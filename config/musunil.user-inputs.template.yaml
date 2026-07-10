@@ -69,6 +69,14 @@ mobile:
   ios_team_id: ""
   integrity_smoke_command: "CHANGE_ME_MOBILE_INTEGRITY_DRY_RUN_COMMAND_PRINTING_mobile_integrity_provider_dry_run"
 
+identity:
+  provider: "portone"
+  portone_store_id: "CHANGE_ME_PORTONE_STORE_ID"
+  portone_identity_channel_key: "CHANGE_ME_PORTONE_IDENTITY_CHANNEL_KEY"
+  portone_api_secret: "CHANGE_ME_PORTONE_API_SECRET"
+  portone_api_base_url: "https://api.portone.io"
+  session_cookie_domain: ".musunil.com"
+
 public_data_sources:
   national_assembly_bill_api_key: "CHANGE_ME_NATIONAL_ASSEMBLY_BILL_API_KEY_OR_SET_LAW_GO_KR_OC"
   national_assembly_bill_api_url: "https://open.assembly.go.kr/portal/openapi/ALLBILLINFO"

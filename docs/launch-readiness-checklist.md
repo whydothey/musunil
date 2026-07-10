@@ -75,6 +75,9 @@
 - 배포 후 post-deploy smoke에서 `/comments`, `/votes`, `/likes`, `/reactions`, `/donations`, `/sponsorships` GET/POST가 404인지 확인한다.
 - production seed와 `/home` 응답에 프리뷰/mock 집회가 섞이지 않는다.
 - 실제 법령·의안 ingest 전 production `/laws`는 preview 법령을 노출하지 않고 빈 목록을 반환한다.
+- production에서 포트원 본인확인 `identity.portone_store_id`, `identity.portone_identity_channel_key`, `identity.portone_api_secret`이 없으면 launch validation이 실패한다.
+- 로그인 없이 공개 읽기 API는 접근 가능하지만, 제보·현장 판단·반론·권리침해 신고·알림 설정·`/me/*`는 본인확인 완료 세션 없이는 `identity_required`로 실패한다.
+- `pnpm service:watch -- --once`가 Web SHA, API readiness, 공개 payload 안전성, 법안/coverage, 인증 write boundary를 검증하고 `docs/splus-service-watch.md`를 갱신한다.
 - production Web fallback에도 프리뷰/mock 카드와 프리뷰 전용 지도 핀이 보이지 않는다.
 - production Web은 `config.js`의 `apiBaseUrl`을 기준으로 하며, `?api=`와 localStorage API override는 localhost에서만 허용된다.
 - production Web은 `build-info.json`의 `commitSha`가 배포 대상 Git SHA와 같아야 한다.
@@ -127,6 +130,7 @@
 - 기본 OpenFreeMap 외 지도 provider를 쓸 경우 해당 `map.*` 키
 - LIVE 미디어 운영을 위한 `security.media_encryption_key`, `storage.provider`, `storage.bucket`, `storage.region`, `storage.access_key_id`, `storage.secret_access_key`
 - 법 관련 탭 운영을 위한 `public_data_sources.national_assembly_bill_api_key` 또는 `public_data_sources.law_go_kr_oc`
+- 쓰기 기능 운영을 위한 `identity.portone_store_id`, `identity.portone_identity_channel_key`, `identity.portone_api_secret`
 - LIVE 공개본 생성을 위한 `redaction.engine_smoke_command`
 - LIVE 현장 인증 운영을 위한 Android Play Integrity service account 또는 iOS App Attest team id와 앱 식별자, `mobile.integrity_smoke_command`
 - AI provider를 켤 경우 `ai.api_key`

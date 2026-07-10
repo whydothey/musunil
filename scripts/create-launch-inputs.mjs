@@ -81,6 +81,14 @@ mobile:
   ios_team_id: ""
   integrity_smoke_command: "CHANGE_ME_MOBILE_INTEGRITY_DRY_RUN_COMMAND_PRINTING_mobile_integrity_provider_dry_run"
 
+identity:
+  provider: "portone"
+  portone_store_id: "CHANGE_ME_PORTONE_STORE_ID"
+  portone_identity_channel_key: "CHANGE_ME_PORTONE_IDENTITY_CHANNEL_KEY"
+  portone_api_secret: "CHANGE_ME_PORTONE_API_SECRET"
+  portone_api_base_url: "https://api.portone.io"
+  session_cookie_domain: ".musunil.com"
+
 public_data_sources:
   national_assembly_bill_api_key: "CHANGE_ME_NATIONAL_ASSEMBLY_BILL_API_KEY_OR_SET_LAW_GO_KR_OC"
   national_assembly_bill_api_url: "https://open.assembly.go.kr/portal/openapi/ALLBILLINFO"
@@ -156,6 +164,6 @@ ai:
 
 writeFileSync(outputPath, yaml, { mode: 0o600 });
 console.log(`Created ${outputPath}`);
-console.log("Fill first: support email, organization contacts, law source API key, media encryption key, storage provider/bucket/keys, redaction smoke command, and mobile integrity verifier values/smoke command.");
+console.log("Fill first: support email, organization contacts, PortOne identity verification keys, law source API key, media encryption key, storage provider/bucket/keys, redaction smoke command, and mobile integrity verifier values/smoke command.");
 console.log("Fill later after business/PG setup: business registration number, business bank account holder, and PG keys. Keep personal bank account exposure and payment influence flags disabled.");
 console.log(`Then run: pnpm launch:ready -- ${outputPath}`);

@@ -10,6 +10,10 @@ const env = {
   MUSUNIL_API_BASE_URL: `http://localhost:${port}`,
   MUSUNIL_INTERNAL_API_KEY: internalApiKey,
   MUSUNIL_USER_TOKEN_SECRET: "ci_user_token_secret_32_bytes_minimum",
+  MUSUNIL_PORTONE_STORE_ID: "ci_portone_store",
+  MUSUNIL_PORTONE_IDENTITY_CHANNEL_KEY: "ci_portone_identity_channel",
+  MUSUNIL_PORTONE_API_SECRET: "ci_portone_api_secret_32_bytes",
+  MUSUNIL_IDENTITY_TEST_MODE: "true",
   PORT: String(port)
 };
 

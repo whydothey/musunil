@@ -14,6 +14,7 @@ const app = createApp(initialStore, {
   readiness: runtime.readiness,
   internalApiKey: runtime.internalApiKey,
   userTokenSecret: runtime.userTokenSecret,
+  identity: runtime.identity,
   autoPublishLiveReports: runtime.autoPublishLiveReports,
   liveMediaStorage: runtime.liveMediaStorage,
   liveMediaEncryptionKey: runtime.liveMediaEncryptionKey,
@@ -40,7 +41,7 @@ const server = createServer(async (req, res) => {
       body
     });
     if (runtime.databaseUrl && req.method !== "GET" && response.status < 400) await persistStore();
-    send(req, res, response.status, response.body);
+    send(req, res, response.status, response.body, response.headers);
   } catch (error) {
     if (error instanceof ApiError) {
       send(req, res, error.status, { error: error.code });
@@ -94,6 +95,15 @@ function loadRuntime() {
     const redisUrl = readString(loaded.config, "redis.url") || process.env.REDIS_URL;
     const liveMediaStorage = createLiveMediaStorage(loaded.config);
     const liveMediaEncryptionKey = readString(loaded.config, "security.media_encryption_key");
+    const identity = {
+      provider: "portone" as const,
+      storeId: process.env.MUSUNIL_PORTONE_STORE_ID || readString(loaded.config, "identity.portone_store_id"),
+      identityChannelKey: process.env.MUSUNIL_PORTONE_IDENTITY_CHANNEL_KEY || readString(loaded.config, "identity.portone_identity_channel_key"),
+      apiSecret: process.env.MUSUNIL_PORTONE_API_SECRET || readString(loaded.config, "identity.portone_api_secret"),
+      apiBaseUrl: process.env.MUSUNIL_PORTONE_API_BASE_URL || readString(loaded.config, "identity.portone_api_base_url"),
+      sessionCookieDomain: readString(loaded.config, "identity.session_cookie_domain"),
+      testMode: process.env.MUSUNIL_IDENTITY_TEST_MODE === "true"
+    };
     const retention = {
       rawClaimStatementDays: readNumber(loaded.config, "retention.raw_claim_statement_days", 30),
       unverifiedOriginalMediaDays: readNumber(loaded.config, "retention.unverified_original_media_days", 30),
@@ -107,6 +117,7 @@ function loadRuntime() {
       allowLocalDevOrigins: process.env.MUSUNIL_RUNTIME_ENV !== "production",
       internalApiKey,
       userTokenSecret,
+      identity,
       encryptionKey,
       databaseUrl,
       liveMediaStorage,
@@ -133,6 +144,15 @@ function loadRuntime() {
       allowLocalDevOrigins: !productionRuntime,
       internalApiKey: process.env.MUSUNIL_INTERNAL_API_KEY,
       userTokenSecret: process.env.MUSUNIL_USER_TOKEN_SECRET || process.env.MUSUNIL_INTERNAL_API_KEY,
+      identity: {
+        provider: "portone" as const,
+        storeId: process.env.MUSUNIL_PORTONE_STORE_ID,
+        identityChannelKey: process.env.MUSUNIL_PORTONE_IDENTITY_CHANNEL_KEY,
+        apiSecret: process.env.MUSUNIL_PORTONE_API_SECRET,
+        apiBaseUrl: process.env.MUSUNIL_PORTONE_API_BASE_URL,
+        sessionCookieDomain: ".musunil.com",
+        testMode: process.env.MUSUNIL_IDENTITY_TEST_MODE === "true"
+      },
       encryptionKey: process.env.MUSUNIL_ENCRYPTION_KEY,
       databaseUrl: process.env.DATABASE_URL,
       liveMediaStorage: undefined,
@@ -187,7 +207,13 @@ async function tcpUrlReadyCheck(id: string, rawUrl: string): Promise<{ id: strin
   }
 }
 
-function send(req: { headers?: Record<string, string | string[] | undefined> }, res: { writeHead: Function; end: Function }, status: number, body: unknown): void {
+function send(
+  req: { headers?: Record<string, string | string[] | undefined> },
+  res: { writeHead: Function; end: Function },
+  status: number,
+  body: unknown,
+  extraHeaders: Record<string, string> = {}
+): void {
   const origin = typeof req.headers?.origin === "string" ? req.headers.origin : undefined;
   const headers: Record<string, string> = {
     "access-control-allow-headers": "content-type, x-musunil-user-id, x-musunil-user-token, x-musunil-internal-key",
@@ -202,7 +228,9 @@ function send(req: { headers?: Record<string, string | string[] | undefined> }, 
     headers["access-control-allow-origin"] = runtime.allowedOrigins[0] ?? "*";
   } else if (runtime.allowedOrigins.includes(origin) || (runtime.allowLocalDevOrigins && isLocalhostOrigin(origin))) {
     headers["access-control-allow-origin"] = origin;
+    headers["access-control-allow-credentials"] = "true";
   }
+  Object.assign(headers, extraHeaders);
   res.writeHead(status, headers);
   res.end(body === undefined ? "" : JSON.stringify(body));
 }

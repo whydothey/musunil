@@ -50,6 +50,13 @@ mobile:
   android_play_integrity_enabled: true
   ios_app_attest_enabled: false
   integrity_smoke_command: "printf mobile_integrity_provider_dry_run"
+identity:
+  provider: "portone"
+  portone_store_id: "store-musunil-production"
+  portone_identity_channel_key: "identity-channel-musunil-production"
+  portone_api_secret: "portone_identity_api_secret_32_bytes"
+  portone_api_base_url: "https://api.portone.io"
+  session_cookie_domain: ".musunil.kr"
 map:
   provider: "openfreemap"
   map_style_url: "https://tiles.openfreemap.org/styles/positron"
@@ -181,6 +188,9 @@ function fillGeneratedLaunchInputs(raw) {
     .replaceAll("CHANGE_ME_PLAY_INTEGRITY_SERVICE_ACCOUNT_JSON_B64", "eyJ0eXBlIjoic2VydmljZV9hY2NvdW50IiwicHJvamVjdF9pZCI6Im11c3VuaWwtcHJvZCIsImNsaWVudF9lbWFpbCI6InBsYXktaW50ZWdyaXR5QG11c3VuaWwtcHJvZC5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsInByaXZhdGVfa2V5IjoiLS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tXG5NSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ1xuLS0tLS1FTkQgUFJJVkFURSBLRVktLS0tLVxuIn0=")
     .replaceAll("CHANGE_ME_MOBILE_INTEGRITY_DRY_RUN_COMMAND_PRINTING_mobile_integrity_provider_dry_run", "printf mobile_integrity_provider_dry_run")
     .replaceAll("CHANGE_ME_REDACTION_ENGINE_SMOKE_COMMAND_WITH_{input}_AND_{output}", "cp {input} {output}")
+    .replaceAll("CHANGE_ME_PORTONE_STORE_ID", "store-musunil-production")
+    .replaceAll("CHANGE_ME_PORTONE_IDENTITY_CHANNEL_KEY", "identity-channel-musunil-production")
+    .replaceAll("CHANGE_ME_PORTONE_API_SECRET", "portone_identity_api_secret_32_bytes")
     .replaceAll("CHANGE_ME_PUBLIC_WEB_URL", "https://musunil.kr")
     .replaceAll("CHANGE_ME_PUBLIC_API_URL", "https://api.musunil.kr")
     .replaceAll("CHANGE_ME_SUPPORT_EMAIL", "ops@musunil.kr")

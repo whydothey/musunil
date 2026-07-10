@@ -45,9 +45,9 @@ function responseHeaders(type) {
   return {
     "cache-control": "no-store",
     "content-security-policy":
-      "default-src 'self'; connect-src 'self' http://localhost:* http://127.0.0.1:* https:; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob:",
+      "default-src 'self'; connect-src 'self' http://localhost:* http://127.0.0.1:* https:; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.portone.io; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob:",
     "content-type": type,
-    "permissions-policy": "camera=(), microphone=(), geolocation=()",
+    "permissions-policy": "camera=(self), microphone=(), geolocation=(self)",
     "referrer-policy": "no-referrer",
     "x-content-type-options": "nosniff",
     "x-frame-options": "DENY"

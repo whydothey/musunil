@@ -121,6 +121,24 @@ function hydrateStore(store: Store): Store {
   for (const report of store.reports) report.createdAt = date(report.createdAt);
   store.liveUploads ??= [];
   for (const upload of store.liveUploads) upload.uploadedAt = date(upload.uploadedAt);
+  store.verifiedUsers ??= [];
+  for (const user of store.verifiedUsers) {
+    user.verifiedAt = date(user.verifiedAt);
+    user.lastSeenAt = date(user.lastSeenAt);
+  }
+  store.identityVerificationSessions ??= [];
+  for (const session of store.identityVerificationSessions) {
+    session.requestedAt = date(session.requestedAt);
+    session.expiresAt = date(session.expiresAt);
+    session.verifiedAt = optionalDate(session.verifiedAt);
+  }
+  store.userSessions ??= [];
+  for (const session of store.userSessions) {
+    session.createdAt = date(session.createdAt);
+    session.lastSeenAt = date(session.lastSeenAt);
+    session.expiresAt = date(session.expiresAt);
+    session.revokedAt = optionalDate(session.revokedAt);
+  }
   return store;
 }
 

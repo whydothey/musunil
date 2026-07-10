@@ -80,7 +80,7 @@ await check("cors_disallowed_origin", async () => {
 await check("user_scope_required", async () => {
   const response = await rawRequest("GET", "/me/reports?userId=user_1");
   assert(response.status === 401, `/me route without user scope should return 401, got ${response.status}`);
-  assert(response.body?.error === "user_scope_required", "user scope error code mismatch");
+  assert(response.body?.error === "identity_required", "user scope error code mismatch");
 });
 
 await check("user_scope_allowed", async () => {
@@ -99,7 +99,7 @@ await check("subscription_user_scope_mismatch", async () => {
     userHeaders(session)
   );
   assert(response.status === 401, `subscription user scope mismatch should return 401, got ${response.status}`);
-  assert(response.body?.error === "user_scope_required", "subscription user scope error code mismatch");
+  assert(response.body?.error === "identity_required", "subscription user scope error code mismatch");
 });
 
 await check("report_user_scope_mismatch", async () => {
@@ -111,7 +111,7 @@ await check("report_user_scope_mismatch", async () => {
     userHeaders(session)
   );
   assert(response.status === 401, `report user scope mismatch should return 401, got ${response.status}`);
-  assert(response.body?.error === "user_scope_required", "report user scope error code mismatch");
+  assert(response.body?.error === "identity_required", "report user scope error code mismatch");
 });
 
 await check("admin_queue", async () => {
@@ -213,7 +213,8 @@ await check("public_live_claim_safety", async () => {
 if (runWriteChecks) {
   await check("write_claim_raw_safety", async () => {
     const marker = `SMOKE_RAW_${Date.now()}`;
-    const created = await request("POST", "/reports/material", { targetType: "occurrence", targetId: "occ_1", rawText: marker });
+    const session = await anonymousSession();
+    const created = await request("POST", "/reports/material", { userId: session.userId, targetType: "occurrence", targetId: "occ_1", rawText: marker }, false, userHeaders(session));
     assert(JSON.stringify(created).includes(marker) === false, "raw report text leaked from create response");
     const detail = await request("GET", "/occurrences/occ_1");
     assert(JSON.stringify(detail).includes(marker) === false, "raw report text leaked from public detail");
@@ -302,12 +303,12 @@ async function check(id, action) {
   }
 }
 
-async function request(method, path, body, internal = false) {
+async function request(method, path, body, internal = false, headers = {}) {
   const response = await rawRequest(
     method,
     path,
     body ? JSON.stringify(body) : undefined,
-    internal ? { "x-musunil-internal-key": runtime.internalApiKey } : {}
+    { ...(internal ? { "x-musunil-internal-key": runtime.internalApiKey } : {}), ...headers }
   );
   assert(response.ok, `${method} ${path} returned ${response.status}: ${JSON.stringify(response.body)}`);
   return response.body;
@@ -333,10 +334,18 @@ async function rawRequest(method, path, body, headers = {}) {
 }
 
 async function anonymousSession() {
-  const response = await rawRequest("POST", "/session/anonymous", "{}");
-  assert(response.status === 201, `anonymous session returned ${response.status}`);
+  const start = await rawRequest("POST", "/auth/identity/start", JSON.stringify({ purpose: "general" }));
+  assert(start.status === 201, `identity start returned ${start.status}`);
+  assert(typeof start.body?.identityVerificationId === "string", "identity start missing identityVerificationId");
+  const response = await rawRequest(
+    "POST",
+    "/auth/identity/complete",
+    JSON.stringify({ identityVerificationId: start.body.identityVerificationId, testCi: `ci-${Date.now()}-${Math.random()}`, testDi: `di-${Date.now()}-${Math.random()}` })
+  );
+  assert(response.status === 201, `identity complete returned ${response.status}`);
   assert(typeof response.body?.userId === "string", "anonymous session missing userId");
   assert(typeof response.body?.token === "string", "anonymous session missing token");
+  assert(response.body?.authLevel === "identity_verified", "identity session authLevel mismatch");
   assert(Date.parse(response.body?.expiresAt) > Date.now(), "anonymous session expiresAt is missing or expired");
   return response.body;
 }

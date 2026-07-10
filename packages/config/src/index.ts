@@ -138,6 +138,16 @@ export function validateLaunchConfig(config: Record<string, unknown>, env: NodeJ
     requireRealValue(config, issues, "mobile.integrity_smoke_command");
   }
 
+  if (production && read(config, "identity.provider") !== "portone") {
+    issues.push({ path: "identity.provider", message: "production identity verification provider must be portone for v1." });
+  }
+  if (production) {
+    requireRealValueOrEnv(config, env, issues, "identity.portone_store_id", "MUSUNIL_PORTONE_STORE_ID");
+    requireRealValueOrEnv(config, env, issues, "identity.portone_identity_channel_key", "MUSUNIL_PORTONE_IDENTITY_CHANNEL_KEY");
+    requireSecretOrEnv(config, env, issues, "identity.portone_api_secret", "MUSUNIL_PORTONE_API_SECRET", 24);
+    requireRealValue(config, issues, "identity.session_cookie_domain");
+  }
+
   const mapProvider = read(config, "map.provider");
   if (production && (!mapProvider || mapProvider === "mock")) {
     issues.push({ path: "map.provider", message: "production must not use the mock map provider." });

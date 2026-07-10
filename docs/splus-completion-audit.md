@@ -14,6 +14,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - Active row가 0개다.
 - `pnpm launch:ready -- <운영 user-inputs.yaml>`가 실제 운영 입력값으로 통과한다.
 - `pnpm launch:post-deploy-smoke -- --require-laws`가 실제 배포 API URL로 통과한다.
+- `pnpm service:watch -- --once`가 실제 Web/API URL 기준으로 통과한다.
 - storage, redaction, mobile integrity, law source dry-run/post, production `/ready`가 실제 외부 연결로 통과한다.
 - 공개 화면과 공개 API에 원문, 정밀 위치, private media key, 요구사항 문구가 나오지 않는다.
 
@@ -30,6 +31,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 | 개인정보/권리 보호 | A+ Active | private key/raw GPS 비노출, 공개 반경, purge 전 외부 delete gate | 실제 storage 권한, redaction smoke, purge 검증 |
 | 알권리 중심 UX | S+ Guard | 390px/1440px 캡처, issue-first UX, 금지 문구 web smoke | 신규 화면마다 캡처 갱신 |
 | 법안·개정안 연결 | A+ Active | parser mock self-check, `/laws`, production preview 비노출, 0건 dry-run 실패 가드 | 실제 법 API 키로 dry-run 1건 이상과 post 검증 |
+| 본인확인 기반 쓰기 경계 | A+ Active | 포트원 provider 설정, identity start/complete, write endpoint `identity_required` 경계 | 실제 포트원 채널 키와 운영 SDK 결제 전 인증 리허설 |
 | 운영 배포 준비 | A- Active | Render blueprint, `/ready`, not-ready write fail-closed, `launch:ready` | 실제 운영 YAML/Secret, DB/Redis, Render 배포 health 통과 |
 
 ## Current Passing Evidence
@@ -48,6 +50,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 pnpm launch:ready -- config/musunil.user-inputs.local.yaml
 pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws
 MUSUNIL_API_BASE_URL=https://api.example.com pnpm launch:post-deploy-smoke -- --require-laws
+MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.example.com pnpm service:watch -- --once
 ```
 
 배포 후:
@@ -63,6 +66,7 @@ GET /ready -> 200
 - 실제 `pnpm redaction:smoke` 결과가 아직 없다.
 - 실제 `pnpm mobile:integrity-smoke` 결과가 아직 없다.
 - 실제 법 원천 `pnpm sources:laws` 1건 이상 dry-run/post 결과가 아직 없다.
+- 실제 포트원 본인확인 채널로 인증 완료 리허설 결과가 아직 없다.
 - 운영 DB/Redis/Render `/ready` 결과가 아직 없다.
 - `check:render-runtime-config`는 Render generated secret fallback의 sample gate이며, 실제 배포 `/ready` 증거를 대체하지 않는다.
 

@@ -27,6 +27,7 @@
     "launch:external-smoke": "node scripts/external-smoke.mjs",
     "launch:ready": "node scripts/launch-ready.mjs",
     "launch:post-deploy-smoke": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/post-deploy-smoke.mjs && pnpm check:web-deploy",
+    "service:watch": "node scripts/service-watch.mjs",
     "check:web-deploy": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/check-web-deploy.mjs",
     "launch:inputs": "node scripts/create-launch-inputs.mjs",
     "launch:verify-inputs": "node scripts/check-launch-inputs.mjs",

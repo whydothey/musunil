@@ -7,9 +7,18 @@ import { decryptSnapshot, encryptSnapshot } from "./postgres-store.ts";
 const now = new Date("2026-07-07T09:00:00.000Z");
 const store = createSeedStore();
 const internalHeaders = { "x-musunil-internal-key": "test_internal_key" };
+const testIdentity = {
+  provider: "portone" as const,
+  storeId: "test_store",
+  identityChannelKey: "test_identity_channel",
+  apiSecret: "test_portone_api_secret_32_bytes",
+  sessionCookieDomain: ".musunil.test",
+  testMode: true
+};
 const app = createApp(store, {
   internalApiKey: "test_internal_key",
   userTokenSecret: "test_user_token_secret_32_bytes_minimum",
+  identity: testIdentity,
   readiness: () => ({ ready: true, checks: [{ id: "test", ok: true, message: "ok" }] })
 });
 const productionSeed = createSeedStore({ includeMockData: false });
@@ -419,7 +428,9 @@ assert.equal(unscopedLive.status, 401);
 const orphan = await app.handle({
   method: "POST",
   path: "/reports/material",
+  headers: user1Headers,
   body: {
+    userId: user1Session.userId,
     targetType: "occurrence",
     targetId: "missing",
     rawText: "없는 타깃에는 Claim이 붙으면 안 된다"
@@ -556,6 +567,7 @@ const heldStore = createSeedStore();
 const heldApp = createApp(heldStore, {
   internalApiKey: "test_internal_key",
   userTokenSecret: "test_user_token_secret_32_bytes_minimum",
+  identity: testIdentity,
   autoPublishLiveReports: false
 });
 const heldSession = await anonymousSession(heldApp);
@@ -603,6 +615,7 @@ assert.equal(heldStore.evidence.find((item) => item.id === heldEvidenceId)?.publ
 
 const missingStorageApp = createApp(createSeedStore(), {
   userTokenSecret: "test_user_token_secret_32_bytes_minimum",
+  identity: testIdentity,
   requireExternalLiveStorage: true
 });
 const missingStorageSession = await anonymousSession(missingStorageApp);
@@ -623,6 +636,7 @@ assert.equal((missingStorageUpload.body as { error: string }).error, "live_stora
 
 const unencryptedStorageApp = createApp(createSeedStore(), {
   userTokenSecret: "test_user_token_secret_32_bytes_minimum",
+  identity: testIdentity,
   requireExternalLiveStorage: true,
   liveMediaStorage: { put: async () => undefined }
 });
@@ -647,6 +661,7 @@ const liveMediaEncryptionKey = "test_live_media_encryption_key_32_bytes";
 const externalStorageWrites: Array<{ storageKey: string; mediaMimeType: string; bytes: Buffer }> = [];
 const externalStorageApp = createApp(externalStorageStore, {
   userTokenSecret: "test_user_token_secret_32_bytes_minimum",
+  identity: testIdentity,
   requireExternalLiveStorage: true,
   liveMediaEncryptionKey,
   liveMediaStorage: {
@@ -784,6 +799,7 @@ const autoPublishStore = createSeedStore();
 const autoPublishApp = createApp(autoPublishStore, {
   internalApiKey: "test_internal_key",
   userTokenSecret: "test_user_token_secret_32_bytes_minimum",
+  identity: testIdentity,
   autoPublishLiveReports: true
 });
 const autoSession = await anonymousSession(autoPublishApp);
@@ -856,7 +872,9 @@ assert.equal(
 const rights = await app.handle({
   method: "POST",
   path: "/reports/rights-violation",
+  headers: user1Headers,
   body: {
+    userId: user1Session.userId,
     targetType: "occurrence",
     targetId: "occ_1",
     riskLevel: "rights_risk",
@@ -872,7 +890,9 @@ for (let index = 0; index < 3; index += 1) {
       await app.handle({
         method: "POST",
         path: "/reports/rights-violation",
+        headers: user1Headers,
         body: {
+          userId: user1Session.userId,
           targetType: "occurrence",
           targetId: "occ_1",
           riskLevel: "rights_risk",
@@ -891,7 +911,9 @@ assert.equal(JSON.stringify((await app.handle({ method: "GET", path: "/occurrenc
 const rebuttal = await app.handle({
   method: "POST",
   path: "/rebuttals",
+  headers: user1Headers,
   body: {
+    userId: user1Session.userId,
     targetType: "occurrence",
     targetId: "occ_1",
     normalizedStatement: "반론이 접수되었습니다.",
@@ -1560,13 +1582,26 @@ function assertPublicPayloadSafe(body: unknown): void {
 }
 
 async function anonymousSession(app: ReturnType<typeof createApp>): Promise<{ userId: string; token: string }> {
-  const response = await app.handle({ method: "POST", path: "/session/anonymous" });
+  const start = await app.handle({ method: "POST", path: "/auth/identity/start", body: { purpose: "general" } });
+  assert.equal(start.status, 201);
+  const identityVerificationId = (start.body as { identityVerificationId: string }).identityVerificationId;
+  assert.equal(typeof identityVerificationId, "string");
+  const response = await app.handle({
+    method: "POST",
+    path: "/auth/identity/complete",
+    body: { identityVerificationId, testCi: `ci-${randomSuffix()}`, testDi: `di-${randomSuffix()}` }
+  });
   assert.equal(response.status, 201);
-  const body = response.body as { userId: string; token: string; expiresAt: string };
+  const body = response.body as { userId: string; token: string; expiresAt: string; authLevel: string };
   assert.equal(typeof body.userId, "string");
   assert.equal(typeof body.token, "string");
+  assert.equal(body.authLevel, "identity_verified");
   assert.equal(new Date(body.expiresAt).getTime() > Date.now(), true);
   return body;
+}
+
+function randomSuffix(): string {
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 function liveVideoFields(id: string) {

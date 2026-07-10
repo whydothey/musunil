@@ -74,6 +74,9 @@ function isPublicWrite(method: string | undefined, path: string): boolean {
   if (method === "POST") {
     return [
       "/session/anonymous",
+      "/auth/identity/start",
+      "/auth/identity/complete",
+      "/auth/logout",
       "/uploads/live",
       "/reports/live",
       "/reports/material",

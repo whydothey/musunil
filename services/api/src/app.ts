@@ -16,6 +16,7 @@ import {
   type CrowdEstimate,
   type Evidence,
   type EvidenceStrength,
+  type IdentityVerificationSession,
   type Issue,
   type IssueLawLink,
   type LawItem,
@@ -26,7 +27,9 @@ import {
   type SourceProvenance,
   type Subscription,
   type TargetType,
-  type TransparencyLog
+  type TransparencyLog,
+  type UserSession,
+  type VerifiedUser
 } from "../../../packages/schemas/src/index.ts";
 
 export type Store = {
@@ -45,6 +48,9 @@ export type Store = {
   transparencyLogs: TransparencyLog[];
   reports: ReportRecord[];
   liveUploads: LiveUploadRecord[];
+  verifiedUsers: VerifiedUser[];
+  identityVerificationSessions: IdentityVerificationSession[];
+  userSessions: UserSession[];
 };
 
 export type SeedStoreOptions = {
@@ -92,6 +98,7 @@ export type ApiRequest = {
 export type ApiResponse = {
   status: number;
   body: unknown;
+  headers?: Record<string, string>;
 };
 
 export type ReadinessReport = {
@@ -103,6 +110,7 @@ export type AppOptions = {
   readiness?: () => ReadinessReport | Promise<ReadinessReport>;
   internalApiKey?: string;
   userTokenSecret?: string;
+  identity?: IdentityRuntime;
   autoPublishLiveReports?: boolean;
   liveMediaStorage?: LiveMediaStorage;
   liveMediaEncryptionKey?: string;
@@ -115,6 +123,16 @@ export type AppOptions = {
     preciseLocationDays?: number;
     auditLogDays?: number;
   };
+};
+
+export type IdentityRuntime = {
+  provider: "portone";
+  storeId?: string;
+  identityChannelKey?: string;
+  apiSecret?: string;
+  apiBaseUrl?: string;
+  sessionCookieDomain?: string;
+  testMode?: boolean;
 };
 
 export function createApp(store: Store = emptyStore(), options: AppOptions = {}) {
@@ -147,7 +165,10 @@ export function emptyStore(): Store {
     auditLogs: [],
     transparencyLogs: [],
     reports: [],
-    liveUploads: []
+    liveUploads: [],
+    verifiedUsers: [],
+    identityVerificationSessions: [],
+    userSessions: []
   };
 }
 
@@ -813,6 +834,10 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
     if (!readiness.ready) return json(503, { error: "runtime_not_ready", checks: readiness.checks });
   }
   if (request.method === "POST" && path === "/session/anonymous") return postAnonymousSession(options);
+  if (request.method === "POST" && path === "/auth/identity/start") return postIdentityStart(store, request, options);
+  if (request.method === "POST" && path === "/auth/identity/complete") return await postIdentityComplete(store, request, options);
+  if (request.method === "GET" && path === "/me") return getMe(store, request, options);
+  if (request.method === "POST" && path === "/auth/logout") return postLogout(store, request, options);
   if (request.method === "GET" && path === "/home") {
     const cards = homeCards(store);
     return json(200, { issueCards: issueCards(store, cards), cards });
@@ -833,10 +858,10 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
   if (request.method === "GET" && path === "/public-sources/coverage") return json(200, { coverage: sourceCoverageReport() });
   if (request.method === "GET" && path === "/map") return getMap(store);
   if (request.method === "GET" && path === "/me/reports") {
-    return withUserScope(request, options, url.searchParams.get("userId"), (userId) => getMyReports(store, userId));
+    return withVerifiedUserScope(store, request, options, url.searchParams.get("userId"), (userId) => getMyReports(store, userId));
   }
   if (request.method === "GET" && path === "/me/subscriptions") {
-    return withUserScope(request, options, url.searchParams.get("userId"), (userId) => getMySubscriptions(store, userId));
+    return withVerifiedUserScope(store, request, options, url.searchParams.get("userId"), (userId) => getMySubscriptions(store, userId));
   }
   if (request.method === "GET" && path === "/transparency/logs") return json(200, { logs: store.transparencyLogs });
   if (request.method === "GET" && path === "/transparency/monthly") return getTransparencyMonthly(store);
@@ -900,11 +925,136 @@ function withUserScope(request: ApiRequest, options: AppOptions, userId: string 
   return action(userId);
 }
 
+function withVerifiedUserScope(store: Store, request: ApiRequest, options: AppOptions, userId: string | null, action: (userId: string) => ApiResponse): ApiResponse {
+  if (!userId) return json(400, { error: "userId_required" });
+  const verified = verifiedUserFromRequest(store, request, options);
+  if (!verified || verified.user.id !== userId) return json(401, { error: "identity_required" });
+  return action(userId);
+}
+
 function postAnonymousSession(options: AppOptions): ApiResponse {
   if (!options.userTokenSecret) return json(503, { error: "user_token_secret_not_configured" });
   const userId = `anon_${randomUUID()}`;
   const expiresAt = Date.now() + userTokenTtlMs;
-  return json(201, { userId, token: signUserToken(userId, expiresAt, options.userTokenSecret), expiresAt: new Date(expiresAt).toISOString() });
+  return json(201, { userId, token: signUserToken(userId, expiresAt, options.userTokenSecret), expiresAt: new Date(expiresAt).toISOString(), authLevel: "anonymous" });
+}
+
+function postIdentityStart(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
+  const identity = options.identity;
+  if (!identity || identity.provider !== "portone" || !identity.storeId || !identity.identityChannelKey) {
+    return json(503, { error: "identity_provider_not_configured" });
+  }
+  const data = asObject(request.body);
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 15 * 60_000);
+  const identityVerificationId = `musunil_identity_${randomUUID()}`;
+  const session: IdentityVerificationSession = {
+    id: randomUUID(),
+    provider: "portone",
+    identityVerificationId,
+    purpose: readIdentityPurpose(data),
+    status: "requested",
+    requestedAt: now,
+    expiresAt
+  };
+  store.identityVerificationSessions.push(session);
+  return json(201, {
+    provider: "portone",
+    storeId: identity.storeId,
+    channelKey: identity.identityChannelKey,
+    identityVerificationId,
+    purpose: session.purpose,
+    expiresAt: expiresAt.toISOString()
+  });
+}
+
+async function postIdentityComplete(store: Store, request: ApiRequest, options: AppOptions): Promise<ApiResponse> {
+  if (!options.userTokenSecret) return json(503, { error: "user_token_secret_not_configured" });
+  const identity = options.identity;
+  if (!identity || identity.provider !== "portone") return json(503, { error: "identity_provider_not_configured" });
+  const data = asObject(request.body);
+  const identityVerificationId = readString(data, "identityVerificationId");
+  const session = store.identityVerificationSessions.find((item) => item.identityVerificationId === identityVerificationId);
+  if (!session) return json(404, { error: "identity_session_not_found" });
+  if (session.expiresAt.getTime() < Date.now()) {
+    session.status = "expired";
+    return json(410, { error: "identity_session_expired" });
+  }
+
+  const verified = await verifyPortoneIdentity(identity, data, identityVerificationId);
+  const ciHash = verified.ci ? hmacSubject(verified.ci, options.userTokenSecret) : undefined;
+  const diHash = verified.di ? hmacSubject(verified.di, options.userTokenSecret) : undefined;
+  const subjectHash = ciHash ?? diHash ?? hmacSubject(`${verified.provider}:${verified.providerVerificationId}`, options.userTokenSecret);
+  const now = new Date();
+  let user = store.verifiedUsers.find(
+    (item) =>
+      (ciHash && item.ciHash === ciHash) ||
+      (diHash && item.diHash === diHash) ||
+      item.subjectHash === subjectHash
+  );
+  if (!user) {
+    user = {
+      id: `user_${randomUUID()}`,
+      identityProvider: "portone",
+      ciHash,
+      diHash,
+      subjectHash,
+      status: "active",
+      verifiedAt: now,
+      lastSeenAt: now,
+      verificationCount: 1
+    };
+    store.verifiedUsers.push(user);
+  } else {
+    user.ciHash ??= ciHash;
+    user.diHash ??= diHash;
+    user.subjectHash = user.subjectHash || subjectHash;
+    user.lastSeenAt = now;
+    user.verificationCount += 1;
+  }
+  session.status = "verified";
+  session.verifiedAt = now;
+  session.userId = user.id;
+
+  const expiresAt = Date.now() + userTokenTtlMs;
+  const token = signUserToken(user.id, expiresAt, options.userTokenSecret);
+  store.userSessions.push({
+    id: randomUUID(),
+    userId: user.id,
+    authLevel: "identity_verified",
+    tokenHash: tokenHash(token),
+    createdAt: now,
+    lastSeenAt: now,
+    expiresAt: new Date(expiresAt)
+  });
+  return json(201, {
+    authenticated: true,
+    user: toPublicVerifiedUser(user),
+    userId: user.id,
+    token,
+    authLevel: "identity_verified",
+    expiresAt: new Date(expiresAt).toISOString()
+  }, identityCookieHeaders(user.id, token, new Date(expiresAt), identity.sessionCookieDomain));
+}
+
+function getMe(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
+  const verified = verifiedUserFromRequest(store, request, options);
+  if (!verified) return json(200, { authenticated: false, status: "identity_required" });
+  return json(200, {
+    authenticated: true,
+    user: toPublicVerifiedUser(verified.user),
+    userId: verified.user.id,
+    authLevel: "identity_verified",
+    expiresAt: verified.session.expiresAt.toISOString()
+  });
+}
+
+function postLogout(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
+  const verified = verifiedUserFromRequest(store, request, options);
+  if (verified) verified.session.revokedAt = new Date();
+  return json(200, { status: "logged_out" }, {
+    "set-cookie": "musunil_session=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax"
+  });
 }
 
 function constantTimeStringEqual(candidate: string | undefined, expected: string): boolean {
@@ -928,19 +1078,155 @@ function verifyUserToken(token: string | undefined, userId: string, secret: stri
   return constantTimeStringEqual(token, signUserToken(userId, expiresAt, secret));
 }
 
-function verifiedBodyUserId(request: ApiRequest, options: AppOptions, data: Record<string, unknown>): string | undefined {
+function verifiedBodyUserId(store: Store, request: ApiRequest, options: AppOptions, data: Record<string, unknown>): string | undefined {
   const userId = readOptionalString(data, "userId");
   if (!userId) return undefined;
-  if (!verifyUserToken(request.headers?.["x-musunil-user-token"], userId, options.userTokenSecret)) {
-    throw new ApiError(401, "user_scope_required");
+  const verified = verifiedUserFromRequest(store, request, options);
+  if (!verified || verified.user.id !== userId) {
+    throw new ApiError(401, "identity_required");
   }
   return userId;
 }
 
-function requireVerifiedBodyUserId(request: ApiRequest, options: AppOptions, data: Record<string, unknown>): string {
-  const userId = verifiedBodyUserId(request, options, data);
-  if (!userId) throw new ApiError(401, "user_scope_required");
+function requireVerifiedBodyUserId(store: Store, request: ApiRequest, options: AppOptions, data: Record<string, unknown>): string {
+  const userId = verifiedBodyUserId(store, request, options, data);
+  if (!userId) throw new ApiError(401, "identity_required");
   return userId;
+}
+
+type VerifiedRequestUser = {
+  user: VerifiedUser;
+  session: UserSession;
+};
+
+function verifiedUserFromRequest(store: Store, request: ApiRequest, options: AppOptions): VerifiedRequestUser | undefined {
+  const userId = request.headers?.["x-musunil-user-id"];
+  const token = request.headers?.["x-musunil-user-token"];
+  if (!userId || !token || !verifyUserToken(token, userId, options.userTokenSecret)) return undefined;
+  const session = store.userSessions.find(
+    (item) =>
+      item.userId === userId &&
+      item.authLevel === "identity_verified" &&
+      !item.revokedAt &&
+      item.expiresAt.getTime() > Date.now() &&
+      item.tokenHash === tokenHash(token)
+  );
+  const user = store.verifiedUsers.find((item) => item.id === userId && item.status === "active");
+  if (!session || !user) return undefined;
+  const now = new Date();
+  session.lastSeenAt = now;
+  user.lastSeenAt = now;
+  return { user, session };
+}
+
+function tokenHash(token: string): string {
+  return `sha256-${createHash("sha256").update(token).digest("base64url")}`;
+}
+
+function hmacSubject(value: string, secret: string): string {
+  return `hmac-sha256-${createHmac("sha256", secret).update(value).digest("base64url")}`;
+}
+
+function toPublicVerifiedUser(user: VerifiedUser) {
+  return {
+    id: user.id,
+    identityProvider: user.identityProvider,
+    status: user.status,
+    verifiedAt: user.verifiedAt.toISOString(),
+    lastSeenAt: user.lastSeenAt.toISOString()
+  };
+}
+
+function identityCookieHeaders(userId: string, token: string, expiresAt: Date, domain: string | undefined): Record<string, string> {
+  const parts = [
+    `musunil_session=${encodeURIComponent(`${userId}:${token}`)}`,
+    "Path=/",
+    `Expires=${expiresAt.toUTCString()}`,
+    "HttpOnly",
+    "Secure",
+    "SameSite=Lax"
+  ];
+  if (domain) parts.splice(2, 0, `Domain=${domain}`);
+  return { "set-cookie": parts.join("; ") };
+}
+
+function readIdentityPurpose(data: Record<string, unknown>): IdentityVerificationSession["purpose"] {
+  const purpose = data.purpose;
+  if (
+    purpose === "report" ||
+    purpose === "field_verification" ||
+    purpose === "rebuttal" ||
+    purpose === "rights_report" ||
+    purpose === "subscription" ||
+    purpose === "general"
+  ) {
+    return purpose;
+  }
+  return "general";
+}
+
+type PortoneVerifiedIdentity = {
+  provider: "portone";
+  providerVerificationId: string;
+  ci?: string;
+  di?: string;
+};
+
+async function verifyPortoneIdentity(identity: IdentityRuntime, data: Record<string, unknown>, identityVerificationId: string): Promise<PortoneVerifiedIdentity> {
+  if (identity.testMode) {
+    const ci = readOptionalString(data, "testCi") ?? readOptionalString(data, "ci");
+    const di = readOptionalString(data, "testDi") ?? readOptionalString(data, "di");
+    if (!ci && !di) throw new ApiError(400, "identity_result_incomplete");
+    return { provider: "portone", providerVerificationId: identityVerificationId, ci, di };
+  }
+  if (!identity.apiSecret) throw new ApiError(503, "identity_provider_not_configured");
+  const apiBaseUrl = identity.apiBaseUrl ?? "https://api.portone.io";
+  const response = await fetch(`${apiBaseUrl.replace(/\/$/, "")}/identity-verifications/${encodeURIComponent(identityVerificationId)}`, {
+    headers: {
+      authorization: `PortOne ${identity.apiSecret}`,
+      "user-agent": "MusunilIdentityVerifier/0.1"
+    },
+    signal: AbortSignal.timeout(10_000)
+  });
+  if (!response.ok) throw new ApiError(502, "identity_provider_verify_failed");
+  const body = await response.json();
+  const status = String(readNested(body, ["identityVerification.status", "status", "verification.status"]) ?? "");
+  if (!["VERIFIED", "verified", "SUCCESS", "success"].includes(status)) throw new ApiError(422, "identity_not_verified");
+  const ci = readNestedString(body, [
+    "identityVerification.verifiedCustomer.ci",
+    "identityVerification.customer.ci",
+    "verifiedCustomer.ci",
+    "customer.ci",
+    "ci"
+  ]);
+  const di = readNestedString(body, [
+    "identityVerification.verifiedCustomer.di",
+    "identityVerification.customer.di",
+    "verifiedCustomer.di",
+    "customer.di",
+    "di"
+  ]);
+  if (!ci && !di) throw new ApiError(422, "identity_result_incomplete");
+  return { provider: "portone", providerVerificationId: identityVerificationId, ci, di };
+}
+
+function readNestedString(value: unknown, paths: string[]): string | undefined {
+  for (const path of paths) {
+    const item = readNested(value, [path]);
+    if (typeof item === "string" && item.trim().length > 0) return item.trim();
+  }
+  return undefined;
+}
+
+function readNested(value: unknown, paths: string[]): unknown {
+  for (const path of paths) {
+    const item = path.split(".").reduce<unknown>((current, key) => {
+      if (!current || typeof current !== "object" || Array.isArray(current)) return undefined;
+      return (current as Record<string, unknown>)[key];
+    }, value);
+    if (item !== undefined && item !== null) return item;
+  }
+  return undefined;
 }
 
 function homeCards(store: Store) {
@@ -1810,7 +2096,7 @@ function getMySubscriptions(store: Store, userId: string): ApiResponse {
 
 async function postLiveUpload(store: Store, request: ApiRequest, options: AppOptions): Promise<ApiResponse> {
   const data = asObject(request.body);
-  const userId = requireVerifiedBodyUserId(request, options, data);
+  const userId = requireVerifiedBodyUserId(store, request, options, data);
   const targetType = readTargetType(data, "targetType", "occurrence");
   const targetId = readString(data, "targetId");
   if (!targetExists(store, targetType, targetId)) return json(404, { error: "target_not_found" });
@@ -1848,7 +2134,7 @@ async function postLiveUpload(store: Store, request: ApiRequest, options: AppOpt
 
 function postLiveReport(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
   const data = asObject(request.body);
-  const userId = requireVerifiedBodyUserId(request, options, data);
+  const userId = requireVerifiedBodyUserId(store, request, options, data);
   const targetType = readTargetType(data, "targetType", "occurrence");
   const targetId = readString(data, "targetId");
   const capturedAt = readDate(data, "capturedAt");
@@ -1967,7 +2253,7 @@ function postFieldVerification(store: Store, claimId: string | undefined, reques
   const reviewedClaim = store.claims.find((claim) => claim.id === claimId && isPublicClaim(claim));
   if (!reviewedClaim || !hasPublicLiveEvidence(store, reviewedClaim)) return json(404, { error: "live_claim_not_found" });
   const data = asObject(request.body);
-  const userId = requireVerifiedBodyUserId(request, options, data);
+  const userId = requireVerifiedBodyUserId(store, request, options, data);
   const capturedAt = readDate(data, "capturedAt");
   const verdict = readFieldVerification(data);
   const evidence: Evidence = {
@@ -2011,7 +2297,7 @@ function postFieldVerification(store: Store, claimId: string | undefined, reques
 
 function postMaterialReport(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
   const data = asObject(request.body);
-  const userId = verifiedBodyUserId(request, options, data);
+  const userId = requireVerifiedBodyUserId(store, request, options, data);
   const targetType = readTargetType(data, "targetType", "occurrence");
   const targetId = readString(data, "targetId");
   const evidence: Evidence = {
@@ -2041,7 +2327,7 @@ function postMaterialReport(store: Store, request: ApiRequest, options: AppOptio
 
 function postOnSiteCorrection(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
   const data = asObject(request.body);
-  const userId = verifiedBodyUserId(request, options, data);
+  const userId = requireVerifiedBodyUserId(store, request, options, data);
   const targetType = readTargetType(data, "targetType", "occurrence");
   const targetId = readString(data, "targetId");
   const claim = addClaim(store, {
@@ -2063,7 +2349,7 @@ function postOnSiteCorrection(store: Store, request: ApiRequest, options: AppOpt
 
 function postRightsViolation(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
   const data = asObject(request.body);
-  const userId = verifiedBodyUserId(request, options, data);
+  const userId = requireVerifiedBodyUserId(store, request, options, data);
   const targetType = readTargetType(data, "targetType", "occurrence");
   const targetId = readString(data, "targetId");
   const riskLevel = readRiskLevel(data, "riskLevel", "rights_risk");
@@ -2087,7 +2373,7 @@ function postRightsViolation(store: Store, request: ApiRequest, options: AppOpti
 
 function postRebuttal(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
   const data = asObject(request.body);
-  const userId = verifiedBodyUserId(request, options, data);
+  const userId = requireVerifiedBodyUserId(store, request, options, data);
   const targetType = readTargetType(data, "targetType", "occurrence");
   const targetId = readString(data, "targetId");
   const claim = addClaim(store, {
@@ -2110,7 +2396,8 @@ function postRebuttal(store: Store, request: ApiRequest, options: AppOptions): A
 function postSubscription(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
   const data = asObject(request.body);
   const userId = readString(data, "userId");
-  if (!verifyUserToken(request.headers?.["x-musunil-user-token"], userId, options.userTokenSecret)) return json(401, { error: "user_scope_required" });
+  const verified = verifiedUserFromRequest(store, request, options);
+  if (!verified || verified.user.id !== userId) return json(401, { error: "identity_required" });
   const subscription: Subscription = {
     id: randomUUID(),
     userId,
@@ -2127,7 +2414,8 @@ function postSubscription(store: Store, request: ApiRequest, options: AppOptions
 function patchSubscription(store: Store, id: string | undefined, request: ApiRequest, options: AppOptions): ApiResponse {
   const subscription = store.subscriptions.find((item) => item.id === id);
   if (!subscription) return json(404, { error: "subscription_not_found" });
-  if (!verifyUserToken(request.headers?.["x-musunil-user-token"], subscription.userId, options.userTokenSecret)) return json(401, { error: "user_scope_required" });
+  const verified = verifiedUserFromRequest(store, request, options);
+  if (!verified || verified.user.id !== subscription.userId) return json(401, { error: "identity_required" });
   const data = asObject(request.body);
   if (data.alertLevel === "major_only" || data.alertLevel === "normal" || data.alertLevel === "all") subscription.alertLevel = data.alertLevel;
   if (Array.isArray(data.alertTypes)) subscription.alertTypes = data.alertTypes.filter((item): item is string => typeof item === "string");
@@ -2710,6 +2998,7 @@ function toPublicLawItem(store: Store, law: LawItem) {
   const links = store.issueLawLinks.filter((link) => link.lawItemId === law.id && store.issues.some((issue) => issue.id === link.issueId));
   const issueIds = new Set(links.map((link) => link.issueId));
   const relatedTargets = [...issueIds].flatMap((issueId) => issueTargets(store, issueId));
+  const regions = new Set(relatedTargets.map(({ target }) => publicTargetRegionLabel(target)).filter(Boolean));
   const claims = publicClaimsForIssueIds(store, issueIds);
   const lastUpdatedAt = latestDate([
     law.statusDate,
@@ -2717,6 +3006,10 @@ function toPublicLawItem(store: Store, law: LawItem) {
     ...store.issues.filter((issue) => issueIds.has(issue.id)).map((issue) => issue.lastUpdatedAt),
     ...claims.map((claim) => claim.createdAt)
   ]);
+  const scheduleProximityScore = lawScheduleProximityScore(law);
+  const occurrenceCount = relatedTargets.length;
+  const regionCount = regions.size;
+  const recentClaimCount = claims.length;
   return {
     id: law.id,
     source: law.source,
@@ -2731,11 +3024,24 @@ function toPublicLawItem(store: Store, law: LawItem) {
     officialUrl: law.officialUrl,
     keywords: law.keywords,
     linkedIssueCount: issueIds.size,
-    relatedTargetCount: relatedTargets.length,
-    recentClaimCount: claims.length,
-    interestScore: links.length * 40 + relatedTargets.length * 7 + claims.length * 3 + (lastUpdatedAt ? 1 : 0),
+    relatedTargetCount: occurrenceCount,
+    occurrenceCount,
+    regionCount,
+    recentClaimCount,
+    scheduleProximityScore,
+    interestScore: occurrenceCount * 25 + regionCount * 20 + recentClaimCount * 8 + scheduleProximityScore + links.length * 5,
     lastUpdatedAt: lastUpdatedAt?.toISOString()
   };
+}
+
+function lawScheduleProximityScore(law: LawItem): number {
+  const date = law.effectiveDate ?? law.statusDate;
+  if (!date) return 0;
+  const days = Math.abs(Date.now() - date.getTime()) / dayMs;
+  if (days <= 7) return 30;
+  if (days <= 30) return 18;
+  if (days <= 90) return 8;
+  return 1;
 }
 
 function publicClaimsForIssueIds(store: Store, issueIds: Set<string>): Claim[] {
@@ -3426,8 +3732,8 @@ function fieldVerificationStatement(value: NonNullable<Claim["fieldVerification"
   )[value];
 }
 
-function json(status: number, body: unknown): ApiResponse {
-  return { status, body };
+function json(status: number, body: unknown, headers?: Record<string, string>): ApiResponse {
+  return { status, body, headers };
 }
 
 export class ApiError extends Error {

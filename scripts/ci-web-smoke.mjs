@@ -66,8 +66,10 @@ async function checkWeb(port) {
   assert(html.headers.get("x-content-type-options") === "nosniff", "nosniff header missing");
   assert(html.headers.get("x-frame-options") === "DENY", "x-frame-options header missing");
   assert(html.headers.get("referrer-policy") === "no-referrer", "referrer-policy header missing");
-  assert(html.headers.get("permissions-policy")?.includes("geolocation=()"), "permissions-policy geolocation guard missing");
+  assert(html.headers.get("permissions-policy")?.includes("geolocation=(self)"), "permissions-policy geolocation self grant missing");
+  assert(html.headers.get("permissions-policy")?.includes("camera=(self)"), "permissions-policy camera self grant missing");
   assert(html.headers.get("content-security-policy")?.includes("default-src 'self'"), "content-security-policy missing");
+  assert(html.headers.get("content-security-policy")?.includes("https://cdn.portone.io"), "PortOne SDK CSP allowlist missing");
   assert(index.includes("지금 확인할 이슈"), "issue-first home title missing");
   assert(index.includes('id="issue-stories"'), "issue story rail missing");
   assert(index.includes('id="reels-section"'), "top-level reels section missing");
@@ -112,6 +114,11 @@ async function checkWeb(port) {
   assert(index.includes("현장 인증 범위"), "map presence area key missing");
   assert(!/좋아요|댓글|찬반|추천|비추천|팔로우/u.test(index), "forbidden social mechanic copy present");
   assert(index.includes("근처 현장 후보"), "nearby report target candidates missing");
+  assert(index.includes('id="identity-sheet"'), "identity verification sheet missing");
+  assert(index.includes("requestIdentityVerification"), "PortOne identity SDK handoff missing");
+  assert(index.includes('api("/auth/identity/start"'), "identity start API handoff missing");
+  assert(index.includes('api("/auth/identity/complete"'), "identity complete API handoff missing");
+  assert(index.includes('id="report-auth-state"'), "report auth status chip missing");
   assert(index.includes('id="confirm-report-target"'), "report target confirmation action missing");
   assert(index.includes("이 현장에 제보"), "report target confirmation copy missing");
   assert(index.includes('id="submit-capture-action"'), "capture preview submit action missing");

@@ -223,6 +223,41 @@ export type Subscription = {
   mutedUntil?: Date;
 };
 
+export type VerifiedUser = {
+  id: string;
+  identityProvider: "portone";
+  ciHash?: string;
+  diHash?: string;
+  subjectHash: string;
+  status: "active" | "blocked";
+  verifiedAt: Date;
+  lastSeenAt: Date;
+  verificationCount: number;
+};
+
+export type IdentityVerificationSession = {
+  id: string;
+  provider: "portone";
+  identityVerificationId: string;
+  purpose: "report" | "field_verification" | "rebuttal" | "rights_report" | "subscription" | "general";
+  status: "requested" | "verified" | "expired" | "failed";
+  requestedAt: Date;
+  expiresAt: Date;
+  verifiedAt?: Date;
+  userId?: string;
+};
+
+export type UserSession = {
+  id: string;
+  userId: string;
+  authLevel: "identity_verified";
+  tokenHash: string;
+  createdAt: Date;
+  lastSeenAt: Date;
+  expiresAt: Date;
+  revokedAt?: Date;
+};
+
 export type NotificationOutbox = {
   id: string;
   userId: string;

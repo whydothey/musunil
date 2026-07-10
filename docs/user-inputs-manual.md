@@ -82,7 +82,15 @@ domestic_operation:
    - 또는 `public_data_sources.law_go_kr_oc`
    - 법 탭과 이슈-법안 연결을 실제 공개 원천으로 돌리려면 둘 중 하나가 필요하다.
 
-2. LIVE 현장 영상 원본 저장소
+2. 포트원 본인확인
+   - `identity.provider: "portone"`
+   - `identity.portone_store_id`
+   - `identity.portone_identity_channel_key`
+   - `identity.portone_api_secret`
+   - `identity.session_cookie_domain`
+   - 읽기는 공개지만 제보, 현장 판단, 반론, 신고, 알림 설정은 본인확인 완료 세션이 필요하다.
+
+3. LIVE 현장 영상 원본 저장소
    - `security.media_encryption_key`
    - `storage.provider`
    - `storage.bucket`
@@ -91,16 +99,16 @@ domestic_operation:
    - `storage.access_key_id`
    - `storage.secret_access_key`
 
-3. 영상 비식별 엔진
+4. 영상 비식별 엔진
    - `redaction.engine_smoke_command`
    - `{input}`과 `{output}`이 반드시 들어가야 한다.
 
-4. 모바일 현장 인증
+5. 모바일 현장 인증
    - Android 우선이면 `mobile.android_*`
    - iOS 우선이면 `mobile.ios_*`
    - `mobile.integrity_smoke_command`
 
-5. 지도
+6. 지도
    - 기본값은 OpenFreeMap이라 별도 API 키가 필요 없다.
    - 유료 지도 provider로 바꿀 때만 별도 설정을 추가한다.
 
