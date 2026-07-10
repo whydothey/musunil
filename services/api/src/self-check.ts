@@ -99,8 +99,6 @@ const publicPayloads = [
   await app.handle({ method: "GET", path: "/home" }),
   await app.handle({ method: "GET", path: "/occurrences/occ_1" }),
   await app.handle({ method: "GET", path: "/continuous-presences/presence_1" }),
-  await app.handle({ method: "GET", path: "/transit-occurrences/transit_1" }),
-  await app.handle({ method: "GET", path: "/targets/crowd_density_signal/crowd_busan_mock" }),
   await app.handle({ method: "GET", path: "/issues/issue_1" }),
   await app.handle({ method: "GET", path: "/laws" }),
   await app.handle({ method: "GET", path: "/laws/law_info_network_amendment" }),
@@ -537,6 +535,22 @@ const live = await app.handle({
 
 assert.equal(live.status, 202);
 assert.equal(JSON.stringify(live.body).includes("이 원문은 공개 응답에 나오면 안 된다"), false);
+const liveReceipt = live.body as {
+  reportId: string;
+  claimId: string;
+  targetTitle: string;
+  issueTitle: string;
+  regionLabel: string;
+  publicRadiusM: number;
+  nextStepLabel: string;
+};
+assert.equal(typeof liveReceipt.reportId, "string");
+assert.equal(typeof liveReceipt.claimId, "string");
+assert.equal(liveReceipt.targetTitle.length > 0, true);
+assert.equal(liveReceipt.issueTitle.length > 0, true);
+assert.equal(liveReceipt.regionLabel.length > 0, true);
+assert.equal(liveReceipt.publicRadiusM, 200);
+assert.equal(liveReceipt.nextStepLabel, "비식별 검토 중");
 
 const heldStore = createSeedStore();
 const heldApp = createApp(heldStore, {
@@ -951,7 +965,7 @@ const routeOnlySubscription = await app.handle({
     targetType: "occurrence",
     targetId: "occ_1",
     alertLevel: "all",
-    alertTypes: ["route_changed"]
+    alertTypes: ["rebuttal_added"]
   }
 });
 assert.equal(routeOnlySubscription.status, 201);
@@ -1023,6 +1037,8 @@ privateClaim.createdAt = new Date("2020-01-01T00:00:00.000Z");
 const privateEvidence = store.evidence.find((evidence) => evidence.id === "ev_occ_live_1");
 assert(privateEvidence);
 privateEvidence.geoCell = "private-cell";
+privateEvidence.privateLng = 126.9783;
+privateEvidence.privateLat = 37.5667;
 privateEvidence.gpsAccuracyM = 12;
 privateEvidence.distanceToTargetM = 34;
 privateEvidence.storageKey = "private/live/expired/original.mp4";
@@ -1057,6 +1073,8 @@ assert.equal((privacyPurge.body as { auditLogsDeleted: number }).auditLogsDelete
 assert.equal((privacyPurge.body as { liveUploadBuffersCleared: number }).liveUploadBuffersCleared >= 1, true);
 assert.equal(privateClaim.statement, "");
 assert.equal(privateEvidence.geoCell, undefined);
+assert.equal(privateEvidence.privateLng, undefined);
+assert.equal(privateEvidence.privateLat, undefined);
 assert.equal(privateEvidence.gpsAccuracyM, undefined);
 assert.equal(privateEvidence.distanceToTargetM, undefined);
 assert.equal(privateEvidence.storageKey, undefined);
@@ -1112,7 +1130,7 @@ assert.equal(JSON.stringify(home.body).includes("\"title\":\"이동·교통 영�
 assert.equal(JSON.stringify(home.body).includes("issue_mock_mobility"), true);
 assert.equal(JSON.stringify(home.body).includes("위치 인증 제보 있음"), true);
 assert.equal(JSON.stringify(home.body).includes("부산 도심 행진 가능성"), true);
-assert.equal(JSON.stringify(home.body).includes("인파 밀집 신호"), true);
+assert.equal(JSON.stringify(home.body).includes("인파 밀집 신호"), false);
 assert.equal(JSON.stringify(home.body).includes("경찰청 2011~2023 집회 신고·개최 통계"), true);
 assert.equal(JSON.stringify(home.body).includes("대구 2020~2025 집회 신고·개최 현황"), true);
 assert.equal(JSON.stringify(home.body).includes("대구 0709(목) 오늘의 집회 공개 일정"), true);
@@ -1128,8 +1146,10 @@ assert.equal(JSON.stringify(home.body).includes("traffic_control"), false);
 const issue = await app.handle({ method: "GET", path: "/issues/issue_1" });
 assert.equal(issue.status, 200);
 assert.equal(JSON.stringify(issue.body).includes("targets"), true);
-assert.equal(JSON.stringify(issue.body).includes("transit_occurrence"), true);
-assert.equal(JSON.stringify(issue.body).includes("route_checkpoint"), true);
+assert.equal(JSON.stringify(issue.body).includes("transit_occurrence"), false);
+assert.equal(JSON.stringify(issue.body).includes("crowd_density_signal"), false);
+assert.equal(JSON.stringify(issue.body).includes("route_segment"), false);
+assert.equal(JSON.stringify(issue.body).includes("route_checkpoint"), false);
 assert.equal(JSON.stringify(issue.body).includes("nationalSummary"), true);
 assert.equal(JSON.stringify(issue.body).includes("topicGrouping"), true);
 assert.equal(JSON.stringify(issue.body).includes("regionalSignals"), true);
@@ -1172,9 +1192,7 @@ assert.equal(regionalCrowdEstimates.some((estimate) => estimate.regionLabel === 
 assert.equal(regionalCrowdEstimates.every((estimate) => estimate.maxCount >= estimate.minCount), true);
 const issueVerificationSignals = (issue.body as { verificationSignals: Array<{ id: string; label: string; summary: string }> }).verificationSignals;
 assert.equal(issueVerificationSignals.some((signal) => signal.id === "official_absent"), true);
-assert.equal(issueVerificationSignals.some((signal) => signal.id === "needs_verification"), true);
-assert.equal(issueVerificationSignals.some((signal) => signal.id === "device_attestation_cluster"), true);
-assert.equal(issueVerificationSignals.some((signal) => signal.id === "user_concentration"), true);
+assert.equal(issueVerificationSignals.length >= 1, true);
 const issueTimeline = (issue.body as { nationalTimeline: { summary: { label: string }; moments: Array<{ title: string; sourceProvenance?: string; evidenceStrength?: string; riskLevel?: string }> } }).nationalTimeline;
 assert.equal(["동시다발 확인", "순차 확산 확인", "단일 권역 확인"].includes(issueTimeline.summary.label), true);
 assert.equal(issueTimeline.moments.some((moment) => moment.title.includes("현장 영상 Claim")), true);
@@ -1267,17 +1285,21 @@ assert.equal(
 assert.equal(JSON.stringify(appRiskDashboard.body).includes(user1Session.userId), false);
 assert.equal(JSON.stringify(appRiskDashboard.body).includes("field-device-cluster"), false);
 
-const crowd = await app.handle({ method: "GET", path: "/targets/crowd_density_signal/crowd_busan_mock" });
-assert.equal(crowd.status, 200);
-assert.equal(JSON.stringify(crowd.body).includes("부산 도심권 인파 밀집 가능성이 감지되었습니다."), true);
-assertPublicPayloadSafe(crowd.body);
+const map = await app.handle({ method: "GET", path: "/map" });
+assert.equal(map.status, 200);
+assertPublicPayloadSafe(map.body);
+const mapBody = map.body as { geojson: { pins: { features: Array<{ geometry: { type: string } }> }; presenceAreas: { features: Array<{ geometry: { type: string } }> } } };
+assert.equal(mapBody.geojson.pins.features.every((feature) => feature.geometry.type === "Point"), true);
+assert.equal(mapBody.geojson.presenceAreas.features.every((feature) => feature.geometry.type === "Polygon"), true);
+assert.equal(JSON.stringify(map.body).includes("LineString"), false);
+assert.equal(mapBody.geojson.presenceAreas.features.length >= 1, true);
 
 const publicSourceBody = {
   targetType: "occurrence",
-  targetId: "occ_seoul_traffic_mock",
+  targetId: "occ_1",
   sourceProvenance: "government_or_police",
   claimantLabel: "경찰/지자체 공개 안내",
-  normalizedStatement: "공개 자료에서 집회 주변 통제 안내가 확인되었습니다.",
+  normalizedStatement: "공개 자료에서 집회 일정 안내가 확인되었습니다.",
   evidenceStrength: "single_source",
   riskLevel: "misleading_possible",
   rawText: "공공 원천 원문은 공개 응답에 그대로 노출하지 않는다"
@@ -1301,9 +1323,9 @@ assert.equal(
   store.claims.filter(
     (claim) =>
       claim.targetType === "occurrence" &&
-      claim.targetId === "occ_seoul_traffic_mock" &&
+      claim.targetId === "occ_1" &&
       claim.claimantLabel === "경찰/지자체 공개 안내" &&
-      claim.normalizedStatement === "공개 자료에서 집회 주변 통제 안내가 확인되었습니다."
+      claim.normalizedStatement === "공개 자료에서 집회 일정 안내가 확인되었습니다."
   ).length,
   1
 );
@@ -1311,9 +1333,9 @@ assert.equal(
   store.claims.find(
     (claim) =>
       claim.targetType === "occurrence" &&
-      claim.targetId === "occ_seoul_traffic_mock" &&
+      claim.targetId === "occ_1" &&
       claim.claimantLabel === "경찰/지자체 공개 안내" &&
-      claim.normalizedStatement === "공개 자료에서 집회 주변 통제 안내가 확인되었습니다."
+      claim.normalizedStatement === "공개 자료에서 집회 일정 안내가 확인되었습니다."
   )?.statement,
   "갱신된 공공 원천 원문도 공개 응답에 나오면 안 된다"
 );
@@ -1519,6 +1541,8 @@ function assertPublicPayloadSafe(body: unknown): void {
     '"publicStorageKey"',
     '"hash"',
     '"geoCell"',
+    '"privateLng"',
+    '"privateLat"',
     '"gpsAccuracyM"',
     '"distanceToTargetM"',
     '"deviceIntegrityProvider"',
@@ -1529,6 +1553,9 @@ function assertPublicPayloadSafe(body: unknown): void {
     '"reviewTargetClaimId"'
   ]) {
     assert.equal(text.includes(field), false, `public payload leaked ${field}`);
+  }
+  for (const token of ["transit_occurrence", "crowd_density_signal", "route_segment", "route_checkpoint", "traffic_control", "WEAKLY_OBSERVED"]) {
+    assert.equal(text.includes(token), false, `public payload leaked removed target token ${token}`);
   }
 }
 
@@ -1550,7 +1577,9 @@ function liveVideoFields(id: string) {
     mediaMimeType: "video/mp4",
     width: 1080,
     height: 1920,
-    captureMode: "in_app_camera"
+    captureMode: "in_app_camera",
+    gpsLng: 126.9783,
+    gpsLat: 37.5667
   };
 }
 

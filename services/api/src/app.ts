@@ -13,7 +13,6 @@ import {
   type AuditLog,
   type Claim,
   type ContinuousPresence,
-  type CrowdDensitySignal,
   type CrowdEstimate,
   type Evidence,
   type EvidenceStrength,
@@ -25,11 +24,8 @@ import {
   type Occurrence,
   type RiskLevel,
   type SourceProvenance,
-  type RouteCheckpoint,
-  type RouteSegment,
   type Subscription,
   type TargetType,
-  type TransitOccurrence,
   type TransparencyLog
 } from "../../../packages/schemas/src/index.ts";
 
@@ -40,10 +36,6 @@ export type Store = {
   issueLawLinks: IssueLawLink[];
   occurrences: Occurrence[];
   continuousPresences: ContinuousPresence[];
-  transitOccurrences: TransitOccurrence[];
-  crowdDensitySignals: CrowdDensitySignal[];
-  routeSegments: RouteSegment[];
-  routeCheckpoints: RouteCheckpoint[];
   crowdEstimates: CrowdEstimate[];
   claims: Claim[];
   evidence: Evidence[];
@@ -147,10 +139,6 @@ export function emptyStore(): Store {
     issueLawLinks: [],
     occurrences: [],
     continuousPresences: [],
-    transitOccurrences: [],
-    crowdDensitySignals: [],
-    routeSegments: [],
-    routeCheckpoints: [],
     crowdEstimates: [],
     claims: [],
     evidence: [],
@@ -212,7 +200,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       id: "issue_mock_mobility",
       title: "대통령 탄핵 요구 행진",
       normalizedTopicKey: "presidential-impeachment-demand",
-      topicTags: ["대통령 탄핵", "행진", "교통"],
+      topicTags: ["대통령 탄핵", "행진", "집회"],
       status: "active",
       firstSeenAt: now,
       lastUpdatedAt: now
@@ -289,6 +277,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     areaClusterId: "area_daegu",
     regionLabel: "대구",
     title: "대구 0709(목) 오늘의 집회 공개 일정",
+    publicLocation: { lng: 128.6014, lat: 35.8714, label: "대구 도심권", precision: "area", source: "operator_review" },
     startsAt: new Date("2026-07-08T15:00:00.000Z"),
     lifecycleState: "UPCOMING",
     claimIds: [],
@@ -300,6 +289,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     areaClusterId: "area_daegu",
     regionLabel: "대구",
     title: "대구 0707(화) 오늘의 집회 공개 일정",
+    publicLocation: { lng: 128.6014, lat: 35.8714, label: "대구 도심권", precision: "area", source: "operator_review" },
     startsAt: new Date("2026-07-06T15:00:00.000Z"),
     lifecycleState: "ENDED",
     claimIds: [],
@@ -311,6 +301,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     areaClusterId: "area_daegu",
     regionLabel: "대구",
     title: "대구 0706(월) 오늘의 집회 공개 일정",
+    publicLocation: { lng: 128.6014, lat: 35.8714, label: "대구 도심권", precision: "area", source: "operator_review" },
     startsAt: new Date("2026-07-05T15:00:00.000Z"),
     lifecycleState: "ENDED",
     claimIds: [],
@@ -322,6 +313,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     areaClusterId: "area_daegu",
     regionLabel: "대구",
     title: "대구 0704(토)~0705(일) 오늘의 집회 공개 일정",
+    publicLocation: { lng: 128.6014, lat: 35.8714, label: "대구 도심권", precision: "area", source: "operator_review" },
     startsAt: new Date("2026-07-03T15:00:00.000Z"),
     endsAt: new Date("2026-07-05T14:59:59.000Z"),
     lifecycleState: "ENDED",
@@ -334,6 +326,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     areaClusterId: "area_seoul",
     regionLabel: "서울",
     title: "서울 인근 집회성 모임",
+    publicLocation: { lng: 126.978, lat: 37.5665, label: "서울 도심권", precision: "area", source: "operator_review" },
     startsAt: now,
     lifecycleState: "UNKNOWN",
     claimIds: [],
@@ -345,19 +338,9 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     areaClusterId: "area_busan",
     regionLabel: "부산",
     title: "부산 도심 행진 가능성",
+    publicLocation: { lng: 129.059, lat: 35.1578, label: "부산 서면 일대", precision: "area", source: "operator_review" },
     startsAt: new Date("2026-07-07T11:30:00.000Z"),
     lifecycleState: "UPCOMING",
-    claimIds: [],
-    evidenceIds: []
-  }, {
-    id: "occ_seoul_traffic_mock",
-    issueId: "issue_mock_mobility",
-    type: "traffic_control",
-    areaClusterId: "area_seoul",
-    regionLabel: "서울",
-    title: "서울 도심 교통 통제 주장",
-    startsAt: new Date("2026-07-07T10:00:00.000Z"),
-    lifecycleState: "STARTING_SOON",
     claimIds: [],
     evidenceIds: []
   });
@@ -366,6 +349,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     issueId: "issue_1",
     areaClusterId: "area_seoul",
     regionLabel: "서울",
+    publicLocation: { lng: 126.965, lat: 37.571, label: "서울 도심 장기 현장", precision: "area", source: "operator_review" },
     presenceType: "continuous_assembly",
     state: "ONGOING",
     claimIds: [],
@@ -375,69 +359,11 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     issueId: "issue_1",
     areaClusterId: "area_daejeon",
     regionLabel: "대전",
+    publicLocation: { lng: 127.3848, lat: 36.3504, label: "대전 정부청사권", precision: "area", source: "operator_review" },
     presenceType: "relay_protest",
     firstProofOfPresenceAt: new Date("2026-07-06T22:00:00.000Z"),
     lastProofOfPresenceAt: new Date("2026-07-07T08:40:00.000Z"),
-    state: "WEAKLY_OBSERVED",
-    claimIds: [],
-    evidenceIds: []
-  });
-  store.transitOccurrences.push({
-    id: "transit_1",
-    issueId: "issue_1",
-    lineId: "서울 지하철 1호선",
-    stationIds: ["시청역", "종각역"],
-    direction: "종각 방향",
-    state: "UNKNOWN",
-    delayClaimIds: [],
-    serviceStatusClaimIds: [],
-    evidenceIds: []
-  }, {
-    id: "transit_busan_mock",
-    issueId: "issue_mock_mobility",
-    lineId: "부산 도시철도 2호선",
-    stationIds: ["서면역", "센텀시티역"],
-    direction: "해운대 방향",
-    state: "UNKNOWN",
-    delayClaimIds: [],
-    serviceStatusClaimIds: [],
-    evidenceIds: []
-  });
-  store.crowdDensitySignals.push({
-    id: "crowd_1",
-    issueId: "issue_1",
-    areaClusterId: "area_seoul",
-    densityLevel: "unknown",
-    bottleneckFlag: false,
-    flowDirectionClaimIds: [],
-    emergencySignalClaimIds: [],
-    evidenceIds: []
-  }, {
-    id: "crowd_busan_mock",
-    issueId: "issue_mock_mobility",
-    areaClusterId: "area_busan",
-    densityLevel: "high",
-    bottleneckFlag: true,
-    flowDirectionClaimIds: [],
-    emergencySignalClaimIds: [],
-    evidenceIds: []
-  });
-  store.routeSegments.push({ id: "route_segment_1", issueId: "issue_1", routeId: "route_1", verification: "claimed", claimIds: [], evidenceIds: [] });
-  store.routeSegments.push({ id: "route_segment_busan_mock", issueId: "issue_mock_mobility", routeId: "route_busan_mock", verification: "claimed", claimIds: [], evidenceIds: [] });
-  store.routeCheckpoints.push({
-    id: "checkpoint_1",
-    issueId: "issue_1",
-    routeId: "route_1",
-    checkpointType: "traffic_control",
-    passableStatus: "uncertain",
-    claimIds: [],
-    evidenceIds: []
-  }, {
-    id: "checkpoint_busan_mock",
-    issueId: "issue_mock_mobility",
-    routeId: "route_busan_mock",
-    checkpointType: "route_split",
-    passableStatus: "uncertain",
+    state: "ONGOING",
     claimIds: [],
     evidenceIds: []
   });
@@ -453,22 +379,13 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
   );
   findAreaCluster(store, "area_seoul")?.targetRefs.push(
     { targetType: "occurrence", targetId: "occ_1" },
-    { targetType: "continuous_presence", targetId: "presence_1" },
-    { targetType: "occurrence", targetId: "occ_seoul_traffic_mock" },
-    { targetType: "transit_occurrence", targetId: "transit_1" },
-    { targetType: "crowd_density_signal", targetId: "crowd_1" },
-    { targetType: "route_checkpoint", targetId: "checkpoint_1" }
+    { targetType: "continuous_presence", targetId: "presence_1" }
   );
   findAreaCluster(store, "area_busan")?.targetRefs.push(
-    { targetType: "occurrence", targetId: "occ_busan_march_mock" },
-    { targetType: "transit_occurrence", targetId: "transit_busan_mock" },
-    { targetType: "crowd_density_signal", targetId: "crowd_busan_mock" },
-    { targetType: "route_segment", targetId: "route_segment_busan_mock" },
-    { targetType: "route_checkpoint", targetId: "checkpoint_busan_mock" }
+    { targetType: "occurrence", targetId: "occ_busan_march_mock" }
   );
   findAreaCluster(store, "area_daejeon")?.targetRefs.push(
-    { targetType: "continuous_presence", targetId: "presence_daejeon_mock" },
-    { targetType: "route_segment", targetId: "route_segment_1" }
+    { targetType: "continuous_presence", targetId: "presence_daejeon_mock" }
   );
   store.evidence.push(
     {
@@ -513,6 +430,8 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       uploadedAt: now,
       capturedAt: new Date("2026-07-07T08:57:00.000Z"),
       geoCell: "preview-seoul-central",
+      privateLng: 126.9783,
+      privateLat: 37.5667,
       publicRadiusM: 200,
       foregroundGps: true,
       gpsAccuracyM: 32,
@@ -540,6 +459,8 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       uploadedAt: now,
       capturedAt: new Date("2026-07-07T08:52:00.000Z"),
       geoCell: "preview-seoul-presence",
+      privateLng: 126.9654,
+      privateLat: 37.5712,
       publicRadiusM: 200,
       foregroundGps: true,
       gpsAccuracyM: 45,
@@ -562,12 +483,6 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       hash: "preview-live-presence-1"
     },
     {
-      id: "ev_transit_1",
-      evidenceType: "citizen_report",
-      uploadedAt: now,
-      proofOfPresenceStatus: "unknown"
-    },
-    {
       id: "ev_busan_media_mock",
       evidenceType: "media_link",
       uploadedAt: new Date("2026-07-07T08:35:00.000Z"),
@@ -579,6 +494,8 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       uploadedAt: new Date("2026-07-07T08:50:00.000Z"),
       capturedAt: new Date("2026-07-07T08:48:00.000Z"),
       geoCell: "preview-busan-central",
+      privateLng: 129.0592,
+      privateLat: 35.1581,
       publicRadiusM: 220,
       foregroundGps: true,
       gpsAccuracyM: 38,
@@ -606,6 +523,8 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       uploadedAt: new Date("2026-07-07T08:43:00.000Z"),
       capturedAt: new Date("2026-07-07T08:40:00.000Z"),
       geoCell: "preview-daejeon-government-complex",
+      privateLng: 127.3848,
+      privateLat: 36.3507,
       publicRadiusM: 220,
       foregroundGps: true,
       gpsAccuracyM: 41,
@@ -742,20 +661,6 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       disputedByClaimIds: []
     },
     {
-      id: "claim_transit_1",
-      targetType: "transit_occurrence",
-      targetId: "transit_1",
-      sourceProvenance: "material_report",
-      claimantLabel: "자료 제보",
-      statement: "",
-      normalizedStatement: "일부 구간 대중교통 영향 가능성이 접수되었습니다.",
-      evidenceStrength: "single_source",
-      riskLevel: "misleading_possible",
-      createdAt: now,
-      evidenceIds: ["ev_transit_1"],
-      disputedByClaimIds: []
-    },
-    {
       id: "claim_busan_march_media_mock",
       targetType: "occurrence",
       targetId: "occ_busan_march_mock",
@@ -784,34 +689,6 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       disputedByClaimIds: []
     },
     {
-      id: "claim_seoul_traffic_mock",
-      targetType: "occurrence",
-      targetId: "occ_seoul_traffic_mock",
-      sourceProvenance: "agency_action_request",
-      claimantLabel: "현장 통제 안내",
-      statement: "",
-      normalizedStatement: "서울 도심 일부 구간 통제 가능성이 안내되었습니다.",
-      evidenceStrength: "single_source",
-      riskLevel: "misleading_possible",
-      createdAt: new Date("2026-07-07T08:45:00.000Z"),
-      evidenceIds: [],
-      disputedByClaimIds: []
-    },
-    {
-      id: "claim_busan_transit_mock",
-      targetType: "transit_occurrence",
-      targetId: "transit_busan_mock",
-      sourceProvenance: "musunil_ai_estimate",
-      claimantLabel: "AI 영향 추정",
-      statement: "",
-      normalizedStatement: "행진 가능성과 인파 신호를 근거로 부산 도시철도 일부 혼잡 가능성을 추정했습니다.",
-      evidenceStrength: "single_source",
-      riskLevel: "misleading_possible",
-      createdAt: new Date("2026-07-07T08:52:00.000Z"),
-      evidenceIds: [],
-      disputedByClaimIds: []
-    },
-    {
       id: "claim_daejeon_presence_mock",
       targetType: "continuous_presence",
       targetId: "presence_daejeon_mock",
@@ -823,62 +700,6 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       riskLevel: "rights_risk",
       createdAt: new Date("2026-07-07T08:43:00.000Z"),
       evidenceIds: ["ev_daejeon_live_mock"],
-      disputedByClaimIds: []
-    },
-    {
-      id: "claim_crowd_busan_mock",
-      targetType: "crowd_density_signal",
-      targetId: "crowd_busan_mock",
-      sourceProvenance: "musunil_ai_estimate",
-      claimantLabel: "인파 밀집 추정",
-      statement: "",
-      normalizedStatement: "부산 도심권 인파 밀집 가능성이 감지되었습니다.",
-      evidenceStrength: "single_source",
-      riskLevel: "misleading_possible",
-      createdAt: new Date("2026-07-07T08:51:00.000Z"),
-      evidenceIds: [],
-      disputedByClaimIds: []
-    },
-    {
-      id: "claim_crowd_1",
-      targetType: "crowd_density_signal",
-      targetId: "crowd_1",
-      sourceProvenance: "musunil_ai_estimate",
-      claimantLabel: "인파 신호 추정",
-      statement: "",
-      normalizedStatement: "서울 도심 인파 밀집 신호는 아직 확인 중입니다.",
-      evidenceStrength: "none",
-      riskLevel: "misleading_possible",
-      createdAt: new Date("2026-07-07T08:30:00.000Z"),
-      evidenceIds: [],
-      disputedByClaimIds: []
-    },
-    {
-      id: "claim_checkpoint_1",
-      targetType: "route_checkpoint",
-      targetId: "checkpoint_1",
-      sourceProvenance: "agency_action_request",
-      claimantLabel: "현장 통제 안내",
-      statement: "",
-      normalizedStatement: "서울 도심 경로 지점의 통행 가능 여부는 확인 중입니다.",
-      evidenceStrength: "single_source",
-      riskLevel: "misleading_possible",
-      createdAt: new Date("2026-07-07T08:44:00.000Z"),
-      evidenceIds: [],
-      disputedByClaimIds: []
-    },
-    {
-      id: "claim_checkpoint_busan_mock",
-      targetType: "route_checkpoint",
-      targetId: "checkpoint_busan_mock",
-      sourceProvenance: "material_report",
-      claimantLabel: "자료 제보",
-      statement: "",
-      normalizedStatement: "부산 행진 경로가 두 갈래로 나뉠 수 있다는 자료가 접수되었습니다.",
-      evidenceStrength: "single_source",
-      riskLevel: "misleading_possible",
-      createdAt: new Date("2026-07-07T08:42:00.000Z"),
-      evidenceIds: [],
       disputedByClaimIds: []
     }
   );
@@ -898,18 +719,10 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
   findOccurrence(store, "occ_1")?.evidenceIds.push("ev_occ_live_1");
   findOccurrence(store, "occ_busan_march_mock")?.claimIds.push("claim_busan_march_media_mock", "claim_busan_march_live_mock");
   findOccurrence(store, "occ_busan_march_mock")?.evidenceIds.push("ev_busan_media_mock", "ev_busan_live_mock");
-  findOccurrence(store, "occ_seoul_traffic_mock")?.claimIds.push("claim_seoul_traffic_mock");
   store.continuousPresences[0]?.claimIds.push("claim_presence_1");
   store.continuousPresences[0]?.evidenceIds.push("ev_presence_1");
   store.continuousPresences[1]?.claimIds.push("claim_daejeon_presence_mock");
   store.continuousPresences[1]?.evidenceIds.push("ev_daejeon_live_mock");
-  store.transitOccurrences[0]?.serviceStatusClaimIds.push("claim_transit_1");
-  store.transitOccurrences[0]?.evidenceIds.push("ev_transit_1");
-  store.transitOccurrences[1]?.serviceStatusClaimIds.push("claim_busan_transit_mock");
-  store.crowdDensitySignals[0]?.flowDirectionClaimIds.push("claim_crowd_1");
-  store.crowdDensitySignals[1]?.flowDirectionClaimIds.push("claim_crowd_busan_mock");
-  store.routeCheckpoints[0]?.claimIds.push("claim_checkpoint_1");
-  store.routeCheckpoints[1]?.claimIds.push("claim_checkpoint_busan_mock");
   store.crowdEstimates.push({
     id: "estimate_issue_1_preview",
     targetType: "issue",
@@ -921,7 +734,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     method: "hybrid",
     evidenceCount: 4,
     independentViewpointCount: 3,
-    limitations: ["프리뷰 공개자료 기준", "현장 영상 공개본과 인파 신호가 일부 지역에 집중되어 있습니다."]
+    limitations: ["프리뷰 공개자료 기준", "현장 영상 공개본이 일부 지역에 집중되어 있습니다."]
   });
   return options.includeMockData === false ? stripPreviewData(store) : store;
 }
@@ -931,10 +744,6 @@ export function stripPreviewData(store: Store): Store {
   store.lawItems = store.lawItems.filter((item) => !isPreviewSeedId(item.id) && !item.assemblyBillId?.startsWith("preview-") && !item.lawId?.startsWith("preview-"));
   store.occurrences = store.occurrences.filter((item) => !isPreviewSeedId(item.id));
   store.continuousPresences = store.continuousPresences.filter((item) => !isPreviewSeedId(item.id));
-  store.transitOccurrences = store.transitOccurrences.filter((item) => !isPreviewSeedId(item.id));
-  store.crowdDensitySignals = store.crowdDensitySignals.filter((item) => !isPreviewSeedId(item.id));
-  store.routeSegments = store.routeSegments.filter((item) => !isPreviewSeedId(item.id));
-  store.routeCheckpoints = store.routeCheckpoints.filter((item) => !isPreviewSeedId(item.id));
   store.crowdEstimates = store.crowdEstimates.filter((item) => !isPreviewSeedId(item.id) && targetExists(store, item.targetType, item.targetId));
   store.claims = store.claims.filter((item) => !isPreviewSeedId(item.id) && targetExists(store, item.targetType, item.targetId));
   store.evidence = store.evidence.filter((item) => !isPreviewSeedId(item.id));
@@ -948,18 +757,6 @@ export function stripPreviewData(store: Store): Store {
     .map((item) => ({ ...item, claimIds: item.claimIds.filter((id) => claimIds.has(id)) }));
   for (const item of store.occurrences) cleanRefs(item, claimIds, evidenceIds);
   for (const item of store.continuousPresences) cleanRefs(item, claimIds, evidenceIds);
-  for (const item of store.routeSegments) cleanRefs(item, claimIds, evidenceIds);
-  for (const item of store.routeCheckpoints) cleanRefs(item, claimIds, evidenceIds);
-  for (const item of store.transitOccurrences) {
-    item.delayClaimIds = item.delayClaimIds.filter((id) => claimIds.has(id));
-    item.serviceStatusClaimIds = item.serviceStatusClaimIds.filter((id) => claimIds.has(id));
-    item.evidenceIds = item.evidenceIds.filter((id) => evidenceIds.has(id));
-  }
-  for (const item of store.crowdDensitySignals) {
-    item.flowDirectionClaimIds = item.flowDirectionClaimIds.filter((id) => claimIds.has(id));
-    item.emergencySignalClaimIds = item.emergencySignalClaimIds.filter((id) => claimIds.has(id));
-    item.evidenceIds = item.evidenceIds.filter((id) => evidenceIds.has(id));
-  }
 
   for (const area of store.areaClusters) area.targetRefs = area.targetRefs.filter((ref) => targetExists(store, ref.targetType, ref.targetId));
   store.areaClusters = store.areaClusters.filter((item) => !isPreviewSeedId(item.id) || item.targetRefs.length > 0);
@@ -984,18 +781,10 @@ function isPreviewSeedId(id: string): boolean {
       "issue_1",
       "occ_1",
       "presence_1",
-      "transit_1",
-      "crowd_1",
-      "route_segment_1",
-      "checkpoint_1",
       "ev_occ_live_1",
       "ev_presence_1",
-      "ev_transit_1",
       "claim_occ_live_1",
       "claim_presence_1",
-      "claim_transit_1",
-      "claim_crowd_1",
-      "claim_checkpoint_1",
       "law_info_network_amendment",
       "law_national_assembly_impeachment",
       "law_public_official_election"
@@ -1007,10 +796,6 @@ function targetExists(store: Store, targetType: TargetType, targetId: string): b
   if (targetType === "issue") return store.issues.some((item) => item.id === targetId);
   if (targetType === "occurrence") return store.occurrences.some((item) => item.id === targetId);
   if (targetType === "continuous_presence") return store.continuousPresences.some((item) => item.id === targetId);
-  if (targetType === "transit_occurrence") return store.transitOccurrences.some((item) => item.id === targetId);
-  if (targetType === "crowd_density_signal") return store.crowdDensitySignals.some((item) => item.id === targetId);
-  if (targetType === "route_segment") return store.routeSegments.some((item) => item.id === targetId);
-  if (targetType === "route_checkpoint") return store.routeCheckpoints.some((item) => item.id === targetId);
   return false;
 }
 
@@ -1043,9 +828,6 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
   if (request.method === "GET" && path.startsWith("/occurrences/")) return getOccurrence(store, path.split("/")[2]);
   if (request.method === "GET" && path.startsWith("/continuous-presences/")) {
     return getTargetById(store, "continuous_presence", path.split("/")[2], "continuous_presence_not_found");
-  }
-  if (request.method === "GET" && path.startsWith("/transit-occurrences/")) {
-    return getTargetById(store, "transit_occurrence", path.split("/")[2], "transit_occurrence_not_found");
   }
   if (request.method === "GET" && path === "/area-clusters") return json(200, { areaClusters: store.areaClusters.map(toPublicAreaCluster) });
   if (request.method === "GET" && path === "/public-sources/coverage") return json(200, { coverage: sourceCoverageReport() });
@@ -1173,7 +955,7 @@ function homeCards(store: Store) {
       updateVelocity: claims.length,
       proofOfPresenceGrowth: evidence.filter((item) => item.proofOfPresenceStatus === "pass").length,
       publicImpact: claims.length > 1 ? 1 : 0,
-      safetyOrTransitImpact: occurrence.type === "traffic_control" || occurrence.type === "public_safety" ? 2 : 0,
+      publicAssemblyImpact: occurrence.type === "static_assembly" || occurrence.type === "march" ? 2 : 0,
       sourceDiversity,
       claimConflict: claims.filter((claim) => claim.disputedByClaimIds.length > 0).length,
       evidenceStrength: maxEvidenceStrengthScore(claims),
@@ -1188,6 +970,7 @@ function homeCards(store: Store) {
       targetType: "occurrence",
       title: occurrence.title,
       regionLabel: occurrence.regionLabel,
+      publicLocation: occurrence.publicLocation,
 	      lifecycleState: occurrence.lifecycleState,
 	      chips: chipsForClaims(claims),
 	      sourceSummary: sourceSummaryForClaims(claims),
@@ -1199,13 +982,13 @@ function homeCards(store: Store) {
     };
   });
 
-  const specialCards = [
-    ...store.continuousPresences.map((item) => ({
+  const specialCards = store.continuousPresences.map((item) => ({
       id: item.id,
       issueId: item.issueId,
       targetType: "continuous_presence",
       title: `${item.regionLabel} 장기 현장`,
       regionLabel: item.regionLabel,
+      publicLocation: item.publicLocation,
       lifecycleState: "ONGOING_SERIES",
       chips: ["장기 진행 중", "세션 구분 없음"],
       updatedAt: item.lastProofOfPresenceAt?.toISOString(),
@@ -1213,56 +996,7 @@ function homeCards(store: Store) {
       current: presenceStateLabel(item.state),
       peak: "-",
       proof: item.evidenceIds.length
-    })),
-    ...store.transitOccurrences.map((item) => ({
-      id: item.id,
-      issueId: item.issueId,
-      targetType: "transit_occurrence",
-      title: `${item.lineId} 대중교통 영향`,
-      regionLabel: item.stationIds.join(", "),
-      lifecycleState: item.state,
-      chips: ["대중교통 영향", item.direction ?? "방향 확인 중"],
-      updatedAt: undefined,
-      priorityScore: 7,
-      current: "지연 주장",
-      peak: "-",
-      proof: item.evidenceIds.length
-    })),
-    ...store.crowdDensitySignals.map((item) => {
-      const cluster = store.areaClusters.find((area) => area.id === item.areaClusterId);
-      return {
-        id: item.id,
-        issueId: item.issueId,
-        targetType: "crowd_density_signal",
-        title: `${cluster?.regionLabel ?? "현장"} 인파 밀집 신호`,
-        regionLabel: cluster?.label ?? "지역 확인 중",
-        lifecycleState: "UNKNOWN",
-        chips: ["주최 없음", item.bottleneckFlag ? "병목 가능" : "흐름 확인"],
-        updatedAt: undefined,
-        priorityScore: item.densityLevel === "high" || item.densityLevel === "critical" ? 7 : 4,
-        current: densityLabel(item.densityLevel),
-        peak: "-",
-        proof: item.evidenceIds.length
-      };
-    }),
-    ...store.routeCheckpoints.map((item) => {
-      const routeLabel = routeDisplayLabel(item.routeId);
-      return {
-        id: item.id,
-        issueId: item.issueId,
-        targetType: "route_checkpoint",
-        title: `${routeLabel} 경로 확인 지점`,
-        regionLabel: routeLabel,
-        lifecycleState: "UNKNOWN",
-        chips: ["경로 지점", item.passableStatus === "blocked" ? "차단 주장" : "통행 확인 중"],
-        updatedAt: undefined,
-        priorityScore: 4,
-        current: checkpointTypeLabel(item.checkpointType),
-        peak: passableStatusLabel(item.passableStatus),
-        proof: item.evidenceIds.length
-      };
-    })
-  ];
+    }));
 
   return [...occurrenceCards, ...specialCards].sort((a, b) => homeCardOrderScore(a) - homeCardOrderScore(b));
 }
@@ -1318,11 +1052,7 @@ function issueCards(store: Store, cards = homeCards(store)) {
 function issueTargets(store: Store, issueId: string): Array<{ targetType: TargetType; target: TargetRecord }> {
   return [
     ...store.occurrences.filter((target) => target.issueId === issueId).map((target) => ({ targetType: "occurrence" as const, target })),
-    ...store.continuousPresences.filter((target) => target.issueId === issueId).map((target) => ({ targetType: "continuous_presence" as const, target })),
-    ...store.transitOccurrences.filter((target) => target.issueId === issueId).map((target) => ({ targetType: "transit_occurrence" as const, target })),
-    ...store.crowdDensitySignals.filter((target) => target.issueId === issueId).map((target) => ({ targetType: "crowd_density_signal" as const, target })),
-    ...store.routeSegments.filter((target) => target.issueId === issueId).map((target) => ({ targetType: "route_segment" as const, target })),
-    ...store.routeCheckpoints.filter((target) => target.issueId === issueId).map((target) => ({ targetType: "route_checkpoint" as const, target }))
+    ...store.continuousPresences.filter((target) => target.issueId === issueId).map((target) => ({ targetType: "continuous_presence" as const, target }))
   ];
 }
 
@@ -1348,7 +1078,6 @@ function homeCardOrderScore(card: { lifecycleState: string; targetType: string; 
 function presenceStateLabel(state: ContinuousPresence["state"]): string {
   return {
     ONGOING: "장기 진행 중",
-    WEAKLY_OBSERVED: "약하게 관측",
     PAUSED: "일시 중단",
     ENDING_SOON: "종료 임박",
     ENDED: "종료",
@@ -1356,48 +1085,12 @@ function presenceStateLabel(state: ContinuousPresence["state"]): string {
   }[state];
 }
 
-function checkpointTypeLabel(type: RouteCheckpoint["checkpointType"]): string {
-  return {
-    police_block: "차벽",
-    traffic_control: "교통 통제",
-    standoff: "대치",
-    route_split: "경로 분기",
-    unknown: "확인 중"
-  }[type];
-}
-
-function passableStatusLabel(status: RouteCheckpoint["passableStatus"]): string {
-  return {
-    passable: "통행 가능",
-    blocked: "차단",
-    uncertain: "확인 중"
-  }[status];
-}
-
 function findOccurrence(store: Store, id: string): Occurrence | undefined {
   return store.occurrences.find((item) => item.id === id);
 }
 
-function routeDisplayLabel(routeId: string): string {
-  if (routeId.includes("busan")) return "부산 도심";
-  if (routeId.includes("route_1")) return "서울 도심";
-  return "경로";
-}
-
 function findAreaCluster(store: Store, id: string): AreaCluster | undefined {
   return store.areaClusters.find((item) => item.id === id);
-}
-
-function densityLabel(level: CrowdDensitySignal["densityLevel"]): string {
-  return (
-    {
-      low: "낮음",
-      medium: "보통",
-      high: "높음",
-      critical: "매우 높음",
-      unknown: "확인 중"
-    } as const
-  )[level];
 }
 
 function getIssue(store: Store, id: string | undefined): ApiResponse {
@@ -1465,11 +1158,7 @@ function issueTargetTypeLabel(targetType: TargetType): string {
     {
       issue: "이슈",
       occurrence: "집회 현장",
-      continuous_presence: "장기 현장",
-      transit_occurrence: "대중교통 영향",
-      crowd_density_signal: "인파 신호",
-      route_segment: "경로 구간",
-      route_checkpoint: "경로 지점"
+      continuous_presence: "장기 현장"
     } as const
   )[targetType];
 }
@@ -1618,9 +1307,6 @@ function targetFirstSeenAt(target: TargetRecord): Date | undefined {
 function targetTitle(targetType: TargetType, target: TargetRecord): string {
   if ("title" in target && typeof target.title === "string") return target.title;
   if (targetType === "continuous_presence") return `${(target as ContinuousPresence).regionLabel} 장기 현장`;
-  if (targetType === "transit_occurrence") return `${(target as TransitOccurrence).lineId} 대중교통 영향`;
-  if (targetType === "crowd_density_signal") return "인파 밀집 신호";
-  if (targetType === "route_checkpoint") return "경로 확인 지점";
   return "공개 대상";
 }
 
@@ -1659,8 +1345,7 @@ function crowdEstimateHasPublicBasis(store: Store, estimate: CrowdEstimate): boo
         : [];
   const claims = estimate.targetType === "issue" ? issueClaims(store, estimate.targetId, targets) : targets.flatMap(({ targetType, target }) => publicClaimsForTarget(store, targetType, target.id));
   return (
-    publicEvidenceForClaims(store, claims).some(hasPublishableLiveEvidence) ||
-    targets.some(({ targetType, target }) => targetType === "crowd_density_signal" && (target as CrowdDensitySignal).densityLevel !== "unknown")
+    publicEvidenceForClaims(store, claims).some(hasPublishableLiveEvidence)
   );
 }
 
@@ -1670,7 +1355,7 @@ function derivedCrowdEstimateForIssue(store: Store, issueId: string): CrowdEstim
   return derivedCrowdEstimateForScope(store, `derived_${issueId}_crowd_estimate`, issueId, targets, claims, [
     "자동 갱신 추정이며 참석 인원 확정치가 아닙니다.",
     publicEvidenceForClaims(store, claims).some((item) => item.evidenceType === "live_media")
-      ? "현장 영상 Claim과 인파 신호가 일부 지역에 편중될 수 있습니다."
+      ? "현장 영상 Claim이 일부 지역에 편중될 수 있습니다."
       : "현장 영상 Claim이 부족해 공개 Claim 기반으로만 계산했습니다."
   ]);
 }
@@ -1686,7 +1371,7 @@ function regionalCrowdEstimatesForIssue(store: Store, issueId: string) {
       const claims = targets.flatMap(({ targetType, target }) => publicClaimsForTarget(store, targetType, target.id));
       const estimate = derivedCrowdEstimateForScope(store, `derived_${issueId}_${regionLabel}_crowd_estimate`, issueId, targets, claims, [
         `${regionLabel} 권역 기준 자동 갱신 추정입니다.`,
-        "지역별 현장 영상과 인파 신호 분포에 따라 범위가 달라질 수 있습니다."
+        "지역별 현장 영상 분포에 따라 범위가 달라질 수 있습니다."
       ]);
       return estimate ? { regionLabel, ...toPublicCrowdEstimate(estimate) } : undefined;
     })
@@ -1705,13 +1390,10 @@ function derivedCrowdEstimateForScope(
   if (!targets.length && !claims.length) return undefined;
   const evidence = publicEvidenceForClaims(store, claims);
   const liveEvidence = evidence.filter(hasPublishableLiveEvidence);
-  const densitySignals = targets.filter((item) => item.targetType === "crowd_density_signal").map((item) => item.target as CrowdDensitySignal);
-  const measuredDensitySignals = densitySignals.filter((item) => item.densityLevel !== "unknown");
-  if (!liveEvidence.length && !measuredDensitySignals.length) return undefined;
+  if (!liveEvidence.length) return undefined;
   const currentTargetCount = targets.filter(({ target }) => !["ARCHIVED", "ENDED", "CANCELED", "POSTPONED"].includes(targetLifecycle(target))).length;
-  const densityBase = measuredDensitySignals.reduce((sum, item) => sum + ({ low: 60, medium: 180, high: 500, critical: 1200, unknown: 0 }[item.densityLevel] ?? 0), 0);
-  const minCount = Math.max(liveEvidence.length, Math.round(liveEvidence.length * 120 + densityBase * 0.35));
-  const maxCount = Math.max(minCount + (liveEvidence.length ? 120 : 60), Math.round(liveEvidence.length * 420 + densityBase + currentTargetCount * 180));
+  const minCount = Math.max(liveEvidence.length, Math.round(liveEvidence.length * 120));
+  const maxCount = Math.max(minCount + 120, Math.round(liveEvidence.length * 420 + currentTargetCount * 180));
   const observedAt = latestDate([...claims.map((claim) => claim.createdAt), ...evidence.map((item) => item.uploadedAt), ...targets.map(({ target }) => targetUpdatedAt(target))]) ?? new Date();
   const independentViewpointCount = new Set(liveEvidence.map((item) => item.geoCell ?? item.id)).size;
   const baseConfidence: CrowdEstimate["confidence"] =
@@ -1727,7 +1409,7 @@ function derivedCrowdEstimateForScope(
     minCount,
     maxCount,
     confidence: qualityWarning ? lowerCrowdConfidence(baseConfidence) : baseConfidence,
-    method: liveEvidence.length && measuredDensitySignals.length ? "hybrid" : liveEvidence.length ? "proof_of_presence_density" : "source_claim",
+    method: "proof_of_presence_density",
     evidenceCount: evidence.length || claims.length,
     independentViewpointCount,
     limitations
@@ -1847,21 +1529,232 @@ function getTargetById(store: Store, targetType: TargetType, id: string | undefi
 }
 
 function getMap(store: Store): ApiResponse {
+  const units = mapOccurrenceUnits(store);
+  const pins = units
+    .filter((unit) => unit.publicLocation)
+    .map((unit, index) => ({
+      type: "Feature" as const,
+      geometry: { type: "Point" as const, coordinates: [unit.publicLocation!.lng, unit.publicLocation!.lat] },
+      properties: {
+        id: `pin_${unit.targetType}_${unit.id}`,
+        occurrenceUnitId: unit.id,
+        targetType: unit.targetType,
+        targetId: unit.id,
+        issueId: unit.issueId,
+        title: unit.title,
+        regionLabel: unit.regionLabel,
+        lifecycleState: unit.lifecycleState,
+        sequence: index + 1,
+        locationLabel: unit.publicLocation!.label,
+        locationPrecision: unit.publicLocation!.precision,
+        source: "public_source_location"
+      }
+    }));
+  const presenceAreas = units
+    .map((unit) => presenceAreaFeatureForUnit(store, unit))
+    .filter((feature): feature is NonNullable<typeof feature> => Boolean(feature));
   return json(200, {
-    clusters: store.areaClusters.map((cluster) => ({
-      id: cluster.id,
-      label: cluster.label,
-      regionLabel: cluster.regionLabel,
-      targets: cluster.targetRefs.length
+    issues: issueCards(store, homeCards(store)).map((issue) => ({
+      id: issue.id,
+      title: issue.title,
+      status: issue.status,
+      regionCount: issue.regionCount,
+      targetCount: issue.targetCount,
+      currentCount: issue.currentCount
     })),
-    pins: store.occurrences.map((occurrence) => ({
-      id: occurrence.id,
-      targetType: "occurrence",
-      areaClusterId: occurrence.areaClusterId,
-      title: occurrence.title,
-      lifecycleState: occurrence.lifecycleState
-    }))
+    occurrenceUnits: units.map((unit) => ({
+      id: unit.id,
+      targetType: unit.targetType,
+      issueId: unit.issueId,
+      title: unit.title,
+      regionLabel: unit.regionLabel,
+      lifecycleState: unit.lifecycleState,
+      hasSourcePin: Boolean(unit.publicLocation),
+      hasPresenceArea: presenceAreas.some((feature) => feature.properties.occurrenceUnitId === unit.id),
+      liveEvidenceCount: publicLiveEvidenceForUnit(store, unit).length,
+      updatedAt: unit.updatedAt?.toISOString()
+    })),
+    geojson: {
+      pins: { type: "FeatureCollection", features: pins },
+      presenceAreas: { type: "FeatureCollection", features: presenceAreas }
+    }
   });
+}
+
+type MapOccurrenceUnit = {
+  id: string;
+  targetType: Extract<TargetType, "occurrence" | "continuous_presence">;
+  issueId?: string;
+  title: string;
+  regionLabel: string;
+  lifecycleState: string;
+  publicLocation?: NonNullable<Occurrence["publicLocation"]>;
+  updatedAt?: Date;
+};
+
+function mapOccurrenceUnits(store: Store): MapOccurrenceUnit[] {
+  return [
+    ...store.occurrences.map((item) => ({
+      id: item.id,
+      targetType: "occurrence" as const,
+      issueId: item.issueId,
+      title: item.title,
+      regionLabel: item.regionLabel,
+      lifecycleState: item.lifecycleState,
+      publicLocation: item.publicLocation,
+      updatedAt: item.startsAt
+    })),
+    ...store.continuousPresences.map((item) => ({
+      id: item.id,
+      targetType: "continuous_presence" as const,
+      issueId: item.issueId,
+      title: `${item.regionLabel} 장기 현장`,
+      regionLabel: item.regionLabel,
+      lifecycleState: item.state,
+      publicLocation: item.publicLocation,
+      updatedAt: item.lastProofOfPresenceAt ?? item.firstProofOfPresenceAt
+    }))
+  ];
+}
+
+function publicLiveEvidenceForUnit(store: Store, unit: MapOccurrenceUnit): Evidence[] {
+  const claims = publicClaimsForTarget(store, unit.targetType, unit.id);
+  return publicEvidenceForClaims(store, claims).filter((item) => hasPublishableLiveEvidence(item) && typeof item.privateLng === "number" && typeof item.privateLat === "number");
+}
+
+function presenceAreaFeatureForUnit(store: Store, unit: MapOccurrenceUnit) {
+  const evidence = publicLiveEvidenceForUnit(store, unit);
+  if (!evidence.length) return undefined;
+  const points = evidence.map((item) => ({
+    lng: item.privateLng as number,
+    lat: item.privateLat as number,
+    radiusM: Math.max(200, Math.min(300, item.publicRadiusM ?? 200, Math.max(100, item.gpsAccuracyM ?? 100)))
+  }));
+  const coordinates = presenceAreaCoordinates(points);
+  if (!coordinates.length) return undefined;
+  const radiusM = Math.max(...points.map((point) => point.radiusM));
+  return {
+    type: "Feature" as const,
+    geometry: { type: "Polygon" as const, coordinates: [coordinates] },
+    properties: {
+      id: `presence_area_${unit.targetType}_${unit.id}`,
+      occurrenceUnitId: unit.id,
+      targetType: unit.targetType,
+      targetId: unit.id,
+      issueId: unit.issueId,
+      title: unit.title,
+      regionLabel: unit.regionLabel,
+      evidenceCount: evidence.length,
+      publicRadiusM: radiusM,
+      source: "proof_of_presence_area"
+    }
+  };
+}
+
+function presenceAreaCoordinates(points: Array<{ lng: number; lat: number; radiusM: number }>): number[][] {
+  const radiusM = Math.max(200, ...points.map((point) => point.radiusM));
+  if (points.length === 1) {
+    const blurred = blurLngLat(points[0].lng, points[0].lat, radiusM);
+    return circlePolygon(blurred.lng, blurred.lat, radiusM, 40);
+  }
+
+  const center = averagePoint(points);
+  const projected = points.map((point) => {
+    const blurred = blurLngLat(point.lng, point.lat, radiusM);
+    return lngLatToMeters(blurred.lng, blurred.lat, center);
+  });
+  if (projected.length === 2) return capsulePolygon(projected[0], projected[1], radiusM, center);
+  const hull = convexHull(projected);
+  if (hull.length < 3) return circlePolygon(center.lng, center.lat, radiusM, 40);
+  const centroid = hull.reduce((sum, point) => ({ x: sum.x + point.x / hull.length, y: sum.y + point.y / hull.length }), { x: 0, y: 0 });
+  const expanded = hull.map((point) => {
+    const dx = point.x - centroid.x;
+    const dy = point.y - centroid.y;
+    const length = Math.max(1, Math.hypot(dx, dy));
+    return { x: point.x + (dx / length) * radiusM, y: point.y + (dy / length) * radiusM };
+  });
+  const closed = [...expanded, expanded[0]].map((point) => metersToLngLat(point, center));
+  return closed.map((point) => [roundCoord(point.lng), roundCoord(point.lat)]);
+}
+
+function averagePoint(points: Array<{ lng: number; lat: number }>): { lng: number; lat: number } {
+  return {
+    lng: points.reduce((sum, point) => sum + point.lng, 0) / points.length,
+    lat: points.reduce((sum, point) => sum + point.lat, 0) / points.length
+  };
+}
+
+function blurLngLat(lng: number, lat: number, radiusM: number): { lng: number; lat: number } {
+  const gridM = Math.max(100, Math.min(300, radiusM));
+  const latStep = gridM / 110_540;
+  const lngStep = gridM / (111_320 * Math.max(0.2, Math.cos((lat * Math.PI) / 180)));
+  return {
+    lng: roundCoord(Math.round(lng / lngStep) * lngStep),
+    lat: roundCoord(Math.round(lat / latStep) * latStep)
+  };
+}
+
+function circlePolygon(lng: number, lat: number, radiusM: number, steps: number): number[][] {
+  const center = { lng, lat };
+  const coordinates = Array.from({ length: steps }, (_, index) => {
+    const angle = (Math.PI * 2 * index) / steps;
+    return metersToLngLat({ x: Math.cos(angle) * radiusM, y: Math.sin(angle) * radiusM }, center);
+  });
+  coordinates.push(coordinates[0]);
+  return coordinates.map((point) => [roundCoord(point.lng), roundCoord(point.lat)]);
+}
+
+function capsulePolygon(a: { x: number; y: number }, b: { x: number; y: number }, radiusM: number, origin: { lng: number; lat: number }): number[][] {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const length = Math.max(1, Math.hypot(dx, dy));
+  const angle = Math.atan2(dy, dx);
+  const points: Array<{ x: number; y: number }> = [];
+  for (let i = 0; i <= 12; i += 1) {
+    const theta = angle - Math.PI / 2 + (Math.PI * i) / 12;
+    points.push({ x: b.x + Math.cos(theta) * radiusM, y: b.y + Math.sin(theta) * radiusM });
+  }
+  for (let i = 0; i <= 12; i += 1) {
+    const theta = angle + Math.PI / 2 + (Math.PI * i) / 12;
+    points.push({ x: a.x + Math.cos(theta) * radiusM, y: a.y + Math.sin(theta) * radiusM });
+  }
+  points.push(points[0]);
+  return points.map((point) => {
+    const lngLat = metersToLngLat(point, origin);
+    return [roundCoord(lngLat.lng), roundCoord(lngLat.lat)];
+  });
+}
+
+function convexHull(points: Array<{ x: number; y: number }>): Array<{ x: number; y: number }> {
+  const sorted = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
+  const cross = (origin: { x: number; y: number }, a: { x: number; y: number }, b: { x: number; y: number }) => (a.x - origin.x) * (b.y - origin.y) - (a.y - origin.y) * (b.x - origin.x);
+  const lower: Array<{ x: number; y: number }> = [];
+  for (const point of sorted) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], point) <= 0) lower.pop();
+    lower.push(point);
+  }
+  const upper: Array<{ x: number; y: number }> = [];
+  for (const point of sorted.slice().reverse()) {
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], point) <= 0) upper.pop();
+    upper.push(point);
+  }
+  return lower.slice(0, -1).concat(upper.slice(0, -1));
+}
+
+function lngLatToMeters(lng: number, lat: number, origin: { lng: number; lat: number }): { x: number; y: number } {
+  const latScale = 110_540;
+  const lngScale = 111_320 * Math.cos((origin.lat * Math.PI) / 180);
+  return { x: (lng - origin.lng) * lngScale, y: (lat - origin.lat) * latScale };
+}
+
+function metersToLngLat(point: { x: number; y: number }, origin: { lng: number; lat: number }): { lng: number; lat: number } {
+  const latScale = 110_540;
+  const lngScale = 111_320 * Math.cos((origin.lat * Math.PI) / 180);
+  return { lng: origin.lng + point.x / lngScale, lat: origin.lat + point.y / latScale };
+}
+
+function roundCoord(value: number): number {
+  return Math.round(value * 1_000_000) / 1_000_000;
 }
 
 function getLaws(store: Store): ApiResponse {
@@ -1982,6 +1875,8 @@ function postLiveReport(store: Store, request: ApiRequest, options: AppOptions):
     captureMode: "in_app_camera",
     redactionStatus: "pending",
     publicRadiusM: 200,
+    privateLng: readNumber(data, "gpsLng"),
+    privateLat: readNumber(data, "gpsLat"),
     foregroundGps: data.foregroundGps === true,
     gpsAccuracyM: readNumber(data, "gpsAccuracyM"),
     distanceToTargetM: readNumber(data, "distanceToTargetM"),
@@ -2008,10 +1903,21 @@ function postLiveReport(store: Store, request: ApiRequest, options: AppOptions):
   }, { attach: false });
 
   store.evidence.push(evidence);
-  rememberReport(store, userId, "live", targetType, targetId, claim.id);
+  const report = rememberReport(store, userId, "live", targetType, targetId, claim.id);
+  const target = targetRecord(store, targetType, targetId);
   audit(store, "hold", targetType, targetId, "live video report held for redaction and review before public visibility");
   return json(202, {
     status: "live_report_queued_for_review",
+    reportId: report.id,
+    claimId: claim.id,
+    targetType,
+    targetId,
+    targetTitle: publicTargetTitle(target),
+    issueTitle: publicTargetIssueTitle(store, targetType, target),
+    regionLabel: publicTargetRegionLabel(target),
+    publicRadiusM: evidence.publicRadiusM,
+    receivedAt: report.createdAt.toISOString(),
+    nextStepLabel: "비식별 검토 중",
     claim: toPublicClaim(claim),
     evidenceId: evidence.id
   });
@@ -2069,6 +1975,8 @@ function postFieldVerification(store: Store, claimId: string | undefined, reques
     evidenceType: "sensor",
     capturedAt,
     uploadedAt: new Date(),
+    privateLng: readNumber(data, "gpsLng"),
+    privateLat: readNumber(data, "gpsLat"),
     foregroundGps: data.foregroundGps === true,
     gpsAccuracyM: readNumber(data, "gpsAccuracyM"),
     distanceToTargetM: readNumber(data, "distanceToTargetM"),
@@ -2547,6 +2455,7 @@ function getAdminPrivacyDashboard(store: Store, options: AppOptions): ApiRespons
       evidenceId: item.id,
       uploadedAt: item.uploadedAt.toISOString(),
       hasGeoCell: Boolean(item.geoCell),
+      hasPrivateCoordinate: item.privateLng !== undefined || item.privateLat !== undefined,
       hasGpsAccuracy: item.gpsAccuracyM !== undefined,
       hasDistanceToTarget: item.distanceToTargetM !== undefined
     })),
@@ -2720,6 +2629,8 @@ async function postPrivacyPurgeExpired(store: Store, options: AppOptions): Promi
     if (evidence.uploadedAt.getTime() < cutoffs.preciseBefore) {
       if (hasPreciseLocationFields(evidence)) evidenceCleared += 1;
       evidence.geoCell = undefined;
+      evidence.privateLng = undefined;
+      evidence.privateLat = undefined;
       evidence.gpsAccuracyM = undefined;
       evidence.distanceToTargetM = undefined;
     }
@@ -2786,7 +2697,7 @@ function privacyCutoffs(options: AppOptions) {
 }
 
 function hasPreciseLocationFields(evidence: Evidence): boolean {
-  return Boolean(evidence.geoCell) || evidence.gpsAccuracyM !== undefined || evidence.distanceToTargetM !== undefined;
+  return Boolean(evidence.geoCell) || evidence.privateLng !== undefined || evidence.privateLat !== undefined || evidence.gpsAccuracyM !== undefined || evidence.distanceToTargetM !== undefined;
 }
 
 function getTransparencyMonthly(store: Store): ApiResponse {
@@ -2966,12 +2877,6 @@ function attachClaim(store: Store, targetType: TargetType, targetId: string, cla
   const target = targetRecord(store, targetType, targetId);
   if (!target) return;
   if ("claimIds" in target && !target.claimIds.includes(claimId)) target.claimIds.push(claimId);
-  if (targetType === "transit_occurrence" && !(target as TransitOccurrence).serviceStatusClaimIds.includes(claimId)) {
-    (target as TransitOccurrence).serviceStatusClaimIds.push(claimId);
-  }
-  if (targetType === "crowd_density_signal" && !(target as CrowdDensitySignal).flowDirectionClaimIds.includes(claimId)) {
-    (target as CrowdDensitySignal).flowDirectionClaimIds.push(claimId);
-  }
 }
 
 function attachEvidence(store: Store, targetType: TargetType, targetId: string, evidenceId: string): void {
@@ -2997,16 +2902,6 @@ function setClaimVisibility(store: Store, claim: Claim, visibility: NonNullable<
   if (!target) return;
   if ("claimIds" in target) target.claimIds = target.claimIds.filter((id) => id !== claim.id);
   if ("evidenceIds" in target) target.evidenceIds = target.evidenceIds.filter((id) => !claim.evidenceIds.includes(id));
-  if (claim.targetType === "transit_occurrence") {
-    const transit = target as TransitOccurrence;
-    transit.delayClaimIds = transit.delayClaimIds.filter((id) => id !== claim.id);
-    transit.serviceStatusClaimIds = transit.serviceStatusClaimIds.filter((id) => id !== claim.id);
-  }
-  if (claim.targetType === "crowd_density_signal") {
-    const crowd = target as CrowdDensitySignal;
-    crowd.flowDirectionClaimIds = crowd.flowDirectionClaimIds.filter((id) => id !== claim.id);
-    crowd.emergencySignalClaimIds = crowd.emergencySignalClaimIds.filter((id) => id !== claim.id);
-  }
 }
 
 function audit(store: Store, action: AuditLog["action"], targetType: AuditLog["targetType"], targetId: string, reason: string): void {
@@ -3028,8 +2923,8 @@ function audit(store: Store, action: AuditLog["action"], targetType: AuditLog["t
   });
 }
 
-function rememberReport(store: Store, userId: string | undefined, reportType: ReportRecord["reportType"], targetType: TargetType, targetId: string, claimId: string): void {
-  store.reports.push({
+function rememberReport(store: Store, userId: string | undefined, reportType: ReportRecord["reportType"], targetType: TargetType, targetId: string, claimId: string): ReportRecord {
+  const report = {
     id: randomUUID(),
     userId,
     reportType,
@@ -3037,7 +2932,9 @@ function rememberReport(store: Store, userId: string | undefined, reportType: Re
     targetId,
     claimId,
     createdAt: new Date()
-  });
+  };
+  store.reports.push(report);
+  return report;
 }
 
 function queueNotifications(store: Store, notificationType: NotificationOutbox["notificationType"], targetType: TargetType, targetId: string, title: string, body: string): void {
@@ -3072,7 +2969,7 @@ function allowsNotificationForSubscription(
   if (subscription.alertTypes.length > 0 && !subscription.alertTypes.includes(notificationType)) return false;
   if (subscription.alertLevel === "all") return true;
   if (subscription.alertLevel === "normal") return notificationType !== "correction_reflected" && notificationType !== "rebuttal_added";
-  return notificationType === "state_changed" || notificationType === "transit_impact_changed";
+  return notificationType === "state_changed";
 }
 
 function hasRecentNotification(store: Store, dedupeKey: string, now: Date): boolean {
@@ -3091,20 +2988,32 @@ function assertTargetExists(store: Store, targetType: TargetType, targetId: stri
 type TargetRecord =
   | Issue
   | Occurrence
-  | ContinuousPresence
-  | TransitOccurrence
-  | CrowdDensitySignal
-  | RouteSegment
-  | RouteCheckpoint;
+  | ContinuousPresence;
 
 function targetRecord(store: Store, targetType: TargetType, targetId: string): TargetRecord | undefined {
   if (targetType === "issue") return store.issues.find((item) => item.id === targetId);
   if (targetType === "occurrence") return store.occurrences.find((item) => item.id === targetId);
   if (targetType === "continuous_presence") return store.continuousPresences.find((item) => item.id === targetId);
-  if (targetType === "transit_occurrence") return store.transitOccurrences.find((item) => item.id === targetId);
-  if (targetType === "crowd_density_signal") return store.crowdDensitySignals.find((item) => item.id === targetId);
-  if (targetType === "route_segment") return store.routeSegments.find((item) => item.id === targetId);
-  return store.routeCheckpoints.find((item) => item.id === targetId);
+  return undefined;
+}
+
+function publicTargetTitle(target: TargetRecord | undefined): string {
+  if (!target) return "연결 현장 확인 중";
+  const record = target as { title?: string; label?: string; routeLabel?: string; id: string };
+  return record.title || record.label || record.routeLabel || record.id;
+}
+
+function publicTargetRegionLabel(target: TargetRecord | undefined): string {
+  if (!target) return "지역 확인 중";
+  const record = target as { regionLabel?: string; label?: string };
+  return record.regionLabel || record.label || "지역 확인 중";
+}
+
+function publicTargetIssueTitle(store: Store, targetType: TargetType, target: TargetRecord | undefined): string {
+  if (!target) return "연결 이슈 확인 중";
+  if (targetType === "issue") return (target as Issue).title;
+  const issueId = (target as { issueId?: string }).issueId;
+  return store.issues.find((issue) => issue.id === issueId)?.title || "연결 이슈 확인 중";
 }
 
 function toPublicIssue(issue: Issue) {
@@ -3135,6 +3044,7 @@ function toPublicOccurrence(occurrence: Occurrence, claims?: Claim[]) {
     type: occurrence.type,
     regionLabel: occurrence.regionLabel,
     title: occurrence.title,
+    publicLocation: occurrence.publicLocation,
     lifecycleState: occurrence.lifecycleState,
     startsAt: occurrence.startsAt?.toISOString(),
     endsAt: occurrence.endsAt?.toISOString(),
@@ -3178,16 +3088,6 @@ function crowdEstimateEvidenceStrength(method: CrowdEstimate["method"]): Evidenc
 function targetRegionLabel(store: Store, targetType: TargetType, target: TargetRecord): string | undefined {
   if ("regionLabel" in target && typeof target.regionLabel === "string") return target.regionLabel;
   if ("areaClusterId" in target && typeof target.areaClusterId === "string") return store.areaClusters.find((cluster) => cluster.id === target.areaClusterId)?.regionLabel;
-  if (targetType === "transit_occurrence") {
-    const transit = target as TransitOccurrence;
-    if (transit.lineId.includes("부산")) return "부산";
-    if (transit.lineId.includes("서울")) return "서울";
-  }
-  if ("routeId" in target && typeof target.routeId === "string") {
-    const label = routeDisplayLabel(target.routeId);
-    if (label.includes("부산")) return "부산";
-    if (label.includes("서울")) return "서울";
-  }
   return undefined;
 }
 
@@ -3215,6 +3115,7 @@ function toPublicTarget(targetType: TargetType, target: TargetRecord, claims: Cl
       campaignId: item.campaignId,
       areaClusterId: item.areaClusterId,
       regionLabel: item.regionLabel,
+      publicLocation: item.publicLocation,
       presenceType: item.presenceType,
       firstProofOfPresenceAt: item.firstProofOfPresenceAt?.toISOString(),
       lastProofOfPresenceAt: item.lastProofOfPresenceAt?.toISOString(),
@@ -3222,48 +3123,7 @@ function toPublicTarget(targetType: TargetType, target: TargetRecord, claims: Cl
       ...counts
     };
   }
-  if (targetType === "transit_occurrence") {
-    const item = target as TransitOccurrence;
-    return {
-      id: item.id,
-      issueId: item.issueId,
-      lineId: item.lineId,
-      stationIds: item.stationIds,
-      direction: item.direction,
-      state: item.state,
-      ...counts
-    };
-  }
-  if (targetType === "crowd_density_signal") {
-    const item = target as CrowdDensitySignal;
-    return {
-      id: item.id,
-      issueId: item.issueId,
-      areaClusterId: item.areaClusterId,
-      densityLevel: item.densityLevel,
-      bottleneckFlag: item.bottleneckFlag,
-      ...counts
-    };
-  }
-  if (targetType === "route_segment") {
-    const item = target as RouteSegment;
-    return {
-      id: item.id,
-      issueId: item.issueId,
-      routeId: item.routeId,
-      verification: item.verification,
-      ...counts
-    };
-  }
-  const item = target as RouteCheckpoint;
-  return {
-    id: item.id,
-    issueId: item.issueId,
-    routeId: item.routeId,
-    checkpointType: item.checkpointType,
-    passableStatus: item.passableStatus,
-    ...counts
-  };
+  return toPublicIssue(target as Issue);
 }
 
 function liveClaimsForTarget(store: Store, targetType: TargetType, targetId: string): Claim[] {
@@ -3500,7 +3360,7 @@ function readOptionalDate(data: Record<string, unknown>, key: string): Date | un
 
 function readOccurrenceType(data: Record<string, unknown>, key: string, fallback: Occurrence["type"]): Occurrence["type"] {
   const value = data[key] ?? fallback;
-  const allowed: ReadonlyArray<Occurrence["type"]> = ["static_assembly", "march", "traffic_control", "policy_site", "counter_assembly", "public_safety"];
+  const allowed: ReadonlyArray<Occurrence["type"]> = ["static_assembly", "march", "policy_site", "counter_assembly"];
   if (typeof value === "string" && allowed.includes(value as Occurrence["type"])) return value as Occurrence["type"];
   throw new ApiError(400, `${key}_invalid`);
 }

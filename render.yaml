@@ -43,7 +43,7 @@ services:
   - type: web
     name: musunil-web
     runtime: static
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build:web-config && pnpm launch:check
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com pnpm build:web-static && pnpm launch:check
     staticPublishPath: apps/web
     headers:
       - path: /*

@@ -20,9 +20,6 @@ Last updated: 2026-07-10 04:58 KST
   - Claim, Evidence
   - Issue, Occurrence
   - ContinuousPresence
-  - TransitOccurrence
-  - CrowdDensitySignal
-  - RouteSegment, RouteCheckpoint
   - AuditLog, TransparencyLog, NotificationOutbox
   - Proof-of-Presence
   - 자동 병합 금지
@@ -34,7 +31,6 @@ Last updated: 2026-07-10 04:58 KST
   - `GET /issues/:id`
   - `GET /occurrences/:id`
   - `GET /continuous-presences/:id`
-  - `GET /transit-occurrences/:id`
   - `GET /area-clusters`
   - `GET /map`
   - `POST /reports/live`
@@ -121,7 +117,7 @@ Last updated: 2026-07-10 04:58 KST
   - 알림 구독 `alertTypes`, mute, dedupe/cooldown guard
   - Postgres `store_snapshots` 기반 v1 runtime persistence와 snapshot 저장 직렬화
   - Postgres snapshot payload AES-GCM 암호화
-  - Postgres initial migration SQL: Claim/Evidence/Occurrence, ContinuousPresence, TransitOccurrence, CrowdDensitySignal, RouteSegment, RouteCheckpoint, reports
+  - Postgres initial migration SQL: Claim/Evidence/Occurrence, ContinuousPresence, reports
   - Render 배포 초안: API `/ready` health check, API/Web 공개 config build + launch gate, DB migration pre-deploy, graceful shutdown, 공개 원천/알림 cron
   - Render Blueprint 관리형 Postgres/Key Value 자동 생성과 `DATABASE_URL`/`REDIS_URL` 주입
   - Render production runtime marker와 설정 실패 fallback mock/LIVE 자동 공개 차단

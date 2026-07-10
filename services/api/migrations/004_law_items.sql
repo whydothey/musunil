@@ -22,10 +22,6 @@ create table if not exists issue_law_links (
   primary key (issue_id, law_item_id)
 );
 
-alter table crowd_density_signals add column if not exists issue_id text references issues(id);
-alter table route_segments add column if not exists issue_id text references issues(id);
-alter table route_checkpoints add column if not exists issue_id text references issues(id);
-
 create index if not exists law_items_source_idx on law_items(source, status_date);
 create index if not exists law_items_keywords_idx on law_items using gin(keywords);
 create index if not exists issue_law_links_law_idx on issue_law_links(law_item_id);

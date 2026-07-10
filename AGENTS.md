@@ -40,10 +40,12 @@ Event를 단일 진실 객체로 만들지 않는다.
 - Issue
 - Occurrence
 - ContinuousPresence
-- TransitOccurrence
-- CrowdDensitySignal
-- RouteSegment
-- RouteCheckpoint
+
+공개 지도 모델:
+
+- 자료 위치 핀: 공개 원천 자료에서 위치가 확인된 Occurrence 또는 ContinuousPresence만 표시한다.
+- 현장 인증 영역: Proof-of-Presence를 통과하고 공개 가능한 현장 영상 Evidence 좌표로 계산한 흐림 Polygon만 표시한다.
+- 교통선, 경로선, 검문/통제 지점, 인파 밀도 면은 공개 지도 도메인으로 만들지 않는다.
 
 ## Proof-of-Presence
 
@@ -87,5 +89,7 @@ Event를 단일 진실 객체로 만들지 않는다.
 - 동일 문구 반복
 
 후원은 운영비 보전 기능이다. 후원 데이터는 랭킹, 알림, 신뢰도, 지도 노출 계산에 넣지 않는다.
+
+국내 v1에서 후원은 `무슨일 운영 후원`으로만 다룬다. 개인 계좌 공개, 해외 결제, 세액공제 기부금 영수증, 후원자 우대 노출, 후원자 배지는 만들지 않는다. PG 연결 전까지 결제 기능은 비활성으로 둔다.
 
 신고는 자동 삭제 버튼이 아니다. 권리침해 신고도 Claim으로 저장하고, 마스킹/보류/쟁점 표시/반론 병기를 먼저 검토한다.

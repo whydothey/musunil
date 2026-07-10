@@ -57,6 +57,8 @@ create table if not exists evidence (
   public_storage_key text,
   hash text,
   geo_cell text,
+  private_lng double precision,
+  private_lat double precision,
   public_radius_m integer,
   foreground_gps boolean,
   gps_accuracy_m integer,

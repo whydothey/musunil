@@ -14,11 +14,22 @@ api:
 organization:
   legal_name: "Musunil Inc."
   operator_name: "Musunil Ops"
+  operator_type: "individual_business_pending"
   business_registration_number: "000-00-00000"
+  mail_order_sales_registration_number: ""
+  business_bank_account_holder: ""
   privacy_officer_name: "Privacy Officer"
   privacy_officer_email: "privacy@musunil.kr"
   location_info_manager_name: "Location Officer"
   location_info_manager_email: "location@musunil.kr"
+domestic_operation:
+  service_country: "KR"
+  service_language: "ko-KR"
+  overseas_service_enabled: false
+  overseas_payments_enabled: false
+  tax_deductible_donation_receipt_enabled: false
+  public_personal_bank_account_exposure_enabled: false
+  fundraising_registration_threshold_krw: 10000000
 render:
   environment: "production"
   service_region: "singapore"
@@ -67,10 +78,25 @@ notifications:
   default_alert_level: "major_only"
 payments:
   provider: ""
+  mode: "disabled"
   public_key: ""
   secret_key: ""
   webhook_secret: ""
   donations_enabled: false
+  operating_support_enabled: false
+  public_label: "무슨일 운영 후원"
+  settlement_currency: "KRW"
+  tax_treatment: "business_income"
+  pg_mid: ""
+  pg_client_key: ""
+  pg_secret_key: ""
+  pg_webhook_secret: ""
+  success_url: "https://musunil.kr/support/complete"
+  fail_url: "https://musunil.kr/support/fail"
+  webhook_url: "https://api.musunil.kr/payments/webhook"
+  influence_on_ranking_enabled: false
+  influence_on_alerts_enabled: false
+  influence_on_trust_enabled: false
 features:
   free_comments_enabled: false
   voting_enabled: false
@@ -78,10 +104,6 @@ features:
   issue_follow_enabled: true
   occurrence_follow_enabled: true
   continuous_presence_enabled: true
-  transit_occurrence_enabled: true
-  crowd_density_enabled: true
-  route_segment_enabled: true
-  route_checkpoint_enabled: true
 `;
 
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";

@@ -12,6 +12,7 @@ export type LoadUserInputsOptions = {
   cwd?: string;
   env?: NodeJS.ProcessEnv;
   allowTemplate?: boolean;
+  preferTemplate?: boolean;
 };
 
 export type LaunchValidationIssue = {
@@ -32,12 +33,16 @@ export function loadUserInputs(options: LoadUserInputsOptions = {}): LoadedUserI
     return parseUserInputs(readFileSync(path, "utf8"), "env_file", path);
   }
 
+  const templatePath = resolve(cwd, "config/musunil.user-inputs.template.yaml");
+  if (options.allowTemplate && options.preferTemplate) {
+    return parseUserInputs(readFileSync(templatePath, "utf8"), "template_file", templatePath);
+  }
+
   const localPath = resolve(cwd, "config/musunil.user-inputs.local.yaml");
   if (existsSync(localPath)) {
     return parseUserInputs(readFileSync(localPath, "utf8"), "local_file", localPath);
   }
 
-  const templatePath = resolve(cwd, "config/musunil.user-inputs.template.yaml");
   if (options.allowTemplate) {
     return parseUserInputs(readFileSync(templatePath, "utf8"), "template_file", templatePath);
   }
@@ -150,6 +155,22 @@ export function validateLaunchConfig(config: Record<string, unknown>, env: NodeJ
     issues.push({ path: "web.allowed_origins", message: "production origins must be real launch URLs." });
   }
 
+  if (production && read(config, "domestic_operation.service_country") !== "KR") {
+    issues.push({ path: "domestic_operation.service_country", message: "v1 production launch is domestic Korea only." });
+  }
+  if (read(config, "domestic_operation.overseas_service_enabled") !== false) {
+    issues.push({ path: "domestic_operation.overseas_service_enabled", message: "overseas service must stay disabled for v1." });
+  }
+  if (read(config, "domestic_operation.overseas_payments_enabled") !== false) {
+    issues.push({ path: "domestic_operation.overseas_payments_enabled", message: "overseas payments must stay disabled for v1." });
+  }
+  if (read(config, "domestic_operation.tax_deductible_donation_receipt_enabled") !== false) {
+    issues.push({ path: "domestic_operation.tax_deductible_donation_receipt_enabled", message: "tax-deductible donation receipts are not supported in v1." });
+  }
+  if (read(config, "domestic_operation.public_personal_bank_account_exposure_enabled") !== false) {
+    issues.push({ path: "domestic_operation.public_personal_bank_account_exposure_enabled", message: "personal bank account exposure must stay disabled." });
+  }
+
   if (read(config, "features.free_comments_enabled") !== false) {
     issues.push({ path: "features.free_comments_enabled", message: "free comments must stay disabled." });
   }
@@ -158,6 +179,28 @@ export function validateLaunchConfig(config: Record<string, unknown>, env: NodeJ
   }
   if (read(config, "payments.donations_enabled") !== false) {
     issues.push({ path: "payments.donations_enabled", message: "donations stay disabled for launch." });
+  }
+  if (read(config, "payments.influence_on_ranking_enabled") !== false) {
+    issues.push({ path: "payments.influence_on_ranking_enabled", message: "payments must not influence ranking." });
+  }
+  if (read(config, "payments.influence_on_alerts_enabled") !== false) {
+    issues.push({ path: "payments.influence_on_alerts_enabled", message: "payments must not influence alerts." });
+  }
+  if (read(config, "payments.influence_on_trust_enabled") !== false) {
+    issues.push({ path: "payments.influence_on_trust_enabled", message: "payments must not influence trust." });
+  }
+  if (read(config, "payments.operating_support_enabled") === true) {
+    requireRealValue(config, issues, "organization.business_registration_number");
+    requireRealValue(config, issues, "organization.business_bank_account_holder");
+    requireRealValue(config, issues, "payments.provider");
+    requireRealValue(config, issues, "payments.mode");
+    requireRealValue(config, issues, "payments.pg_mid");
+    requireRealValue(config, issues, "payments.pg_client_key");
+    requireSecret(config, issues, "payments.pg_secret_key", 24);
+    requireSecret(config, issues, "payments.pg_webhook_secret", 24);
+    requireRealValue(config, issues, "payments.success_url");
+    requireRealValue(config, issues, "payments.fail_url");
+    requireRealValue(config, issues, "payments.webhook_url");
   }
   if (production && read(config, "preview.use_mock_data") === true) {
     issues.push({ path: "preview.use_mock_data", message: "production must not expose mock data." });

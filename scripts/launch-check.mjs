@@ -244,15 +244,17 @@ if (!publicCrowdEstimate || !/sourceProvenance:\s*"musunil_ai_estimate"/.test(pu
 const derivedCrowdEstimate = apiApp.match(/function derivedCrowdEstimateForScope[\s\S]*?function lowerCrowdConfidence/);
 const crowdEstimateList = apiApp.match(/function crowdEstimatesForIssue[\s\S]*?function crowdEstimateHasPublicBasis/);
 if (!crowdEstimateList || !/crowdEstimateHasPublicBasis/.test(crowdEstimateList[0])) {
-  failures.push("stored CrowdEstimate values must require current public live or density basis");
+  failures.push("stored CrowdEstimate values must require current public live evidence basis");
 }
 if (!derivedCrowdEstimate || !/independentViewpointCount = new Set\(liveEvidence\.map/.test(derivedCrowdEstimate[0]) || /Math\.max\(regions\.size/.test(derivedCrowdEstimate[0])) {
   failures.push("derived CrowdEstimate independent viewpoints must come from publishable live evidence, not target regions");
 }
-if (!derivedCrowdEstimate || !/measuredDensitySignals/.test(derivedCrowdEstimate[0]) || !/!liveEvidence\.length && !measuredDensitySignals\.length/.test(derivedCrowdEstimate[0])) {
-  failures.push("derived CrowdEstimate must not generate numeric ranges without live evidence or measured density signals");
+if (!derivedCrowdEstimate || !/if \(!liveEvidence\.length\) return undefined/.test(derivedCrowdEstimate[0])) {
+  failures.push("derived CrowdEstimate must not generate numeric ranges without publishable live evidence");
 }
-if (/\$\{item\.routeId\} 경로/.test(apiApp)) failures.push("route checkpoint cards must not expose internal route ids as visible titles");
+for (const removedTarget of ["transit_occurrence", "crowd_density_signal", "route_segment", "route_checkpoint"]) {
+  if (apiApp.includes(removedTarget)) failures.push(`removed public target type still present in API app: ${removedTarget}`);
+}
 const publicIngestWorker = readFileSync(resolve(cwd, "workers/public-source-ingest/src/index.ts"), "utf8");
 const publicSourceRegistry = readFileSync(resolve(cwd, "packages/schemas/src/public-sources.ts"), "utf8");
 if (!/response\.ok/.test(publicIngestWorker) || !/process\.exit\(1\)/.test(publicIngestWorker)) {
@@ -272,12 +274,13 @@ if (!/seoul_assembly_control/.test(publicSourceRegistry) || !/sejong_today_assem
   failures.push("public source registry must separate active sources from unresolved regions");
 }
 if (!/MUSUNIL_WEB_CONFIG/.test(web)) failures.push("web runtime config hook is missing");
+if (!/build-info\.js/.test(web)) failures.push("web build-info hook is missing");
 if (!/일정 확인/.test(web) || !/public-sources\/coverage/.test(web)) failures.push("web public source coverage status is missing");
 if (/const API = "http:\/\/localhost:4000"/.test(web)) failures.push("web API base is hardcoded to localhost");
 if (!/isLocalPage/.test(web) || !/storedApi = isLocalPage/.test(web) || !/apiParam = isLocalPage/.test(web)) {
   failures.push("web API override must be localhost-only");
 }
-if (!/isPreviewApiBase/.test(web) || !/preview-only/.test(web) || !/isPreviewCard/.test(web)) {
+if (!/isPreviewApiBase/.test(web) || !/fallback\.cards = fallback\.cards\.filter\(\(card\) => !isPreviewCard/.test(web) || !/isPreviewIssue/.test(web)) {
   failures.push("web production fallback must hide preview/mock data");
 }
 if (!/data-time-filter="now"/.test(web) || !/function matchesCardFilters/.test(web) || !/function cardOrderScore/.test(web)) {
@@ -291,7 +294,7 @@ if (!/data-time-filter="archive"/.test(web)) failures.push("web must keep past/a
 for (const term of ["요청사항", "S+", "s+", "국평오", "정통법", "객관화 보드"]) {
   if (web.includes(term)) failures.push(`internal planning term leaked to web UI: ${term}`);
 }
-for (const token of ["--primary", "--official", "--pending", "--dispute", "--risk", "--transit", "--crowd", "--route", "--archive"]) {
+for (const token of ["--primary", "--official", "--pending", "--dispute", "--risk", "--archive"]) {
   if (!web.includes(token)) failures.push(`semantic color token missing: ${token}`);
 }
 if (/#325bd6|#a96513|#6552a3/i.test(web)) failures.push("legacy hard-coded map/status color found");
@@ -319,8 +322,8 @@ if (!/preDeployCommand:\s*pnpm db:migrate/.test(renderYaml)) failures.push("Rend
 if (!/name:\s*musunil-api[\s\S]*?buildCommand:[^\n]*pnpm check[^\n]*pnpm build:web-config[^\n]*pnpm launch:check/.test(renderYaml)) {
   failures.push("Render API build must run pnpm check, pnpm build:web-config, and pnpm launch:check");
 }
-if (!/name:\s*musunil-web[\s\S]*?buildCommand:[^\n]*pnpm build:web-config[^\n]*pnpm launch:check/.test(renderYaml)) {
-  failures.push("Render Web build must run pnpm build:web-config and pnpm launch:check");
+if (!/name:\s*musunil-web[\s\S]*?buildCommand:[^\n]*pnpm build:web-static[^\n]*pnpm launch:check/.test(renderYaml)) {
+  failures.push("Render Web build must run pnpm build:web-static and pnpm launch:check");
 }
 for (const header of ["Cache-Control", "Content-Security-Policy", "Permissions-Policy", "Referrer-Policy", "X-Content-Type-Options", "X-Frame-Options"]) {
   if (!hasRenderHeader(renderWeb, header)) failures.push(`Render Web static header is missing: ${header}`);

@@ -28,11 +28,7 @@ export const riskLevels = ["low", "misleading_possible", "rights_risk", "high_le
 export const targetTypes = [
   "issue",
   "occurrence",
-  "continuous_presence",
-  "transit_occurrence",
-  "crowd_density_signal",
-  "route_segment",
-  "route_checkpoint"
+  "continuous_presence"
 ] as const;
 
 export type SourceProvenance = (typeof sourceProvenances)[number];
@@ -78,6 +74,8 @@ export type Evidence = {
   captureMode?: "in_app_camera" | "gallery" | "screen_recording" | "external_link";
   hash?: string;
   geoCell?: string;
+  privateLng?: number;
+  privateLat?: number;
   publicRadiusM?: number;
   foregroundGps?: boolean;
   gpsAccuracyM?: number;
@@ -166,10 +164,11 @@ export type Occurrence = {
   id: string;
   issueId?: string;
   campaignId?: string;
-  type: "static_assembly" | "march" | "traffic_control" | "policy_site" | "counter_assembly" | "public_safety";
+  type: "static_assembly" | "march" | "policy_site" | "counter_assembly";
   areaClusterId: string;
   regionLabel: string;
   title: string;
+  publicLocation?: PublicLocation;
   startsAt?: Date;
   endsAt?: Date;
   lifecycleState: LifecycleState;
@@ -183,54 +182,21 @@ export type ContinuousPresence = {
   campaignId?: string;
   areaClusterId: string;
   regionLabel: string;
+  publicLocation?: PublicLocation;
   presenceType: "sit_in" | "encampment" | "relay_protest" | "continuous_assembly";
   firstProofOfPresenceAt?: Date;
   lastProofOfPresenceAt?: Date;
-  state: "ONGOING" | "WEAKLY_OBSERVED" | "PAUSED" | "ENDING_SOON" | "ENDED" | "ARCHIVED";
+  state: "ONGOING" | "PAUSED" | "ENDING_SOON" | "ENDED" | "ARCHIVED";
   claimIds: string[];
   evidenceIds: string[];
 };
 
-export type TransitOccurrence = {
-  id: string;
-  issueId?: string;
-  lineId: string;
-  stationIds: string[];
-  direction?: string;
-  state: LifecycleState;
-  delayClaimIds: string[];
-  serviceStatusClaimIds: string[];
-  evidenceIds: string[];
-};
-
-export type CrowdDensitySignal = {
-  id: string;
-  issueId?: string;
-  areaClusterId: string;
-  densityLevel: "low" | "medium" | "high" | "critical" | "unknown";
-  bottleneckFlag: boolean;
-  flowDirectionClaimIds: string[];
-  emergencySignalClaimIds: string[];
-  evidenceIds: string[];
-};
-
-export type RouteSegment = {
-  id: string;
-  issueId?: string;
-  routeId: string;
-  verification: "verified" | "claimed";
-  claimIds: string[];
-  evidenceIds: string[];
-};
-
-export type RouteCheckpoint = {
-  id: string;
-  issueId?: string;
-  routeId: string;
-  checkpointType: "police_block" | "traffic_control" | "standoff" | "route_split" | "unknown";
-  passableStatus: "passable" | "blocked" | "uncertain";
-  claimIds: string[];
-  evidenceIds: string[];
+export type PublicLocation = {
+  lng: number;
+  lat: number;
+  label: string;
+  precision: "venue" | "area";
+  source: "public_source" | "operator_review";
 };
 
 export type CrowdEstimate = {
@@ -341,7 +307,7 @@ export type PriorityScoreInput = {
   updateVelocity: number;
   proofOfPresenceGrowth: number;
   publicImpact: number;
-  safetyOrTransitImpact: number;
+  publicAssemblyImpact: number;
   sourceDiversity: number;
   claimConflict: number;
   evidenceStrength: number;
@@ -356,7 +322,7 @@ export function calculatePriorityScore(input: PriorityScoreInput): number {
     input.updateVelocity +
     input.proofOfPresenceGrowth +
     input.publicImpact +
-    input.safetyOrTransitImpact +
+    input.publicAssemblyImpact +
     input.sourceDiversity +
     input.claimConflict +
     input.evidenceStrength -
@@ -373,16 +339,12 @@ export type ChangeSignal =
   | "donation_increased"
   | "single_source_claim"
   | "state_changed"
-  | "route_changed"
-  | "transit_impact_changed"
   | "rebuttal_added"
   | "correction_reflected";
 
 export function shouldNotify(signal: ChangeSignal): boolean {
   return [
     "state_changed",
-    "route_changed",
-    "transit_impact_changed",
     "rebuttal_added",
     "correction_reflected"
   ].includes(signal);

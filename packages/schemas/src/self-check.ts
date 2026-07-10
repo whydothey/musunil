@@ -75,8 +75,6 @@ assert.equal(shouldNotify("report_count_increased"), false);
 assert.equal(shouldNotify("donation_increased"), false);
 assert.equal(shouldNotify("single_source_claim"), false);
 assert.equal(shouldNotify("state_changed"), true);
-assert.equal(shouldNotify("route_changed"), true);
-assert.equal(shouldNotify("transit_impact_changed"), true);
 assert.equal(shouldNotify("rebuttal_added"), true);
 assert.equal(shouldNotify("correction_reflected"), true);
 
@@ -95,7 +93,7 @@ assert.equal(
     updateVelocity: 5,
     proofOfPresenceGrowth: 4,
     publicImpact: 3,
-    safetyOrTransitImpact: 2,
+    publicAssemblyImpact: 2,
     sourceDiversity: 2,
     claimConflict: 1,
     evidenceStrength: 5,

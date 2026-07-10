@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { loadUserInputs, validateLaunchConfig } from "./index.ts";
 
 const cwd = resolve(import.meta.dirname, "../../..");
-const loaded = loadUserInputs({ cwd, allowTemplate: true, env: {} });
+const loaded = loadUserInputs({ cwd, allowTemplate: true, preferTemplate: true, env: {} });
 
 assert.equal(loaded.source, "template_file");
 assert.equal((loaded.config.features as Record<string, unknown>).free_comments_enabled, false);
@@ -47,6 +47,8 @@ assert.equal(launchIssues.some((issue) => issue.path === "mobile.android_package
 assert.equal(launchIssues.some((issue) => issue.path === "mobile.android_play_integrity_service_account_json_b64"), true);
 assert.equal(launchIssues.some((issue) => issue.path === "mobile.integrity_smoke_command"), true);
 assert.equal(launchIssues.some((issue) => issue.path === "features.free_comments_enabled"), false);
+assert.equal(launchIssues.some((issue) => issue.path === "domestic_operation.public_personal_bank_account_exposure_enabled"), false);
+assert.equal(launchIssues.some((issue) => issue.path === "payments.influence_on_ranking_enabled"), false);
 
 const productionConfig = JSON.parse(JSON.stringify(loaded.config));
 productionConfig.render.environment = "production";
@@ -72,6 +74,33 @@ const unsafeLiveProductionConfig = JSON.parse(JSON.stringify(loaded.config));
 unsafeLiveProductionConfig.render.environment = "production";
 unsafeLiveProductionConfig.moderation.auto_publish_low_risk_live_reports = true;
 assert.equal(validateLaunchConfig(unsafeLiveProductionConfig, {}).some((issue) => issue.path === "moderation.auto_publish_low_risk_live_reports"), true);
+
+const unsafeDomesticConfig = JSON.parse(JSON.stringify(loaded.config));
+unsafeDomesticConfig.domestic_operation.public_personal_bank_account_exposure_enabled = true;
+unsafeDomesticConfig.domestic_operation.overseas_payments_enabled = true;
+assert.equal(validateLaunchConfig(unsafeDomesticConfig, {}).some((issue) => issue.path === "domestic_operation.public_personal_bank_account_exposure_enabled"), true);
+assert.equal(validateLaunchConfig(unsafeDomesticConfig, {}).some((issue) => issue.path === "domestic_operation.overseas_payments_enabled"), true);
+
+const unsafePaymentInfluenceConfig = JSON.parse(JSON.stringify(loaded.config));
+unsafePaymentInfluenceConfig.payments.influence_on_ranking_enabled = true;
+unsafePaymentInfluenceConfig.payments.influence_on_alerts_enabled = true;
+unsafePaymentInfluenceConfig.payments.influence_on_trust_enabled = true;
+assert.equal(validateLaunchConfig(unsafePaymentInfluenceConfig, {}).some((issue) => issue.path === "payments.influence_on_ranking_enabled"), true);
+assert.equal(validateLaunchConfig(unsafePaymentInfluenceConfig, {}).some((issue) => issue.path === "payments.influence_on_alerts_enabled"), true);
+assert.equal(validateLaunchConfig(unsafePaymentInfluenceConfig, {}).some((issue) => issue.path === "payments.influence_on_trust_enabled"), true);
+
+const supportPaymentConfig = JSON.parse(JSON.stringify(loaded.config));
+supportPaymentConfig.payments.operating_support_enabled = true;
+assert.equal(validateLaunchConfig(supportPaymentConfig, {}).some((issue) => issue.path === "payments.pg_secret_key"), true);
+supportPaymentConfig.organization.business_registration_number = "123-45-67890";
+supportPaymentConfig.organization.business_bank_account_holder = "무슨일";
+supportPaymentConfig.payments.provider = "toss_payments";
+supportPaymentConfig.payments.mode = "live";
+supportPaymentConfig.payments.pg_mid = "musunil";
+supportPaymentConfig.payments.pg_client_key = "test_client_key_for_musunil";
+supportPaymentConfig.payments.pg_secret_key = "test_pg_secret_key_for_musunil_32";
+supportPaymentConfig.payments.pg_webhook_secret = "test_pg_webhook_secret_for_musunil_32";
+assert.equal(validateLaunchConfig(supportPaymentConfig, {}).some((issue) => issue.path === "payments.pg_secret_key"), false);
 
 const placeholderConfig = JSON.parse(JSON.stringify(loaded.config));
 placeholderConfig.app.public_base_url = "https://musunil.example";

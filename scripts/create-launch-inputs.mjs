@@ -27,11 +27,23 @@ web:
 organization:
   legal_name: "CHANGE_ME_LEGAL_NAME"
   operator_name: "CHANGE_ME_OPERATOR_NAME"
+  operator_type: "individual_business_pending"
   business_registration_number: ""
+  mail_order_sales_registration_number: ""
+  business_bank_account_holder: ""
   privacy_officer_name: "CHANGE_ME_PRIVACY_OFFICER_NAME"
   privacy_officer_email: "CHANGE_ME_PRIVACY_OFFICER_EMAIL"
   location_info_manager_name: "CHANGE_ME_LOCATION_MANAGER_NAME"
   location_info_manager_email: "CHANGE_ME_LOCATION_MANAGER_EMAIL"
+
+domestic_operation:
+  service_country: "KR"
+  service_language: "ko-KR"
+  overseas_service_enabled: false
+  overseas_payments_enabled: false
+  tax_deductible_donation_receipt_enabled: false
+  public_personal_bank_account_exposure_enabled: false
+  fundraising_registration_threshold_krw: 10000000
 
 render:
   environment: "production"
@@ -117,13 +129,25 @@ features:
   issue_follow_enabled: true
   occurrence_follow_enabled: true
   continuous_presence_enabled: true
-  transit_occurrence_enabled: true
-  crowd_density_enabled: true
-  route_segment_enabled: true
-  route_checkpoint_enabled: true
 
 payments:
   donations_enabled: false
+  operating_support_enabled: false
+  provider: ""
+  mode: "disabled"
+  public_label: "무슨일 운영 후원"
+  settlement_currency: "KRW"
+  tax_treatment: "business_income"
+  pg_mid: ""
+  pg_client_key: ""
+  pg_secret_key: ""
+  pg_webhook_secret: ""
+  success_url: "https://musunil.com/support/complete"
+  fail_url: "https://musunil.com/support/fail"
+  webhook_url: "https://api.musunil.com/payments/webhook"
+  influence_on_ranking_enabled: false
+  influence_on_alerts_enabled: false
+  influence_on_trust_enabled: false
 
 ai:
   provider: ""
@@ -132,5 +156,6 @@ ai:
 
 writeFileSync(outputPath, yaml, { mode: 0o600 });
 console.log(`Created ${outputPath}`);
-console.log("Fill: support email, organization contacts, media encryption key, storage provider/bucket/keys, redaction smoke command, mobile integrity verifier values/smoke command, and a law source API key.");
+console.log("Fill first: support email, organization contacts, law source API key, media encryption key, storage provider/bucket/keys, redaction smoke command, and mobile integrity verifier values/smoke command.");
+console.log("Fill later after business/PG setup: business registration number, business bank account holder, and PG keys. Keep personal bank account exposure and payment influence flags disabled.");
 console.log(`Then run: pnpm launch:ready -- ${outputPath}`);

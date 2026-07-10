@@ -60,19 +60,27 @@
 - 공개 응답에 내부 `claimIds/evidenceIds/*ClaimIds/targetRefs` 참조 배열이 나오지 않는다.
 - 규모 추정 공개 응답은 `musunil_ai_estimate` Claim 메타, evidence strength, risk level을 함께 노출한다.
 - 규모 추정의 독립 시점 수는 지역 수가 아니라 공개 가능한 현장 영상 근거 기준으로만 증가한다.
-- 공개 일정·자료 Claim만 있고 공개 가능한 현장 영상 또는 실제 인파 신호가 없으면 자동 규모 숫자를 만들지 않는다.
-- 저장된 규모 추정도 현재 공개 가능한 현장 영상 또는 실제 인파 신호가 없으면 공개 응답에서 제외한다.
+- 공개 일정·자료 Claim만 있고 공개 가능한 현장 영상 근거가 없으면 자동 규모 숫자를 만들지 않는다.
+- 저장된 규모 추정도 현재 공개 가능한 현장 영상 근거가 없으면 공개 응답에서 제외한다.
 - 잘못된 JSON은 400, 과대 JSON body는 413으로 실패한다.
 - 공개 write API는 IP 단위 rate limit으로 429를 반환한다.
 - `pnpm smoke:api`는 비파괴로 공개 schema, 금지 타입 부재, 잘못된 내부 키 거부를 확인한다.
 - staging에서는 `pnpm smoke:api -- --boundary-checks`와 `pnpm smoke:api -- --write-checks`로 HTTP 경계와 원문 비공개 write path를 확인한다.
 - 자유 댓글, 추천/비추천, 찬반투표, 후원 영향 UI가 없다.
+- 국내 v1 운영에서 `domestic_operation.service_country`는 `KR`이고 해외 서비스/해외 결제/세액공제 기부금 영수증/개인 계좌 공개 플래그가 모두 꺼져 있다.
+- 후원은 `payments.influence_on_ranking_enabled`, `payments.influence_on_alerts_enabled`, `payments.influence_on_trust_enabled`가 모두 false다.
+- 도메인 기반 실제 서비스 오픈 전에는 `payments.operating_support_enabled`가 false다.
+- PG 운영 후원을 켤 때는 개인사업자 번호, 사업용 계좌 예금주, PG MID/client key/secret/webhook secret/success/fail/webhook URL이 모두 입력되어 있다.
 - `hazard_area`, `service_disruption` 공개 타입이 없다.
 - 배포 후 post-deploy smoke에서 `/comments`, `/votes`, `/likes`, `/reactions`, `/donations`, `/sponsorships` GET/POST가 404인지 확인한다.
 - production seed와 `/home` 응답에 프리뷰/mock 집회가 섞이지 않는다.
 - 실제 법령·의안 ingest 전 production `/laws`는 preview 법령을 노출하지 않고 빈 목록을 반환한다.
 - production Web fallback에도 프리뷰/mock 카드와 프리뷰 전용 지도 핀이 보이지 않는다.
 - production Web은 `config.js`의 `apiBaseUrl`을 기준으로 하며, `?api=`와 localStorage API override는 localhost에서만 허용된다.
+- production Web은 `build-info.json`의 `commitSha`가 배포 대상 Git SHA와 같아야 한다.
+- Render Static Site는 repo root에서 `pnpm build:web-static`을 실행하고 `apps/web`만 publish한다.
+- Render Static Site와 Cloudflare 경로는 `/`, `/config.js`, `/build-info.json`에 `Cache-Control: no-store`를 보내야 한다.
+- 배포 후 `MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm launch:post-deploy-smoke`가 live Web SHA와 API smoke를 함께 통과해야 한다.
 - 공개 홈 카드에는 `WEAKLY_OBSERVED`, `traffic_control` 같은 내부 enum 원문이 보이지 않는다.
 - 내부/admin 라우트는 `x-musunil-internal-key` 없이는 막히고 constant-time 비교를 사용한다.
 - 내부 risk dashboard는 사용자/기기 군집을 bucket으로만 표시하고 raw userId/device attestation을 노출하지 않는다.
@@ -107,6 +115,9 @@
 - `app.public_base_url`
 - `app.support_email`
 - `api.public_base_url`
+- `web.allowed_origins`
+- `domestic_operation.service_country`
+- `domestic_operation.public_personal_bank_account_exposure_enabled: false`
 - `organization.*`
 - `security.jwt_secret` 또는 Render `MUSUNIL_USER_TOKEN_SECRET`
 - `security.encryption_key` 또는 Render `MUSUNIL_ENCRYPTION_KEY`
@@ -121,6 +132,29 @@
 - AI provider를 켤 경우 `ai.api_key`
 - 실제 push provider를 켤 경우 `notifications.*`
 - 모바일 LIVE 제보 출시 전 실제 기기에서 무결성 verifier dry-run
+
+## 개인사업자/PG 단계 입력
+
+도메인 기반 실제 서비스 오픈 후 사용자가 개인사업자 등록과 사업용 계좌 확보를 완료하면 아래 값을 입력한다.
+
+- `organization.operator_type: "individual_business"`
+- `organization.business_registration_number`
+- `organization.mail_order_sales_registration_number` 또는 신고 전 비워 둠
+- `organization.business_bank_account_holder`
+
+PG 계약 후에만 아래 값을 입력하고 `payments.operating_support_enabled`를 켠다.
+
+- `payments.provider`
+- `payments.mode`
+- `payments.pg_mid`
+- `payments.pg_client_key`
+- `payments.pg_secret_key`
+- `payments.pg_webhook_secret`
+- `payments.success_url`
+- `payments.fail_url`
+- `payments.webhook_url`
+
+`payments.donations_enabled`는 세액공제 가능한 공익 기부금 기능이므로 공익법인등 지정과 기부금품 모집 등록 검토 전에는 false로 둔다.
 
 ## 운영 전 수동 확인
 
@@ -153,6 +187,9 @@
 - 지도 provider가 `mock`.
 - `preview.use_mock_data`가 production에서 true.
 - 운영 origin에 `localhost` 포함.
+- 국내 v1에서 해외 결제, 세액공제 기부금 영수증, 개인 계좌 공개 플래그가 켜짐.
+- 개인사업자 등록과 PG 계약 전 `payments.operating_support_enabled`를 켬.
+- 후원/결제가 랭킹, 알림, 신뢰도, 지도 노출, Claim 우선순위에 영향을 줌.
 - 원본 미디어 비식별화 경로 미연결 상태에서 LIVE 공개를 켬.
 - 규모 추정을 Claim 메타 없이 단정 숫자처럼 공개함.
 - 공개 가능한 현장 영상 근거 없이 지역 수만으로 규모 추정 독립 시점 수를 올림.

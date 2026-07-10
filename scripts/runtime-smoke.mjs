@@ -190,16 +190,14 @@ await check("internal_redaction_worker", async () => {
 });
 
 await check("public_schema_safety", async () => {
-  for (const path of [
-    "/home",
-    "/occurrences/occ_1",
-    "/targets/occurrence/occ_1/live-claims",
-    "/targets/issue/issue_1/live-claims",
-    "/targets/crowd_density_signal/crowd_busan_mock",
-    "/continuous-presences/presence_1",
-    "/transit-occurrences/transit_1",
-    "/area-clusters"
-  ]) {
+	  for (const path of [
+	    "/home",
+	    "/occurrences/occ_1",
+	    "/targets/occurrence/occ_1/live-claims",
+	    "/targets/issue/issue_1/live-claims",
+	    "/continuous-presences/presence_1",
+	    "/area-clusters"
+	  ]) {
     assertPublicPayloadSafe(await request("GET", path));
   }
 });

@@ -23,9 +23,6 @@
         --pending: #a76314;
         --dispute: #6651a6;
         --risk: #b43a46;
-        --transit: #315fd3;
-        --crowd: #9c6114;
-        --route: var(--dispute);
         --law: #526625;
         --archive: var(--neutral-650);
         --bg: var(--neutral-50);
@@ -64,8 +61,6 @@
           --pending: #d89542;
           --dispute: #b7a6f2;
           --risk: #ef7676;
-          --transit: #91adff;
-          --crowd: #e1a35d;
           --law: #bad36a;
           --faint: #7f8d96;
           --shadow: 0 18px 40px rgb(0 0 0 / 32%);
@@ -183,6 +178,17 @@
         box-shadow:
           0 12px 24px color-mix(in srgb, var(--brand) 24%, transparent),
           inset 0 1px 0 rgb(255 255 255 / 32%);
+        overflow: hidden;
+      }
+
+      .brand-symbol {
+        width: 28px;
+        height: 28px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
       }
 
       h1 {
@@ -298,8 +304,7 @@
       .icon-btn:hover,
       .button:hover,
       .segmented button:hover,
-      .tabs button:hover,
-      .layer:hover {
+      .tabs button:hover {
         transform: translateY(-1px);
         box-shadow: var(--shadow-soft);
       }
@@ -307,9 +312,7 @@
       .icon-btn:active,
       .button:active,
       .segmented button:active,
-      .tabs button:active,
-      .layer:active,
-      .pin:active {
+      .tabs button:active {
         transform: translateY(1px) scale(.98);
       }
 
@@ -346,18 +349,152 @@
 
       .layout {
         display: grid;
-        grid-template-columns: minmax(340px, 430px) minmax(360px, .82fr) minmax(380px, 560px);
+        grid-template-columns: 76px minmax(420px, 680px) minmax(390px, 560px);
+        grid-template-rows: auto auto;
+        align-items: start;
+        justify-content: center;
         gap: 16px;
         padding: 16px;
       }
 
+      .layout.desktop-law #home-section {
+        display: none;
+      }
+
+      .layout.desktop-law #law-section {
+        display: grid;
+      }
+
+      .layout.desktop-reels #home-section,
+      .layout.desktop-reels #law-section {
+        display: none;
+      }
+
+      .layout.desktop-reels #reels-section {
+        display: grid;
+      }
+
+      .layout.desktop-explore #home-section,
+      .layout.desktop-explore #law-section,
+      .layout.desktop-explore #reels-section {
+        display: none;
+      }
+
+      .layout.desktop-explore #map-section {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+      }
+
+      .layout.desktop-explore .detail-column {
+        grid-column: 3;
+        grid-row: 1 / span 2;
+      }
+
+      .desktop-rail {
+        position: sticky;
+        top: 82px;
+        z-index: 8;
+        grid-column: 1;
+        grid-row: 1 / span 2;
+        display: grid;
+        align-content: start;
+        gap: 8px;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: color-mix(in srgb, var(--surface) 96%, transparent);
+        box-shadow: var(--shadow-soft);
+        backdrop-filter: blur(18px);
+      }
+
+      .rail-item {
+        display: grid;
+        place-items: center;
+        gap: 3px;
+        min-height: 58px;
+        padding: 7px 4px;
+        border: 1px solid transparent;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 760;
+        cursor: pointer;
+        transition:
+          background-color var(--motion-fast) var(--ease-out),
+          border-color var(--motion-fast) var(--ease-out),
+          color var(--motion-fast) var(--ease-out),
+          transform var(--motion-fast) var(--ease-out);
+      }
+
+      .rail-item:hover {
+        transform: translateY(-1px);
+        background: color-mix(in srgb, var(--brand) 7%, transparent);
+        color: var(--brand);
+      }
+
+      .rail-item[aria-current="page"] {
+        border-color: color-mix(in srgb, var(--brand) 42%, var(--line));
+        background: color-mix(in srgb, var(--brand) 11%, var(--surface));
+        color: var(--brand);
+      }
+
+      .rail-icon {
+        display: grid;
+        place-items: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 7px;
+        background: color-mix(in srgb, currentColor 10%, transparent);
+      }
+
+      .nav-symbol,
+      .button-symbol {
+        display: block;
+        width: 18px;
+        height: 18px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .icon-btn .button-symbol {
+        width: 17px;
+        height: 17px;
+      }
+
+      .button .button-symbol {
+        flex: 0 0 auto;
+      }
+
+      #home-section,
+      #law-section,
+      #reels-section {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+      }
+
+      #map-section {
+        grid-column: 3;
+        grid-row: 2;
+      }
+
+      .detail-column {
+        grid-column: 3;
+        grid-row: 1;
+      }
+
       .column {
         min-width: 0;
+        align-self: start;
         scroll-margin-top: 88px;
       }
 
       .stack {
         display: grid;
+        align-content: start;
         gap: 12px;
       }
 
@@ -433,12 +570,16 @@
 	        gap: 10px;
 	      }
 
-	      .issue-list,
-	      .law-list {
-	        display: grid;
-	        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-	        gap: 10px;
-	      }
+      .issue-list,
+      .law-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 10px;
+      }
+
+      .issue-situations-block {
+        display: none;
+      }
 
       .filter-panel {
         display: grid;
@@ -616,19 +757,6 @@
         background: var(--official);
       }
 
-      .situation-card.type-transit_occurrence::before {
-        background: var(--transit);
-      }
-
-      .situation-card.type-crowd_density_signal::before {
-        background: var(--crowd);
-      }
-
-      .situation-card.type-route_segment::before,
-      .situation-card.type-route_checkpoint::before {
-        background: var(--route);
-      }
-
       .situation-card[aria-selected="true"],
       .issue-card[aria-selected="true"],
       .law-card[aria-selected="true"] {
@@ -663,16 +791,344 @@
         animation: card-in var(--motion) var(--ease-out) both;
       }
 
-      #law-section {
+      #law-section,
+      #reels-section {
         display: none;
       }
 
-      .layout.desktop-law #home-section {
+      .layout.desktop-law .map-shell {
+        box-shadow: var(--shadow-soft);
+      }
+
+      .issue-stories {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding: 2px 2px 8px;
+        scrollbar-width: none;
+      }
+
+      .issue-stories::-webkit-scrollbar {
         display: none;
       }
 
-      .layout.desktop-law #law-section {
+      .story-ring {
         display: grid;
+        flex: 0 0 78px;
+        gap: 6px;
+        justify-items: center;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--ink);
+        text-align: center;
+        cursor: pointer;
+      }
+
+      .story-orb {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 62px;
+        height: 62px;
+        border-radius: 999px;
+        background:
+          linear-gradient(var(--surface), var(--surface)) padding-box,
+          conic-gradient(var(--story-color, var(--brand)), color-mix(in srgb, var(--story-color, var(--brand)) 45%, var(--surface)), var(--story-color, var(--brand))) border-box;
+        border: 3px solid transparent;
+        color: var(--story-color, var(--brand));
+        box-shadow: var(--shadow-soft);
+        transition:
+          transform var(--motion-fast) var(--ease-out),
+          box-shadow var(--motion-fast) var(--ease-out);
+      }
+
+      .story-ring:hover .story-orb,
+      .story-ring[aria-selected="true"] .story-orb {
+        transform: translateY(-2px) scale(1.03);
+        box-shadow: var(--shadow);
+      }
+
+      .story-orb strong {
+        font-size: 16px;
+      }
+
+      .story-visual,
+      .issue-cover-art svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .issue-visual {
+        --visual-bg0: #f4f7fa;
+        --visual-bg1: #e7f1f4;
+        --visual-bg2: #f6f8fb;
+        --visual-a: #145c72;
+        --visual-b: #1e796b;
+        --visual-c: #d39a38;
+        --visual-ink: #21313b;
+        --visual-paper: #ffffff;
+        --visual-shadow: rgb(28 46 58 / 18%);
+        color: var(--visual-a);
+      }
+
+      .issue-visual-law {
+        --visual-bg0: #f4f0ff;
+        --visual-bg1: #e8f5f1;
+        --visual-a: #6c5db5;
+        --visual-b: #21806f;
+        --visual-c: #d6a141;
+      }
+
+      .issue-visual-assembly {
+        --visual-bg0: #fff5e8;
+        --visual-bg1: #edf6f7;
+        --visual-a: #b77b2c;
+        --visual-b: #176f82;
+        --visual-c: #6a5bb1;
+      }
+
+      .issue-visual-ballot {
+        --visual-bg0: #edf5ff;
+        --visual-bg1: #f7f0ff;
+        --visual-a: #315fd3;
+        --visual-b: #6651a6;
+        --visual-c: #1e796b;
+      }
+
+      .issue-visual-public {
+        --visual-bg0: #edf7f4;
+        --visual-bg1: #f4f2ff;
+        --visual-a: #1e796b;
+        --visual-b: #145c72;
+        --visual-c: #6651a6;
+      }
+
+      .story-visual {
+        border-radius: 999px;
+        overflow: hidden;
+      }
+
+      .story-ring span {
+        width: 100%;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 760;
+        line-height: 1.25;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        white-space: normal;
+      }
+
+      .story-ring[aria-selected="true"] span {
+        color: var(--brand);
+      }
+
+      .story-ring[data-state="official"] {
+        --story-color: var(--official);
+      }
+
+      .story-ring[data-state="pending"] {
+        --story-color: var(--pending);
+      }
+
+      .story-ring[data-state="dispute"] {
+        --story-color: var(--dispute);
+      }
+
+      .story-ring[data-state="active"] {
+        --story-color: var(--brand);
+      }
+
+      .issue-card {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 0;
+      }
+
+      .issue-card::before {
+        display: none;
+      }
+
+      .issue-feed-cover {
+        position: relative;
+        display: grid;
+        gap: 12px;
+        overflow: hidden;
+        padding: 14px;
+        border-bottom: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+        background:
+          radial-gradient(circle at 88% 16%, color-mix(in srgb, var(--story-color, var(--brand)) 18%, transparent), transparent 34%),
+          linear-gradient(135deg, color-mix(in srgb, var(--story-color, var(--brand)) 8%, var(--surface)), var(--surface));
+      }
+
+      .issue-feed-cover > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .issue-cover-art {
+        position: absolute;
+        right: -8px;
+        bottom: -12px;
+        z-index: 0;
+        width: 148px;
+        height: 148px;
+        color: var(--story-color, var(--brand));
+        opacity: .42;
+        pointer-events: none;
+      }
+
+      .issue-cover-art.has-live-video {
+        inset: 0;
+        width: auto;
+        height: auto;
+        opacity: 1;
+      }
+
+      .issue-cover-art.has-live-video::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(90deg, color-mix(in srgb, var(--surface) 96%, transparent) 0 48%, transparent 100%),
+          linear-gradient(180deg, transparent 0 56%, rgb(11 18 22 / 26%) 100%);
+      }
+
+      .issue-cover-fallback {
+        position: absolute;
+        inset: auto 4px 0 auto;
+        width: 148px;
+        height: 148px;
+        opacity: .34;
+      }
+
+      .issue-cover-video {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: saturate(.82) contrast(.94);
+      }
+
+      .live-thumb-badge {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        z-index: 3;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-height: 28px;
+        padding: 0 9px;
+        border: 1px solid rgb(255 255 255 / 28%);
+        border-radius: 999px;
+        background: rgb(10 17 21 / 62%);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 780;
+        box-shadow: 0 8px 22px rgb(0 0 0 / 22%);
+        backdrop-filter: blur(12px);
+      }
+
+      .story-orb.has-live-video {
+        background:
+          linear-gradient(var(--surface), var(--surface)) padding-box,
+          conic-gradient(var(--official), var(--brand), var(--official)) border-box;
+        color: #fff;
+      }
+
+      .story-thumb-video {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+        border-radius: 999px;
+        object-fit: cover;
+        filter: saturate(.82) contrast(.95);
+      }
+
+      .story-thumb-fallback {
+        position: absolute;
+        inset: 0;
+        opacity: .82;
+      }
+
+      .issue-feed-title {
+        display: grid;
+        gap: 5px;
+      }
+
+      .issue-feed-title .title {
+        font-size: 18px;
+        line-height: 1.25;
+      }
+
+      .issue-feed-actions {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 7px;
+        padding: 0 14px 14px;
+      }
+
+      .feed-action {
+        display: grid;
+        place-items: center;
+        gap: 4px;
+        min-height: 48px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-2);
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 760;
+      }
+
+      .feed-action span {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 680;
+      }
+
+      .explore-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .explore-tile {
+        display: grid;
+        gap: 7px;
+        min-height: 116px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background:
+          radial-gradient(circle at 92% 10%, color-mix(in srgb, var(--tile-color, var(--brand)) 16%, transparent), transparent 38%),
+          var(--surface);
+        box-shadow: var(--shadow-soft);
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .explore-tile strong {
+        font-size: 15px;
+        line-height: 1.3;
+      }
+
+      .explore-tile span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .explore-tile b {
+        color: var(--brand);
+        font-size: 20px;
       }
 
       .card-top {
@@ -871,35 +1327,55 @@
         color: var(--ink);
       }
 
-      .layer-stack {
+      .map-key {
         display: flex;
-        gap: 7px;
-        flex-wrap: wrap;
+        align-items: center;
         justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+        min-height: 36px;
+        padding: 0 10px;
+        border: 1px solid color-mix(in srgb, var(--line) 84%, transparent);
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--surface) 90%, transparent);
+        box-shadow: var(--shadow-soft);
+        backdrop-filter: blur(18px);
       }
 
-      .layer {
+      .map-key span {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        min-height: 36px;
-        padding: 0 10px;
-        border: 1px solid var(--line);
-        border-radius: var(--radius);
-        background: color-mix(in srgb, var(--surface) 94%, transparent);
-        color: var(--ink);
-        box-shadow: var(--shadow);
-        cursor: pointer;
-        transition:
-          background-color var(--motion-fast) var(--ease-out),
-          box-shadow var(--motion-fast) var(--ease-out),
-          transform var(--motion-fast) var(--ease-out);
+        min-height: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 820;
+        line-height: 1;
       }
 
-      .layer[aria-pressed="true"] {
-        border-color: color-mix(in srgb, var(--brand) 48%, var(--line));
-        background: color-mix(in srgb, var(--brand) 11%, var(--surface));
-        color: var(--brand);
+      .map-key i {
+        display: inline-block;
+        flex: 0 0 auto;
+      }
+
+      .key-pin {
+        width: 13px;
+        height: 13px;
+        border: 3px solid #fff;
+        border-radius: 999px;
+        background: var(--brand);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 58%, transparent);
+      }
+
+      .key-area {
+        width: 18px;
+        height: 11px;
+        border: 1px solid color-mix(in srgb, var(--brand) 58%, transparent);
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--brand) 15%, transparent);
       }
 
       .map-icon {
@@ -930,168 +1406,6 @@
       .map-icon.presence {
         background: color-mix(in srgb, var(--official) 12%, transparent);
         color: var(--official);
-      }
-
-      .map-icon.transit {
-        background: color-mix(in srgb, var(--transit) 10%, transparent);
-        color: var(--transit);
-      }
-
-      .map-icon.crowd {
-        background: color-mix(in srgb, var(--crowd) 10%, transparent);
-        color: var(--crowd);
-      }
-
-      .map-icon.route {
-        background: color-mix(in srgb, var(--route) 12%, transparent);
-        color: var(--route);
-      }
-
-      .map-legend {
-        display: none;
-      }
-
-      .legend-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: var(--muted);
-        font-size: 12px;
-        font-weight: 680;
-      }
-
-      .legend-mark {
-        display: grid;
-        place-items: center;
-        width: 24px;
-        height: 24px;
-        border-radius: 7px;
-      }
-
-      .legend-mark .map-icon {
-        width: 24px;
-        height: 24px;
-      }
-
-      .legend-mark .map-icon svg {
-        width: 16px;
-        height: 16px;
-      }
-
-      .pin {
-        position: absolute;
-        z-index: 6;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: auto;
-        height: auto;
-        padding: 0;
-        border: 0;
-        background: transparent;
-        color: #fff;
-        font-weight: 820;
-        pointer-events: auto;
-        cursor: pointer;
-        transition:
-          filter var(--motion-fast) var(--ease-out),
-          transform var(--motion) var(--ease-snap);
-      }
-
-      .pin span {
-        display: grid;
-        line-height: 1;
-        text-align: center;
-      }
-
-      .pin-glyph {
-        place-items: center;
-        width: 42px;
-        height: 42px;
-        border: 0;
-        border-radius: 999px;
-        background: transparent;
-        filter:
-          drop-shadow(0 1px 0 rgb(255 255 255 / 92%))
-          drop-shadow(1px 0 0 rgb(255 255 255 / 92%))
-          drop-shadow(0 -1px 0 rgb(255 255 255 / 92%))
-          drop-shadow(-1px 0 0 rgb(255 255 255 / 92%))
-          drop-shadow(0 10px 14px rgb(23 35 45 / 28%));
-        transition:
-          filter var(--motion-fast) var(--ease-out),
-          transform var(--motion) var(--ease-snap);
-      }
-
-      .pin:hover .pin-glyph {
-        transform: translateY(-2px) scale(1.05);
-        filter:
-          drop-shadow(0 1px 0 #fff)
-          drop-shadow(1px 0 0 #fff)
-          drop-shadow(0 -1px 0 #fff)
-          drop-shadow(-1px 0 0 #fff)
-          drop-shadow(0 14px 18px rgb(23 35 45 / 34%));
-      }
-
-      .pin .map-icon {
-        width: 38px;
-        height: 38px;
-        border-radius: 999px;
-        background: transparent;
-      }
-
-      .pin .map-icon svg {
-        width: 30px;
-        height: 30px;
-        stroke-width: 2.7;
-      }
-
-      .pin.main {
-        left: 37%;
-        top: 45%;
-      }
-
-      .pin.transit {
-        left: 62%;
-        top: 31%;
-      }
-
-      .pin.crowd {
-        left: 66%;
-        top: 55%;
-      }
-
-      .pin.checkpoint {
-        left: 24%;
-        top: 29%;
-      }
-
-      .pin.document {
-        left: 18%;
-        top: 16%;
-      }
-
-      .pin.daegu {
-        left: 74%;
-        top: 68%;
-      }
-
-      .pin.selected {
-        transform: translateY(-5px);
-      }
-
-      .pin.selected .pin-glyph {
-        transform: scale(1.18);
-        filter:
-          drop-shadow(0 1px 0 #fff)
-          drop-shadow(1px 0 0 #fff)
-          drop-shadow(0 -1px 0 #fff)
-          drop-shadow(-1px 0 0 #fff)
-          drop-shadow(0 0 0 color-mix(in srgb, var(--brand) 70%, transparent))
-          drop-shadow(0 16px 20px rgb(23 35 45 / 36%));
-      }
-
-      html[data-preview-api="false"] .pin.preview-only {
-        display: none;
       }
 
       .map-sheet {
@@ -1228,6 +1542,11 @@
         align-items: start;
         justify-content: space-between;
         gap: 10px;
+      }
+
+      #close-detail {
+        display: none;
+        flex: 0 0 auto;
       }
 
       .claim-list,
@@ -1375,11 +1694,11 @@
         border-bottom: 1px solid var(--line);
       }
 
-	      .reel-card,
+      .reel-card,
       .reel-notice {
-	        display: grid;
-	        gap: 10px;
-	        padding: 10px;
+        display: grid;
+        gap: 10px;
+        padding: 10px;
 	        border: 1px solid var(--line);
 	        border-radius: var(--radius);
 	        background: color-mix(in srgb, var(--surface-2) 78%, var(--surface));
@@ -1389,6 +1708,106 @@
         gap: 4px;
         border-color: color-mix(in srgb, var(--brand) 20%, var(--line));
         background: color-mix(in srgb, var(--brand) 6%, var(--surface));
+      }
+
+      .reels-stage {
+        display: grid;
+        gap: 12px;
+        max-height: calc(100vh - 128px);
+        overflow-y: auto;
+        scroll-snap-type: y mandatory;
+        scrollbar-width: none;
+      }
+
+      .reels-stage::-webkit-scrollbar {
+        display: none;
+      }
+
+      .reel-card.reel-full {
+        position: relative;
+        min-height: min(720px, calc(100vh - 142px));
+        overflow: hidden;
+        padding: 0;
+        border-color: color-mix(in srgb, var(--brand) 20%, var(--line));
+        background: #0d171b;
+        color: #fff;
+        scroll-snap-align: start;
+      }
+
+      .reel-card.reel-full .reel-media {
+        width: 100%;
+        min-height: min(720px, calc(100vh - 142px));
+        max-height: none;
+        margin: 0;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .reel-card.reel-full .reel-placeholder {
+        min-height: inherit;
+        background:
+          radial-gradient(circle at 48% 22%, rgb(95 154 180 / 28%), transparent 36%),
+          linear-gradient(160deg, #20343b, #0b1115 58%, #1d2a31);
+      }
+
+      .reel-card.reel-full .reel-placeholder > span:last-child {
+        display: none;
+      }
+
+      .reel-card.reel-full .reel-placeholder > strong {
+        display: none;
+      }
+
+      .reel-overlay {
+        position: absolute;
+        right: 68px;
+        bottom: 18px;
+        left: 16px;
+        z-index: 2;
+        display: grid;
+        gap: 9px;
+        text-shadow: 0 1px 16px rgb(0 0 0 / 52%);
+      }
+
+      .reel-overlay strong {
+        font-size: 18px;
+        line-height: 1.25;
+      }
+
+      .reel-overlay span,
+      .reel-overlay p {
+        color: rgb(255 255 255 / 78%);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .reel-actions {
+        position: absolute;
+        right: 10px;
+        bottom: 20px;
+        z-index: 3;
+        display: grid;
+        gap: 8px;
+      }
+
+      .reel-action {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        min-height: 48px;
+        padding: 4px;
+        border: 1px solid rgb(255 255 255 / 18%);
+        border-radius: 999px;
+        background: rgb(9 15 18 / 54%);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 760;
+        backdrop-filter: blur(12px);
+      }
+
+      .reel-action:disabled {
+        opacity: .82;
       }
 
       .reel-notice strong {
@@ -1595,7 +2014,7 @@
 
 	      .report-steps {
 	        display: grid;
-	        grid-template-columns: repeat(3, minmax(0, 1fr));
+	        grid-template-columns: repeat(5, minmax(0, 1fr));
 	        gap: 7px;
 	        padding: 0;
 	        margin: 0;
@@ -1629,12 +2048,195 @@
         list-style: none;
       }
 
+      .report-target-panel,
+      .nearby-targets,
       .report-guide li,
       .capture-checks,
-      .report-handoff {
+      .report-handoff,
+      .report-receipt {
         border: 1px solid var(--line);
         border-radius: 8px;
         background: var(--surface-2);
+      }
+
+      .report-target-panel,
+      .nearby-targets,
+      .report-receipt {
+        display: grid;
+        gap: 10px;
+        padding: 11px;
+      }
+
+      .report-target-panel[data-state="confirmed"] {
+        border-color: color-mix(in srgb, var(--official) 30%, var(--line));
+        background:
+          linear-gradient(135deg, color-mix(in srgb, var(--official) 8%, transparent), transparent 58%),
+          var(--surface);
+      }
+
+      .report-target-head,
+      .nearby-target-head,
+      .receipt-head {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .report-target-copy,
+      .receipt-copy {
+        display: grid;
+        gap: 3px;
+        min-width: 0;
+      }
+
+      .report-target-copy strong,
+      .nearby-target-head strong,
+      .receipt-copy strong {
+        color: var(--ink);
+        font-size: 14px;
+        line-height: 1.25;
+      }
+
+      .report-target-copy span,
+      .nearby-target-head span,
+      .receipt-copy span,
+      .report-target-meta span,
+      .report-preview-meta dd,
+      .report-receipt span {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .report-target-meta,
+      .report-preview-meta,
+      .receipt-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+      }
+
+      .report-target-meta div,
+      .report-preview-meta div,
+      .receipt-grid div {
+        display: grid;
+        gap: 2px;
+        min-width: 0;
+        padding: 8px;
+        border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+        border-radius: 7px;
+        background: color-mix(in srgb, var(--surface) 82%, var(--surface-2));
+      }
+
+      .report-target-meta strong,
+      .report-preview-meta dt,
+      .receipt-grid strong {
+        min-width: 0;
+        overflow: hidden;
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 760;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .report-target-actions,
+      .preview-actions,
+      .receipt-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+      }
+
+      .report-target-actions .button,
+      .preview-actions .button,
+      .receipt-actions .button {
+        flex: 1 1 112px;
+        min-width: 0;
+      }
+
+      .nearby-target-list {
+        display: grid;
+        gap: 7px;
+      }
+
+      .nearby-target-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition:
+          border-color var(--motion-fast) var(--ease-out),
+          box-shadow var(--motion-fast) var(--ease-out),
+          transform var(--motion-fast) var(--ease-out);
+      }
+
+      .nearby-target-card:hover,
+      .nearby-target-card[aria-selected="true"] {
+        border-color: color-mix(in srgb, var(--brand) 42%, var(--line));
+        box-shadow: var(--shadow-soft);
+        transform: translateY(-1px);
+      }
+
+      .nearby-target-main {
+        display: grid;
+        gap: 5px;
+        min-width: 0;
+      }
+
+      .nearby-target-main strong {
+        overflow: hidden;
+        color: var(--ink);
+        font-size: 13px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .nearby-target-main span {
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 12px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .nearby-target-side {
+        display: grid;
+        justify-items: end;
+        gap: 5px;
+      }
+
+      .distance-pill {
+        display: inline-grid;
+        min-width: 72px;
+        min-height: 28px;
+        place-items: center;
+        padding: 5px 8px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--brand) 10%, var(--surface));
+        color: var(--brand-strong);
+        font-size: 12px;
+        font-weight: 780;
+        white-space: nowrap;
+      }
+
+      .distance-pill.near {
+        background: color-mix(in srgb, var(--official) 12%, var(--surface));
+        color: var(--official);
+      }
+
+      .distance-pill.far {
+        background: color-mix(in srgb, var(--pending) 12%, var(--surface));
+        color: var(--pending);
       }
 
       .report-guide li {
@@ -1757,6 +2359,10 @@
         font-size: 12px;
       }
 
+      .capture-preview video[src] {
+        min-height: 190px;
+      }
+
       .report-handoff {
         padding: 11px;
       }
@@ -1798,8 +2404,19 @@
           gap: 3px;
         }
 
-        .capture-checks ul {
+        .capture-checks ul,
+        .report-target-meta,
+        .report-preview-meta,
+        .receipt-grid {
           grid-template-columns: 1fr;
+        }
+
+        .nearby-target-card {
+          grid-template-columns: 1fr;
+        }
+
+        .nearby-target-side {
+          justify-items: start;
         }
       }
 
@@ -1907,14 +2524,7 @@
         }
 
         .layout {
-          grid-template-columns: minmax(320px, 380px) 1fr;
-        }
-
-        .detail-column {
-          grid-column: 1 / -1;
-          display: grid;
-          grid-template-columns: 1fr minmax(310px, 380px);
-          gap: 14px;
+          grid-template-columns: 68px minmax(360px, 620px) minmax(330px, 1fr);
         }
       }
 
@@ -1949,6 +2559,10 @@
           padding: 10px 10px 112px;
         }
 
+        .desktop-rail {
+          display: none;
+        }
+
         #follow {
           width: 40px;
           padding: 0;
@@ -1956,52 +2570,170 @@
         }
 
         #follow::before {
-          content: "+";
-          font-size: 18px;
-          line-height: 1;
+          content: none;
+        }
+
+        #home-section,
+        #law-section,
+        #reels-section,
+        #map-section,
+        .detail-column {
+          grid-column: 1;
+          grid-row: auto;
         }
 
         .layout.mobile-tab-home #law-section,
+        .layout.mobile-tab-home #reels-section,
         .layout.mobile-tab-home #map-section,
         .layout.mobile-tab-home .detail-column,
-        .layout.mobile-tab-law #home-section,
-        .layout.mobile-tab-law #map-section,
-        .layout.mobile-tab-law .detail-column,
-        .layout.mobile-tab-map #home-section,
-        .layout.mobile-tab-map #law-section,
-        .layout.mobile-tab-map .detail-column,
+        .layout.mobile-tab-reels #home-section,
+        .layout.mobile-tab-reels #law-section,
+        .layout.mobile-tab-reels #map-section,
+        .layout.mobile-tab-reels .detail-column,
+        .layout.mobile-tab-explore #home-section,
+        .layout.mobile-tab-explore #law-section,
+        .layout.mobile-tab-explore #reels-section,
+        .layout.mobile-tab-explore .detail-column,
+        .layout.mobile-tab-laws #home-section,
+        .layout.mobile-tab-laws #reels-section,
+        .layout.mobile-tab-laws #map-section,
+        .layout.mobile-tab-laws .detail-column,
         .layout.mobile-tab-report #home-section,
         .layout.mobile-tab-report #law-section,
+        .layout.mobile-tab-report #reels-section,
         .layout.mobile-tab-report #map-section,
         .layout.mobile-tab-report #record-section,
-        .layout.mobile-tab-record #home-section,
-        .layout.mobile-tab-record #law-section,
-        .layout.mobile-tab-record #map-section,
-        .layout.mobile-tab-record #report-section {
+        .layout.mobile-detail-open #report-section {
           display: none;
         }
 
-        .layout.mobile-tab-law #law-section {
+        .layout.mobile-tab-laws #law-section,
+        .layout.mobile-tab-reels #reels-section {
           display: grid;
         }
 
-        .layout.mobile-tab-report .detail-column,
-        .layout.mobile-tab-record .detail-column {
+        .layout.mobile-tab-report .detail-column {
           display: grid;
           grid-template-columns: 1fr;
           width: 100%;
         }
 
+        .layout.mobile-detail-open .detail-column {
+          position: fixed;
+          right: 10px;
+          bottom: 86px;
+          left: 10px;
+          z-index: 34;
+          display: grid;
+          grid-template-columns: 1fr;
+          max-height: calc(100vh - 112px);
+          overflow: auto;
+          border-radius: 12px;
+          box-shadow: 0 24px 80px rgb(0 0 0 / 28%);
+          animation: sheet-in var(--motion) var(--ease-out) both;
+        }
+
+        .layout.mobile-detail-open #close-detail {
+          display: grid;
+        }
+
+        .layout.mobile-detail-open::before {
+          content: "";
+          position: fixed;
+          inset: 0;
+          z-index: 33;
+          background: rgb(8 14 18 / 28%);
+          backdrop-filter: blur(2px);
+        }
+
+        .layout.mobile-tab-report .report-panel {
+          min-height: calc(100vh - 148px);
+        }
+
+        .issue-list,
+        .law-list {
+          grid-template-columns: 1fr;
+        }
+
+        .issue-stories {
+          gap: 8px;
+          padding-bottom: 4px;
+        }
+
+        .story-ring {
+          flex-basis: 70px;
+        }
+
+        .story-orb {
+          width: 56px;
+          height: 56px;
+        }
+
+        .issue-feed-cover {
+          gap: 9px;
+          padding: 12px;
+        }
+
+        .issue-feed-title .title {
+          max-width: calc(100% - 98px);
+          font-size: 17px;
+        }
+
+        .issue-cover-art,
+        .issue-cover-fallback {
+          width: 116px;
+          height: 116px;
+        }
+
+        .issue-feed-actions {
+          gap: 6px;
+          padding: 0 12px 12px;
+        }
+
+        .feed-action {
+          min-height: 44px;
+        }
+
+        .issue-card > .chips {
+          padding: 0 12px 12px !important;
+        }
+
+        .explore-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        #reels-section .reels-stage {
+          max-height: calc(100vh - 176px);
+        }
+
+        #reels-section .reel-card.reel-full {
+          min-height: min(620px, calc(100vh - 230px));
+        }
+
+        #reels-section .reel-card.reel-full .reel-media {
+          min-height: min(620px, calc(100vh - 230px));
+        }
+
+        #reels-section .reel-overlay {
+          right: 66px;
+          bottom: 14px;
+        }
+
+        #reels-section .reel-actions {
+          right: 9px;
+          bottom: 14px;
+          gap: 6px;
+        }
+
+        #reels-section .reel-action {
+          width: 46px;
+          min-height: 42px;
+        }
+
         .map-shell {
-          min-height: calc(100vh - 152px);
-        }
-
-        .pin.daegu {
-          top: 56%;
-        }
-
-        .pin.crowd {
-          top: 47%;
+          min-height: 470px;
+          height: calc(100vh - 300px);
+          max-height: 560px;
         }
 
         .map-toolbar {
@@ -2011,10 +2743,6 @@
 
         .map-sheet {
           grid-template-columns: 1fr;
-        }
-
-        .map-legend {
-          display: none;
         }
 
         .detail-column {
@@ -2049,6 +2777,9 @@
         }
 
         .mobile-nav button {
+          display: grid;
+          place-items: center;
+          gap: 2px;
           min-height: 44px;
           border: 0;
           border-radius: 7px;
@@ -2061,6 +2792,16 @@
             box-shadow var(--motion-fast) var(--ease-out),
             color var(--motion-fast) var(--ease-out),
             transform var(--motion-fast) var(--ease-out);
+        }
+
+        .mobile-nav button::before {
+          display: none;
+          content: none;
+        }
+
+        .mobile-nav .nav-symbol {
+          width: 19px;
+          height: 19px;
         }
 
         .mobile-nav button[aria-current="page"] {
@@ -2099,6 +2840,17 @@
         }
       }
 
+      @keyframes sheet-in {
+        from {
+          opacity: .82;
+          transform: translateY(22px) scale(.985);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
       @media (prefers-reduced-motion: reduce) {
         *,
         *::before,
@@ -2118,6 +2870,41 @@
   </head>
   <body>
     <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+      <symbol id="icon-home" viewBox="0 0 24 24">
+        <path d="M4 11.5 12 5l8 6.5" />
+        <path d="M6.5 10.5V19h11v-8.5" />
+        <path d="M10 19v-5h4v5" />
+      </symbol>
+      <symbol id="icon-video" viewBox="0 0 24 24">
+        <rect x="4" y="6" width="12" height="12" rx="3" />
+        <path d="m16 10 4-2.4v8.8L16 14" />
+      </symbol>
+      <symbol id="icon-search" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="6" />
+        <path d="m16 16 4 4" />
+      </symbol>
+      <symbol id="icon-report" viewBox="0 0 24 24">
+        <path d="M12 5v14" />
+        <path d="M5 12h14" />
+      </symbol>
+      <symbol id="icon-refresh" viewBox="0 0 24 24">
+        <path d="M20 12a8 8 0 0 1-13.7 5.6" />
+        <path d="M4 12A8 8 0 0 1 17.7 6.4" />
+        <path d="M17.7 3.8v2.6h-2.6" />
+        <path d="M6.3 20.2v-2.6h2.6" />
+      </symbol>
+      <symbol id="icon-locate" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 3v3" />
+        <path d="M12 18v3" />
+        <path d="M3 12h3" />
+        <path d="M18 12h3" />
+        <circle cx="12" cy="12" r="8" />
+      </symbol>
+      <symbol id="icon-bell" viewBox="0 0 24 24">
+        <path d="M6 9a6 6 0 0 1 12 0c0 7 2 7 2 9H4c0-2 2-2 2-9" />
+        <path d="M10 21h4" />
+      </symbol>
       <symbol id="icon-assembly" viewBox="0 0 24 24">
         <path d="M6 4h12v8H6z" />
         <path d="M12 12v8" />
@@ -2135,26 +2922,6 @@
         <path d="M16 18V8" />
         <path d="M3 18h18" />
       </symbol>
-      <symbol id="icon-transit" viewBox="0 0 24 24">
-        <rect x="6" y="4" width="12" height="12" rx="3" />
-        <path d="M9 8h6" />
-        <path d="M9 13h.01" />
-        <path d="M15 13h.01" />
-        <path d="m9 20 2-4" />
-        <path d="m15 20-2-4" />
-      </symbol>
-      <symbol id="icon-crowd" viewBox="0 0 24 24">
-        <circle cx="8" cy="8" r="3" />
-        <circle cx="16" cy="8" r="3" />
-        <path d="M3 20c.6-3 2.4-5 5-5s4.4 2 5 5" />
-        <path d="M11 20c.5-2.8 2.3-5 5-5 2.3 0 4.1 1.7 5 5" />
-      </symbol>
-      <symbol id="icon-route" viewBox="0 0 24 24">
-        <path d="M4 17h16" />
-        <path d="M7 17 10 7" />
-        <path d="M14 17 17 7" />
-        <path d="M6 11h12" />
-      </symbol>
       <symbol id="icon-law" viewBox="0 0 24 24">
         <path d="M5 19h14" />
         <path d="M7 19V7l5-3 5 3v12" />
@@ -2165,7 +2932,15 @@
     <div class="app">
       <header class="topbar">
         <div class="brand">
-          <div class="mark" aria-hidden="true">무</div>
+          <div class="mark" aria-hidden="true">
+            <svg class="brand-symbol" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="3.2" fill="currentColor" stroke="none" />
+              <path d="M6.2 12a5.8 5.8 0 0 1 11.6 0" />
+              <path d="M3.8 12a8.2 8.2 0 0 1 16.4 0" opacity=".62" />
+              <path d="M7 18.5h10" />
+              <path d="M12 15.2v3.3" />
+            </svg>
+          </div>
           <div>
             <h1>무슨일</h1>
             <p class="subtitle">집회·시위 공개자료 확인</p>
@@ -2174,130 +2949,127 @@
 
         <div class="global-strip" aria-label="전국 요약">
           <div class="metric"><strong id="metric-live">0</strong><span>진행/예정</span></div>
-          <div class="metric"><strong id="metric-proof">0</strong><span>공식 자료</span></div>
+          <div class="metric"><strong id="metric-proof">0</strong><span>공식 확인</span></div>
           <div class="metric"><strong id="metric-risk">0</strong><span>다른 주장</span></div>
 	          <div class="metric"><strong id="metric-alert">0</strong><span>더 확인 필요</span></div>
         </div>
 
         <div class="actions">
-          <button class="icon-btn" id="refresh" title="새로고침" aria-label="새로고침">↻</button>
-          <button class="icon-btn" id="locate" title="현재 위치" aria-label="현재 위치">⌖</button>
-	          <button class="button primary" id="follow" title="중요 변경 알림" aria-label="중요 변경 알림">＋ 중요 변경 알림</button>
+          <button class="icon-btn" id="refresh" title="새로고침" aria-label="새로고침"><svg class="button-symbol"><use href="#icon-refresh"></use></svg></button>
+          <button class="icon-btn" id="locate" title="현재 위치" aria-label="현재 위치"><svg class="button-symbol"><use href="#icon-locate"></use></svg></button>
+	          <button class="button primary" id="follow" title="중요 변경 알림" aria-label="중요 변경 알림"><svg class="button-symbol"><use href="#icon-bell"></use></svg><span>중요 변경 알림</span></button>
         </div>
       </header>
 
       <main class="layout">
+        <nav class="desktop-rail" aria-label="주요 화면">
+          <button class="rail-item" type="button" aria-current="page" data-rail-view="home"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-home"></use></svg></span><span>홈</span></button>
+          <button class="rail-item" type="button" data-rail-view="reels"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-video"></use></svg></span><span>영상</span></button>
+          <button class="rail-item" type="button" data-rail-view="explore"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-search"></use></svg></span><span>탐색</span></button>
+          <button class="rail-item" type="button" data-rail-view="laws"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-law"></use></svg></span><span>법안</span></button>
+          <button class="rail-item" type="button" data-rail-view="report"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-report"></use></svg></span><span>제보</span></button>
+        </nav>
+
         <section class="column stack" id="home-section" aria-label="이슈와 상황 목록">
           <div class="section-title home-lead">
             <div>
               <h2>지금 확인할 이슈</h2>
-              <p class="fine">주제별 집회·시위 공개자료 · 지역/시간/이동 영향별 상황</p>
               <p class="fine" id="api-state">자료 불러오는 중</p>
             </div>
-            <button class="button ghost" id="open-laws">법 보기</button>
+            <button class="button ghost" id="open-laws">법안 보기</button>
           </div>
 
           <div class="stack">
+            <div class="issue-stories" id="issue-stories" aria-label="주요 이슈 빠른 보기"></div>
             <div class="issue-list" id="issues" aria-label="주요 이슈"></div>
-            <div class="section-title compact">
-              <div>
-                <h2 id="cards-title">선택 이슈의 상황</h2>
-                <p class="fine" id="issue-context">이슈를 선택하면 관련 상황만 표시됩니다.</p>
+            <div class="issue-situations-block" id="issue-situations-block" aria-label="선택 이슈 관련 상황">
+              <div class="section-title compact">
+                <div>
+                  <h2 id="cards-title">선택 이슈의 상황</h2>
+                  <p class="fine" id="issue-context">이슈를 선택하면 관련 상황만 표시됩니다.</p>
+                </div>
               </div>
+              <details class="filter-panel" aria-label="상황 범위">
+                <summary>
+                  <strong>상황 범위</strong>
+                  <span class="fine" id="filter-summary">지금 · 전국</span>
+                </summary>
+                <div class="filter-controls">
+                  <div class="segmented" aria-label="시간 필터">
+                    <button aria-pressed="true" data-time-filter="now">지금</button>
+                    <button aria-pressed="false" data-time-filter="upcoming">예정</button>
+                    <button aria-pressed="false" data-time-filter="series">장기</button>
+                    <button aria-pressed="false" data-time-filter="archive">기록</button>
+                  </div>
+                  <div class="segmented" aria-label="지역 필터">
+                    <button aria-pressed="true" data-source-filter="all">전국</button>
+                    <button aria-pressed="false" data-source-filter="official">공식 자료</button>
+                    <button aria-pressed="false" data-source-filter="needs">더 확인 필요</button>
+                  </div>
+                  <details class="coverage-panel" id="coverage-panel" aria-label="확인 가능한 지역" hidden></details>
+                </div>
+              </details>
+              <div class="feed" id="cards"></div>
             </div>
-            <details class="filter-panel" aria-label="상황 범위">
-              <summary>
-                <strong>상황 범위</strong>
-                <span class="fine" id="filter-summary">지금 · 전국</span>
-              </summary>
-              <div class="filter-controls">
-                <div class="segmented" aria-label="시간 필터">
-                  <button aria-pressed="true" data-time-filter="now">지금</button>
-                  <button aria-pressed="false" data-time-filter="upcoming">예정</button>
-                  <button aria-pressed="false" data-time-filter="series">장기</button>
-                  <button aria-pressed="false" data-time-filter="transit">교통</button>
-                  <button aria-pressed="false" data-time-filter="archive">기록</button>
-                </div>
-                <div class="segmented" aria-label="지역 필터">
-                  <button aria-pressed="true" data-source-filter="all">전국</button>
-                  <button aria-pressed="false" data-source-filter="official">공식 자료</button>
-                  <button aria-pressed="false" data-source-filter="needs">더 확인 필요</button>
-                </div>
-                <details class="coverage-panel" id="coverage-panel" aria-label="확인 가능한 지역" hidden></details>
-              </div>
-            </details>
-            <div class="feed" id="cards"></div>
           </div>
         </section>
 
         <section class="column stack" id="law-section" aria-label="법">
           <div class="section-title">
             <div>
-              <h2>법</h2>
-              <p class="fine" id="law-context">주요 이슈와 연결된 공개 법령·의안을 관심도순으로 봅니다.</p>
+              <h2>법안·개정안</h2>
+              <p class="fine" id="law-context">법안이 어떤 이슈와 연결되는지 먼저 봅니다.</p>
             </div>
             <button class="button ghost" id="close-laws">이슈 보기</button>
           </div>
           <div class="law-list" id="laws" aria-label="법령과 의안"></div>
         </section>
 
-        <section class="column" id="map-section" aria-label="지도">
+        <section class="column stack" id="reels-section" aria-label="현장 영상">
+          <div class="section-title">
+            <div>
+              <h2>현장 영상</h2>
+              <p class="fine" id="reels-context">선택한 이슈의 공개 영상을 봅니다.</p>
+            </div>
+            <button class="button ghost" id="reels-issue-action">이슈 보기</button>
+          </div>
+          <div class="reels-stage" id="reels-feed" aria-label="현장 영상 피드"></div>
+        </section>
+
+        <section class="column stack" id="map-section" aria-label="탐색">
+          <div class="section-title">
+            <div>
+              <h2>탐색</h2>
+              <p class="fine">지역과 이슈를 먼저 보고 지도에서 위치 맥락을 확인합니다.</p>
+            </div>
+            <button class="button ghost" id="explore-map-action">지도</button>
+          </div>
+          <div class="explore-grid" id="explore-grid" aria-label="지역·이슈 탐색"></div>
           <div class="map-shell">
             <div id="live-map" aria-hidden="true"></div>
             <canvas id="map-canvas" aria-hidden="true"></canvas>
 
             <div class="map-toolbar">
               <label class="map-search">
-                <span aria-hidden="true">⌕</span>
-                <input type="search" id="map-search" placeholder="지역, 노선, 주제 검색" aria-label="지도 검색" />
+                <svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg>
+                <input type="search" id="map-search" placeholder="지역, 이슈, 현장 검색" aria-label="지도 검색" />
               </label>
-              <div class="layer-stack" aria-label="지도 레이어">
-	                <button class="layer" data-layer="official" aria-pressed="true"><span class="map-icon stats"><svg><use href="#icon-stats"></use></svg></span>공식 자료</button>
-	                <button class="layer" data-layer="assembly" aria-pressed="true"><span class="map-icon"><svg><use href="#icon-assembly"></use></svg></span>집회/시위</button>
-	                <button class="layer transit" data-layer="transit" aria-pressed="true"><span class="map-icon transit"><svg><use href="#icon-transit"></use></svg></span>교통 영향</button>
-	                <button class="layer crowd" data-layer="crowd" aria-pressed="true"><span class="map-icon crowd"><svg><use href="#icon-crowd"></use></svg></span>인파 신호</button>
-	                <button class="layer route" data-layer="route" aria-pressed="true"><span class="map-icon route"><svg><use href="#icon-route"></use></svg></span>행진/통제</button>
+              <div class="map-key" aria-label="지도 표시 기준">
+                <span><i class="key-pin"></i>자료 위치</span>
+                <span><i class="key-area"></i>현장 인증 범위</span>
               </div>
             </div>
-
-            <div class="map-legend" aria-label="지도 범례">
-              <div class="legend-row"><span class="legend-mark"><span class="map-icon"><svg><use href="#icon-assembly"></use></svg></span></span>집회성 상황</div>
-              <div class="legend-row"><span class="legend-mark"><span class="map-icon stats"><svg><use href="#icon-stats"></use></svg></span></span>공식 통계 자료</div>
-              <div class="legend-row"><span class="legend-mark"><span class="map-icon presence"><svg><use href="#icon-presence"></use></svg></span></span>장기 현장</div>
-              <div class="legend-row"><span class="legend-mark"><span class="map-icon transit"><svg><use href="#icon-transit"></use></svg></span></span>대중교통 영향</div>
-              <div class="legend-row"><span class="legend-mark"><span class="map-icon crowd"><svg><use href="#icon-crowd"></use></svg></span></span>인파 밀집 신호</div>
-              <div class="legend-row"><span class="legend-mark"><span class="map-icon route"><svg><use href="#icon-route"></use></svg></span></span>통제/경로 지점</div>
-            </div>
-
-            <button class="pin document" data-target="occ_police_national_stats_2023" aria-label="전국 집회 신고 통계">
-              <span class="pin-glyph"><span class="map-icon stats"><svg><use href="#icon-stats"></use></svg></span></span>
-            </button>
-            <button class="pin daegu" data-target="occ_daegu_0709_public" data-related="occ_daegu_0709_public,occ_daegu_stats_2025,occ_daegu_0707_public,occ_daegu_0706_public,occ_daegu_0704_0705_public" aria-label="대구 오늘의 집회 공개 일정">
-              <span class="pin-glyph"><span class="map-icon"><svg><use href="#icon-assembly"></use></svg></span></span>
-            </button>
-            <button class="pin main preview-only" data-target="occ_1" aria-label="서울 인근 집회성 모임">
-              <span class="pin-glyph"><span class="map-icon"><svg><use href="#icon-assembly"></use></svg></span></span>
-            </button>
-            <button class="pin transit preview-only" data-target="transit_1" aria-label="대중교통 영향">
-              <span class="pin-glyph"><span class="map-icon transit"><svg><use href="#icon-transit"></use></svg></span></span>
-            </button>
-            <button class="pin crowd preview-only" data-target="crowd_busan_mock" aria-label="인파 밀집 신호">
-              <span class="pin-glyph"><span class="map-icon crowd"><svg><use href="#icon-crowd"></use></svg></span></span>
-            </button>
-            <button class="pin checkpoint preview-only" data-target="checkpoint_1" aria-label="통제 지점">
-              <span class="pin-glyph"><span class="map-icon route"><svg><use href="#icon-route"></use></svg></span></span>
-            </button>
 
             <div class="map-sheet">
               <div class="stack">
                 <div class="row">
                   <span class="chip live" id="map-state">시간 확인 중</span>
-                  <span class="chip issue" id="map-mode">상세 연결</span>
+                  <span class="chip issue" id="map-mode">보조 지도</span>
                 </div>
                 <div>
                   <h3 id="map-title">서울 도심 일대</h3>
-	                  <p class="muted" id="map-summary">집회 1건 · 장기 현장 1건 · 교통 영향 1건 · 인파 신호 1건</p>
-                    <p class="map-context" id="map-context">이슈를 선택하면 관련 지역과 상황이 함께 바뀝니다.</p>
+	                  <p class="muted" id="map-summary">자료 위치와 현장 인증 범위를 함께 확인합니다.</p>
+                    <p class="map-context" id="map-context">지도는 위치 맥락만 보조합니다.</p>
 	                  <div class="map-sheet-summary" aria-label="지도 선택 요약">
 	                    <span><b>장소</b><em id="map-impact">확인 중</em></span>
 	                    <span><b>근거</b><em id="map-proof">0</em></span>
@@ -2306,7 +3078,7 @@
                   </div>
                 </div>
               </div>
-              <button class="button" id="split-view">상세에서 확인</button>
+              <button class="button" id="split-view">상세 보기</button>
             </div>
           </div>
         </section>
@@ -2324,6 +3096,7 @@
 	                  <p class="muted" id="detail-summary">확인된 자료를 기준으로 정리했습니다.</p>
 	                  <div class="source-badges" id="detail-source-badges" aria-label="출처 요약"></div>
                 </div>
+                <button class="icon-btn" id="close-detail" title="닫기" aria-label="상세 닫기">×</button>
               </div>
 
               <div class="summary-grid">
@@ -2357,25 +3130,57 @@
 	              <span class="chip warn">현장 인증</span>
 	            </div>
 	            <ol class="report-steps" id="report-steps" aria-label="제보 처리 상태">
-	              <li data-stage="received" data-active="true"><strong>촬영</strong><span>앱 내 카메라</span></li>
-	              <li data-stage="review"><strong>검토</strong><span>비식별 처리</span></li>
-	              <li data-stage="reflected"><strong>반영</strong><span>영상 Claim</span></li>
+	              <li data-stage="locate" data-active="true"><strong>위치</strong><span>근처 확인</span></li>
+	              <li data-stage="target"><strong>대상</strong><span>현장 확정</span></li>
+	              <li data-stage="capture"><strong>촬영</strong><span>앱 카메라</span></li>
+	              <li data-stage="preview"><strong>확인</strong><span>제출 전</span></li>
+	              <li data-stage="review"><strong>접수</strong><span>검토 대기</span></li>
 	            </ol>
 
             <form id="live-form">
               <article class="empty-state">
-                <strong>현장 영상은 Claim으로만 반영됩니다</strong>
-                <span>실시간 GPS, 앱 내 카메라, 기기 무결성, 5분 내 업로드가 모두 맞을 때 검토 대기 상태가 됩니다.</span>
+                <strong>근처 현장을 먼저 고릅니다</strong>
+                <span>위치와 카메라가 같은 세션에서 확인된 영상만 접수됩니다.</span>
               </article>
+              <section class="nearby-targets" aria-label="근처 현장 후보">
+                <div class="nearby-target-head">
+                  <div class="report-target-copy">
+                    <strong>근처 현장 후보</strong>
+                    <span id="nearby-target-status">위치를 확인하면 가까운 현장을 거리순으로 보여줍니다.</span>
+                  </div>
+                  <span class="chip schedule" id="nearby-target-count">확인 전</span>
+                </div>
+                <div class="nearby-target-list" id="nearby-target-list"></div>
+              </section>
+              <section class="report-target-panel" id="report-target-panel" data-state="empty" aria-label="제보 대상 확인">
+                <div class="report-target-head">
+                  <div class="report-target-copy">
+                    <strong id="report-target-title">현장을 선택해 주세요</strong>
+                    <span id="report-target-subtitle">선택한 현장으로 영상 확인 자료가 접수됩니다.</span>
+                  </div>
+                  <span class="chip warn" id="report-target-chip">대상 미확정</span>
+                </div>
+                <div class="report-target-meta">
+                  <div><strong id="report-target-issue">이슈 확인 전</strong><span>연결 이슈</span></div>
+                  <div><strong id="report-target-region">위치 확인 전</strong><span>현장 위치</span></div>
+                  <div><strong id="report-target-distance">거리 확인 전</strong><span>내 위치 기준</span></div>
+                  <div><strong id="report-target-status">상태 확인 전</strong><span>공개 상태</span></div>
+                </div>
+                <div class="report-target-actions">
+                  <button class="button primary" type="button" id="confirm-report-target">이 현장에 제보</button>
+                  <button class="button" type="button" id="change-report-target">다른 현장 선택</button>
+                  <button class="button" type="button" id="view-report-map">지도에서 확인</button>
+                </div>
+              </section>
               <ul class="report-guide" aria-label="현장 영상 접수 조건">
-                <li><b>1</b><span><strong>상황 선택</strong><em>확인 중인 이슈와 연결된 현장 근처에서 시작합니다.</em></span></li>
-                <li><b>2</b><span><strong>앱 내 촬영</strong><em>갤러리 업로드 없이 현장에서 바로 6~10초 촬영합니다.</em></span></li>
-                <li><b>3</b><span><strong>비식별 검토</strong><em>얼굴, 차량번호, 민감 위치를 가린 공개본만 남깁니다.</em></span></li>
+                <li><b>1</b><span><strong>현장 확정</strong><em>영상이 들어갈 이슈와 현장을 제출 전에 고릅니다.</em></span></li>
+                <li><b>2</b><span><strong>앱 내 촬영</strong><em>갤러리 업로드 없이 현장에서 바로 7초 촬영합니다.</em></span></li>
+                <li><b>3</b><span><strong>제출 전 확인</strong><em>대상 현장, 촬영 시각, 거리 확인 후 접수합니다.</em></span></li>
               </ul>
               <div class="capture-checks" aria-label="현장 인증 조건">
                 <strong>촬영 화면이 열리는 조건</strong>
                 <ul>
-                  <li data-check="gps" data-status="idle"><strong>Foreground GPS</strong><span>점검 대기</span></li>
+                  <li data-check="gps" data-status="idle"><strong>전면 위치</strong><span>점검 대기</span></li>
                   <li data-check="camera" data-status="idle"><strong>앱 내 카메라</strong><span>점검 대기</span></li>
                   <li data-check="integrity" data-status="idle"><strong>기기 무결성</strong><span>모바일 앱 확인</span></li>
                   <li data-check="freshness" data-status="idle"><strong>5분 내 업로드</strong><span>촬영 후 서버 확인</span></li>
@@ -2383,34 +3188,62 @@
               </div>
               <div class="report-handoff">
                 <strong>현장 촬영만 접수됩니다</strong>
-                <span>카메라와 GPS가 같은 세션에서 확인되면 검토 대기로 들어갑니다. 공개 후에도 영상 자체는 하나의 주장으로 표시됩니다.</span>
+                <span>카메라와 GPS가 같은 세션에서 확인되면 검토 대기로 들어갑니다. 공개 후에도 영상은 확정 결론이 아니라 확인 자료로 표시됩니다.</span>
               </div>
               <div class="capture-preview" id="capture-preview" hidden>
                 <video id="capture-video" playsinline muted></video>
                 <strong id="capture-title">촬영 대기</strong>
-                <span id="capture-note">선택한 상황 근처에서 6~10초만 촬영합니다.</span>
+                <span id="capture-note">현장 선택 후 7초만 촬영합니다.</span>
+                <dl class="report-preview-meta" id="report-preview-meta" hidden>
+                  <div><dt>대상 현장</dt><dd id="preview-target">확인 전</dd></div>
+                  <div><dt>촬영 시각</dt><dd id="preview-time">확인 전</dd></div>
+                  <div><dt>거리 확인</dt><dd id="preview-distance">확인 전</dd></div>
+                  <div><dt>공개 범위</dt><dd>비식별 검토 후 반경 단위</dd></div>
+                </dl>
               </div>
+              <section class="report-receipt" id="report-receipt" hidden aria-label="제보 접수 결과">
+                <div class="receipt-head">
+                  <div class="receipt-copy">
+                    <strong id="receipt-title">접수됨</strong>
+                    <span id="receipt-subtitle">비식별 검토 중입니다.</span>
+                  </div>
+                  <span class="chip live" id="receipt-status">검토 대기</span>
+                </div>
+                <div class="receipt-grid">
+                  <div><strong id="receipt-target">-</strong><span>연결 현장</span></div>
+                  <div><strong id="receipt-issue">-</strong><span>연결 이슈</span></div>
+                  <div><strong id="receipt-id">-</strong><span>접수 번호</span></div>
+                  <div><strong id="receipt-radius">반경 200m</strong><span>공개 위치 범위</span></div>
+                </div>
+                <div class="receipt-actions">
+                  <button class="button" type="button" id="receipt-video-action">내 영상 보기</button>
+                  <button class="button" type="button" id="receipt-evidence-action">근거 보기</button>
+                </div>
+              </section>
               <div class="report-actions">
-                <button class="button" type="button" id="capture-check-action">촬영 환경 점검</button>
-                <button class="button primary" type="button" id="start-capture-action">현장 촬영 시작</button>
+                <button class="button" type="button" id="capture-check-action">위치·카메라 확인</button>
+                <button class="button primary" type="button" id="start-capture-action">현장 선택하기</button>
+                <button class="button primary" type="button" id="submit-capture-action" hidden>제출</button>
+                <button class="button" type="button" id="retake-capture-action" hidden>다시 촬영</button>
                 <button class="button" type="button" id="report-video-action">현장 영상 보기</button>
               </div>
-              <p class="status-line" id="form-status" aria-live="polite">선택한 상황의 영상과 근거를 먼저 확인할 수 있습니다.</p>
+              <p class="status-line" id="form-status" aria-live="polite">근처 현장을 찾는 중입니다.</p>
             </form>
           </section>
         </aside>
       </main>
 
       <nav class="mobile-nav" aria-label="하단 탭">
-        <button aria-current="page" data-tab-view="home">홈</button>
-        <button data-tab-view="map">지도</button>
-        <button data-tab-view="law">법</button>
-        <button data-tab-view="report">제보</button>
-        <button data-tab-view="record">상세</button>
+        <button aria-current="page" data-tab-view="home"><svg class="nav-symbol"><use href="#icon-home"></use></svg><span>홈</span></button>
+        <button data-tab-view="reels"><svg class="nav-symbol"><use href="#icon-video"></use></svg><span>영상</span></button>
+        <button data-tab-view="explore"><svg class="nav-symbol"><use href="#icon-search"></use></svg><span>탐색</span></button>
+        <button data-tab-view="laws"><svg class="nav-symbol"><use href="#icon-law"></use></svg><span>법안</span></button>
+        <button data-tab-view="report"><svg class="nav-symbol"><use href="#icon-report"></use></svg><span>제보</span></button>
       </nav>
       <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
     </div>
 
+    <script src="./build-info.js"></script>
     <script src="./config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
     <script>
@@ -2435,9 +3268,9 @@
           createdAt: new Date().toISOString()
         },
         {
-          id: "local_claim_2",
-          claimantLabel: "자료 제보",
-          normalizedStatement: "인근 대중교통 영향 가능성이 접수되었습니다.",
+	          id: "local_claim_2",
+	          claimantLabel: "자료 제보",
+	          normalizedStatement: "공개 자료와 현장 자료의 위치 맥락을 확인 중입니다.",
           evidenceStrength: "single_source",
           riskLevel: "misleading_possible",
           createdAt: new Date().toISOString()
@@ -2523,24 +3356,7 @@
             }
           }
         ],
-        transit_1: [
-          {
-            id: "live_transit_1_preview",
-            targetTitle: "1호선 대중교통 영향",
-            regionLabel: "서울",
-            durationMs: 7000,
-            publicRadiusM: 180,
-            claim: {
-              normalizedStatement: "1호선 일부 구간에서 대기 인파와 지연 안내가 촬영되었습니다."
-            },
-            fieldVerification: {
-              aligned: 4,
-              disputed: 0,
-              statusLabel: "현장 일치 우세"
-            }
-          }
-        ],
-        issue_1: [
+	        issue_1: [
           {
             id: "live_issue_1_preview_seoul",
             targetTitle: "서울 도심 정보통신망법 개정 반대 집회",
@@ -2555,23 +3371,8 @@
               disputed: 1,
               statusLabel: "현장 이견 일부"
             }
-          },
-          {
-            id: "live_issue_1_preview_transit",
-            targetTitle: "1호선 대중교통 영향",
-            regionLabel: "서울",
-            durationMs: 7000,
-            publicRadiusM: 180,
-            claim: {
-              normalizedStatement: "같은 이슈와 연결된 이동 흐름과 대기 인파가 촬영되었습니다."
-            },
-            fieldVerification: {
-              aligned: 4,
-              disputed: 0,
-              statusLabel: "현장 일치 우세"
-            }
-          }
-        ]
+	          }
+	        ]
       };
       const fallback = {
         issueCards: [
@@ -2583,14 +3384,14 @@
             status: "active",
             topicTags: ["정보통신망법 개정", "반대", "집회"],
             updatedAt: new Date().toISOString(),
-            targetCount: 4,
-            currentCount: 4,
+	            targetCount: 2,
+	            currentCount: 2,
             regionCount: 1,
             officialCount: 0,
             disputeCount: 1,
             needsVerificationCount: 3,
-            sourceSummary: { official: 0, media: 1, field: 3, estimate: 1 },
-            chips: ["4건 진행·예정", "1개 지역", "출처 확인 중"]
+	            sourceSummary: { official: 0, media: 1, field: 2, estimate: 1 },
+	            chips: ["2건 진행·예정", "1개 지역", "출처 확인 중"]
           },
           {
             id: "issue_mock_mobility",
@@ -2598,16 +3399,16 @@
             title: "대통령 탄핵 요구 행진",
             lifecycleState: "UNKNOWN",
             status: "active",
-            topicTags: ["대통령 탄핵", "행진", "교통"],
+	            topicTags: ["대통령 탄핵", "행진", "집회"],
             updatedAt: new Date().toISOString(),
-            targetCount: 3,
-            currentCount: 3,
+	            targetCount: 1,
+	            currentCount: 1,
             regionCount: 1,
             officialCount: 0,
             disputeCount: 0,
             needsVerificationCount: 3,
             sourceSummary: { official: 0, media: 0, field: 1, estimate: 1 },
-            chips: ["3건 진행·예정", "1개 지역", "출처 확인 중"]
+	            chips: ["1건 진행·예정", "1개 지역", "출처 확인 중"]
           }
         ],
         cards: [
@@ -2629,9 +3430,10 @@
             id: "occ_daegu_0709_public",
             issueId: "issue_real_public_sources",
             targetType: "occurrence",
-            title: "대구 0709(목) 오늘의 집회 공개 일정",
-            regionLabel: "대구",
-            lifecycleState: "UPCOMING",
+	            title: "대구 0709(목) 오늘의 집회 공개 일정",
+	            regionLabel: "대구",
+	            publicLocation: { lng: 128.6014, lat: 35.8714, label: "대구 도심권", precision: "area" },
+	            lifecycleState: "UPCOMING",
             chips: ["공식 발표 있음", "첨부 파일 있음"],
             updatedAt: "2026-07-09T00:00:00.000+09:00",
             priorityScore: 24,
@@ -2643,9 +3445,10 @@
             id: "occ_daegu_0707_public",
             issueId: "issue_real_public_sources",
             targetType: "occurrence",
-            title: "대구 0707(화) 오늘의 집회 공개 일정",
-            regionLabel: "대구",
-            lifecycleState: "ENDED",
+	            title: "대구 0707(화) 오늘의 집회 공개 일정",
+	            regionLabel: "대구",
+	            publicLocation: { lng: 128.6014, lat: 35.8714, label: "대구 도심권", precision: "area" },
+	            lifecycleState: "ENDED",
             chips: ["공식 발표 있음", "최근 일정"],
             updatedAt: "2026-07-06T08:00:00.000Z",
             priorityScore: 15,
@@ -2657,9 +3460,10 @@
             id: "occ_daegu_stats_2025",
             issueId: "issue_real_public_sources",
             targetType: "occurrence",
-            title: "대구 2020~2025 집회 신고·개최 현황",
-            regionLabel: "대구",
-            lifecycleState: "ARCHIVED",
+	            title: "대구 2020~2025 집회 신고·개최 현황",
+	            regionLabel: "대구",
+	            publicLocation: { lng: 128.6014, lat: 35.8714, label: "대구 도심권", precision: "area" },
+	            lifecycleState: "ARCHIVED",
             chips: ["공식 발표 있음", "신고·개최 통계"],
             updatedAt: "2026-05-12T00:00:00.000Z",
             priorityScore: 22,
@@ -2671,9 +3475,10 @@
             id: "occ_daegu_0706_public",
             issueId: "issue_real_public_sources",
             targetType: "occurrence",
-            title: "대구 0706(월) 오늘의 집회 공개 일정",
-            regionLabel: "대구",
-            lifecycleState: "ENDED",
+	            title: "대구 0706(월) 오늘의 집회 공개 일정",
+	            regionLabel: "대구",
+	            publicLocation: { lng: 128.6014, lat: 35.8714, label: "대구 도심권", precision: "area" },
+	            lifecycleState: "ENDED",
             chips: ["공식 발표 있음", "최근 일정"],
             updatedAt: "2026-07-06T08:00:00.000Z",
             priorityScore: 14,
@@ -2685,9 +3490,10 @@
             id: "occ_daegu_0704_0705_public",
             issueId: "issue_real_public_sources",
             targetType: "occurrence",
-            title: "대구 0704(토)~0705(일) 오늘의 집회 공개 일정",
-            regionLabel: "대구",
-            lifecycleState: "ENDED",
+	            title: "대구 0704(토)~0705(일) 오늘의 집회 공개 일정",
+	            regionLabel: "대구",
+	            publicLocation: { lng: 128.6014, lat: 35.8714, label: "대구 도심권", precision: "area" },
+	            lifecycleState: "ENDED",
             chips: ["공식 발표 있음", "주말 일정"],
             updatedAt: "2026-07-03T08:00:00.000Z",
             priorityScore: 13,
@@ -2699,9 +3505,10 @@
             id: "occ_1",
             issueId: "issue_1",
             targetType: "occurrence",
-            title: "서울 인근 집회성 모임",
-            regionLabel: "서울",
-            lifecycleState: "UNKNOWN",
+	            title: "서울 인근 집회성 모임",
+	            regionLabel: "서울",
+	            publicLocation: { lng: 126.978, lat: 37.5665, label: "서울 도심권", precision: "area" },
+	            lifecycleState: "UNKNOWN",
             chips: ["위치 인증 제보 있음", "여러 주장 있음"],
             updatedAt: new Date().toISOString(),
             priorityScore: 24,
@@ -2709,48 +3516,21 @@
             peak: "3,000~4,500",
             proof: 8
           },
-          {
-            id: "transit_1",
-            issueId: "issue_1",
-            targetType: "transit_occurrence",
-            title: "1호선 일부 구간 영향",
-            regionLabel: "서울",
-            lifecycleState: "UNKNOWN",
-            chips: ["대중교통 영향", "확인 중"],
-            updatedAt: new Date().toISOString(),
-            priorityScore: 18,
-            current: "지연 주장",
-            peak: "-",
-            proof: 2
-          },
-          {
-            id: "crowd_busan_mock",
-            issueId: "issue_mock_mobility",
-            targetType: "crowd_density_signal",
-            title: "부산 인파 밀집 신호",
-            regionLabel: "부산 서면 일대",
-            lifecycleState: "UNKNOWN",
-            chips: ["주최 없음", "병목 가능"],
-            updatedAt: new Date().toISOString(),
-            priorityScore: 16,
-            current: "높음",
-            peak: "-",
-            proof: 1
-          },
-          {
-            id: "checkpoint_1",
-            issueId: "issue_1",
-            targetType: "route_checkpoint",
-            title: "서울 도심 통제 지점",
-            regionLabel: "서울",
-            lifecycleState: "UNKNOWN",
-            chips: ["경로 지점", "통행 확인 중"],
-            updatedAt: new Date().toISOString(),
-            priorityScore: 12,
-            current: "traffic_control",
-            peak: "uncertain",
-            proof: 0
-          }
+	          {
+	            id: "occ_busan_march_mock",
+	            issueId: "issue_mock_mobility",
+	            targetType: "occurrence",
+	            title: "부산 도심 행진 가능성",
+	            regionLabel: "부산 서면 일대",
+	            publicLocation: { lng: 129.059, lat: 35.1578, label: "부산 서면 일대", precision: "area" },
+	            lifecycleState: "UPCOMING",
+	            chips: ["행진 가능성", "위치 확인 필요"],
+	            updatedAt: new Date().toISOString(),
+	            priorityScore: 16,
+	            current: "확인 중",
+	            peak: "-",
+	            proof: 1
+	          }
         ],
         laws: [
           {
@@ -2796,11 +3576,7 @@
 	      const $ = (id) => document.getElementById(id);
 	      const targetPaths = {
         occurrence: "occurrences",
-        continuous_presence: "continuous-presences",
-        transit_occurrence: "transit-occurrences",
-        crowd_density_signal: "crowd-density-signals",
-        route_segment: "route-segments",
-        route_checkpoint: "route-checkpoints"
+        continuous_presence: "continuous-presences"
       };
 	      let activeTimeFilter = "now";
 	      let activeSourceFilter = "all";
@@ -2816,9 +3592,20 @@
 	      let selected = visibleCards(loadedCards)[0] || loadedCards[0];
 	      let detailMode = "issue";
 	      let latestCoverage;
+	      let latestMapData;
+      const issueLivePreviewByIssueId = new Map();
+      const reportTargetRadiusM = 200;
+      const reportReceiptStorageKey = "musunil.reportReceipt.v1";
+      let nearbyReportTargets = [];
+      let selectedReportTarget;
+      let reportTargetConfirmed = false;
+      let latestReportPosition;
+      let pendingCapture;
+      let capturePreviewUrl;
+      let reportLocateInFlight = false;
 
       function isPreviewCard(id) {
-        return id.includes("_mock") || ["occ_1", "transit_1", "crowd_1", "checkpoint_1", "presence_1"].includes(id);
+        return id.includes("_mock") || ["occ_1", "presence_1"].includes(id);
       }
 
       function isPreviewIssue(id) {
@@ -2926,20 +3713,41 @@
           document.querySelectorAll(".mobile-nav button").forEach((item) => item.removeAttribute("aria-current"));
           (activeButton || document.querySelector(`.mobile-nav button[data-tab-view="${view}"]`))?.setAttribute("aria-current", "page");
           const layout = document.querySelector(".layout");
-          layout.classList.remove("mobile-tab-home", "mobile-tab-law", "mobile-tab-map", "mobile-tab-report", "mobile-tab-record");
+          layout.classList.remove("mobile-tab-home", "mobile-tab-reels", "mobile-tab-explore", "mobile-tab-laws", "mobile-tab-report", "mobile-detail-open");
           layout.classList.add(`mobile-tab-${view}`);
         });
         scrollTo({ top: 0, behavior: reduceMotion() ? "auto" : "smooth" });
-        if (view === "map") setTimeout(() => liveMap?.resize(), 120);
-        if (view === "law") focusPanel($("law-section"));
-        if (view === "report") focusPanel($("report-section"));
-	        if (view === "record") focusPanel($("record-section"));
+        if (view === "explore") setTimeout(() => liveMap?.resize(), 120);
+        if (view === "reels") renderReelsView();
+        if (view === "laws") focusPanel($("law-section"));
+        if (view === "report") {
+          focusPanel($("report-section"));
+          activateReportFlow({ requestPosition: true });
+        }
 	      }
 
+      function openDetailPanel() {
+        if (innerWidth > 780) {
+          focusPanel($("record-section"));
+          return;
+        }
+        withViewTransition(() => {
+          document.querySelector(".layout").classList.add("mobile-detail-open");
+        });
+        focusPanel($("record-section"));
+      }
+
+      function closeDetailPanel() {
+        withViewTransition(() => {
+          document.querySelector(".layout").classList.remove("mobile-detail-open");
+        });
+      }
+
 	      function setReportStage(stage) {
-	        const order = ["received", "review", "reflected"];
+	        const order = ["locate", "target", "capture", "preview", "review"];
+          const activeIndex = Math.max(0, order.indexOf(stage));
 	        document.querySelectorAll("#report-steps li").forEach((item) => {
-	          item.dataset.active = String(order.indexOf(item.dataset.stage) <= order.indexOf(stage));
+	          item.dataset.active = String(order.indexOf(item.dataset.stage) <= activeIndex);
 	        });
 	      }
 
@@ -2955,11 +3763,11 @@
         const visible = document.visibilityState === "visible";
         const hasGps = Boolean(navigator.geolocation);
         const hasCamera = Boolean(navigator.mediaDevices?.getUserMedia && window.MediaRecorder);
-        setCaptureCheck("gps", hasGps && visible ? "pass" : "fail", hasGps ? (visible ? "사용 가능" : "앱이 전면일 때 가능") : "위치 API 없음");
+        setCaptureCheck("gps", hasGps && visible ? "pass" : "fail", hasGps ? (visible ? "사용 가능" : "앱이 전면일 때 가능") : "위치 확인 불가");
         setCaptureCheck("camera", hasCamera ? "pass" : "fail", hasCamera ? "촬영 API 확인" : "카메라 녹화 API 없음");
         setCaptureCheck("integrity", "warn", "모바일 앱에서 최종 확인");
         setCaptureCheck("freshness", "warn", "촬영 후 5분 제한 적용");
-        $("form-status").textContent = hasGps && hasCamera ? "촬영 환경 기본 조건을 확인했습니다. 현장 촬영을 시작할 수 있습니다." : "이 브라우저에서는 일부 촬영 조건을 확인할 수 없습니다.";
+        $("form-status").textContent = hasGps && hasCamera ? "촬영 준비 기본 조건을 확인했습니다." : "이 브라우저에서는 일부 촬영 조건을 확인할 수 없습니다.";
         showToast(hasGps && hasCamera ? "촬영 환경 기본 조건 확인" : "촬영 조건 일부 미지원");
       }
 
@@ -2983,36 +3791,317 @@
         });
       }
 
-      function setCapturePreview(title, note, stream) {
+      function setCapturePreview(title, note, stream, blob) {
         $("capture-preview").hidden = false;
         $("capture-title").textContent = title;
         $("capture-note").textContent = note;
-        $("capture-video").srcObject = stream || null;
+        const video = $("capture-video");
+        if (capturePreviewUrl) {
+          URL.revokeObjectURL(capturePreviewUrl);
+          capturePreviewUrl = undefined;
+        }
+        video.pause();
+        video.removeAttribute("src");
+        video.srcObject = stream || null;
+        video.controls = Boolean(blob);
+        if (blob) {
+          capturePreviewUrl = URL.createObjectURL(blob);
+          video.src = capturePreviewUrl;
+        }
       }
 
       function captureErrorMessage(error) {
-        if (error?.code === 1) return "위치 권한이 없어 현장 인증을 진행할 수 없습니다.";
-        if (error?.name === "NotAllowedError") return "카메라 권한이 없어 현장 촬영을 진행할 수 없습니다.";
+        if (error?.code === 1) return "위치 권한을 켜거나 지도에서 현장을 먼저 확인해 주세요.";
+        if (error?.name === "NotAllowedError") return "카메라 권한이 없어 촬영할 수 없습니다.";
         if (error?.message === "target_distance_unavailable") return "선택한 상황의 위치 기준이 없어 현장 인증을 진행할 수 없습니다.";
-        if (error?.message === "target_too_far") return `현재 위치가 대상에서 약 ${Math.round(error.distanceM)}m 떨어져 있어 제출하지 않았습니다.`;
+        if (error?.message === "target_too_far") return `현재 위치가 대상에서 약 ${Math.round(error.distanceM)}m 떨어져 있어 접수하지 않았습니다.`;
         if (error?.message === "proof_of_presence_failed") return "GPS 정확도, 대상 거리, 5분 내 업로드 조건 중 하나가 맞지 않아 제출하지 않았습니다.";
         return "촬영 조건을 충족하지 못해 제출하지 않았습니다.";
       }
 
+      function issueForCard(card) {
+        return loadedIssueCards.find((issue) => issue.id === card?.issueId);
+      }
+
+      function reportableCards() {
+        const states = new Set(["LIVE", "UPCOMING", "STARTING_SOON", "UNKNOWN", "ONGOING_SERIES", "MOVING", "PAUSED", "ENDING_SOON"]);
+        return sortCards(loadedCards).filter((card) => cardCenter(card) && states.has(card.lifecycleState));
+      }
+
+      function reportDistanceLabel(distanceM) {
+        if (!Number.isFinite(distanceM)) return "위치 확인 전";
+        if (distanceM <= 60) return "현장 근처";
+        if (distanceM < 1000) return `약 ${Math.round(distanceM / 10) * 10}m`;
+        return `약 ${(distanceM / 1000).toFixed(distanceM < 10_000 ? 1 : 0)}km`;
+      }
+
+      function reportDistanceClass(distanceM) {
+        if (!Number.isFinite(distanceM)) return "";
+        if (distanceM <= reportTargetRadiusM) return "near";
+        return "far";
+      }
+
+      function reportTargetFromCard(card, position) {
+        const center = cardCenter(card);
+        const coords = position ? [position.coords.longitude, position.coords.latitude] : undefined;
+        const distanceM = coords && center ? distanceMeters(coords, center) : Number.NaN;
+        const issue = issueForCard(card);
+        return {
+          targetType: card.targetType,
+          targetId: card.id,
+          issueId: card.issueId,
+          issueTitle: issue?.title || "연결 이슈 확인 중",
+          occurrenceTitle: card.title,
+          regionLabel: card.regionLabel || "지역 확인 중",
+          distanceM,
+          distanceLabel: reportDistanceLabel(distanceM),
+          statusTone: stateClass(card.lifecycleState),
+          statusLabel: labelState(card.lifecycleState),
+          verificationCount: Number(card.liveClaimCount || card.videoCount || card.proof || 0),
+          riskLevel: card.riskLevel || (needsVerification(card) ? "misleading_possible" : "low"),
+          evidenceStrength: card.evidenceStrength || (Number(card.proof || 0) > 1 ? "multiple_sources" : "single_source"),
+          card
+        };
+      }
+
+      function reportTargetScore(target) {
+        const distance = Number.isFinite(target.distanceM) ? target.distanceM : 2_000_000;
+        const selectedIssueBonus = target.issueId && target.issueId === selectedIssue?.id ? -120 : 0;
+        const selectedCardBonus = target.targetId === selected?.id ? -80 : 0;
+        const stateBonus = ["LIVE", "STARTING_SOON", "UNKNOWN", "UPCOMING", "ONGOING_SERIES"].includes(target.card.lifecycleState) ? -40 : 0;
+        return distance + selectedIssueBonus + selectedCardBonus + stateBonus;
+      }
+
+      function buildNearbyReportTargets(position = latestReportPosition) {
+        return reportableCards()
+          .map((card) => reportTargetFromCard(card, position))
+          .sort((a, b) => reportTargetScore(a) - reportTargetScore(b))
+          .slice(0, 6);
+      }
+
+      function canConfirmReportTarget(target = selectedReportTarget) {
+        return Boolean(target && Number.isFinite(target.distanceM) && target.distanceM <= reportTargetRadiusM);
+      }
+
+      function clearPendingCapture() {
+        pendingCapture = undefined;
+        $("report-preview-meta").hidden = true;
+        $("submit-capture-action").hidden = true;
+        $("retake-capture-action").hidden = true;
+        $("start-capture-action").hidden = false;
+        if (capturePreviewUrl) {
+          URL.revokeObjectURL(capturePreviewUrl);
+          capturePreviewUrl = undefined;
+        }
+        const video = $("capture-video");
+        video.pause();
+        video.removeAttribute("src");
+        video.srcObject = null;
+        video.controls = false;
+        $("capture-preview").hidden = true;
+      }
+
+      function updateReportActionState() {
+        const start = $("start-capture-action");
+        const submit = $("submit-capture-action");
+        const retake = $("retake-capture-action");
+        submit.hidden = !pendingCapture;
+        retake.hidden = !pendingCapture;
+        start.hidden = Boolean(pendingCapture);
+        if (pendingCapture) return;
+        if (!selectedReportTarget) {
+          start.textContent = "위치로 찾기";
+          start.disabled = reportLocateInFlight;
+          return;
+        }
+        if (!reportTargetConfirmed) {
+          start.textContent = canConfirmReportTarget() ? "현장 확정하기" : "위치로 찾기";
+          start.disabled = reportLocateInFlight;
+          return;
+        }
+        start.textContent = "7초 촬영하기";
+        start.disabled = false;
+      }
+
+      function renderNearbyReportTargets() {
+        const list = $("nearby-target-list");
+        const count = $("nearby-target-count");
+        const status = $("nearby-target-status");
+        nearbyReportTargets = buildNearbyReportTargets();
+        if (!selectedReportTarget && nearbyReportTargets.length) selectedReportTarget = nearbyReportTargets[0];
+        if (selectedReportTarget) {
+          const fresh = nearbyReportTargets.find((target) => target.targetId === selectedReportTarget.targetId);
+          if (fresh) selectedReportTarget = fresh;
+        }
+        count.textContent = latestReportPosition ? `${nearbyReportTargets.length}곳` : "위치 확인 전";
+        status.textContent = latestReportPosition
+          ? canConfirmReportTarget(nearbyReportTargets[0])
+            ? "가장 가까운 현장을 확인했습니다."
+            : "200m 안의 현장이 없어 지도를 확인해 주세요."
+          : "위치를 확인하면 가까운 현장을 거리순으로 보여줍니다.";
+        if (!nearbyReportTargets.length) {
+          list.innerHTML = `
+            <article class="empty-state">
+              <strong>표시할 현장이 없습니다</strong>
+              <span>공개 일정이나 현장 자료가 연결되면 이곳에 표시됩니다.</span>
+            </article>
+          `;
+          renderSelectedReportTarget();
+          updateReportActionState();
+          return;
+        }
+        list.innerHTML = nearbyReportTargets
+          .map((target) => `
+            <button class="nearby-target-card" type="button" data-report-target-id="${escapeHtml(target.targetId)}" aria-selected="${String(target.targetId === selectedReportTarget?.targetId)}">
+              <span class="nearby-target-main">
+                <strong>${escapeHtml(target.occurrenceTitle)}</strong>
+                <span>${escapeHtml(target.issueTitle)} · ${escapeHtml(target.regionLabel)}</span>
+              </span>
+              <span class="nearby-target-side">
+                <span class="distance-pill ${reportDistanceClass(target.distanceM)}">${escapeHtml(target.distanceLabel)}</span>
+                <span class="chip ${escapeHtml(target.statusTone)}">${escapeHtml(target.statusLabel)}</span>
+              </span>
+            </button>
+          `)
+          .join("");
+        document.querySelectorAll("[data-report-target-id]").forEach((button) => {
+          button.addEventListener("click", () => selectReportTarget(button.dataset.reportTargetId));
+        });
+        renderSelectedReportTarget();
+        updateReportActionState();
+      }
+
+      function renderSelectedReportTarget() {
+        const target = selectedReportTarget;
+        $("report-target-panel").dataset.state = reportTargetConfirmed ? "confirmed" : "empty";
+        $("confirm-report-target").disabled = !canConfirmReportTarget(target);
+        if (!target) {
+          $("report-target-title").textContent = "현장을 선택해 주세요";
+          $("report-target-subtitle").textContent = "선택한 현장으로 영상 확인 자료가 접수됩니다.";
+          $("report-target-chip").textContent = "대상 미확정";
+          $("report-target-chip").className = "chip warn";
+          $("report-target-issue").textContent = "이슈 확인 전";
+          $("report-target-region").textContent = "위치 확인 전";
+          $("report-target-distance").textContent = "거리 확인 전";
+          $("report-target-status").textContent = "상태 확인 전";
+          return;
+        }
+        $("report-target-title").textContent = target.occurrenceTitle;
+        $("report-target-subtitle").textContent = reportTargetConfirmed ? "이 현장으로 영상이 접수됩니다." : "이 현장이 맞는지 확인해 주세요.";
+        $("report-target-chip").textContent = reportTargetConfirmed ? "대상 확정" : canConfirmReportTarget(target) ? "확정 가능" : "거리 확인 필요";
+        $("report-target-chip").className = `chip ${reportTargetConfirmed ? "live" : canConfirmReportTarget(target) ? "schedule" : "warn"}`;
+        $("report-target-issue").textContent = target.issueTitle;
+        $("report-target-region").textContent = target.regionLabel;
+        $("report-target-distance").textContent = target.distanceLabel;
+        $("report-target-status").textContent = target.statusLabel;
+      }
+
+      function selectReportTarget(targetId) {
+        const target = nearbyReportTargets.find((item) => item.targetId === targetId);
+        if (!target) return;
+        selectedReportTarget = target;
+        reportTargetConfirmed = false;
+        clearPendingCapture();
+        renderNearbyReportTargets();
+        setReportStage(latestReportPosition ? "target" : "locate");
+        $("form-status").textContent = canConfirmReportTarget(target) ? "현장을 선택해 주세요." : "대상과 거리가 멉니다. 가까운 현장을 확인해 주세요.";
+      }
+
+      function confirmReportTarget() {
+        if (!selectedReportTarget) {
+          activateReportFlow({ requestPosition: true });
+          return false;
+        }
+        if (!canConfirmReportTarget(selectedReportTarget)) {
+          $("form-status").textContent = Number.isFinite(selectedReportTarget.distanceM)
+            ? `${selectedReportTarget.distanceLabel} 떨어져 있어 이 현장으로 촬영할 수 없습니다.`
+            : "위치를 먼저 확인해 주세요.";
+          setReportStage("locate");
+          updateReportActionState();
+          return false;
+        }
+        reportTargetConfirmed = true;
+        clearPendingCapture();
+        renderSelectedReportTarget();
+        setReportStage("target");
+        $("form-status").textContent = "촬영 준비 완료. 이 현장으로 영상이 접수됩니다.";
+        showToast("제보 대상 확정");
+        updateReportActionState();
+        return true;
+      }
+
+      async function activateReportFlow(options = {}) {
+        renderReportReceipt(loadStoredReportReceipt());
+        if (options.requestPosition === false) {
+          renderNearbyReportTargets();
+          return;
+        }
+        if (!navigator.geolocation) {
+          setCaptureCheck("gps", "fail", "위치 확인 불가");
+          latestReportPosition = undefined;
+          renderNearbyReportTargets();
+          $("form-status").textContent = "위치 확인이 불가합니다. 지도에서 현장을 확인해 주세요.";
+          return;
+        }
+        if (reportLocateInFlight) return;
+        reportLocateInFlight = true;
+        setReportStage("locate");
+        $("form-status").textContent = "근처 현장을 찾는 중입니다.";
+        $("nearby-target-status").textContent = "근처 현장을 찾는 중입니다.";
+        updateReportActionState();
+        try {
+          latestReportPosition = await gpsPosition();
+          setCaptureCheck("gps", "pass", "현재 위치 확인");
+          reportTargetConfirmed = false;
+          clearPendingCapture();
+          renderNearbyReportTargets();
+          $("form-status").textContent = nearbyReportTargets.length ? "현장을 선택해 주세요." : "현재 위치 주변에 표시할 현장이 없습니다.";
+        } catch (error) {
+          setCaptureCheck("gps", "fail", "권한 확인 필요");
+          latestReportPosition = undefined;
+          renderNearbyReportTargets();
+          $("form-status").textContent = captureErrorMessage(error);
+        } finally {
+          reportLocateInFlight = false;
+          updateReportActionState();
+        }
+      }
+
       async function startLiveCapture() {
+        if (pendingCapture) return;
+        if (!reportTargetConfirmed) {
+          if (selectedReportTarget && canConfirmReportTarget()) confirmReportTarget();
+          else activateReportFlow({ requestPosition: true });
+          return;
+        }
         if (!navigator.geolocation || !navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
           checkCaptureReadiness();
           return;
         }
         const button = $("start-capture-action");
-        const card = selected?.targetType === "issue" ? visibleCards(loadedCards)[0] : selected;
+        const card = selectedReportTarget?.card;
+        if (!card) {
+          $("form-status").textContent = "현장을 먼저 선택해 주세요.";
+          return;
+        }
         let stream;
         button.disabled = true;
-        setReportStage("received");
+        setReportStage("capture");
         try {
           const position = await gpsPosition();
+          const targetCenter = cardCenter(card);
+          if (!targetCenter) throw new Error("target_distance_unavailable");
+          const distanceToTargetM = distanceMeters([position.coords.longitude, position.coords.latitude], targetCenter);
+          if (distanceToTargetM > reportTargetRadiusM) {
+            const error = new Error("target_too_far");
+            error.distanceM = distanceToTargetM;
+            throw error;
+          }
+          latestReportPosition = position;
+          selectedReportTarget = reportTargetFromCard(card, position);
+          renderNearbyReportTargets();
           stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
-          setCapturePreview("촬영 중", "7초 뒤 자동으로 검토 대기에 제출합니다.", stream);
+          setCapturePreview("촬영 중", "7초 뒤 제출 전 확인 화면으로 넘어갑니다.", stream);
           $("capture-video").play().catch(() => {});
           const capturedAt = new Date();
           const chunks = [];
@@ -3029,21 +4118,64 @@
           recorder.stop();
           await stopped;
           const blob = new Blob(chunks, { type: recorder.mimeType || "video/webm" });
-          await submitLiveCapture(card, position, blob, capturedAt);
+          pendingCapture = { card, position, blob, capturedAt, distanceToTargetM };
+          setCaptureCheck("camera", "pass", "촬영 완료");
+          setCaptureCheck("freshness", "warn", "제출 대기");
+          setReportStage("preview");
+          setCapturePreview("제출 전 확인", "대상 현장과 거리 확인 후 접수합니다.", null, blob);
+          renderCapturePreviewMeta(pendingCapture);
+          $("form-status").textContent = "제출 전 확인 단계입니다.";
+          showToast("촬영 완료");
+          updateReportActionState();
         } catch (error) {
           $("form-status").textContent = captureErrorMessage(error);
-          showToast("현장 촬영 제출 실패");
+          if (error?.message === "target_too_far") activateReportFlow({ requestPosition: false });
+          showToast("촬영을 진행하지 못했습니다");
         } finally {
           stream?.getTracks().forEach((track) => track.stop());
           button.disabled = false;
+          updateReportActionState();
         }
       }
 
-      async function submitLiveCapture(card, position, blob, capturedAt) {
+      function renderCapturePreviewMeta(capture) {
+        $("report-preview-meta").hidden = false;
+        $("preview-target").textContent = capture.card.title;
+        $("preview-time").textContent = capture.capturedAt.toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+        $("preview-distance").textContent = reportDistanceLabel(capture.distanceToTargetM);
+      }
+
+      async function submitPendingCapture() {
+        if (!pendingCapture) {
+          $("form-status").textContent = "제출할 촬영 영상이 없습니다.";
+          return;
+        }
+        const submit = $("submit-capture-action");
+        submit.disabled = true;
+        $("form-status").textContent = "영상 확인 자료를 접수 중입니다.";
+        try {
+          const receipt = await submitLiveCapture(pendingCapture);
+          clearPendingCapture();
+          setReportStage("review");
+          storeReportReceipt(receipt);
+          renderReportReceipt(receipt);
+          $("capture-preview").hidden = true;
+          $("form-status").textContent = "접수됨. 비식별 검토 중입니다.";
+          showToast("현장 영상 접수됨");
+        } catch (error) {
+          $("form-status").textContent = captureErrorMessage(error);
+          showToast("제출 실패");
+        } finally {
+          submit.disabled = false;
+          updateReportActionState();
+        }
+      }
+
+      async function submitLiveCapture(capture) {
+        const { card, position, blob, capturedAt, distanceToTargetM } = capture;
         const targetCenter = cardCenter(card);
         if (!targetCenter) throw new Error("target_distance_unavailable");
-        const distanceToTargetM = distanceMeters([position.coords.longitude, position.coords.latitude], targetCenter);
-        if (distanceToTargetM > 200) {
+        if (distanceToTargetM > reportTargetRadiusM) {
           const error = new Error("target_too_far");
           error.distanceM = distanceToTargetM;
           throw error;
@@ -3060,7 +4192,7 @@
             mediaBase64: await blobBase64(blob)
           })
         });
-        await api("/reports/live", {
+        const report = await api("/reports/live", {
           method: "POST",
           headers: sessionHeaders(session),
           body: JSON.stringify({
@@ -3070,6 +4202,8 @@
             capturedAt: capturedAt.toISOString(),
             uploadedAt: upload.uploadedAt,
             foregroundGps: true,
+            gpsLng: position.coords.longitude,
+            gpsLat: position.coords.latitude,
             gpsAccuracyM: Math.round(position.coords.accuracy || 999),
             distanceToTargetM: Math.round(distanceToTargetM),
             deviceIntegrityStatus: "pass",
@@ -3087,10 +4221,55 @@
         setCaptureCheck("camera", "pass", "촬영 완료");
         setCaptureCheck("integrity", "pass", "세션 확인");
         setCaptureCheck("freshness", "pass", "5분 내 제출");
-        setReportStage("review");
-        setCapturePreview("검토 대기", "비식별 처리 후 공개 Claim 후보가 됩니다.");
-        $("form-status").textContent = "현장 영상 Claim이 검토 대기에 들어갔습니다.";
-        showToast("현장 영상 Claim 검토 대기");
+        return reportReceiptFromResponse(report, capture);
+      }
+
+      function reportReceiptFromResponse(report, capture) {
+        const issue = issueForCard(capture.card);
+        return {
+          reportId: report.reportId || report.claim?.id || "접수 번호 확인 중",
+          claimId: report.claimId || report.claim?.id || "",
+          status: report.status || "live_report_queued_for_review",
+          targetType: report.targetType || capture.card.targetType,
+          targetId: report.targetId || capture.card.id,
+          targetTitle: report.targetTitle || capture.card.title,
+          issueTitle: report.issueTitle || issue?.title || "연결 이슈 확인 중",
+          regionLabel: report.regionLabel || capture.card.regionLabel || "지역 확인 중",
+          publicRadiusM: report.publicRadiusM || 200,
+          receivedAt: report.receivedAt || new Date().toISOString(),
+          nextStepLabel: report.nextStepLabel || "비식별 검토 중"
+        };
+      }
+
+      function storeReportReceipt(receipt) {
+        try {
+          sessionStorage.setItem(reportReceiptStorageKey, JSON.stringify(receipt));
+        } catch {}
+      }
+
+      function loadStoredReportReceipt() {
+        try {
+          const raw = sessionStorage.getItem(reportReceiptStorageKey);
+          return raw ? JSON.parse(raw) : undefined;
+        } catch {
+          return undefined;
+        }
+      }
+
+      function renderReportReceipt(receipt) {
+        const panel = $("report-receipt");
+        if (!receipt) {
+          panel.hidden = true;
+          return;
+        }
+        panel.hidden = false;
+        $("receipt-title").textContent = "접수됨";
+        $("receipt-subtitle").textContent = receipt.nextStepLabel || "비식별 검토 중입니다.";
+        $("receipt-status").textContent = "검토 대기";
+        $("receipt-target").textContent = receipt.targetTitle || "-";
+        $("receipt-issue").textContent = receipt.issueTitle || "-";
+        $("receipt-id").textContent = receipt.reportId || receipt.claimId || "-";
+        $("receipt-radius").textContent = `반경 ${receipt.publicRadiusM || 200}m`;
       }
 
       async function load() {
@@ -3099,16 +4278,18 @@
 	          loadedCards = normalizeCards(home.cards?.length ? home.cards : fallback.cards);
 	          loadedIssueCards = normalizeIssueCards(home.issueCards?.length ? home.issueCards : fallback.issueCards);
 	          loadedLaws = normalizeLaws(laws?.laws?.length ? laws.laws : fallback.laws);
+	          latestMapData = normalizeMapData(map, loadedCards, loadedIssueCards);
 	          selectedIssue = loadedIssueCards.find((issue) => issue.id === selectedIssue?.id) || loadedIssueCards[0];
 	          selectedLaw = loadedLaws.find((law) => law.id === selectedLaw?.id) || loadedLaws[0];
 	          selected = visibleCards(loadedCards).find((card) => card.id === selected?.id) || visibleCards(loadedCards)[0] || loadedCards[0] || fallback.cards[0];
 	          latestCoverage = coverage?.coverage;
 	          const coverageLabel = latestCoverage ? ` · 일정 확인 ${latestCoverage.activeScheduleRegions}/${latestCoverage.totalPoliceRegions}` : "";
-	          setStatus(`실시간 자료 · 권역 ${map.clusters.length}${coverageLabel}`, { toast: false });
+	          setStatus(`실시간 자료 · 현장 ${latestMapData.occurrenceUnits.length}${coverageLabel}`, { toast: false });
 	        } catch {
 	          loadedCards = sortCards(fallback.cards);
 	          loadedIssueCards = sortIssueCards(fallback.issueCards);
 	          loadedLaws = sortLaws(fallback.laws);
+	          latestMapData = buildMapDataFromCards(loadedCards, loadedIssueCards);
 	          selectedIssue = loadedIssueCards.find((issue) => issue.id === selectedIssue?.id) || loadedIssueCards[0];
 	          selectedLaw = loadedLaws.find((law) => law.id === selectedLaw?.id) || loadedLaws[0];
 	          selected = visibleCards(loadedCards).find((card) => card.id === selected?.id) || visibleCards(loadedCards)[0] || loadedCards[0];
@@ -3119,10 +4300,15 @@
 	        renderCoverage(latestCoverage);
 	        renderIssues(loadedIssueCards);
 	        renderLaws(loadedLaws);
+        renderExploreGrid(loadedCards, loadedIssueCards);
+        renderReelsView();
 	        renderCards(loadedCards, { renderDetail: false });
 	        if (selectedIssue) renderIssueDetail(selectedIssue);
+        activateReportFlow({ requestPosition: false });
+        hydrateIssueLivePreviews(loadedIssueCards);
         updateMetrics(loadedCards);
         initMap();
+        syncOccurrenceMapLayers();
       }
 
       function normalizeCards(cards) {
@@ -3149,7 +4335,97 @@
         })));
       }
 
-      function normalizeLaws(laws) {
+      function normalizeMapData(map, cards = loadedCards, issues = loadedIssueCards) {
+        const base = buildMapDataFromCards(cards, issues);
+        const pins = map?.geojson?.pins?.features?.length ? map.geojson.pins : base.geojson.pins;
+        const presenceAreas = map?.geojson?.presenceAreas?.features?.length ? map.geojson.presenceAreas : base.geojson.presenceAreas;
+        return {
+          issues: Array.isArray(map?.issues) ? map.issues : base.issues,
+          occurrenceUnits: Array.isArray(map?.occurrenceUnits) ? map.occurrenceUnits : base.occurrenceUnits,
+          geojson: { pins, presenceAreas }
+        };
+      }
+
+      function buildMapDataFromCards(cards, issues = loadedIssueCards) {
+        const occurrenceCards = cards.filter((card) => ["occurrence", "continuous_presence"].includes(card.targetType));
+        const pins = occurrenceCards
+          .filter((card) => card.publicLocation && Number.isFinite(card.publicLocation.lng) && Number.isFinite(card.publicLocation.lat))
+          .map((card, index) => ({
+            type: "Feature",
+            geometry: { type: "Point", coordinates: [card.publicLocation.lng, card.publicLocation.lat] },
+            properties: {
+              id: `pin_${card.id}`,
+              occurrenceUnitId: card.id,
+              targetType: card.targetType,
+              targetId: card.id,
+              issueId: card.issueId,
+              title: card.title,
+              regionLabel: card.regionLabel,
+              lifecycleState: card.lifecycleState,
+              sequence: index + 1,
+              locationLabel: card.publicLocation.label || card.regionLabel,
+              locationPrecision: card.publicLocation.precision || "area",
+              source: "public_source_location"
+            }
+          }));
+        const presenceAreas = occurrenceCards
+          .filter((card) => card.publicLocation && Number(card.proof || 0) > 0)
+          .map((card) => ({
+            type: "Feature",
+            geometry: { type: "Polygon", coordinates: [mapCircleCoordinates(card.publicLocation.lng, card.publicLocation.lat, card.publicRadiusM || 220)] },
+            properties: {
+              id: `presence_area_${card.id}`,
+              occurrenceUnitId: card.id,
+              targetType: card.targetType,
+              targetId: card.id,
+              issueId: card.issueId,
+              title: card.title,
+              regionLabel: card.regionLabel,
+              evidenceCount: Number(card.proof || 0),
+              publicRadiusM: card.publicRadiusM || 220,
+              source: "proof_of_presence_area"
+            }
+          }));
+        return {
+          issues,
+          occurrenceUnits: occurrenceCards.map((card) => ({
+            id: card.id,
+            targetType: card.targetType,
+            issueId: card.issueId,
+            title: card.title,
+            regionLabel: card.regionLabel,
+            lifecycleState: card.lifecycleState,
+            hasSourcePin: Boolean(card.publicLocation),
+            hasPresenceArea: presenceAreas.some((feature) => feature.properties.occurrenceUnitId === card.id),
+            liveEvidenceCount: Number(card.proof || 0),
+            updatedAt: card.updatedAt
+          })),
+          geojson: {
+            pins: { type: "FeatureCollection", features: pins },
+            presenceAreas: { type: "FeatureCollection", features: presenceAreas }
+          }
+        };
+      }
+
+      function mapCircleCoordinates(lng, lat, radiusM, steps = 40) {
+        const latScale = 110_540;
+        const lngScale = 111_320 * Math.max(0.2, Math.cos((lat * Math.PI) / 180));
+        const coords = Array.from({ length: steps }, (_, index) => {
+          const angle = (Math.PI * 2 * index) / steps;
+          return [
+            roundMapCoord(lng + (Math.cos(angle) * radiusM) / lngScale),
+            roundMapCoord(lat + (Math.sin(angle) * radiusM) / latScale)
+          ];
+        });
+        coords.push(coords[0]);
+        return coords;
+      }
+
+      function roundMapCoord(value) {
+        return Math.round(value * 1_000_000) / 1_000_000;
+      }
+
+	      function normalizeLaws(laws) {
         return sortLaws(laws.map((law) => ({
           linkedIssueCount: 0,
           relatedTargetCount: 0,
@@ -3158,6 +4434,28 @@
           keywords: [],
           ...law
         })));
+	      }
+
+      async function hydrateIssueLivePreviews(issues) {
+        const candidates = (issues || []).slice(0, 8).filter((issue) => !issueLivePreviewByIssueId.has(issue.id));
+        if (!candidates.length) return;
+        const previews = await Promise.all(
+          candidates.map(async (issue) => {
+            const liveClaims = await loadLiveClaims("issue", issue.id);
+            return [issue.id, firstPublishableLivePreview(liveClaims)];
+          })
+        );
+        let changed = false;
+        for (const [issueId, preview] of previews) {
+          if (preview) {
+            issueLivePreviewByIssueId.set(issueId, preview);
+            changed = true;
+          }
+        }
+        if (changed) {
+          renderIssues(loadedIssueCards);
+          renderExploreGrid(loadedCards, loadedIssueCards);
+        }
       }
 
 	      function visibleCards(cards) {
@@ -3171,7 +4469,6 @@
 	          now: !["ARCHIVED", "ENDED", "CANCELED", "POSTPONED"].includes(state),
 	          upcoming: ["UPCOMING", "STARTING_SOON"].includes(state),
 	          series: state === "ONGOING_SERIES" || card.targetType === "continuous_presence",
-	          transit: card.targetType === "transit_occurrence" || (card.chips || []).some((chip) => /교통|통제|경로/.test(chip)),
 	          archive: ["ARCHIVED", "ENDED"].includes(state)
 	        }[activeTimeFilter] ?? true;
 	        if (!timeOk) return false;
@@ -3271,7 +4568,7 @@
 	        if (summary.official || (card.chips || []).some((chip) => /공식/.test(chip))) badges.push(["official", "공식 자료"]);
 	        if (summary.media || (card.chips || []).some((chip) => /언론/.test(chip))) badges.push(["media", "언론"]);
 	        if (summary.field || (card.chips || []).some((chip) => /위치|자료/.test(chip))) badges.push(["field", "현장"]);
-	        if (summary.estimate || ["crowd_density_signal", "transit_occurrence"].includes(card.targetType)) badges.push(["estimate", "추정"]);
+	        if (summary.estimate) badges.push(["estimate", "추정"]);
 	        return badges.length ? badges : [["official", "공개 자료"]];
 	      }
 
@@ -3310,8 +4607,185 @@
 	        return badges.map(([type, label]) => `<span class="source-badge ${type}">${escapeHtml(label)}</span>`).join("");
 	      }
 
+      function issueTopicText(issue) {
+        return (issue.topicTags || []).slice(0, 3).join(" · ") || "주제 확인 중";
+      }
+
+      function issueVideoCount(issue) {
+        return Number(issue.liveClaimCount || issue.videoCount || (fallbackLiveClaimsByTarget[issue.id] || []).length || 0);
+      }
+
+      function issueStoryState(issue) {
+        if (Number(issue.disputeCount || 0) > 0) return "dispute";
+        if (Number(issue.needsVerificationCount || 0) > 0) return "pending";
+        if (Number(issue.officialCount || 0) > 0) return "official";
+        return "active";
+      }
+
+      function issueStoryColor(issue) {
+        return {
+          dispute: "var(--dispute)",
+          pending: "var(--pending)",
+          official: "var(--official)",
+          active: "var(--brand)"
+        }[issueStoryState(issue)];
+      }
+
+      function publicLivePreviewForIssue(issue) {
+        return issueLivePreviewByIssueId.get(issue.id);
+      }
+
+      function publicLiveMediaUrl(item) {
+        const url = item?.media?.redactedClipUrl;
+        if (typeof url !== "string" || !url) return "";
+        if (url.startsWith("/media/redacted/") && !url.includes("..")) return url;
+        try {
+          const parsed = new URL(url);
+          if (parsed.protocol === "https:" && !parsed.username && !parsed.password && !parsed.pathname.includes("/private/")) return parsed.toString();
+        } catch {}
+        return "";
+      }
+
+      function publicLiveMediaSrc(item) {
+        const url = publicLiveMediaUrl(item);
+        if (!url) return "";
+        if (url.startsWith("/")) return new URL(url, `${API}/`).toString();
+        return url;
+      }
+
+      function firstPublishableLivePreview(items) {
+        return (Array.isArray(items) ? items : []).find((item) => publicLiveMediaUrl(item));
+      }
+
+      function renderIssueStoryVisual(issue) {
+        const preview = publicLivePreviewForIssue(issue);
+        const url = publicLiveMediaSrc(preview);
+        if (!url) return issueVisualSvg(issue, { compact: true });
+        return `
+          <span class="story-thumb-fallback">${issueVisualSvg(issue, { compact: true })}</span>
+          <video class="story-thumb-video" src="${escapeHtml(url)}" muted playsinline preload="metadata" aria-hidden="true"></video>
+        `;
+      }
+
+      function renderIssueCoverArt(issue) {
+        const preview = publicLivePreviewForIssue(issue);
+        const url = publicLiveMediaSrc(preview);
+        if (!url) return `<div class="issue-cover-art">${issueVisualSvg(issue)}</div>`;
+        return `
+          <div class="issue-cover-art has-live-video">
+            <div class="issue-cover-fallback">${issueVisualSvg(issue)}</div>
+            <video class="issue-cover-video" src="${escapeHtml(url)}" muted playsinline preload="metadata" aria-hidden="true"></video>
+            <span class="live-thumb-badge">현장 인증 영상</span>
+          </div>
+        `;
+      }
+
+      function issueVisualKind(issue) {
+        const text = `${issue.title || ""} ${(issue.topicTags || []).join(" ")}`;
+        if (/정보통신망|개정|법|의안|국회/.test(text)) return "law";
+        if (/탄핵|대통령|행진/.test(text)) return "assembly";
+        if (/선거|투표|개표/.test(text)) return "ballot";
+        return "public";
+      }
+
+      function issueVisualSvg(issue, options = {}) {
+        const kind = issueVisualKind(issue);
+        const compact = Boolean(options.compact);
+        const gradientId = `issue-bg-${String(issue.id || kind).replace(/[^a-z0-9_-]/gi, "-")}-${compact ? "story" : "cover"}`;
+        const shapes = {
+          law: `
+            <rect x="44" y="44" width="58" height="78" rx="14" fill="var(--visual-paper)" opacity=".92" />
+            <rect x="58" y="32" width="58" height="78" rx="14" fill="var(--visual-paper)" opacity=".72" />
+            <path d="M61 57h28M61 72h35M61 87h24" stroke="var(--visual-a)" stroke-width="5" stroke-linecap="round" opacity=".82" />
+            <path d="M44 122h78" stroke="var(--visual-ink)" stroke-width="7" stroke-linecap="round" opacity=".16" />
+            <circle cx="107" cy="45" r="13" fill="var(--visual-c)" opacity=".78" />
+            <circle cx="102" cy="45" r="2.5" fill="#fff" opacity=".92" />
+            <circle cx="107" cy="45" r="2.5" fill="#fff" opacity=".92" />
+            <circle cx="112" cy="45" r="2.5" fill="#fff" opacity=".92" />
+          `,
+          assembly: `
+            <path d="M31 116c8-31 28-48 58-48s50 17 58 48" fill="none" stroke="var(--visual-b)" stroke-width="18" stroke-linecap="round" opacity=".24" />
+            <path d="M48 116c6-20 20-31 41-31s35 11 41 31" fill="none" stroke="var(--visual-a)" stroke-width="14" stroke-linecap="round" opacity=".42" />
+            <path d="M65 116c4-10 12-16 24-16s20 6 24 16" fill="none" stroke="var(--visual-c)" stroke-width="10" stroke-linecap="round" opacity=".74" />
+            <circle cx="89" cy="57" r="15" fill="var(--visual-paper)" opacity=".9" />
+            <circle cx="89" cy="54" r="5" fill="var(--visual-a)" opacity=".78" />
+            <path d="M78 67c5-8 17-8 22 0" fill="none" stroke="var(--visual-a)" stroke-width="5" stroke-linecap="round" opacity=".72" />
+            <circle cx="45" cy="92" r="5" fill="var(--visual-a)" opacity=".65" />
+            <circle cx="132" cy="94" r="5" fill="var(--visual-b)" opacity=".65" />
+          `,
+          ballot: `
+            <rect x="34" y="50" width="92" height="68" rx="16" fill="var(--visual-paper)" opacity=".9" />
+            <path d="M48 75h36M48 92h24" stroke="var(--visual-a)" stroke-width="5" stroke-linecap="round" opacity=".78" />
+            <path d="m91 84 10 10 22-30" fill="none" stroke="var(--visual-c)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M47 50 62 34h58l6 16" fill="var(--visual-b)" opacity=".22" />
+            <circle cx="48" cy="118" r="7" fill="var(--visual-a)" opacity=".22" />
+            <circle cx="124" cy="48" r="8" fill="var(--visual-c)" opacity=".28" />
+          `,
+          public: `
+            <circle cx="80" cy="78" r="38" fill="var(--visual-paper)" opacity=".68" />
+            <circle cx="80" cy="78" r="18" fill="var(--visual-b)" opacity=".18" />
+            <circle cx="80" cy="78" r="7" fill="var(--visual-a)" />
+            <path d="M80 39v17M80 100v17M41 78h17M102 78h17" stroke="var(--visual-a)" stroke-width="6" stroke-linecap="round" opacity=".62" />
+            <path d="M53 105c14 12 40 12 54 0" fill="none" stroke="var(--visual-c)" stroke-width="8" stroke-linecap="round" opacity=".55" />
+            <circle cx="115" cy="50" r="8" fill="var(--visual-c)" opacity=".46" />
+            <circle cx="44" cy="52" r="6" fill="var(--visual-b)" opacity=".46" />
+          `
+        }[kind];
+        return `
+          <svg class="${compact ? "story-visual " : ""}issue-visual issue-visual-${escapeHtml(kind)}" viewBox="0 0 160 160" aria-hidden="true">
+            <defs>
+              <linearGradient id="${escapeHtml(gradientId)}" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0" stop-color="var(--visual-bg0)" />
+                <stop offset=".58" stop-color="var(--visual-bg2)" />
+                <stop offset="1" stop-color="var(--visual-bg1)" />
+              </linearGradient>
+              <filter id="${escapeHtml(gradientId)}-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="var(--visual-shadow)" flood-opacity=".8" />
+              </filter>
+            </defs>
+            <rect x="4" y="4" width="152" height="152" rx="34" fill="url(#${escapeHtml(gradientId)})" />
+            <path d="M-8 126C30 86 64 132 104 86s48-14 72-42" fill="none" stroke="var(--visual-a)" stroke-width="22" stroke-linecap="round" opacity=".08" />
+            <path d="M24 34h112M24 126h112" stroke="var(--visual-ink)" stroke-width="1" opacity=".07" />
+            <path d="M34 24v112M126 24v112" stroke="var(--visual-ink)" stroke-width="1" opacity=".055" />
+            <circle cx="131" cy="31" r="22" fill="var(--visual-b)" opacity=".13" />
+            <circle cx="31" cy="129" r="28" fill="var(--visual-c)" opacity=".11" />
+            <g filter="url(#${escapeHtml(gradientId)}-shadow)">
+              ${shapes}
+            </g>
+          </svg>
+        `;
+      }
+
+      function issueRecentChange(issue) {
+        if (Number(issue.currentCount || 0) > 0) return "현장 증가";
+        if (Number(issue.disputeCount || 0) > 0) return "반론 있음";
+        if (Number(issue.officialCount || 0) > 0) return "공식 확인";
+        return "확인 중";
+      }
+
+      function renderIssueStories(issues) {
+        const root = $("issue-stories");
+        if (!root) return;
+        root.innerHTML = "";
+        for (const issue of issues.slice(0, 10)) {
+          const button = document.createElement("button");
+          button.className = "story-ring";
+          button.type = "button";
+          button.dataset.issueId = issue.id;
+          button.dataset.state = issueStoryState(issue);
+          button.setAttribute("aria-selected", String(issue.id === selectedIssue?.id));
+          button.innerHTML = `
+            <span class="story-orb ${publicLivePreviewForIssue(issue) ? "has-live-video" : ""}">${renderIssueStoryVisual(issue)}</span>
+            <span>${escapeHtml(issue.title)}</span>
+          `;
+          button.addEventListener("click", () => selectIssue(issue, { openDetail: true, scrollToCards: false }));
+          root.append(button);
+        }
+      }
+
 	      function renderIssues(issues) {
 	        const root = $("issues");
+        renderIssueStories(issues);
 	        root.classList.add("is-refreshing");
 	        root.innerHTML = "";
 	        if (!issues.length) {
@@ -3330,25 +4804,31 @@
 	          button.className = "issue-card";
 	          button.type = "button";
 	          button.dataset.issueId = issue.id;
+          button.style.setProperty("--story-color", issueStoryColor(issue));
 	          button.setAttribute("aria-selected", String(issue.id === selectedIssue?.id));
 	          button.innerHTML = `
-	            <div class="card-top">
-	              <span class="chip ${stateClass(issue.lifecycleState)}">${escapeHtml(issueStatusLabel(issue))}</span>
-	              <span class="selected-label" ${issue.id === selectedIssue?.id ? "" : "hidden"}>선택됨</span>
-	              <span class="fine">${relative(issue.updatedAt)}</span>
-	            </div>
-		            <div>
-		              <div class="title">${escapeHtml(issue.title)}</div>
-		              <p class="fine">${(issue.topicTags || []).map(escapeHtml).join(" · ") || "주제 확인 중"}</p>
-		            </div>
-		            <div class="source-badges">${renderSourceBadges(sourceBadgesForCard(issue))}</div>
-		            <div class="chips">${(issue.chips || []).map((chip) => `<span class="chip">${escapeHtml(chip)}</span>`).join("")}</div>
-		            <div class="card-action">
-		              <span class="card-action-label">관련 상황 보기</span>
-		              <span aria-hidden="true">›</span>
-		            </div>
+            <div class="issue-feed-cover">
+              ${renderIssueCoverArt(issue)}
+              <div class="card-top">
+                <span class="chip ${stateClass(issue.lifecycleState)}">${escapeHtml(issueStatusLabel(issue))}</span>
+                <span class="selected-label" ${issue.id === selectedIssue?.id ? "" : "hidden"}>선택됨</span>
+                <span class="fine">${relative(issue.updatedAt)}</span>
+              </div>
+              <div class="issue-feed-title">
+                <div class="title">${escapeHtml(issue.title)}</div>
+                <p class="fine">${escapeHtml(issueTopicText(issue))}</p>
+              </div>
+              <div class="source-badges">${renderSourceBadges(sourceBadgesForCard(issue))}</div>
+            </div>
+            <div class="issue-feed-actions" aria-label="이슈 핵심 정보">
+              <div class="feed-action"><strong>${Number(issue.regionCount || 0)}</strong><span>지역</span></div>
+              <div class="feed-action"><strong>${issueVideoCount(issue)}</strong><span>영상</span></div>
+              <div class="feed-action"><strong>${officialCountText(issue.officialCount)}</strong><span>근거</span></div>
+              <div class="feed-action"><strong>${escapeHtml(issueRecentChange(issue))}</strong><span>변화</span></div>
+            </div>
+            <div class="chips" style="padding: 0 14px 14px">${(issue.chips || []).slice(0, 3).map((chip) => `<span class="chip">${escapeHtml(chip)}</span>`).join("")}</div>
 	          `;
-	          button.addEventListener("click", () => selectIssue(issue, { scrollToCards: true }));
+	          button.addEventListener("click", () => selectIssue(issue, { openDetail: true, scrollToCards: false }));
 	          root.append(button);
 	        }
 	        setTimeout(() => root.classList.remove("is-refreshing"), 320);
@@ -3359,7 +4839,7 @@
 	        const linkedIssueCount = laws.reduce((sum, law) => sum + Number(law.linkedIssueCount || 0), 0);
 	        $("law-context").textContent = laws.length
 	          ? `공개 법령·의안 ${laws.length}개 · 연결 이슈 ${linkedIssueCount}건`
-	          : "주요 이슈와 연결된 공개 법령·의안을 관심도순으로 봅니다.";
+	          : "법안이 어떤 이슈와 연결되는지 먼저 봅니다.";
 	        root.classList.add("is-refreshing");
 	        root.innerHTML = "";
 	        if (!laws.length) {
@@ -3398,10 +4878,10 @@
 	            <div class="summary-grid">
 	              <div class="mini-stat"><strong>${Number(law.linkedIssueCount || 0)}</strong><span>연결 이슈</span></div>
 	              <div class="mini-stat"><strong>${Number(law.relatedTargetCount || 0)}</strong><span>관련 상황</span></div>
-	              <div class="mini-stat"><strong>${Number(law.recentClaimCount || 0)}</strong><span>공개 Claim</span></div>
+	              <div class="mini-stat"><strong>${Number(law.recentClaimCount || 0)}</strong><span>연결 자료</span></div>
 	            </div>
 	            <div class="card-action">
-	              <span class="card-action-label">법 보기</span>
+	              <span class="card-action-label">연결 이슈 보기</span>
 	              <span aria-hidden="true">›</span>
 	            </div>
 	          `;
@@ -3422,7 +4902,7 @@
 	        });
 	        renderLawDetail(law).then(() => pulseElement($("record-section")));
 	        if (innerWidth <= 780 && options.openDetail !== false) {
-	          setMobileTab("record", document.querySelector('.mobile-nav button[data-tab-view="record"]'));
+	          openDetailPanel();
 	        }
 	      }
 
@@ -3432,9 +4912,10 @@
 	        if (innerWidth <= 780) {
 	          setMobileTab("home", document.querySelector('.mobile-nav button[data-tab-view="home"]'));
 	        } else {
-	          document.querySelector(".layout").classList.remove("desktop-law");
+	          document.querySelector(".layout").classList.remove("desktop-law", "desktop-reels", "desktop-explore");
+          setRailCurrent("home");
 	        }
-	        selectIssue(issue, { toast: "연결 이슈로 이동했습니다.", scrollToCards: true });
+	        selectIssue(issue, { toast: "연결 이슈로 이동했습니다.", openDetail: true, scrollToCards: false });
 	        focusPanel($("home-section"));
 	      }
 
@@ -3454,10 +4935,21 @@
 	            node.setAttribute("aria-selected", String(node.dataset.issueId === issue.id));
 	            node.querySelector(".selected-label").hidden = node.dataset.issueId !== issue.id;
 	          });
+          document.querySelectorAll(".story-ring").forEach((node) => {
+            node.setAttribute("aria-selected", String(node.dataset.issueId === issue.id));
+          });
 	        });
 	        selected = visibleCards(loadedCards)[0] || selected;
 	        renderCards(loadedCards, { renderDetail: false });
+        renderExploreGrid(loadedCards, loadedIssueCards);
+        renderReelsView();
+        activateReportFlow({ requestPosition: false });
 	        renderIssueDetail(issue);
+        if (innerWidth <= 780 && options.openDetail) {
+          openDetailPanel();
+        } else if (innerWidth > 780) {
+          pulseElement($("record-section"));
+        }
 	        if (options.scrollToCards) {
 	          pulseElement($("cards"), "is-refreshing", 320);
 	          $("cards-title").scrollIntoView({ block: "start", behavior: reduceMotion() ? "auto" : "smooth" });
@@ -3512,7 +5004,7 @@
 	            <div class="source-badges">${renderSourceBadges(sourceBadgesForCard(card))}</div>
 	            <div class="chips">${(card.chips || []).map((chip) => `<span class="chip">${escapeHtml(chip)}</span>`).join("")}</div>
             <div class="summary-grid">
-              <div class="mini-stat"><strong>${escapeHtml(String(card.current || "확인 중"))}</strong><span>확인 내용</span></div>
+              <div class="mini-stat"><strong>${escapeHtml(currentLabel(card.current))}</strong><span>확인 내용</span></div>
               <div class="mini-stat"><strong>${escapeHtml(situationTypeLabel(card))}</strong><span>유형</span></div>
               <div class="mini-stat"><strong>${escapeHtml(String(card.proof || 0))}</strong><span>근거</span></div>
             </div>
@@ -3530,8 +5022,49 @@
         setTimeout(() => root.classList.remove("is-refreshing"), 320);
       }
 
+      function renderExploreGrid(cards, issues) {
+        const root = $("explore-grid");
+        if (!root) return;
+        const regions = [...cards.reduce((map, card) => {
+          const key = card.regionLabel || "전국";
+          const group = map.get(key) || { label: key, count: 0, proof: 0, card };
+          group.count += 1;
+          group.proof += Number(card.proof || 0);
+          if (cardOrderScore(card) < cardOrderScore(group.card)) group.card = card;
+          map.set(key, group);
+          return map;
+        }, new Map()).values()].sort((a, b) => b.count - a.count).slice(0, 4);
+        const issueTiles = issues.slice(0, 4).map((issue) => ({
+          type: "issue",
+          id: issue.id,
+          label: issue.title,
+          count: Number(issue.currentCount || issue.targetCount || 0),
+          meta: `${Number(issue.regionCount || 0)}개 지역 · 영상 ${issueVideoCount(issue)}`,
+          color: issueStoryColor(issue),
+          item: issue
+        }));
+        const regionTiles = regions.map((region) => ({
+          type: "region",
+          id: region.label,
+          label: region.label,
+          count: region.count,
+          meta: `근거 ${region.proof}건 · ${region.card ? labelState(region.card.lifecycleState) : "확인 중"}`,
+          color: "var(--brand)",
+          item: region.card
+        }));
+        const tiles = [...issueTiles, ...regionTiles].slice(0, 8);
+        root.innerHTML = tiles.map((tile) => `
+          <button class="explore-tile" type="button" data-explore-type="${escapeHtml(tile.type)}" data-explore-id="${escapeHtml(tile.id)}" style="--tile-color: ${tile.color}">
+            <span>${tile.type === "issue" ? "이슈" : "지역"}</span>
+            <strong>${escapeHtml(tile.label)}</strong>
+            <b>${Number(tile.count || 0)}</b>
+            <span>${escapeHtml(tile.meta)}</span>
+          </button>
+        `).join("");
+      }
+
       function updateFilterSummary() {
-        const time = { now: "지금", upcoming: "예정", series: "장기", transit: "교통", archive: "기록" }[activeTimeFilter] || "지금";
+        const time = { now: "지금", upcoming: "예정", series: "장기", archive: "기록" }[activeTimeFilter] || "지금";
         const source = { all: "전국", official: "공식 자료", needs: "더 확인 필요" }[activeSourceFilter] || "전국";
         $("filter-summary").textContent = `${time} · ${source}`;
       }
@@ -3578,9 +5111,10 @@
           pulseElement(document.querySelector(".map-sheet"));
         });
         if (innerWidth <= 780 && options.openDetail !== false) {
-          setMobileTab("record", document.querySelector('.mobile-nav button[data-tab-view="record"]'));
+          openDetailPanel();
         }
         if (options.toast) showToast(options.toast);
+        activateReportFlow({ requestPosition: false });
       }
 
 	      async function renderDetail(card) {
@@ -3592,7 +5126,7 @@
           $("map-mode").textContent = "선택 상황";
 	        $("detail-title").textContent = card.title;
 	        $("updated-at").textContent = relative(card.updatedAt);
-	        $("stat-current").textContent = card.current || "확인 중";
+	        $("stat-current").textContent = currentLabel(card.current);
 	        $("stat-peak").textContent = card.peak || "-";
 	        $("stat-proof").textContent = String(card.proof || 0);
           $("stat-current-label").textContent = "확인 내용";
@@ -3624,22 +5158,22 @@
 	        $("state-chip").textContent = issueStatusLabel(issue);
 	        $("state-chip").className = `chip ${stateClass(issue.lifecycleState)}`;
 	        $("map-state").textContent = "이슈";
-          $("map-mode").textContent = "관련 지역";
+          $("map-mode").textContent = "보조 지도";
 	        $("detail-title").textContent = issue.title;
 	        $("updated-at").textContent = relative(issue.updatedAt);
 	        $("stat-current").textContent = `${Number(issue.currentCount || 0)}건`;
 	        $("stat-peak").textContent = `${Number(issue.regionCount || 0)}개 지역`;
-	        $("stat-proof").textContent = String(Number(issue.officialCount || 0));
+	        $("stat-proof").textContent = officialCountText(issue.officialCount);
           $("stat-current-label").textContent = "관련 현장";
           $("stat-peak-label").textContent = "확인 권역";
-          $("stat-proof-label").textContent = "공식 자료";
+          $("stat-proof-label").textContent = "공식 확인";
 	        $("map-title").textContent = "이슈 관련 지역";
-	        $("map-summary").textContent = `${issue.title}에 묶인 공개자료를 지역·시간·이동 영향별로 표시합니다.`;
-          $("map-context").textContent = "지도 핀을 선택하면 해당 상황 카드와 상세 패널이 함께 바뀝니다.";
+	        $("map-summary").textContent = `${issue.title}에 묶인 공개자료를 지역·시간·현장 단위로 표시합니다.`;
+          $("map-context").textContent = "지도는 위치 맥락만 보조합니다. 판단은 상세의 출처와 근거를 기준으로 봅니다.";
 	        $("map-impact").textContent = cards.length ? [...new Set(cards.map((card) => card.regionLabel || "전국"))].slice(0, 2).join(", ") : "전국";
-	        $("map-proof").textContent = `${Number(issue.officialCount || 0)}건`;
+	        $("map-proof").textContent = officialCountText(issue.officialCount);
 	        $("map-update").textContent = relative(issue.updatedAt);
-	        $("map-risk").textContent = Number(issue.needsVerificationCount || 0) ? "더 확인 필요" : "공식 자료";
+	        $("map-risk").textContent = Number(issue.needsVerificationCount || 0) ? "더 확인 필요" : "공식 확인";
 
 	        const detail = await loadIssueDetail(issue);
 	        const claims = issueClaimsFromDetail(issue, detail);
@@ -3647,7 +5181,7 @@
 	        $("detail-summary").textContent = issueSummary(issue, cards, visibleCount);
 	        $("detail-source-badges").innerHTML = renderSourceBadges(badges.length ? badges : sourceBadgesForCard(issue));
 	        $("summary-tab").innerHTML = renderIssueSummary(issue, cards, claims, detail);
-	        $("video-tab").innerHTML = renderLiveClaims(await loadLiveClaims("issue", issue.id), "이 이슈에 연결된 공개 현장 영상 Claim이 아직 없습니다.", { filterable: true });
+	        $("video-tab").innerHTML = renderLiveClaims(await loadLiveClaims("issue", issue.id), "이 이슈에 연결된 공개 현장 인증 영상이 아직 없습니다.", { filterable: true });
 	        $("timeline-tab").innerHTML = renderIssueTimeline(cards, detail);
 	        $("evidence-tab").innerHTML = renderIssueEvidence(issue, claims);
 	        $("dispute-tab").innerHTML = renderIssueDisputes(issue, claims);
@@ -3670,10 +5204,10 @@
 	        $("stat-proof").textContent = String(Number(law.recentClaimCount || 0));
           $("stat-current-label").textContent = "연결 이슈";
           $("stat-peak-label").textContent = "관련 상황";
-          $("stat-proof-label").textContent = "공개 Claim";
-	        $("map-title").textContent = "법 관련 이슈";
+          $("stat-proof-label").textContent = "연결 자료";
+	        $("map-title").textContent = "법안 연결 이슈";
 	        $("map-summary").textContent = `${law.lawName}과 연결된 이슈를 공개자료 기준으로 표시합니다.`;
-          $("map-context").textContent = "연결 이슈를 선택하면 이슈 화면과 상세 패널로 이어집니다.";
+          $("map-context").textContent = "법 탭에서는 지도보다 연결 이슈와 공개 근거를 먼저 봅니다.";
 	        $("map-impact").textContent = issues.length ? issues.slice(0, 2).map((issue) => issue.title).join(", ") : "연결 대기";
 	        $("map-proof").textContent = `${Number(law.recentClaimCount || 0)}건`;
 	        $("map-update").textContent = relative(law.lastUpdatedAt || law.statusDate || law.effectiveDate);
@@ -3776,7 +5310,7 @@
 	          </article>
 	          <article class="evidence-row">
 	            <strong>연결 방식</strong>
-	            <span>법 이름, 의안 제목, 주제어가 이슈 제목·태그·공개 Claim과 일치할 때 연결합니다.</span>
+	            <span>법 이름, 의안 제목, 주제어가 이슈 제목·태그·공개 자료와 일치할 때 연결합니다.</span>
 	          </article>
 	          <article class="evidence-row">
 	            <strong>키워드</strong>
@@ -3798,7 +5332,7 @@
 	          .map((link) => `
 	            <article class="evidence-row">
 	              <strong>${escapeHtml(link.matchBasis)} · ${escapeHtml(link.confidence)}</strong>
-	              <span>연결된 공개 Claim ${Number(link.claimCount || 0)}건</span>
+	              <span>연결 공개 자료 ${Number(link.claimCount || 0)}건</span>
 	            </article>
 	          `)
 	          .join("");
@@ -3828,10 +5362,22 @@
 	        return "확인 중";
 	      }
 
-	      function issueSummary(issue, cards, visibleCount) {
+      function issueSummary(issue, cards, visibleCount) {
 	        const current = Number(issue.currentCount || 0);
 	        const official = Number(issue.officialCount || 0);
-	        return `${cards.length}건의 관련 상황 중 ${visibleCount}건을 표시합니다. ${current}건은 진행·예정이고, 공식 자료 ${official}건을 기준으로 확인합니다.`;
+	        const officialText = official ? `공식 자료 ${official}건도 함께 확인합니다.` : "아직 공식 자료는 확인되지 않았습니다.";
+	        return `${cards.length}건의 관련 상황 중 ${visibleCount}건을 표시합니다. ${current}건은 진행·예정입니다. ${officialText}`;
+	      }
+
+	      function officialCountText(value) {
+	        const count = Number(value || 0);
+	        return count ? `${count}건` : "미확인";
+	      }
+
+	      function sourceSummaryText(issue, claims) {
+	        const official = Number(issue.officialCount || 0);
+	        const officialText = official ? `공식 자료 ${official}건` : "공식 자료 미확인";
+	        return `${officialText} · 공개된 주장 ${claims.length}건을 함께 봅니다.`;
 	      }
 
 	      function renderIssueSummary(issue, cards, claims, detail = {}) {
@@ -3845,7 +5391,7 @@
 	            <div><dt>확인된 축</dt><dd>${escapeHtml(regions.length ? `${regions.slice(0, 4).join(", ")} 기준 자료가 묶였습니다.` : "지역 정보 확인 중입니다.")}</dd></div>
 	            <div><dt>진행·예정</dt><dd>${Number(issue.currentCount || 0)}건이 현재 확인 대상입니다.</dd></div>
 	            <div><dt>더 확인 필요</dt><dd>${Number(issue.needsVerificationCount || 0)}건은 출처나 현장 자료를 더 확인해야 합니다.</dd></div>
-	            <div><dt>출처</dt><dd>${Number(issue.officialCount || 0)}건의 공식 자료와 ${claims.length}건의 공개 Claim을 함께 봅니다.</dd></div>
+	            <div><dt>출처</dt><dd>${sourceSummaryText(issue, claims)}</dd></div>
 	          </dl>
             ${renderRegionalSignals(detail.regionalSignals?.length ? detail.regionalSignals : fallbackRegionalSignals(cards))}
             ${renderCrowdEstimates(detail.crowdEstimates || [], detail.regionalCrowdEstimates || [])}
@@ -3890,12 +5436,12 @@
 	              <strong>전국 현황</strong>
 	              <span class="chip issue">알권리 요약</span>
 	            </div>
-	            <p class="fine">같은 주제로 묶인 지역·현장·공개 Claim과 확인 범위를 한눈에 봅니다.</p>
+	            <p class="fine">같은 주제로 묶인 지역·현장·공개된 주장과 확인 범위를 한눈에 봅니다.</p>
 	            <div class="national-metrics">
 	              <div class="mini-stat"><strong>${regionCount}개</strong><span>확인 권역</span></div>
 	              <div class="mini-stat"><strong>${targetCount}건</strong><span>관련 현장</span></div>
 	              <div class="mini-stat"><strong>${liveClaimCount}건</strong><span>현장 영상</span></div>
-	              <div class="mini-stat"><strong>${Number(summary.publicClaimCount || claims.length)}건</strong><span>공개 Claim</span></div>
+	              <div class="mini-stat"><strong>${Number(summary.publicClaimCount || claims.length)}건</strong><span>공개된 주장</span></div>
 	              <div class="mini-stat"><strong>${Number(summary.needsVerificationCount || issue.needsVerificationCount || 0)}건</strong><span>더 확인 필요</span></div>
 	              <div class="mini-stat"><strong>${escapeHtml(estimateText)}</strong><span>규모 추정</span></div>
 	            </div>
@@ -3933,8 +5479,8 @@
 
 	      function regionalSignalLabels(signal) {
 	        return [
-	          Number(signal.officialClaimCount || 0) ? `공식 ${Number(signal.officialClaimCount || 0)}건` : "공식 자료 없음",
-	          Number(signal.liveClaimCount || 0) ? `현장 영상 ${Number(signal.liveClaimCount || 0)}건` : Number(signal.fieldClaimCount || 0) ? `현장 Claim ${Number(signal.fieldClaimCount || 0)}건` : "현장 자료 없음",
+	          Number(signal.officialClaimCount || 0) ? `공식 ${Number(signal.officialClaimCount || 0)}건` : "공식 자료 미확인",
+	          Number(signal.liveClaimCount || 0) ? `현장 영상 ${Number(signal.liveClaimCount || 0)}건` : Number(signal.fieldClaimCount || 0) ? `현장 자료 ${Number(signal.fieldClaimCount || 0)}건` : "현장 자료 없음",
 	          Number(signal.disputeCount || 0) ? `이견 ${Number(signal.disputeCount || 0)}건` : "이견 없음",
 	          Number(signal.needsVerificationCount || 0) ? `더 확인 필요 ${Number(signal.needsVerificationCount || 0)}건` : "확인 신호 충분"
 	        ];
@@ -3960,7 +5506,7 @@
 	            <article class="evidence-row">
 	              <strong>${numberFormat(estimate.minCount)}~${numberFormat(estimate.maxCount)}명 · ${escapeHtml(confidenceLabel(estimate.confidence))}</strong>
 	              <span>${estimate.generated ? "자동 갱신 추정" : "검토된 추정"} · ${escapeHtml(estimateMethodLabel(estimate.method))} · 근거 ${Number(estimate.evidenceCount || 0)}건 · 독립 시점 ${Number(estimate.independentViewpointCount || 0)}개</span>
-	              <span>${escapeHtml(sourceLabel(estimateClaim.sourceProvenance))} Claim · ${escapeHtml(evidenceLabel(estimateClaim.evidenceStrength))} · ${escapeHtml(riskLabel(estimateClaim.riskLevel))}</span>
+	              <span>${escapeHtml(sourceLabel(estimateClaim.sourceProvenance))} 자료 · ${escapeHtml(evidenceLabel(estimateClaim.evidenceStrength))} · ${escapeHtml(riskLabel(estimateClaim.riskLevel))}</span>
 	            </article>
 	            <div class="estimate-metrics">
 	              <div class="mini-stat"><strong>${numberFormat(estimate.minCount)}</strong><span>하한</span></div>
@@ -4014,8 +5560,8 @@
 	      function estimateMethodLabel(value) {
 	        return {
 	          proof_of_presence_density: "현장 인증 밀도 기반",
-	          source_claim: "공개 Claim 기반",
-	          hybrid: "현장 인증과 공개 Claim 혼합"
+	          source_claim: "공개 주장 기반",
+	          hybrid: "현장 인증과 공개 주장 혼합"
 	        }[value] || "추정 방식 확인 중";
 	      }
 
@@ -4037,7 +5583,7 @@
 	                <strong>전국 시간축</strong>
 	                <span class="chip issue">${escapeHtml(summary.label || "시간축 확인")}</span>
 	              </div>
-	              <p class="fine">${escapeHtml(summary.summary || "지역별 첫 확인과 공개 Claim을 시간순으로 표시합니다.")}</p>
+	              <p class="fine">${escapeHtml(summary.summary || "지역별 첫 확인과 공개된 주장을 시간순으로 표시합니다.")}</p>
 	              <div class="segmented timeline-filter" aria-label="흐름 자료 필터">
 	                ${timelineFilterButton("all", "전체", issueTimelineSourceFilter, "source")}
 	                ${timelineFilterButton("field", "현장", issueTimelineSourceFilter, "source")}
@@ -4115,7 +5661,7 @@
 	              <span>${Number(issue.officialCount || 0)}건</span>
 	            </article>
 	            <article class="evidence-row">
-	              <strong>공개 Claim</strong>
+	              <strong>공개된 주장</strong>
 	              <span>${claims.length}건</span>
 	            </article>
 	            <article class="evidence-row">
@@ -4155,10 +5701,10 @@
 	        }
 	      }
 
-	      function renderLiveClaims(liveClaims, emptyText = "검토 완료된 현장 영상 Claim이 아직 없습니다.", options = {}) {
+	      function renderLiveClaims(liveClaims, emptyText = "검토 완료된 현장 인증 영상이 아직 없습니다.", options = {}) {
         const notice = `
           <article class="reel-notice">
-            <strong>현장 영상 Claim</strong>
+            <strong>현장 인증 영상</strong>
             <span>실시간 GPS 촬영과 비식별 검토를 통과한 공개본만 표시합니다. 일치 여부 판단은 현장 인증자에게만 열립니다.</span>
           </article>
         `;
@@ -4169,8 +5715,11 @@
 	          return `${notice}${filters}<div class="empty-state"><strong>현장 영상 없음</strong><span>${escapeHtml(emptyText)}</span></div>`;
 	        }
 	        if (!filteredItems.length) {
-	          return `${notice}${filters}<div class="empty-state"><strong>필터에 맞는 영상이 없습니다</strong><span>다른 지역이나 판단 상태를 선택하면 공개된 영상 Claim을 볼 수 있습니다.</span></div>`;
+	          return `${notice}${filters}<div class="empty-state"><strong>필터에 맞는 영상이 없습니다</strong><span>다른 지역이나 판단 상태를 선택하면 공개된 현장 영상을 볼 수 있습니다.</span></div>`;
 	        }
+        if (options.fullScreen) {
+          return renderFullScreenReels(filteredItems);
+        }
 	        return notice + filters + filteredItems
 	          .map((item) => `
 	            <article class="reel-card">
@@ -4181,13 +5730,13 @@
 	                </div>
 	              ` : ""}
 	              <div class="claim-source">
-	                <strong>${escapeHtml(item.claim?.normalizedStatement || "현장 영상 Claim")}</strong>
+	                <strong>${escapeHtml(item.claim?.normalizedStatement || "현장 인증 영상")}</strong>
 	                <span class="chip ${item.fieldVerification?.disputed ? "warn" : "live"}">${escapeHtml(item.fieldVerification?.statusLabel || "현장 판단 대기")}</span>
 	              </div>
 	              <div class="source-badges">${renderSourceBadges([["field", "현장 영상"], ["official", "GPS 인증"]])}</div>
-	              <div class="reel-media" aria-label="비식별 처리된 현장 영상 Claim">
+	              <div class="reel-media" aria-label="비식별 처리된 현장 인증 영상">
 	                ${item.media?.redactedClipUrl
-	                  ? `<video src="${escapeHtml(item.media.redactedClipUrl)}" controls playsinline preload="metadata"></video>`
+	                  ? `<video src="${escapeHtml(publicLiveMediaSrc(item))}" controls playsinline preload="metadata"></video>`
 	                  : `<div class="reel-placeholder"><span class="reel-signal">LIVE</span><strong>비식별 공개본</strong><span>원본은 공개하지 않습니다</span></div>`}
 	              </div>
 	              <div class="reel-meta">
@@ -4206,6 +5755,33 @@
 	          `)
 	          .join("");
 	      }
+
+      function renderFullScreenReels(items) {
+        return items
+          .map((item) => `
+            <article class="reel-card reel-full" data-reel-id="${escapeHtml(item.id || "")}">
+              <div class="reel-media" aria-label="비식별 처리된 현장 인증 영상">
+                ${item.media?.redactedClipUrl
+                  ? `<video src="${escapeHtml(publicLiveMediaSrc(item))}" controls playsinline preload="metadata"></video>`
+                  : `<div class="reel-placeholder"><span class="reel-signal">LIVE</span><strong>비식별 공개본</strong><span>원본은 공개하지 않습니다</span></div>`}
+              </div>
+              <div class="reel-overlay">
+                <div class="source-badges">${renderSourceBadges([["field", "현장 영상"], ["official", "GPS 인증"]])}</div>
+                <strong>${escapeHtml(item.targetTitle || selectedIssue?.title || "공개 현장")}</strong>
+                <p>${escapeHtml(item.claim?.normalizedStatement || "현장 인증 영상")}</p>
+                <span>${escapeHtml(item.regionLabel || "지역 확인 중")} · ${escapeHtml(formatDuration(item.durationMs))} · ${escapeHtml(item.fieldVerification?.statusLabel || "현장 판단 대기")}</span>
+              </div>
+              <div class="reel-actions" aria-label="영상 확인 메뉴">
+                <button class="reel-action" type="button" data-reel-action="evidence">근거</button>
+                <button class="reel-action" type="button" data-reel-action="region">지역</button>
+                <button class="reel-action" type="button" data-reel-action="issue">이슈</button>
+                <button class="reel-action" type="button" data-reel-action="dispute">반론</button>
+                <button class="reel-action" type="button" data-reel-action="alert">알림</button>
+              </div>
+            </article>
+          `)
+          .join("");
+      }
 
 	      function renderLiveClaimFilters(liveClaims) {
 	        const regions = [...new Set(liveClaims.map((item) => item.regionLabel).filter(Boolean))].slice(0, 6);
@@ -4247,6 +5823,24 @@
 	        return `${Math.max(1, Math.round(Number(durationMs) / 1000))}초`;
 	      }
 
+      async function renderReelsView() {
+        const root = $("reels-feed");
+        if (!root) return;
+        const issue = selectedIssue || loadedIssueCards[0];
+        $("reels-context").textContent = issue ? `${issue.title} · 현장 인증 영상` : "공개 현장 영상을 봅니다.";
+        root.innerHTML = `
+          <article class="reel-card reel-full">
+            <div class="reel-media"><div class="reel-placeholder"><span class="reel-signal">LOAD</span><strong>영상 확인 중</strong><span>공개본만 불러옵니다</span></div></div>
+          </article>
+        `;
+        if (!issue) {
+          root.innerHTML = `<div class="empty-state"><strong>표시할 영상이 없습니다</strong><span>이슈가 확인되면 현장 인증 영상이 여기에 표시됩니다.</span></div>`;
+          return;
+        }
+        const liveClaims = await loadLiveClaims("issue", issue.id);
+        root.innerHTML = renderLiveClaims(liveClaims, "이 이슈에 연결된 공개 현장 인증 영상이 아직 없습니다.", { fullScreen: true });
+      }
+
 	      function trustSummary(claims, card) {
 	        const sources = new Set(claims.map((claim) => claim.sourceProvenance));
 	        const hasOfficial = sources.has("government_or_police");
@@ -4255,27 +5849,35 @@
 	        if (hasOfficial && hasField) return "공식 자료와 현장 자료가 함께 확인된 상황입니다.";
 	        if (hasOfficial) return "공식 공개 자료를 기준으로 정리한 상황입니다.";
 	        if (hasField) return "현장 자료가 접수되어 확인 중인 상황입니다.";
-	        if (hasEstimate || card.targetType === "crowd_density_signal") return "공개 신호를 바탕으로 추정 자료를 병기한 상황입니다.";
+	        if (hasEstimate) return "공개 신호를 바탕으로 추정 자료를 병기한 상황입니다.";
 	        return "확인된 출처와 현장 자료를 함께 정리했습니다.";
 	      }
 
-	      function situationTypeLabel(card) {
-	        if (card.targetType === "transit_occurrence") return "교통";
-	        if (card.targetType === "crowd_density_signal") return "인파";
-	        if (card.targetType === "route_segment" || card.targetType === "route_checkpoint") return "경로";
+      function situationTypeLabel(card) {
 	        if (card.targetType === "continuous_presence") return "장기";
-	        if (card.lifecycleState === "ARCHIVED") return "기록";
-	        return "집회";
-	      }
+        if (card.lifecycleState === "ARCHIVED") return "기록";
+        return "집회";
+      }
+
+      function currentLabel(value) {
+        const raw = String(value || "").trim();
+        if (!raw) return "확인 중";
+        if (/^[A-Z0-9_]+$/.test(raw)) return "확인 중";
+	        return (
+	          {
+	            live: "진행 중",
+            upcoming: "예정",
+            ended: "종료됨",
+            unknown: "확인 중"
+          }[raw] || raw.replaceAll("_", " ")
+        );
+      }
 
 	      function objectiveFact(card) {
 	        if (card.lifecycleState === "ARCHIVED") return "공개 기록 자료가 등록되었습니다.";
 	        if (card.lifecycleState === "UPCOMING" || card.lifecycleState === "STARTING_SOON") return "공개 일정 자료가 등록되었습니다.";
 	        if (card.targetType === "continuous_presence") return "세션 구분 없는 장기 현장으로 추적 중입니다.";
-	        if (card.targetType === "transit_occurrence") return "대중교통 관련 주장이 접수되었습니다.";
-	        if (card.targetType === "crowd_density_signal") return "주최 없는 인파 밀집 신호가 관측되었습니다.";
-	        if (card.targetType === "route_segment" || card.targetType === "route_checkpoint") return "경로 또는 통제 지점 주장이 접수되었습니다.";
-	        return "집회·시위 관련 공개 자료가 등록되었습니다.";
+		        return "집회·시위 관련 공개 자료가 등록되었습니다.";
 	      }
 
 	      function uncertaintyLabel(card) {
@@ -4462,6 +6064,7 @@
       function initMap() {
         if (liveMap) {
           liveMap.resize();
+          syncOccurrenceMapLayers();
           return;
         }
 
@@ -4483,7 +6086,7 @@
           liveMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
           $("map-canvas").hidden = true;
           liveMap.on("load", () => {
-            addPreviewMapLayers(liveMap);
+            syncOccurrenceMapLayers();
             flyToCard(selected);
           });
           liveMap.on("error", () => {
@@ -4498,118 +6101,102 @@
         }
       }
 
-      function addPreviewMapLayers(map) {
-        const routeColor = semanticColor("--route");
-        const transitColor = semanticColor("--transit");
-        const crowdColor = semanticColor("--crowd");
-        const sources = {
-          route: {
-            type: "Feature",
-            geometry: {
-              type: "LineString",
-              coordinates: [
-                [126.958, 37.562],
-                [126.972, 37.568],
-                [126.991, 37.564],
-                [127.008, 37.571]
-              ]
-            }
-          },
-          transit: {
-            type: "Feature",
-            geometry: {
-              type: "LineString",
-              coordinates: [
-                [126.946, 37.556],
-                [126.966, 37.56],
-                [126.988, 37.566],
-                [127.012, 37.574],
-                [127.034, 37.582]
-              ]
-            }
-          },
-          crowd: {
-            type: "Feature",
-            geometry: {
-              type: "Polygon",
-              coordinates: [
-                [
-                  [126.994, 37.552],
-                  [127.02, 37.553],
-                  [127.026, 37.568],
-                  [127.006, 37.579],
-                  [126.988, 37.568],
-                  [126.994, 37.552]
-                ]
-              ]
-            }
-          }
-        };
-
-        if (!map.getSource("preview-route")) {
-          map.addSource("preview-route", { type: "geojson", data: sources.route });
-          map.addLayer({
-            id: "preview-route",
-            type: "line",
-            source: "preview-route",
-            layout: {
-              "line-cap": "round",
-              "line-join": "round"
-            },
-            paint: {
-              "line-blur": 0.25,
-              "line-color": routeColor,
-              "line-opacity": 0.6,
-              "line-width": 3
-            }
-          });
-        }
-
-        if (!map.getSource("preview-transit")) {
-          map.addSource("preview-transit", { type: "geojson", data: sources.transit });
-          map.addLayer({
-            id: "preview-transit",
-            type: "line",
-            source: "preview-transit",
-            layout: {
-              "line-cap": "round",
-              "line-join": "round"
-            },
-            paint: {
-              "line-blur": 0.2,
-              "line-color": transitColor,
-              "line-opacity": 0.55,
-              "line-width": 3
-            }
-          });
-        }
-
-        if (!map.getSource("preview-crowd")) {
-          map.addSource("preview-crowd", { type: "geojson", data: sources.crowd });
-          map.addLayer({
-            id: "preview-crowd-fill",
+      function syncOccurrenceMapLayers() {
+        if (!liveMap || !liveMap.isStyleLoaded?.()) return;
+        const pinData = latestMapData?.geojson?.pins || { type: "FeatureCollection", features: [] };
+        const areaData = latestMapData?.geojson?.presenceAreas || { type: "FeatureCollection", features: [] };
+        ensureGeoJsonSource("presence-areas", areaData);
+        ensureGeoJsonSource("occurrence-pins", pinData);
+        if (!liveMap.getLayer("presence-areas-fill")) {
+          liveMap.addLayer({
+            id: "presence-areas-fill",
             type: "fill",
-            source: "preview-crowd",
+            source: "presence-areas",
             paint: {
-              "fill-antialias": true,
-              "fill-color": crowdColor,
-              "fill-opacity": 0.07
+              "fill-color": semanticColor("--brand"),
+              "fill-opacity": ["case", ["boolean", ["feature-state", "selected"], false], 0.28, 0.14]
             }
           });
-          map.addLayer({
-            id: "preview-crowd-line",
+        }
+        if (!liveMap.getLayer("presence-areas-line")) {
+          liveMap.addLayer({
+            id: "presence-areas-line",
             type: "line",
-            source: "preview-crowd",
-            layout: {
-              "line-cap": "round",
-              "line-join": "round"
-            },
+            source: "presence-areas",
             paint: {
-              "line-blur": 0.15,
-              "line-color": crowdColor,
-              "line-opacity": 0.36,
-              "line-width": 1.15
+              "line-color": semanticColor("--brand"),
+              "line-opacity": 0.62,
+              "line-width": ["case", ["boolean", ["feature-state", "selected"], false], 2.8, 1.4]
             }
+          });
+        }
+        if (!liveMap.getLayer("occurrence-pin-halo")) {
+          liveMap.addLayer({
+            id: "occurrence-pin-halo",
+            type: "circle",
+            source: "occurrence-pins",
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 7, 12, 13, 18],
+              "circle-color": "#fff",
+              "circle-opacity": 0.96,
+              "circle-stroke-width": ["case", ["boolean", ["feature-state", "selected"], false], 4, 2],
+              "circle-stroke-color": semanticColor("--brand")
+            }
+          });
+        }
+        if (!liveMap.getLayer("occurrence-pin-core")) {
+          liveMap.addLayer({
+            id: "occurrence-pin-core",
+            type: "circle",
+            source: "occurrence-pins",
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 7, 6, 13, 9],
+              "circle-color": semanticColor("--brand"),
+              "circle-opacity": 0.98
+            }
+          });
+        }
+        if (!liveMap.getLayer("occurrence-pin-label")) {
+          liveMap.addLayer({
+            id: "occurrence-pin-label",
+            type: "symbol",
+            source: "occurrence-pins",
+            layout: {
+              "text-field": ["to-string", ["get", "sequence"]],
+              "text-size": ["interpolate", ["linear"], ["zoom"], 7, 10, 13, 12],
+              "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+              "text-allow-overlap": true
+            },
+            paint: { "text-color": "#fff" }
+          });
+        }
+        bindMapLayerInteractions();
+        updatePinSelection();
+      }
+
+      function ensureGeoJsonSource(id, data) {
+        const source = liveMap.getSource(id);
+        if (source?.setData) {
+          source.setData(data);
+          return;
+        }
+        liveMap.addSource(id, { type: "geojson", data, generateId: true });
+      }
+
+      let mapLayerInteractionsBound = false;
+      function bindMapLayerInteractions() {
+        if (mapLayerInteractionsBound || !liveMap) return;
+        mapLayerInteractionsBound = true;
+        for (const layerId of ["occurrence-pin-core", "occurrence-pin-halo", "occurrence-pin-label", "presence-areas-fill", "presence-areas-line"]) {
+          liveMap.on("mouseenter", layerId, () => {
+            liveMap.getCanvas().style.cursor = "pointer";
+          });
+          liveMap.on("mouseleave", layerId, () => {
+            liveMap.getCanvas().style.cursor = "";
+          });
+          liveMap.on("click", layerId, (event) => {
+            const feature = event.features?.[0];
+            if (feature?.properties) selectMapOccurrence(feature.properties);
           });
         }
       }
@@ -4641,14 +6228,9 @@
       function cardCenter(card) {
         const exact = cardCenterOverride(card);
         if (exact) return exact.center;
-        return {
-          occurrence: [126.978, 37.5665],
-          continuous_presence: [126.965, 37.571],
-          transit_occurrence: [126.992, 37.57],
-          crowd_density_signal: [127.01, 37.558],
-          route_segment: [126.982, 37.566],
-          route_checkpoint: [126.958, 37.579]
-        }[card?.targetType];
+        if (card?.publicLocation) return [card.publicLocation.lng, card.publicLocation.lat];
+        const feature = latestMapData?.geojson?.pins?.features?.find((item) => item.properties?.targetId === card?.id);
+        return feature?.geometry?.coordinates;
       }
 
       function distanceMeters(from, to) {
@@ -4669,12 +6251,27 @@
       }
 
       function updatePinSelection() {
-        document.querySelectorAll(".pin").forEach((pin) => {
-          const related = (pin.dataset.related || pin.dataset.target || "").split(",");
-          const active = related.includes(selected?.id) || (selected?.targetType === "continuous_presence" && pin.dataset.target === "occ_1");
-          pin.classList.toggle("selected", active);
-          pin.setAttribute("aria-current", String(active));
-        });
+        if (!liveMap?.isStyleLoaded?.()) return;
+        const selectedId = selected?.id || "";
+        try {
+          if (liveMap.getLayer("occurrence-pin-halo")) {
+            liveMap.setPaintProperty("occurrence-pin-halo", "circle-stroke-width", ["case", ["==", ["get", "targetId"], selectedId], 4, 2]);
+          }
+          if (liveMap.getLayer("presence-areas-fill")) {
+            liveMap.setPaintProperty("presence-areas-fill", "fill-opacity", ["case", ["==", ["get", "targetId"], selectedId], 0.28, 0.14]);
+          }
+          if (liveMap.getLayer("presence-areas-line")) {
+            liveMap.setPaintProperty("presence-areas-line", "line-width", ["case", ["==", ["get", "targetId"], selectedId], 2.8, 1.4]);
+          }
+        } catch {}
+      }
+
+      function selectMapOccurrence(properties) {
+        const targetId = properties.targetId || properties.occurrenceUnitId;
+        const card = loadedCards.find((item) => item.id === targetId);
+        if (!card) return;
+        selectCard(card, { toast: "지도 선택을 현장 카드와 상세에 반영했습니다." });
+        if (innerWidth > 780) focusPanel(document.querySelector(".map-sheet"));
       }
 
       function drawRoad(ctx, points) {
@@ -4793,18 +6390,54 @@
           layout.classList.add("mobile-tab-home");
         }
         if (innerWidth <= 780) {
-          layout.classList.remove("desktop-law");
+          layout.classList.remove("desktop-law", "desktop-reels", "desktop-explore");
         }
         if (innerWidth > 780) {
-          layout.classList.remove("mobile-tab-home", "mobile-tab-law", "mobile-tab-map", "mobile-tab-report", "mobile-tab-record");
+          layout.classList.remove("mobile-tab-home", "mobile-tab-reels", "mobile-tab-explore", "mobile-tab-laws", "mobile-tab-report", "mobile-detail-open");
         }
+      }
+
+      function setRailCurrent(view) {
+        document.querySelectorAll(".rail-item").forEach((item) => {
+          item.setAttribute("aria-current", String(item.dataset.railView === view ? "page" : "false"));
+          if (item.dataset.railView !== view) item.removeAttribute("aria-current");
+        });
+      }
+
+      function setPrimaryView(view) {
+        if (innerWidth <= 780) {
+          setMobileTab(view, document.querySelector(`.mobile-nav button[data-tab-view="${view}"]`));
+          return;
+        }
+        const layout = document.querySelector(".layout");
+        withViewTransition(() => {
+          layout.classList.remove("desktop-law", "desktop-reels", "desktop-explore");
+          if (view === "laws") layout.classList.add("desktop-law");
+          if (view === "reels") layout.classList.add("desktop-reels");
+          if (view === "explore") layout.classList.add("desktop-explore");
+        });
+        setRailCurrent(view);
+        scrollTo({ top: 0, behavior: reduceMotion() ? "auto" : "smooth" });
+        if (view === "laws" && selectedLaw) renderLawDetail(selectedLaw);
+        if (view === "reels") renderReelsView();
+        if (view === "explore") {
+          pulseElement(document.querySelector(".map-shell"), "is-focused", 900);
+          setTimeout(() => liveMap?.resize(), 120);
+        }
+        if (view === "report") {
+          focusPanel($("report-section"));
+          activateReportFlow({ requestPosition: true });
+        }
+        if (view === "home") focusPanel($("home-section"));
       }
 
       function setDesktopLawPanel(open) {
         const layout = document.querySelector(".layout");
         withViewTransition(() => {
           layout.classList.toggle("desktop-law", open);
+          layout.classList.remove("desktop-reels", "desktop-explore");
         });
+        setRailCurrent(open ? "laws" : "home");
         if (open) {
           if (selectedLaw) renderLawDetail(selectedLaw);
           focusPanel($("law-section"));
@@ -4813,31 +6446,6 @@
           focusPanel($("home-section"));
         }
         setTimeout(() => liveMap?.resize(), 120);
-      }
-
-	      function setLayerVisibility(layer, visible) {
-	        const pinGroups = {
-	          official: [".pin.document"],
-	          assembly: [".pin.daegu", ".pin.main"],
-	          transit: [".pin.transit"],
-	          crowd: [".pin.crowd"],
-	          route: [".pin.checkpoint"]
-        };
-        for (const selector of pinGroups[layer] || []) {
-          document.querySelectorAll(selector).forEach((pin) => {
-            pin.style.visibility = visible ? "" : "hidden";
-          });
-        }
-        const mapLayers = {
-          transit: ["preview-transit"],
-          crowd: ["preview-crowd-fill", "preview-crowd-line"],
-          route: ["preview-route"]
-        };
-        for (const id of mapLayers[layer] || []) {
-          try {
-            if (liveMap?.getLayer(id)) liveMap.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
-          } catch {}
-        }
       }
 
       document.querySelectorAll(".tabs button").forEach((button) => {
@@ -4863,29 +6471,10 @@
         });
       });
 
-      document.querySelectorAll(".layer").forEach((button) => {
-        button.addEventListener("click", () => {
-          const next = button.getAttribute("aria-pressed") !== "true";
-          button.setAttribute("aria-pressed", String(next));
-          setLayerVisibility(button.dataset.layer, next);
-          focusPanel(document.querySelector(".map-shell"));
-          showToast(`${button.textContent.trim()} 레이어 ${next ? "켜짐" : "꺼짐"}`);
-        });
-      });
-
       $("map-search").addEventListener("keydown", (event) => {
         if (event.key === "Enter") searchMap(event.currentTarget.value);
       });
       $("map-search").addEventListener("change", (event) => searchMap(event.currentTarget.value));
-
-      document.querySelectorAll(".pin").forEach((pin) => {
-        pin.addEventListener("click", () => {
-          const ids = [pin.dataset.target, ...(pin.dataset.related || "").split(",")].filter(Boolean);
-          const card = ids.map((id) => loadedCards.find((item) => item.id === id)).find(Boolean) || selected;
-          selectCard(card, { toast: "지도 선택을 상황 카드와 상세에 반영했습니다." });
-          if (innerWidth > 780) focusPanel(document.querySelector(".map-sheet"));
-        });
-      });
 
       $("record-section").addEventListener("click", (event) => {
         const sourceButton = event.target instanceof Element ? event.target.closest("[data-issue-timeline-source]") : null;
@@ -4908,16 +6497,58 @@
         if (issueButton) openIssueFromLaw(issueButton.dataset.lawIssueId);
       });
 
+      $("explore-grid").addEventListener("click", (event) => {
+        const tile = event.target instanceof Element ? event.target.closest("[data-explore-type]") : null;
+        if (!tile) return;
+        if (tile.dataset.exploreType === "issue") {
+          const issue = loadedIssueCards.find((item) => item.id === tile.dataset.exploreId);
+          if (issue) {
+            selectIssue(issue, { scrollToCards: false, toast: "이슈를 선택했습니다." });
+            if (innerWidth <= 780) setMobileTab("home", document.querySelector('.mobile-nav button[data-tab-view="home"]'));
+          }
+          return;
+        }
+        const card = loadedCards.find((item) => (item.regionLabel || "전국") === tile.dataset.exploreId);
+        if (card) selectCard(card, { toast: "지역 현장을 열었습니다." });
+      });
+
+      $("reels-section").addEventListener("click", (event) => {
+        const action = event.target instanceof Element ? event.target.closest("[data-reel-action]") : null;
+        if (!action) return;
+        if (action.dataset.reelAction === "region") {
+          setPrimaryView("explore");
+          return;
+        }
+        if (action.dataset.reelAction === "issue") {
+          setPrimaryView("home");
+          return;
+        }
+        if (action.dataset.reelAction === "alert") {
+          $("follow").click();
+          return;
+        }
+        const tab = {
+          evidence: "evidence",
+          dispute: "dispute"
+        }[action.dataset.reelAction] || "summary";
+        document.querySelector(`.tabs button[data-tab="${tab}"]`)?.click();
+        openDetailPanel();
+      });
+
       document.querySelectorAll(".mobile-nav button").forEach((button) => {
         button.addEventListener("click", () => {
           setMobileTab(button.dataset.tabView, button);
-          if (button.dataset.tabView === "law" && selectedLaw) renderLawDetail(selectedLaw);
+          if (button.dataset.tabView === "laws" && selectedLaw) renderLawDetail(selectedLaw);
         });
+      });
+
+      document.querySelectorAll(".rail-item").forEach((button) => {
+        button.addEventListener("click", () => setPrimaryView(button.dataset.railView));
       });
 
       $("open-laws").addEventListener("click", () => {
         if (innerWidth <= 780) {
-          setMobileTab("law", document.querySelector('.mobile-nav button[data-tab-view="law"]'));
+          setMobileTab("laws", document.querySelector('.mobile-nav button[data-tab-view="laws"]'));
           if (selectedLaw) renderLawDetail(selectedLaw);
           return;
         }
@@ -4931,6 +6562,11 @@
         }
         setDesktopLawPanel(false);
       });
+      $("reels-issue-action").addEventListener("click", () => setPrimaryView("home"));
+      $("explore-map-action").addEventListener("click", () => {
+        focusPanel(document.querySelector(".map-shell"));
+        setTimeout(() => liveMap?.resize(), 120);
+      });
 
       $("refresh").addEventListener("click", async () => {
         setStatus("최신 자료 확인 중", { toast: false });
@@ -4939,15 +6575,15 @@
         showToast("최신 공개 자료로 갱신했습니다.");
       });
       $("locate").addEventListener("click", () => {
-        if (innerWidth <= 780) setMobileTab("map", document.querySelector('.mobile-nav button[data-tab-view="map"]'));
+        if (innerWidth <= 780) setMobileTab("explore", document.querySelector('.mobile-nav button[data-tab-view="explore"]'));
         else focusPanel(document.querySelector(".map-shell"));
         setStatus("위치 권한 없이 전국 보기");
       });
       $("split-view").addEventListener("click", () => {
-        if (innerWidth <= 780) setMobileTab("record", document.querySelector('.mobile-nav button[data-tab-view="record"]'));
-        else focusPanel($("record-section"));
+        openDetailPanel();
         showToast("선택한 상황을 상세 패널에서 확인합니다.");
       });
+      $("close-detail").addEventListener("click", closeDetailPanel);
       $("follow").addEventListener("click", async () => {
         const button = $("follow");
         const label = button.textContent;
@@ -4974,12 +6610,30 @@
 
       $("live-form").addEventListener("submit", (event) => event.preventDefault());
       $("capture-check-action").addEventListener("click", checkCaptureReadiness);
+      $("confirm-report-target").addEventListener("click", confirmReportTarget);
+      $("change-report-target").addEventListener("click", () => activateReportFlow({ requestPosition: true }));
+      $("view-report-map").addEventListener("click", () => {
+        if (selectedReportTarget?.card) selectCard(selectedReportTarget.card, { openDetail: false, toast: "지도에서 현장을 확인합니다." });
+        setPrimaryView("explore");
+      });
       $("start-capture-action").addEventListener("click", startLiveCapture);
+      $("submit-capture-action").addEventListener("click", submitPendingCapture);
+      $("retake-capture-action").addEventListener("click", () => {
+        clearPendingCapture();
+        $("capture-preview").hidden = true;
+        setReportStage("target");
+        $("form-status").textContent = "다시 촬영할 수 있습니다.";
+        updateReportActionState();
+      });
       $("report-video-action").addEventListener("click", () => {
-        document.querySelector('.tabs button[data-tab="video"]')?.click();
-        if (innerWidth <= 780) setMobileTab("record", document.querySelector('.mobile-nav button[data-tab-view="record"]'));
-        focusPanel($("record-section"));
-        $("form-status").textContent = "선택한 상황의 현장 영상 탭으로 이동했습니다.";
+        setPrimaryView("reels");
+        $("form-status").textContent = "선택한 이슈의 현장 영상으로 이동했습니다.";
+      });
+      $("receipt-video-action").addEventListener("click", () => setPrimaryView("reels"));
+      $("receipt-evidence-action").addEventListener("click", () => {
+        const receipt = loadStoredReportReceipt();
+        const card = loadedCards.find((item) => item.id === receipt?.targetId);
+        if (card) selectCard(card, { toast: "연결 현장의 근거를 확인합니다." });
       });
 
       window.addEventListener("resize", () => {

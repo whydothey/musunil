@@ -32,10 +32,6 @@ function assertRequiredTables(sql: string): void {
     "issue_law_links",
     "occurrences",
     "continuous_presences",
-    "transit_occurrences",
-    "crowd_density_signals",
-    "route_segments",
-    "route_checkpoints",
     "crowd_estimates",
     "claims",
     "evidence",
@@ -61,6 +57,12 @@ function assertRequiredTables(sql: string): void {
   }
   if (!/claims[\s\S]*visibility\s+text/i.test(sql)) {
     throw new Error("claims.visibility column is missing.");
+  }
+  if (!/public_location\s+jsonb/i.test(sql)) {
+    throw new Error("public_location column is missing for map occurrence units.");
+  }
+  if (!/private_lng\s+double precision/i.test(sql) || !/private_lat\s+double precision/i.test(sql)) {
+    throw new Error("private coordinate columns are missing for proof-of-presence area derivation.");
   }
 }
 

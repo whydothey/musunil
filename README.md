@@ -43,6 +43,28 @@ pnpm dev:web
 
 브라우저에서 출력된 `http://localhost:<port>`를 연다. API가 `http://localhost:4000`에서 실행 중이면 데이터를 가져오고, 아니면 내장 샘플을 표시한다.
 운영 정적 빌드는 `pnpm build:web-config`로 단일 YAML의 `api.public_base_url`, `map.map_style_url`만 [apps/web/config.js](/Users/mk/Documents/Musunil/apps/web/config.js)에 공개 주입한다.
+Render Static Site는 `pnpm build:web-static`을 사용한다. 이 빌드는 [apps/web/build-info.json](/Users/mk/Documents/Musunil/apps/web/build-info.json)에 커밋 SHA를 생성하므로, 배포 화면이 최신 커밋인지 확인할 수 있다.
+
+Render Static Site 수동 생성값:
+
+```text
+Branch: main
+Root Directory: 비움
+Build Command: corepack enable && pnpm install --frozen-lockfile && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com pnpm build:web-static && pnpm launch:check
+Publish Directory: apps/web
+Cache-Control header: no-store
+```
+
+배포 후에는 아래 명령으로 API와 Web이 같은 최신 커밋을 보고 있는지 확인한다.
+
+```bash
+MUSUNIL_API_BASE_URL=https://api.musunil.com \
+MUSUNIL_WEB_BASE_URL=https://musunil.com \
+MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) \
+pnpm launch:post-deploy-smoke
+```
+
+이 검증이 실패하면 Render가 다른 브랜치/Root/Publish Directory를 보고 있거나, Static Site 헤더/Cloudflare 캐시가 구버전을 반환하는 상태다.
 
 ## 현재 구현 범위
 
@@ -125,6 +147,8 @@ pnpm dev:web
 - Render Dashboard에서 Blueprint 생성과 `MUSUNIL_USER_INPUTS_B64` 1회 입력.
 
 UI/UX 프리뷰용 외부 연결 순서는 [docs/uiux-preview-connections-guide.md](/Users/mk/Documents/Musunil/docs/uiux-preview-connections-guide.md)에 정리했다. 먼저 지도만 붙이고, 실제 푸시/결제/AI/미디어 저장소는 뒤로 미룬다.
+
+국내 운영과 운영 후원 수익화 순서는 [docs/domestic-operation-and-monetization.md](/Users/mk/Documents/Musunil/docs/domestic-operation-and-monetization.md)에 정리했다. 현재 순서는 도메인 기반 실제 서비스 오픈, 개인사업자 등록 및 사업용 계좌 확보, PG 단발/정기 운영 후원 연결이다. 개인 계좌 공개와 후원 기반 노출/알림/신뢰도 가중은 금지한다.
 
 Mock 데이터와 실제 공개 원천 ingest 방식은 [docs/data-fixtures-and-real-sources.md](/Users/mk/Documents/Musunil/docs/data-fixtures-and-real-sources.md)에 정리했다.
 

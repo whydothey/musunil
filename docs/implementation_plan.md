@@ -29,7 +29,9 @@ Web/PWA, Mobile
 - 모든 경찰/지자체 안내, 주최 측 공지, 언론 보도, 시민 제보, 반론, 신고, AI 추정은 Claim이다.
 - Source provenance, Evidence strength, Risk level은 별도 필드다.
 - 같은 주제라도 지역이나 시간이 다르면 별도 Occurrence다.
-- 장기 농성은 ContinuousPresence, 지하철/대중교통 영향은 TransitOccurrence, 주최 없는 밀집은 CrowdDensitySignal, 행진/차량행렬/차벽/검문은 RouteSegment/RouteCheckpoint로 분리한다.
+- 장기 농성은 ContinuousPresence로 분리한다.
+- 공개 지도는 자료 위치 핀과 Proof-of-Presence 현장 인증 영역만 표시한다.
+- 교통선, 경로선, 검문/통제 지점, 인파 밀도 면은 공개 도메인으로 만들지 않는다.
 
 ## 기능 분해
 
@@ -38,7 +40,7 @@ Web/PWA, Mobile
    - 제품/운영 입력값은 단일 YAML에서 읽고, Render 관리형 DB/Redis URL과 generated secret만 환경변수로 받는다.
 
 2. 도메인 모델
-   - Issue, Occurrence, ContinuousPresence, TransitOccurrence, CrowdDensitySignal, RouteSegment, RouteCheckpoint.
+   - Issue, Occurrence, ContinuousPresence.
    - Claim, Evidence, AuditLog, TransparencyLog, Subscription, NotificationOutbox.
    - LawItem, IssueLawLink. LawItem은 Event/Claim이 아니라 공식 법령·의안 참조 메타데이터이며, IssueLawLink가 주제어/법 이름/의안 제목/수동 연결 근거를 보존한다.
    - Issue 제목은 지역/형태가 아니라 주장 대상과 주장 성격이다. 예: `부정선거 의혹 제기 집회`, `정보통신망법 개정 반대 집회`, `대통령 탄핵 요구 집회`.
@@ -55,10 +57,11 @@ Web/PWA, Mobile
 
 5. 지도/상세
    - 홈의 최상위 탐색 단위는 Issue다.
-   - 사용자는 Issue를 먼저 선택하고, 하위 Occurrence/ContinuousPresence/TransitOccurrence/CrowdDensitySignal/RouteSegment/RouteCheckpoint를 확인한다.
+   - 사용자는 Issue를 먼저 선택하고, 하위 Occurrence/ContinuousPresence 현장을 확인한다.
    - 법 탭은 주요 이슈와 연결된 법령·의안을 관심도순으로 보여 주되, 신뢰도·알림·랭킹과 독립된 탐색 정렬값만 사용한다.
    - 집회 목적이 확인되지 않은 일정/통계 자료는 Issue로 억지 묶지 않고 Occurrence/기록으로 표시한다.
-   - 집회 지점, 장기 현장, 행진 경로, 통제 지점, 대중교통 영향, 인파 신호만 표시한다.
+   - 지도는 자료 위치 핀과 현장 인증 영역만 표시한다. 자료에서 위치를 파싱하지 못하면 핀을 만들지 않고 카드에서 `위치 확인 중`으로 남긴다.
+   - 현장 인증 영역은 공개 가능한 LIVE Evidence 좌표를 서버에서 흐림 처리해 만든 Polygon만 사용한다.
    - 불법/합법 단정, 참여 독려, 충돌/회피/진입 전술 안내는 만들지 않는다.
 
 6. 알림
@@ -91,14 +94,14 @@ Web/PWA, Mobile
 
 - PostgreSQL/PostGIS 마이그레이션.
 - 초기 migration SQL로 Claim/Evidence/Occurrence/Audit/Notification 테이블 계약을 고정한다.
-- Claim/Evidence/Issue/Occurrence/ContinuousPresence/TransitOccurrence/CrowdDensitySignal/Route 모델.
+- Claim/Evidence/Issue/Occurrence/ContinuousPresence 모델.
 - AuditLog/TransparencyLog.
 
 ### Sprint 3. 홈/지도
 
 - 이슈 우선 홈: Issue 카드, 선택 이슈의 하위 상황 카드.
-- 지금/예정/장기/교통 필터.
-- 지도 클러스터와 상세 진입.
+- 지금/예정/장기 필터.
+- MapLibre GeoJSON source/layer 기반 자료 위치 핀, 현장 인증 영역, 상세 진입.
 - Priority score에서 후원/신고/투표/댓글 제외 테스트.
 
 ### Sprint 4. 제보 UX
@@ -115,16 +118,16 @@ Web/PWA, Mobile
 - Play Integrity/App Attest hook.
 - 원본 해시, EXIF 제거, 마스킹 파이프라인.
 
-### Sprint 6. 집회 특수 유형
+### Sprint 6. 집회 현장 정밀화
 
 - ContinuousPresence 그래프.
-- TransitOccurrence 노선/역/방향.
-- CrowdDensitySignal 병목/밀도.
-- RouteSegment/RouteCheckpoint.
+- 행진도 공개 지도에서는 선형 경로가 아니라 현장 단위 핀과 인증 영역으로 표시한다.
+- 공개 원천 위치 파싱 실패, 다중 장소, 반론 있는 현장의 카드/지도 상태를 정리한다.
+- LIVE Evidence 1개, 2개, 3개 이상 케이스별 현장 인증 영역 계산을 검증한다.
 
 ### Sprint 7. AI/Workers
 
-- 공개 집회/교통 원천 read-only 수집 worker.
+- 공개 집회 원천 read-only 수집 worker.
 - 대구경찰청 `오늘의 집회시위` 목록은 HTML parser + dry-run부터 운영한다.
 - 국회 의안 공개 API와 국가법령정보 공동활용 API는 `LawItem`으로 정규화하고 `/internal/ingest/laws`로 반영한다.
 - PDF/첨부파일 구조화 파서.
@@ -157,7 +160,7 @@ Web/PWA, Mobile
 - Frontend Agent: Web/PWA 구현.
 - Mobile Agent: Expo 촬영, 위치 인증, 푸시 토큰.
 - Backend Agent: API, DB, 인증, 권한.
-- Geo/Map Agent: PostGIS, 지도 클러스터, route 처리.
+- Geo/Map Agent: PostGIS, MapLibre source/layer, 자료 위치 핀, 현장 인증 영역.
 - AI Agent Engineer: Claim 정규화, Evidence 매칭, 요약, 조작 신호.
 - Security/Privacy Agent: 위치 흐림, 원본 보호, 로그 접근 통제.
 - Legal/Risk Agent: 권리침해 신고, 기관 요청, 투명성 로그.
