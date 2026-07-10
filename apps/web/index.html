@@ -3251,13 +3251,32 @@
       const isLocalPage = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
       const apiParam = isLocalPage ? new URLSearchParams(location.search).get("api") : null;
       const storedApi = isLocalPage ? localStorage.getItem("musunilApiBaseUrl") : null;
-      const API = (apiParam || storedApi || webConfig.apiBaseUrl || location.origin).replace(/\/$/, "");
+      const API = (apiParam || storedApi || safePublicApiBase(webConfig.apiBaseUrl) || defaultApiBase()).replace(/\/$/, "");
       if (apiParam) localStorage.setItem("musunilApiBaseUrl", API);
       const isPreviewApiBase = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::|\/|$)/.test(API);
       document.documentElement.dataset.previewApi = String(isPreviewApiBase);
       const MAP_STYLE_URL = webConfig.mapStyleUrl || "https://tiles.openfreemap.org/styles/positron";
       const SESSION_KEY = "musunilUserSession";
       let liveMap;
+
+      function safePublicApiBase(value) {
+        if (typeof value !== "string" || !value.trim()) return undefined;
+        try {
+          const parsed = new URL(value.trim());
+          const localApi = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(parsed.hostname);
+          if (!isLocalPage && localApi) return undefined;
+          if (!isLocalPage && parsed.protocol !== "https:") return undefined;
+          return parsed.toString().replace(/\/$/, "");
+        } catch {
+          return undefined;
+        }
+      }
+
+      function defaultApiBase() {
+        if (!isLocalPage && (location.hostname === "musunil.com" || location.hostname.endsWith(".musunil.com"))) return "https://api.musunil.com";
+        return location.origin;
+      }
+
       const fallbackClaims = [
         {
           id: "local_claim_1",

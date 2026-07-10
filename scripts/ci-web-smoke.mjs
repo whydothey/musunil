@@ -158,6 +158,8 @@ async function checkWeb(port) {
   assert(index.includes("mediaBase64: await blobBase64(blob)"), "live upload bytes missing");
   assert(index.includes("hash: upload.hash"), "server upload hash missing");
   assert(index.includes("distanceMeters("), "field distance calculation missing");
+  assert(index.includes("safePublicApiBase"), "production API base guard missing");
+  assert(index.includes("https://api.musunil.com"), "production API fallback missing");
   assert(!index.includes("distanceToTargetM: 80"), "fake field distance present");
   assert(!index.includes("storageKey: `private/live/browser"), "client-side private storage key present");
   assert(!index.includes("hash: `browser-"), "client-side live hash present");

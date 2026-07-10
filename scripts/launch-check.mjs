@@ -277,6 +277,7 @@ if (!/MUSUNIL_WEB_CONFIG/.test(web)) failures.push("web runtime config hook is m
 if (!/build-info\.js/.test(web)) failures.push("web build-info hook is missing");
 if (!/일정 확인/.test(web) || !/public-sources\/coverage/.test(web)) failures.push("web public source coverage status is missing");
 if (/const API = "http:\/\/localhost:4000"/.test(web)) failures.push("web API base is hardcoded to localhost");
+if (!/function safePublicApiBase/.test(web) || !/https:\/\/api\.musunil\.com/.test(web)) failures.push("web must ignore stale localhost config on production domains");
 if (!/isLocalPage/.test(web) || !/storedApi = isLocalPage/.test(web) || !/apiParam = isLocalPage/.test(web)) {
   failures.push("web API override must be localhost-only");
 }
