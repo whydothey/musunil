@@ -1,0 +1,14 @@
+node_modules/
+tmp/
+dist/
+coverage/
+.turbo/
+.DS_Store
+config/musunil.user-inputs.local.yaml
+config/*.local.yaml
+config/*.secret.yaml
+.env
+.env.*
+*.pem
+*.key
+*.log

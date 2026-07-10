@@ -1,0 +1,1562 @@
+import assert from "node:assert/strict";
+import { EventEmitter } from "node:events";
+import { createApp, createSeedStore, decryptLiveMediaBytes } from "./app.ts";
+import { enforcePublicWriteRateLimit, readJsonBody } from "./http-boundary.ts";
+import { decryptSnapshot, encryptSnapshot } from "./postgres-store.ts";
+
+const now = new Date("2026-07-07T09:00:00.000Z");
+const store = createSeedStore();
+const internalHeaders = { "x-musunil-internal-key": "test_internal_key" };
+const app = createApp(store, {
+  internalApiKey: "test_internal_key",
+  userTokenSecret: "test_user_token_secret_32_bytes_minimum",
+  readiness: () => ({ ready: true, checks: [{ id: "test", ok: true, message: "ok" }] })
+});
+const productionSeed = createSeedStore({ includeMockData: false });
+assert.equal(productionSeed.occurrences.some((item) => item.id === "occ_daegu_0709_public"), true);
+assert.equal(productionSeed.occurrences.some((item) => item.id === "occ_1" || item.id.includes("_mock")), false);
+assert.equal(productionSeed.claims.some((item) => item.id.includes("_mock") || item.targetId === "occ_1"), false);
+assert.equal(productionSeed.areaClusters.some((item) => item.id === "area_busan" || item.id === "area_seoul"), false);
+assert.equal(productionSeed.lawItems.length, 0);
+assert.equal(productionSeed.issueLawLinks.length, 0);
+const productionSeedText = JSON.stringify(productionSeed);
+for (const previewToken of [
+  "_mock",
+  "preview-",
+  "law_info_network_amendment",
+  "law_national_assembly_impeachment",
+  "law_public_official_election",
+  "occ_1",
+  "presence_1",
+  "transit_1",
+  "crowd_1",
+  "checkpoint_1",
+  "\"id\":\"area_seoul\"",
+  "\"id\":\"area_busan\"",
+  "\"id\":\"area_daejeon\""
+]) {
+  assert.equal(productionSeedText.includes(previewToken), false);
+}
+const productionHome = await createApp(productionSeed).handle({ method: "GET", path: "/home" });
+assert.equal(JSON.stringify(productionHome.body).includes("대구 0709(목) 오늘의 집회 공개 일정"), true);
+assert.equal(JSON.stringify(productionHome.body).includes("부산 도심 행진 가능성"), false);
+assert.equal(JSON.stringify(productionHome.body).includes("issueCards"), true);
+const productionLaws = await createApp(productionSeed).handle({ method: "GET", path: "/laws" });
+assert.equal((productionLaws.body as { laws: unknown[] }).laws.length, 0);
+assert.equal((await createApp(productionSeed).handle({ method: "GET", path: "/laws/law_info_network_amendment" })).status, 404);
+const encryptedSnapshot = encryptSnapshot('{"raw":"사용자 원문"}', "test_encryption_key_32_bytes_minimum");
+assert.equal(encryptedSnapshot.includes("사용자 원문"), false);
+assert.equal(decryptSnapshot(encryptedSnapshot, "test_encryption_key_32_bytes_minimum"), '{"raw":"사용자 원문"}');
+assert.throws(() => decryptSnapshot(encryptedSnapshot, "wrong_encryption_key_32_bytes_minimum"));
+const user1Session = await anonymousSession(app);
+const user1Headers = userHeaders(user1Session);
+const routeOnlySession = await anonymousSession(app);
+const mutedSession = await anonymousSession(app);
+const attackerSession = await anonymousSession(app);
+
+assert.equal((await app.handle({ method: "GET", path: "/health" })).status, 200);
+const sourceCoverage = await app.handle({ method: "GET", path: "/public-sources/coverage" });
+assert.equal(sourceCoverage.status, 200);
+assert.equal((sourceCoverage.body as { coverage: { totalPoliceRegions: number; activeScheduleRegions: number; policy: string } }).coverage.totalPoliceRegions, 18);
+assert.equal((sourceCoverage.body as { coverage: { totalPoliceRegions: number; activeScheduleRegions: number; policy: string } }).coverage.activeScheduleRegions, 18);
+assert.equal(
+  (sourceCoverage.body as { coverage: { totalPoliceRegions: number; activeScheduleRegions: number; policy: string } }).coverage.policy,
+  "absence_of_public_source_is_not_absence_of_assembly"
+);
+const coverageBody = sourceCoverage.body as {
+  coverage: {
+    candidateScheduleRegions: number;
+    statisticsOnlyRegions: number;
+    needsDiscoveryRegions: number;
+    nextRefreshAt?: string;
+    regions: Array<{ code: string; refreshCadenceHours: number; lastCheckedAt: string; nextRefreshAt: string; gapReason: string; coverageLevel: string }>;
+  };
+};
+assert.equal(coverageBody.coverage.candidateScheduleRegions, 0);
+assert.equal(coverageBody.coverage.statisticsOnlyRegions, 0);
+assert.equal(coverageBody.coverage.needsDiscoveryRegions, 0);
+assert.equal(typeof coverageBody.coverage.nextRefreshAt, "string");
+assert.equal(coverageBody.coverage.regions.length, 18);
+assert.equal(coverageBody.coverage.regions.every((region) => region.refreshCadenceHours > 0 && region.lastCheckedAt && region.nextRefreshAt && region.gapReason), true);
+assert.equal(coverageBody.coverage.regions.find((region) => region.code === "seoul")?.coverageLevel, "daily_schedule");
+assert.equal(coverageBody.coverage.regions.find((region) => region.code === "sejong")?.coverageLevel, "daily_schedule");
+assert.equal(coverageBody.coverage.regions.find((region) => region.code === "gangwon")?.coverageLevel, "daily_schedule");
+assert.equal(coverageBody.coverage.regions.find((region) => region.code === "busan")?.coverageLevel, "daily_schedule");
+assert.equal(coverageBody.coverage.regions.find((region) => region.code === "gyeonggi_south")?.coverageLevel, "daily_schedule");
+assert.equal(coverageBody.coverage.regions.find((region) => region.code === "gyeonggi_north")?.coverageLevel, "daily_schedule");
+assert.equal(coverageBody.coverage.regions.find((region) => region.code === "gwangju")?.coverageLevel, "daily_schedule");
+assert.equal(coverageBody.coverage.regions.find((region) => region.code === "incheon")?.coverageLevel, "daily_schedule");
+assert.equal(coverageBody.coverage.regions.find((region) => region.code === "gyeongbuk")?.coverageLevel, "daily_schedule");
+assert.equal(coverageBody.coverage.regions.find((region) => region.code === "gyeongnam")?.coverageLevel, "daily_schedule");
+assert.equal(coverageBody.coverage.regions.find((region) => region.code === "jeju")?.coverageLevel, "daily_schedule");
+assert.equal(coverageBody.coverage.regions.find((region) => region.code === "chungbuk")?.coverageLevel, "daily_schedule");
+assert.equal(coverageBody.coverage.regions.find((region) => region.code === "ulsan")?.coverageLevel, "daily_schedule");
+assert.equal(coverageBody.coverage.regions.find((region) => region.code === "chungnam")?.coverageLevel, "daily_schedule");
+assert.equal(coverageBody.coverage.regions.find((region) => region.code === "jeonbuk")?.coverageLevel, "daily_schedule");
+assert.equal(coverageBody.coverage.regions.find((region) => region.code === "jeonnam")?.coverageLevel, "daily_schedule");
+assert.equal(coverageBody.coverage.regions.find((region) => region.code === "daejeon")?.coverageLevel, "daily_schedule");
+const publicPayloads = [
+  await app.handle({ method: "GET", path: "/home" }),
+  await app.handle({ method: "GET", path: "/occurrences/occ_1" }),
+  await app.handle({ method: "GET", path: "/continuous-presences/presence_1" }),
+  await app.handle({ method: "GET", path: "/transit-occurrences/transit_1" }),
+  await app.handle({ method: "GET", path: "/targets/crowd_density_signal/crowd_busan_mock" }),
+  await app.handle({ method: "GET", path: "/issues/issue_1" }),
+  await app.handle({ method: "GET", path: "/laws" }),
+  await app.handle({ method: "GET", path: "/laws/law_info_network_amendment" }),
+  await app.handle({ method: "GET", path: "/targets/occurrence/occ_1/live-claims" }),
+  await app.handle({ method: "GET", path: "/targets/issue/issue_1/live-claims" }),
+  await app.handle({ method: "GET", path: "/area-clusters" }),
+  await app.handle({ method: "GET", path: "/map" })
+];
+for (const payload of publicPayloads) {
+  assert.equal(payload.status, 200);
+  assertPublicPayloadSafe(payload.body);
+}
+const liveClaims = await app.handle({ method: "GET", path: "/targets/occurrence/occ_1/live-claims" });
+assert.equal(liveClaims.status, 200);
+assert.equal((liveClaims.body as { liveClaims: Array<{ claim: { id: string }; redactionStatus: string; media: { redactedClipUrl: string } }> }).liveClaims[0]?.claim.id, "claim_occ_live_1");
+assert.equal((liveClaims.body as { liveClaims: Array<{ redactionStatus: string }> }).liveClaims[0]?.redactionStatus, "completed");
+assert.equal((liveClaims.body as { liveClaims: Array<{ media: { redactedClipUrl: string } }> }).liveClaims[0]?.media.redactedClipUrl, "/media/redacted/preview-occ-live-1.webm");
+const missingPublicRedactionStore = createSeedStore();
+const missingPublicRedactionEvidence = missingPublicRedactionStore.evidence.find((item) => item.id === "ev_occ_live_1");
+if (missingPublicRedactionEvidence) missingPublicRedactionEvidence.publicStorageKey = undefined;
+const missingPublicRedactionClaims = await createApp(missingPublicRedactionStore).handle({ method: "GET", path: "/targets/occurrence/occ_1/live-claims" });
+assert.equal((missingPublicRedactionClaims.body as { liveClaims: unknown[] }).liveClaims.length, 0);
+for (const evidenceId of ["ev_occ_live_1", "ev_presence_1", "ev_daejeon_live_mock"]) {
+  const evidence = missingPublicRedactionStore.evidence.find((item) => item.id === evidenceId);
+  if (evidence) evidence.publicStorageKey = undefined;
+}
+const missingPublishableIssue = await createApp(missingPublicRedactionStore).handle({ method: "GET", path: "/issues/issue_1" });
+assert.equal((missingPublishableIssue.body as { nationalSummary: { liveClaimCount: number } }).nationalSummary.liveClaimCount, 0);
+assert.equal((missingPublishableIssue.body as { crowdEstimates: unknown[] }).crowdEstimates.length, 0);
+assert.equal(
+  (missingPublishableIssue.body as { nationalTimeline: { moments: Array<{ title: string }> } }).nationalTimeline.moments.some((moment) => moment.title.includes("현장 영상 Claim")),
+  false
+);
+const integrityStore = createSeedStore();
+const integrityApp = createApp(integrityStore, { internalApiKey: "test_internal_key" });
+const unauthedIntegrityPatch = await integrityApp.handle({
+  method: "PATCH",
+  path: "/internal/evidence/ev_occ_live_1/device-integrity",
+  body: { deviceIntegrityStatus: "unknown" }
+});
+assert.equal(unauthedIntegrityPatch.status, 401);
+const invalidIntegrityPatch = await integrityApp.handle({
+  method: "PATCH",
+  path: "/internal/evidence/ev_occ_live_1/device-integrity",
+  headers: internalHeaders,
+  body: { deviceIntegrityStatus: "trusted_by_client" }
+});
+assert.equal(invalidIntegrityPatch.status, 400);
+const missingIntegrityProof = await integrityApp.handle({
+  method: "PATCH",
+  path: "/internal/evidence/ev_occ_live_1/device-integrity",
+  headers: internalHeaders,
+  body: { deviceIntegrityStatus: "pass", provider: "play_integrity" }
+});
+assert.equal(missingIntegrityProof.status, 400);
+assert.equal((missingIntegrityProof.body as { error: string }).error, "device_integrity_proof_required");
+const trustedIntegrityPatch = await integrityApp.handle({
+  method: "PATCH",
+  path: "/internal/evidence/ev_occ_live_1/device-integrity",
+  headers: internalHeaders,
+  body: { deviceIntegrityStatus: "unknown", provider: "play_integrity", attestationToken: "integrity-unknown-token" }
+});
+assert.equal(trustedIntegrityPatch.status, 200);
+assert.equal(integrityStore.evidence.find((item) => item.id === "ev_occ_live_1")?.deviceIntegrityStatus, "unknown");
+assert.equal(integrityStore.evidence.find((item) => item.id === "ev_occ_live_1")?.deviceIntegrityProvider, "play_integrity");
+assert.equal(JSON.stringify(trustedIntegrityPatch.body).includes("integrity-unknown-token"), false);
+const trustedIntegrityPass = await integrityApp.handle({
+  method: "PATCH",
+  path: "/internal/evidence/ev_occ_live_1/device-integrity",
+  headers: internalHeaders,
+  body: { deviceIntegrityStatus: "pass", provider: "app_attest", attestationHash: "sha256-trusteddeviceintegrityhash" }
+});
+assert.equal(trustedIntegrityPass.status, 200);
+assert.equal(integrityStore.evidence.find((item) => item.id === "ev_occ_live_1")?.deviceIntegrityStatus, "pass");
+assert.equal(integrityStore.evidence.find((item) => item.id === "ev_occ_live_1")?.deviceIntegrityProvider, "app_attest");
+assert.equal(integrityStore.evidence.find((item) => item.id === "ev_occ_live_1")?.deviceIntegrityProofHash, "sha256-trusteddeviceintegrityhash");
+const staleFieldCapturedAt = new Date(Date.now() - 10 * 60_000).toISOString();
+const freshFieldCapturedAt = new Date(Date.now() - 60_000).toISOString();
+const unscopedVerification = await app.handle({
+  method: "POST",
+  path: "/claims/claim_occ_live_1/field-verifications",
+  body: {
+    fieldVerification: "field_aligned",
+    capturedAt: freshFieldCapturedAt,
+    uploadedAt: new Date("2026-07-07T09:04:00.000Z").toISOString(),
+    foregroundGps: true,
+    gpsAccuracyM: 30,
+    distanceToTargetM: 80,
+    deviceIntegrityStatus: "pass",
+    deviceAttestation: "field-device-cluster"
+  }
+});
+assert.equal(unscopedVerification.status, 401);
+const badVerification = await app.handle({
+  method: "POST",
+  path: "/claims/claim_occ_live_1/field-verifications",
+  headers: user1Headers,
+  body: {
+    userId: user1Session.userId,
+    fieldVerification: "field_aligned",
+    capturedAt: staleFieldCapturedAt,
+    uploadedAt: new Date(Date.now() - 9 * 60_000).toISOString(),
+    foregroundGps: true,
+    gpsAccuracyM: 30,
+    distanceToTargetM: 80,
+    deviceIntegrityStatus: "pass",
+    deviceAttestation: "field-device-cluster"
+  }
+});
+assert.equal(badVerification.status, 422);
+const alignedVerification = await app.handle({
+  method: "POST",
+  path: "/claims/claim_occ_live_1/field-verifications",
+  headers: user1Headers,
+  body: {
+    userId: user1Session.userId,
+    fieldVerification: "field_aligned",
+    capturedAt: freshFieldCapturedAt,
+    uploadedAt: new Date("2026-07-07T09:04:00.000Z").toISOString(),
+    foregroundGps: true,
+    gpsAccuracyM: 30,
+    distanceToTargetM: 80,
+    deviceIntegrityStatus: "pass",
+    deviceAttestation: "field-device-cluster"
+  }
+});
+assert.equal(alignedVerification.status, 202);
+const alignedVerificationClaimId = (alignedVerification.body as { claim: { id: string; visibility: string }; evidenceId: string }).claim.id;
+const alignedVerificationEvidenceId = (alignedVerification.body as { claim: { id: string; visibility: string }; evidenceId: string }).evidenceId;
+assert.equal((alignedVerification.body as { claim: { visibility: string } }).claim.visibility, "held_private");
+assert.equal((alignedVerification.body as { liveClaim: { fieldVerification: { aligned: number; disputed: number } } }).liveClaim.fieldVerification.aligned, 0);
+const publishUntrustedFieldVerification = await app.handle({
+  method: "PATCH",
+  path: `/admin/claims/${alignedVerificationClaimId}`,
+  headers: internalHeaders,
+  body: { visibility: "public", riskLevel: "low", publicReason: "현장 판단 공개 전 검증 누락" }
+});
+assert.equal(publishUntrustedFieldVerification.status, 400);
+assert.equal((publishUntrustedFieldVerification.body as { error: string }).error, "device_integrity_required");
+const trustedAlignedFieldVerification = await app.handle({
+  method: "PATCH",
+  path: `/internal/evidence/${alignedVerificationEvidenceId}/device-integrity`,
+  headers: internalHeaders,
+  body: { deviceIntegrityStatus: "pass", provider: "play_integrity", attestationToken: "trusted-field-aligned-token" }
+});
+assert.equal(trustedAlignedFieldVerification.status, 200);
+assert.equal(store.evidence.find((item) => item.id === alignedVerificationEvidenceId)?.deviceIntegrityProofHash?.startsWith("sha256-"), true);
+assert.equal(
+  (
+    await app.handle({
+      method: "PATCH",
+      path: `/admin/claims/${alignedVerificationClaimId}`,
+      headers: internalHeaders,
+      body: { visibility: "public", riskLevel: "low", publicReason: "현장 판단 verifier 통과" }
+    })
+  ).status,
+  200
+);
+const liveClaimsAfterAlignedVerification = await app.handle({ method: "GET", path: "/targets/occurrence/occ_1/live-claims" });
+assert.equal((liveClaimsAfterAlignedVerification.body as { liveClaims: Array<{ fieldVerification: { aligned: number; disputed: number; statusLabel: string } }> }).liveClaims[0]?.fieldVerification.aligned, 1);
+assert.equal((liveClaimsAfterAlignedVerification.body as { liveClaims: Array<{ fieldVerification: { aligned: number; disputed: number; statusLabel: string } }> }).liveClaims[0]?.fieldVerification.disputed, 0);
+const disputedVerification = await app.handle({
+  method: "POST",
+  path: "/claims/claim_occ_live_1/field-verifications",
+  headers: userHeaders(routeOnlySession),
+  body: {
+    userId: routeOnlySession.userId,
+    fieldVerification: "different_place_possible",
+    capturedAt: freshFieldCapturedAt,
+    uploadedAt: new Date("2026-07-07T09:04:00.000Z").toISOString(),
+    foregroundGps: true,
+    gpsAccuracyM: 30,
+    distanceToTargetM: 80,
+    deviceIntegrityStatus: "pass",
+    deviceAttestation: "field-device-cluster"
+  }
+});
+assert.equal(disputedVerification.status, 202);
+const disputedVerificationClaimId = (disputedVerification.body as { claim: { id: string }; evidenceId: string }).claim.id;
+const disputedVerificationEvidenceId = (disputedVerification.body as { claim: { id: string }; evidenceId: string }).evidenceId;
+assert.equal((disputedVerification.body as { liveClaim: { fieldVerification: { disputed: number } } }).liveClaim.fieldVerification.disputed, 0);
+assert.equal(store.claims.find((item) => item.id === "claim_occ_live_1")?.disputedByClaimIds.includes(disputedVerificationClaimId), false);
+assert.equal(
+  (
+    await app.handle({
+      method: "PATCH",
+      path: `/internal/evidence/${disputedVerificationEvidenceId}/device-integrity`,
+      headers: internalHeaders,
+      body: { deviceIntegrityStatus: "pass", provider: "play_integrity", attestationToken: "trusted-field-disputed-token" }
+    })
+  ).status,
+  200
+);
+assert.equal(
+  (
+    await app.handle({
+      method: "PATCH",
+      path: `/admin/claims/${disputedVerificationClaimId}`,
+      headers: internalHeaders,
+      body: { visibility: "public", riskLevel: "misleading_possible", publicReason: "현장 이견 verifier 통과" }
+    })
+  ).status,
+  200
+);
+assert.equal(store.claims.find((item) => item.id === "claim_occ_live_1")?.disputedByClaimIds.includes(disputedVerificationClaimId), true);
+const liveClaimsAfterVerification = await app.handle({ method: "GET", path: "/targets/occurrence/occ_1/live-claims" });
+const verifiedLiveClaim = (liveClaimsAfterVerification.body as { liveClaims: Array<{ fieldVerification: { aligned: number; disputed: number; statusLabel: string } }> }).liveClaims[0];
+assert.equal(verifiedLiveClaim.fieldVerification.aligned, 1);
+assert.equal(verifiedLiveClaim.fieldVerification.disputed, 1);
+assert.equal(verifiedLiveClaim.fieldVerification.statusLabel, "현장 이견 있음");
+assertPublicPayloadSafe(liveClaimsAfterVerification.body);
+const issueLiveClaimsAfterVerification = await app.handle({ method: "GET", path: "/targets/issue/issue_1/live-claims" });
+const issueLiveClaim = (
+  issueLiveClaimsAfterVerification.body as {
+    liveClaims: Array<{ targetTitle: string; regionLabel: string; claim: { id: string }; fieldVerification: { statusLabel: string } }>;
+  }
+).liveClaims.find((item) => item.claim.id === "claim_occ_live_1");
+assert.equal(issueLiveClaimsAfterVerification.status, 200);
+assert.equal(issueLiveClaim?.regionLabel, "서울");
+assert.equal(typeof issueLiveClaim?.targetTitle, "string");
+assert.equal(issueLiveClaim?.fieldVerification.statusLabel, "현장 이견 있음");
+assertPublicPayloadSafe(issueLiveClaimsAfterVerification.body);
+assert.equal((await createApp().handle({ method: "GET", path: "/ready" })).status, 503);
+assert.equal((await app.handle({ method: "GET", path: "/ready" })).status, 200);
+assert.equal(
+  (await createApp(createSeedStore(), { readiness: async () => ({ ready: false, checks: [{ id: "postgres", ok: false, message: "postgres unreachable" }] }) }).handle({
+    method: "GET",
+    path: "/ready"
+  })).status,
+  503
+);
+assert.equal(
+  (await createApp(createSeedStore(), { readiness: async () => ({ ready: false, checks: [{ id: "redis", ok: false, message: "redis unreachable" }] }) }).handle({
+    method: "GET",
+    path: "/ready"
+  })).status,
+  503
+);
+const notReadyWriteApp = createApp(createSeedStore(), {
+  requireReadyForWrites: true,
+  readiness: async () => ({ ready: false, checks: [{ id: "postgres.database_url", ok: false, message: "postgres missing" }] })
+});
+const notReadySession = await notReadyWriteApp.handle({ method: "POST", path: "/session/anonymous" });
+assert.equal(notReadySession.status, 503);
+assert.equal((notReadySession.body as { error: string }).error, "runtime_not_ready");
+const notReadyInternalWrite = await notReadyWriteApp.handle({
+  method: "POST",
+  path: "/internal/ingest/public-source",
+  headers: internalHeaders,
+  body: {}
+});
+assert.equal(notReadyInternalWrite.status, 503);
+assert.equal((notReadyInternalWrite.body as { error: string }).error, "runtime_not_ready");
+assert.deepEqual(await fakeJsonRequest(Buffer.from('{"ok":true}')), { ok: true });
+await assert.rejects(() => fakeJsonRequest(Buffer.from("{")), { status: 400, code: "invalid_json" });
+await assert.rejects(() => fakeJsonRequest(Buffer.alloc(257 * 1024, "x")), { status: 413, code: "body_too_large" });
+const rateBuckets = new Map<string, { count: number; resetAt: number }>();
+for (let index = 0; index < 30; index += 1) {
+  enforcePublicWriteRateLimit({ method: "POST", url: "/reports/material", headers: { "x-forwarded-for": "198.51.100.1" } }, rateBuckets, 1_000);
+}
+assert.throws(
+  () => enforcePublicWriteRateLimit({ method: "POST", url: "/reports/material", headers: { "x-forwarded-for": "198.51.100.1" } }, rateBuckets, 1_000),
+  { status: 429, code: "rate_limited" }
+);
+enforcePublicWriteRateLimit({ method: "POST", url: "/reports/material", headers: { "x-forwarded-for": "198.51.100.1" } }, rateBuckets, 62_000);
+enforcePublicWriteRateLimit({ method: "GET", url: "/home", headers: { "x-forwarded-for": "198.51.100.1" } }, rateBuckets, 1_000);
+
+const forbiddenEngagementCounts = {
+  claims: store.claims.length,
+  reports: store.reports.length,
+  notifications: store.notificationOutbox.length
+};
+for (const path of ["/comments", "/votes", "/likes", "/reactions", "/donations", "/sponsorships"]) {
+  assert.equal((await app.handle({ method: "POST", path, body: { targetType: "occurrence", targetId: "occ_1" } })).status, 404);
+}
+assert.deepEqual(
+  { claims: store.claims.length, reports: store.reports.length, notifications: store.notificationOutbox.length },
+  forbiddenEngagementCounts
+);
+
+const badLive = await app.handle({
+  method: "POST",
+  path: "/reports/live",
+  headers: user1Headers,
+  body: {
+    userId: user1Session.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    capturedAt: now.toISOString(),
+    uploadedAt: new Date("2026-07-07T09:10:00.000Z").toISOString(),
+    foregroundGps: true,
+    gpsAccuracyM: 30,
+    distanceToTargetM: 80,
+    deviceIntegrityStatus: "pass",
+    ...liveVideoFields("bad-live"),
+    rawText: "이 원문은 공개 응답에 나오면 안 된다"
+  }
+});
+assert.equal(badLive.status, 422);
+
+const unscopedLive = await app.handle({
+  method: "POST",
+  path: "/reports/live",
+  body: {
+    targetType: "occurrence",
+    targetId: "occ_1",
+    capturedAt: now.toISOString(),
+    uploadedAt: new Date("2026-07-07T09:04:00.000Z").toISOString(),
+    foregroundGps: true,
+    gpsAccuracyM: 30,
+    distanceToTargetM: 80,
+    deviceIntegrityStatus: "pass",
+    ...liveVideoFields("unscoped-live")
+  }
+});
+assert.equal(unscopedLive.status, 401);
+
+const orphan = await app.handle({
+  method: "POST",
+  path: "/reports/material",
+  body: {
+    targetType: "occurrence",
+    targetId: "missing",
+    rawText: "없는 타깃에는 Claim이 붙으면 안 된다"
+  }
+});
+assert.equal(orphan.status, 404);
+
+const liveUpload = await app.handle({
+  method: "POST",
+  path: "/uploads/live",
+  headers: user1Headers,
+  body: {
+    userId: user1Session.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    mediaMimeType: "video/webm",
+    mediaBase64: Buffer.from("live upload bytes").toString("base64")
+  }
+});
+assert.equal(liveUpload.status, 201);
+assert.match((liveUpload.body as { storageKey: string }).storageKey, /^private\/live\/browser\//);
+const liveUploadedAt = (liveUpload.body as { uploadedAt: string }).uploadedAt;
+const liveCapturedAt = new Date(new Date(liveUploadedAt).getTime() - 60_000).toISOString();
+
+const forgedUploadTimeLive = await app.handle({
+  method: "POST",
+  path: "/reports/live",
+  headers: user1Headers,
+  body: {
+    userId: user1Session.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    capturedAt: new Date(new Date(liveUploadedAt).getTime() - 10 * 60_000).toISOString(),
+    uploadedAt: new Date(new Date(liveUploadedAt).getTime() - 9 * 60_000).toISOString(),
+    foregroundGps: true,
+    gpsAccuracyM: 30,
+    distanceToTargetM: 80,
+    deviceIntegrityStatus: "pass",
+    ...liveVideoFields("live"),
+    storageKey: (liveUpload.body as { storageKey: string }).storageKey,
+    hash: (liveUpload.body as { hash: string }).hash
+  }
+});
+assert.equal(forgedUploadTimeLive.status, 422);
+assert.equal((forgedUploadTimeLive.body as { error: string }).error, "proof_of_presence_failed");
+
+const galleryLive = await app.handle({
+  method: "POST",
+  path: "/reports/live",
+  headers: user1Headers,
+  body: {
+    userId: user1Session.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    capturedAt: liveCapturedAt,
+    foregroundGps: true,
+    gpsAccuracyM: 30,
+    distanceToTargetM: 80,
+    deviceIntegrityStatus: "pass",
+    ...liveVideoFields("live"),
+    captureMode: "gallery",
+    storageKey: (liveUpload.body as { storageKey: string }).storageKey,
+    hash: (liveUpload.body as { hash: string }).hash,
+    uploadedAt: liveUploadedAt
+  }
+});
+assert.equal(galleryLive.status, 422);
+assert.equal((galleryLive.body as { error: string }).error, "proof_of_presence_failed");
+
+const shortLive = await app.handle({
+  method: "POST",
+  path: "/reports/live",
+  headers: user1Headers,
+  body: {
+    userId: user1Session.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    capturedAt: liveCapturedAt,
+    foregroundGps: true,
+    gpsAccuracyM: 30,
+    distanceToTargetM: 80,
+    deviceIntegrityStatus: "pass",
+    ...liveVideoFields("live"),
+    durationMs: 1000,
+    storageKey: (liveUpload.body as { storageKey: string }).storageKey,
+    hash: (liveUpload.body as { hash: string }).hash,
+    uploadedAt: liveUploadedAt
+  }
+});
+assert.equal(shortLive.status, 422);
+assert.equal((shortLive.body as { error: string }).error, "proof_of_presence_failed");
+
+const live = await app.handle({
+  method: "POST",
+  path: "/reports/live",
+  headers: user1Headers,
+  body: {
+    userId: user1Session.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    capturedAt: liveCapturedAt,
+    foregroundGps: true,
+    gpsAccuracyM: 30,
+    distanceToTargetM: 80,
+    deviceIntegrityStatus: "pass",
+    ...liveVideoFields("live"),
+    storageKey: (liveUpload.body as { storageKey: string }).storageKey,
+    hash: (liveUpload.body as { hash: string }).hash,
+    uploadedAt: liveUploadedAt,
+    rawText: "이 원문은 공개 응답에 나오면 안 된다"
+  }
+});
+
+assert.equal(live.status, 202);
+assert.equal(JSON.stringify(live.body).includes("이 원문은 공개 응답에 나오면 안 된다"), false);
+
+const heldStore = createSeedStore();
+const heldApp = createApp(heldStore, {
+  internalApiKey: "test_internal_key",
+  userTokenSecret: "test_user_token_secret_32_bytes_minimum",
+  autoPublishLiveReports: false
+});
+const heldSession = await anonymousSession(heldApp);
+const heldUpload = await heldApp.handle({
+  method: "POST",
+  path: "/uploads/live",
+  headers: userHeaders(heldSession),
+  body: {
+    userId: heldSession.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    mediaMimeType: "video/webm",
+    mediaBase64: Buffer.from("held live upload bytes").toString("base64")
+  }
+});
+assert.equal(heldUpload.status, 201);
+const heldUploadedAt = (heldUpload.body as { uploadedAt: string }).uploadedAt;
+const heldCapturedAt = new Date(new Date(heldUploadedAt).getTime() - 60_000).toISOString();
+const heldLive = await heldApp.handle({
+  method: "POST",
+  path: "/reports/live",
+  headers: userHeaders(heldSession),
+  body: {
+    userId: heldSession.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    capturedAt: heldCapturedAt,
+    uploadedAt: heldUploadedAt,
+    foregroundGps: true,
+    gpsAccuracyM: 30,
+    distanceToTargetM: 80,
+    deviceIntegrityStatus: "pass",
+    ...liveVideoFields("held-live"),
+    storageKey: (heldUpload.body as { storageKey: string }).storageKey,
+    hash: (heldUpload.body as { hash: string }).hash,
+    rawText: "검수 전 공개되면 안 되는 LIVE 원문"
+  }
+});
+assert.equal(heldLive.status, 202);
+const heldClaimId = (heldLive.body as { claim: { id: string; visibility: string } }).claim.id;
+const heldEvidenceId = (heldLive.body as { evidenceId: string }).evidenceId;
+assert.equal((heldLive.body as { claim: { visibility: string } }).claim.visibility, "held_private");
+assert.equal(heldStore.evidence.find((item) => item.id === heldEvidenceId)?.deviceIntegrityStatus, "unknown");
+assert.equal(heldStore.evidence.find((item) => item.id === heldEvidenceId)?.publicRadiusM, 200);
+
+const missingStorageApp = createApp(createSeedStore(), {
+  userTokenSecret: "test_user_token_secret_32_bytes_minimum",
+  requireExternalLiveStorage: true
+});
+const missingStorageSession = await anonymousSession(missingStorageApp);
+const missingStorageUpload = await missingStorageApp.handle({
+  method: "POST",
+  path: "/uploads/live",
+  headers: userHeaders(missingStorageSession),
+  body: {
+    userId: missingStorageSession.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    mediaMimeType: "video/webm",
+    mediaBase64: Buffer.from("external storage required").toString("base64")
+  }
+});
+assert.equal(missingStorageUpload.status, 503);
+assert.equal((missingStorageUpload.body as { error: string }).error, "live_storage_unavailable");
+
+const unencryptedStorageApp = createApp(createSeedStore(), {
+  userTokenSecret: "test_user_token_secret_32_bytes_minimum",
+  requireExternalLiveStorage: true,
+  liveMediaStorage: { put: async () => undefined }
+});
+const unencryptedStorageSession = await anonymousSession(unencryptedStorageApp);
+const unencryptedStorageUpload = await unencryptedStorageApp.handle({
+  method: "POST",
+  path: "/uploads/live",
+  headers: userHeaders(unencryptedStorageSession),
+  body: {
+    userId: unencryptedStorageSession.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    mediaMimeType: "video/webm",
+    mediaBase64: Buffer.from("unencrypted storage rejected").toString("base64")
+  }
+});
+assert.equal(unencryptedStorageUpload.status, 503);
+assert.equal((unencryptedStorageUpload.body as { error: string }).error, "live_storage_unavailable");
+
+const externalStorageStore = createSeedStore();
+const liveMediaEncryptionKey = "test_live_media_encryption_key_32_bytes";
+const externalStorageWrites: Array<{ storageKey: string; mediaMimeType: string; bytes: Buffer }> = [];
+const externalStorageApp = createApp(externalStorageStore, {
+  userTokenSecret: "test_user_token_secret_32_bytes_minimum",
+  requireExternalLiveStorage: true,
+  liveMediaEncryptionKey,
+  liveMediaStorage: {
+    put: async ({ storageKey, mediaMimeType, bytes }) => {
+      externalStorageWrites.push({ storageKey, mediaMimeType, bytes });
+    }
+  }
+});
+const externalStorageSession = await anonymousSession(externalStorageApp);
+const externalStorageUpload = await externalStorageApp.handle({
+  method: "POST",
+  path: "/uploads/live",
+  headers: userHeaders(externalStorageSession),
+  body: {
+    userId: externalStorageSession.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    mediaMimeType: "video/webm",
+    mediaBase64: Buffer.from("external storage bytes").toString("base64")
+  }
+});
+assert.equal(externalStorageUpload.status, 201);
+assert.equal(externalStorageWrites.length, 1);
+assert.equal(externalStorageWrites[0]?.mediaMimeType, "application/vnd.musunil.live-media+json");
+assert.notEqual(externalStorageWrites[0]?.bytes.toString("utf8"), "external storage bytes");
+assert.equal(decryptLiveMediaBytes(externalStorageWrites[0]!.bytes, liveMediaEncryptionKey).toString("utf8"), "external storage bytes");
+assert.equal(externalStorageStore.liveUploads[0]?.privateMediaBase64, undefined);
+
+const heldDetail = await heldApp.handle({ method: "GET", path: "/occurrences/occ_1" });
+assert.equal(JSON.stringify(heldDetail.body).includes(heldClaimId), false);
+assert.equal(heldStore.occurrences.find((item) => item.id === "occ_1")?.claimIds.includes(heldClaimId), false);
+const heldQueue = await heldApp.handle({ method: "GET", path: "/admin/review-queue", headers: internalHeaders });
+assert.equal(JSON.stringify(heldQueue.body).includes(heldClaimId), true);
+const unsafePublishHeld = await heldApp.handle({
+  method: "PATCH",
+  path: `/admin/claims/${heldClaimId}`,
+  headers: internalHeaders,
+  body: { visibility: "public", riskLevel: "rights_risk", publicReason: "비식별 없이 공개 시도" }
+});
+assert.equal(unsafePublishHeld.status, 400);
+assert.equal((unsafePublishHeld.body as { error: string }).error, "live_redaction_required");
+assert.equal(heldStore.occurrences.find((item) => item.id === "occ_1")?.claimIds.includes(heldClaimId), false);
+const httpRedactionPublishHeld = await heldApp.handle({
+  method: "PATCH",
+  path: `/admin/claims/${heldClaimId}`,
+  headers: internalHeaders,
+  body: { visibility: "public", riskLevel: "rights_risk", redactedClipUrl: "http://cdn.musunil.test/held-live.webm", publicReason: "비HTTPS 공개본" }
+});
+assert.equal(httpRedactionPublishHeld.status, 400);
+assert.equal((httpRedactionPublishHeld.body as { error: string }).error, "redaction_worker_required");
+const privateRedactionPublishHeld = await heldApp.handle({
+  method: "PATCH",
+  path: `/admin/claims/${heldClaimId}`,
+  headers: internalHeaders,
+  body: { visibility: "public", riskLevel: "rights_risk", redactedClipUrl: "/private/live/held-live.webm", publicReason: "비공개 경로 공개 시도" }
+});
+assert.equal(privateRedactionPublishHeld.status, 400);
+assert.equal((privateRedactionPublishHeld.body as { error: string }).error, "redaction_worker_required");
+assert.equal(heldStore.occurrences.find((item) => item.id === "occ_1")?.claimIds.includes(heldClaimId), false);
+assert.equal(heldStore.evidence.find((item) => item.id === heldEvidenceId)?.redactionStatus, "pending");
+assert.equal(heldStore.evidence.find((item) => item.id === heldEvidenceId)?.publicStorageKey, undefined);
+const unauthedRedaction = await heldApp.handle({
+  method: "PATCH",
+  path: `/internal/evidence/${heldEvidenceId}/redaction`,
+  body: { redactedClipUrl: "/media/redacted/held-live.webm" }
+});
+assert.equal(unauthedRedaction.status, 401);
+const invalidWorkerRedaction = await heldApp.handle({
+  method: "PATCH",
+  path: `/internal/evidence/${heldEvidenceId}/redaction`,
+  headers: internalHeaders,
+  body: { redactedClipUrl: "/private/live/held-live.webm" }
+});
+assert.equal(invalidWorkerRedaction.status, 400);
+assert.equal((invalidWorkerRedaction.body as { error: string }).error, "redactedClipUrl_invalid");
+const prooflessWorkerRedaction = await heldApp.handle({
+  method: "PATCH",
+  path: `/internal/evidence/${heldEvidenceId}/redaction`,
+  headers: internalHeaders,
+  body: { redactedClipUrl: "/media/redacted/held-live.webm" }
+});
+assert.equal(prooflessWorkerRedaction.status, 400);
+assert.equal((prooflessWorkerRedaction.body as { error: string }).error, "redaction_proof_required");
+const workerRedaction = await heldApp.handle({
+  method: "PATCH",
+  path: `/internal/evidence/${heldEvidenceId}/redaction`,
+  headers: internalHeaders,
+  body: { redactedClipUrl: "/media/redacted/held-live.webm", redactionProofToken: "trusted-redaction-report" }
+});
+assert.equal(workerRedaction.status, 200);
+assert.equal((workerRedaction.body as { evidence: { redactionStatus: string; publicMediaUrl: string; redactionProofHash: string } }).evidence.redactionStatus, "completed");
+assert((workerRedaction.body as { evidence: { redactionProofHash: string } }).evidence.redactionProofHash.startsWith("sha256-"));
+assert.equal(JSON.stringify(workerRedaction.body).includes("trusted-redaction-report"), false);
+assert.equal(JSON.stringify(workerRedaction.body).includes("storageKey"), false);
+const publishBeforeDeviceIntegrity = await heldApp.handle({
+  method: "PATCH",
+  path: `/admin/claims/${heldClaimId}`,
+  headers: internalHeaders,
+  body: { visibility: "public", riskLevel: "rights_risk", publicReason: "기기 무결성 전 공개 시도" }
+});
+assert.equal(publishBeforeDeviceIntegrity.status, 400);
+assert.equal((publishBeforeDeviceIntegrity.body as { error: string }).error, "device_integrity_required");
+const trustedDeviceIntegrity = await heldApp.handle({
+  method: "PATCH",
+  path: `/internal/evidence/${heldEvidenceId}/device-integrity`,
+  headers: internalHeaders,
+  body: { deviceIntegrityStatus: "pass", provider: "play_integrity", attestationToken: "trusted-device-token" }
+});
+assert.equal(trustedDeviceIntegrity.status, 200);
+assert.equal(heldStore.evidence.find((item) => item.id === heldEvidenceId)?.deviceIntegrityStatus, "pass");
+assert.equal(heldStore.evidence.find((item) => item.id === heldEvidenceId)?.deviceIntegrityProofHash?.startsWith("sha256-"), true);
+const publishHeld = await heldApp.handle({
+  method: "PATCH",
+  path: `/admin/claims/${heldClaimId}`,
+  headers: internalHeaders,
+  body: { visibility: "public", riskLevel: "rights_risk", publicReason: "검수 후 공개" }
+});
+assert.equal(publishHeld.status, 200);
+const publishedDetail = await heldApp.handle({ method: "GET", path: "/occurrences/occ_1" });
+assert.equal(JSON.stringify(publishedDetail.body).includes(heldClaimId), true);
+assert.equal(heldStore.occurrences.find((item) => item.id === "occ_1")?.claimIds.includes(heldClaimId), true);
+const publishedLiveClaims = await heldApp.handle({ method: "GET", path: "/targets/occurrence/occ_1/live-claims" });
+assert.equal(JSON.stringify(publishedLiveClaims.body).includes("/media/redacted/held-live.webm"), true);
+assert.equal(JSON.stringify(publishedLiveClaims.body).includes("private/live/test/held-live.mp4"), false);
+assert.equal((publishedLiveClaims.body as { liveClaims: Array<{ publicRadiusM?: number }> }).liveClaims[0]?.publicRadiusM, 200);
+assertPublicPayloadSafe(publishedLiveClaims.body);
+const heldIssueAfterPublish = await heldApp.handle({ method: "GET", path: "/issues/issue_1" });
+const heldIssueEstimate = (heldIssueAfterPublish.body as { crowdEstimates: Array<{ id: string; confidence: string }> }).crowdEstimates.find(
+  (estimate) => estimate.id === "derived_issue_1_crowd_estimate"
+);
+assert.equal(heldIssueEstimate?.confidence, "medium");
+assert.equal(JSON.stringify(heldIssueAfterPublish.body).includes("device_integrity"), false);
+
+const autoPublishStore = createSeedStore();
+const autoPublishApp = createApp(autoPublishStore, {
+  internalApiKey: "test_internal_key",
+  userTokenSecret: "test_user_token_secret_32_bytes_minimum",
+  autoPublishLiveReports: true
+});
+const autoSession = await anonymousSession(autoPublishApp);
+const autoUpload = await autoPublishApp.handle({
+  method: "POST",
+  path: "/uploads/live",
+  headers: userHeaders(autoSession),
+  body: {
+    userId: autoSession.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    mediaMimeType: "video/webm",
+    mediaBase64: Buffer.from("auto publish must still wait for redaction").toString("base64")
+  }
+});
+const autoUploadedAt = (autoUpload.body as { uploadedAt: string }).uploadedAt;
+const autoLive = await autoPublishApp.handle({
+  method: "POST",
+  path: "/reports/live",
+  headers: userHeaders(autoSession),
+  body: {
+    userId: autoSession.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    capturedAt: new Date(new Date(autoUploadedAt).getTime() - 60_000).toISOString(),
+    uploadedAt: autoUploadedAt,
+    foregroundGps: true,
+    gpsAccuracyM: 30,
+    distanceToTargetM: 80,
+    deviceIntegrityStatus: "pass",
+    ...liveVideoFields("auto-live"),
+    storageKey: (autoUpload.body as { storageKey: string }).storageKey,
+    hash: (autoUpload.body as { hash: string }).hash
+  }
+});
+assert.equal(autoLive.status, 202);
+const autoClaimId = (autoLive.body as { claim: { id: string; visibility: string } }).claim.id;
+assert.equal((autoLive.body as { claim: { visibility: string } }).claim.visibility, "held_private");
+assert.equal(autoPublishStore.occurrences.find((item) => item.id === "occ_1")?.claimIds.includes(autoClaimId), false);
+
+const detail = await app.handle({ method: "GET", path: "/occurrences/occ_1" });
+assert.equal(detail.status, 200);
+assert.equal(JSON.stringify(detail.body).includes("이 원문은 공개 응답에 나오면 안 된다"), false);
+
+const correction = await app.handle({
+  method: "POST",
+  path: "/corrections/on-site",
+  headers: user1Headers,
+  body: {
+    userId: user1Session.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    normalizedStatement: "위치가 일부 다르다는 현장 정정이 접수되었습니다.",
+    rawText: "정정 원문도 공개 응답에 나오면 안 된다"
+  }
+});
+assert.equal(correction.status, 201);
+assert.equal(JSON.stringify(correction.body).includes("정정 원문도 공개 응답에 나오면 안 된다"), false);
+
+assert.equal(
+  (await app.handle({
+    method: "POST",
+    path: "/reports/material",
+    headers: userHeaders(attackerSession),
+    body: { userId: user1Session.userId, targetType: "occurrence", targetId: "occ_1", rawText: "소유권 위조" }
+  })).status,
+  401
+);
+
+const rights = await app.handle({
+  method: "POST",
+  path: "/reports/rights-violation",
+  body: {
+    targetType: "occurrence",
+    targetId: "occ_1",
+    riskLevel: "rights_risk",
+    rawText: "신고 원문도 공개 응답에 나오면 안 된다"
+  }
+});
+assert.equal(rights.status, 201);
+assert.equal(JSON.stringify(rights.body).includes("auto_delete"), false);
+assert.equal(JSON.stringify(rights.body).includes("신고 원문도 공개 응답에 나오면 안 된다"), false);
+for (let index = 0; index < 3; index += 1) {
+  assert.equal(
+    (
+      await app.handle({
+        method: "POST",
+        path: "/reports/rights-violation",
+        body: {
+          targetType: "occurrence",
+          targetId: "occ_1",
+          riskLevel: "rights_risk",
+          rawText: `반복 신고 원문 ${index}`
+        }
+      })
+    ).status,
+    201
+  );
+}
+assert.equal(store.claims.some((claim) => claim.id === "claim_occ_live_1"), true);
+assert.equal(store.claims.find((claim) => claim.id === "claim_occ_live_1")?.visibility ?? "public", "public");
+assert.equal(store.auditLogs.some((log) => log.action === "delete" && log.targetType === "occurrence" && log.targetId === "occ_1"), false);
+assert.equal(JSON.stringify((await app.handle({ method: "GET", path: "/occurrences/occ_1" })).body).includes("claim_occ_live_1"), true);
+
+const rebuttal = await app.handle({
+  method: "POST",
+  path: "/rebuttals",
+  body: {
+    targetType: "occurrence",
+    targetId: "occ_1",
+    normalizedStatement: "반론이 접수되었습니다.",
+    rawText: "반론 원문도 공개 응답에 나오면 안 된다"
+  }
+});
+assert.equal(rebuttal.status, 201);
+assert.equal(JSON.stringify(rebuttal.body).includes("반론 원문도 공개 응답에 나오면 안 된다"), false);
+
+const subscription = await app.handle({
+  method: "POST",
+  path: "/subscriptions",
+  headers: user1Headers,
+  body: {
+    userId: user1Session.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    alertLevel: "all",
+    alertTypes: ["state_changed"]
+  }
+});
+assert.equal(subscription.status, 201);
+const outboxBeforeNonStateReport = store.notificationOutbox.length;
+assert.equal(
+  (
+    await app.handle({
+      method: "POST",
+      path: "/reports/material",
+      headers: user1Headers,
+      body: { userId: user1Session.userId, targetType: "occurrence", targetId: "occ_1", rawText: "자료 제보는 단독 알림이 아니다" }
+    })
+  ).status,
+  201
+);
+assert.equal(store.notificationOutbox.length, outboxBeforeNonStateReport);
+
+const issueSubscription = await app.handle({
+  method: "POST",
+  path: "/subscriptions",
+  headers: user1Headers,
+  body: {
+    userId: user1Session.userId,
+    targetType: "issue",
+    targetId: "issue_1",
+    alertLevel: "major_only",
+    alertTypes: ["state_changed"]
+  }
+});
+assert.equal(issueSubscription.status, 201);
+
+const duplicateSubscription = await app.handle({
+  method: "POST",
+  path: "/subscriptions",
+  headers: user1Headers,
+  body: {
+    userId: user1Session.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    alertLevel: "all",
+    alertTypes: ["state_changed"]
+  }
+});
+assert.equal(duplicateSubscription.status, 201);
+
+const routeOnlySubscription = await app.handle({
+  method: "POST",
+  path: "/subscriptions",
+  headers: userHeaders(routeOnlySession),
+  body: {
+    userId: routeOnlySession.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    alertLevel: "all",
+    alertTypes: ["route_changed"]
+  }
+});
+assert.equal(routeOnlySubscription.status, 201);
+
+const mutedSubscription = await app.handle({
+  method: "POST",
+  path: "/subscriptions",
+  headers: userHeaders(mutedSession),
+  body: {
+    userId: mutedSession.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    alertLevel: "all",
+    alertTypes: ["state_changed"]
+  }
+});
+assert.equal(mutedSubscription.status, 201);
+const mutedSubscriptionId = (mutedSubscription.body as { subscription: { id: string } }).subscription.id;
+assert.equal(
+  (await app.handle({
+    method: "PATCH",
+    path: `/subscriptions/${mutedSubscriptionId}`,
+    headers: userHeaders(mutedSession),
+    body: { mutedUntil: new Date("2099-01-01T00:00:00.000Z").toISOString() }
+  })).status,
+  200
+);
+
+assert.equal(
+  (await app.handle({
+    method: "POST",
+    path: "/subscriptions",
+    headers: userHeaders(attackerSession),
+    body: { userId: user1Session.userId, targetType: "occurrence", targetId: "occ_1", alertLevel: "all", alertTypes: ["state_changed"] }
+  })).status,
+  401
+);
+assert.equal((await app.handle({ method: "GET", path: `/me/reports?userId=${user1Session.userId}` })).status, 401);
+
+const mine = await app.handle({ method: "GET", path: `/me/reports?userId=${user1Session.userId}`, headers: user1Headers });
+assert.equal(mine.status, 200);
+assert.equal(JSON.stringify(mine.body).includes("이 원문은 공개 응답에 나오면 안 된다"), false);
+
+const reconcile = await app.handle({
+  method: "POST",
+  path: "/internal/agents/reconcile-lifecycle",
+  headers: internalHeaders,
+  body: { targetId: "occ_1" }
+});
+assert.equal(reconcile.status, 200);
+assert.equal(JSON.stringify(reconcile.body).includes("LIVE"), true);
+
+const dispatch = await app.handle({ method: "POST", path: "/internal/notifications/dispatch", headers: internalHeaders, body: {} });
+assert.equal(dispatch.status, 200);
+assert.equal(JSON.stringify(dispatch.body).includes("local_dispatch_completed"), true);
+const dispatchBody = dispatch.body as { dispatchedCount: number; pendingCount: number; notifications: Array<{ userId: string; status: string; sentAt?: Date }> };
+assert.equal(dispatchBody.dispatchedCount, 1);
+assert.equal(dispatchBody.pendingCount, 0);
+assert.deepEqual(dispatchBody.notifications.map((notification) => notification.userId), [user1Session.userId]);
+assert.deepEqual(dispatchBody.notifications.map((notification) => notification.status), ["sent"]);
+assert.equal(dispatchBody.notifications[0]?.sentAt instanceof Date, true);
+const secondDispatch = await app.handle({ method: "POST", path: "/internal/notifications/dispatch", headers: internalHeaders, body: {} });
+assert.equal((secondDispatch.body as { dispatchedCount: number }).dispatchedCount, 0);
+
+const privateClaim = store.claims.find((claim) => claim.id === "claim_occ_live_1");
+assert(privateClaim);
+privateClaim.statement = "보존 기간 만료 원문";
+privateClaim.createdAt = new Date("2020-01-01T00:00:00.000Z");
+const privateEvidence = store.evidence.find((evidence) => evidence.id === "ev_occ_live_1");
+assert(privateEvidence);
+privateEvidence.geoCell = "private-cell";
+privateEvidence.gpsAccuracyM = 12;
+privateEvidence.distanceToTargetM = 34;
+privateEvidence.storageKey = "private/live/expired/original.mp4";
+privateEvidence.hash = "expired-original-hash";
+privateEvidence.uploadedAt = new Date("2020-01-01T00:00:00.000Z");
+const oldUpload = {
+  storageKey: "private/live/expired/upload.webm",
+  userId: "user_expired",
+  targetType: "occurrence" as const,
+  targetId: "occ_1",
+  mediaMimeType: "video/webm",
+  byteSize: 4,
+  hash: "old-upload-hash",
+  uploadedAt: new Date("2020-01-01T00:00:00.000Z"),
+  privateMediaBase64: "AAAA"
+};
+store.liveUploads.push(oldUpload);
+store.auditLogs.push({ id: "old_audit_for_purge", action: "hold", targetType: "claim", targetId: privateClaim.id, createdAt: new Date("2010-01-01T00:00:00.000Z"), reason: "expired audit" });
+const privacyDashboard = await app.handle({ method: "GET", path: "/admin/privacy-dashboard", headers: internalHeaders });
+assert.equal(privacyDashboard.status, 200);
+assert.equal((privacyDashboard.body as { policy: string }).policy, "private_originals_precise_location_never_public");
+assert.equal((privacyDashboard.body as { summary: { originalMediaStoredCount: number; preciseLocationStoredCount: number; privateUploadBufferCount: number } }).summary.originalMediaStoredCount >= 1, true);
+assert.equal((privacyDashboard.body as { summary: { preciseLocationStoredCount: number } }).summary.preciseLocationStoredCount >= 1, true);
+assert.equal((privacyDashboard.body as { summary: { privateUploadBufferCount: number } }).summary.privateUploadBufferCount >= 1, true);
+assert.equal((privacyDashboard.body as { purgePreview: { liveUploadBuffers: number } }).purgePreview.liveUploadBuffers >= 1, true);
+assert.equal(JSON.stringify(privacyDashboard.body).includes("private/live/expired"), false);
+assert.equal(JSON.stringify(privacyDashboard.body).includes("privateMediaBase64"), false);
+assert.equal(JSON.stringify(privacyDashboard.body).includes("private-cell"), false);
+const privacyPurge = await app.handle({ method: "POST", path: "/internal/privacy/purge-expired", headers: internalHeaders, body: {} });
+assert.equal(privacyPurge.status, 200);
+assert.equal((privacyPurge.body as { auditLogsDeleted: number }).auditLogsDeleted >= 1, true);
+assert.equal((privacyPurge.body as { liveUploadBuffersCleared: number }).liveUploadBuffersCleared >= 1, true);
+assert.equal(privateClaim.statement, "");
+assert.equal(privateEvidence.geoCell, undefined);
+assert.equal(privateEvidence.gpsAccuracyM, undefined);
+assert.equal(privateEvidence.distanceToTargetM, undefined);
+assert.equal(privateEvidence.storageKey, undefined);
+assert.equal(privateEvidence.hash, undefined);
+assert.equal(oldUpload.privateMediaBase64, undefined);
+
+const failedDeleteStore = createSeedStore();
+const failedDeleteEvidence = failedDeleteStore.evidence.find((evidence) => evidence.id === "ev_occ_live_1");
+assert(failedDeleteEvidence);
+failedDeleteEvidence.storageKey = "private/live/expired/delete-fails.mp4";
+failedDeleteEvidence.uploadedAt = new Date("2020-01-01T00:00:00.000Z");
+const failedDeleteApp = createApp(failedDeleteStore, {
+  internalApiKey: "test_internal_key",
+  liveMediaStorage: { put: async () => undefined, delete: async () => { throw new Error("delete failed"); } }
+});
+const failedDeletePurge = await failedDeleteApp.handle({ method: "POST", path: "/internal/privacy/purge-expired", headers: internalHeaders, body: {} });
+assert.equal(failedDeletePurge.status, 503);
+assert.equal((failedDeletePurge.body as { error: string }).error, "privacy_purge_storage_unavailable");
+assert.equal(failedDeleteEvidence.storageKey, "private/live/expired/delete-fails.mp4");
+
+const deletedStorageKeys: string[] = [];
+const storageDeleteStore = createSeedStore();
+const storageDeleteEvidence = storageDeleteStore.evidence.find((evidence) => evidence.id === "ev_occ_live_1");
+assert(storageDeleteEvidence);
+storageDeleteEvidence.storageKey = "private/live/expired/delete-succeeds.mp4";
+storageDeleteEvidence.hash = "delete-succeeds-hash";
+storageDeleteEvidence.uploadedAt = new Date("2020-01-01T00:00:00.000Z");
+const storageDeleteApp = createApp(storageDeleteStore, {
+  internalApiKey: "test_internal_key",
+  liveMediaStorage: {
+    put: async () => undefined,
+    delete: async (storageKey) => {
+      deletedStorageKeys.push(storageKey);
+    }
+  }
+});
+const storageDeletePurge = await storageDeleteApp.handle({ method: "POST", path: "/internal/privacy/purge-expired", headers: internalHeaders, body: {} });
+assert.equal(storageDeletePurge.status, 200);
+assert.deepEqual(deletedStorageKeys, ["private/live/expired/delete-succeeds.mp4"]);
+assert.equal(storageDeleteEvidence.storageKey, undefined);
+assert.equal(storageDeleteEvidence.hash, undefined);
+
+const home = await app.handle({ method: "GET", path: "/home" });
+assert.equal(home.status, 200);
+assert.equal(JSON.stringify(home.body).includes("issueCards"), true);
+assert.equal(JSON.stringify(home.body).includes("정보통신망법 개정 반대 집회"), true);
+assert.equal(JSON.stringify(home.body).includes("대통령 탄핵 요구 행진"), true);
+assert.equal(JSON.stringify((home.body as { issueCards: unknown }).issueCards).includes("대구 7월 집회 신고 현황"), false);
+assert.equal(JSON.stringify(home.body).includes("서울 시청·종각 일대 집회 관련 현장 신호"), false);
+assert.equal(JSON.stringify(home.body).includes("\"title\":\"부산 서면-해운대 행진 가능성\""), false);
+assert.equal(JSON.stringify(home.body).includes("집회·시위 현장 요약"), false);
+assert.equal(JSON.stringify(home.body).includes("\"title\":\"이동·교통 영향\""), false);
+assert.equal(JSON.stringify(home.body).includes("issue_mock_mobility"), true);
+assert.equal(JSON.stringify(home.body).includes("위치 인증 제보 있음"), true);
+assert.equal(JSON.stringify(home.body).includes("부산 도심 행진 가능성"), true);
+assert.equal(JSON.stringify(home.body).includes("인파 밀집 신호"), true);
+assert.equal(JSON.stringify(home.body).includes("경찰청 2011~2023 집회 신고·개최 통계"), true);
+assert.equal(JSON.stringify(home.body).includes("대구 2020~2025 집회 신고·개최 현황"), true);
+assert.equal(JSON.stringify(home.body).includes("대구 0709(목) 오늘의 집회 공개 일정"), true);
+assert.equal(JSON.stringify(home.body).includes("대구 0707(화) 오늘의 집회 공개 일정"), true);
+assert.equal(JSON.stringify(home.body).includes("대구 0706(월) 오늘의 집회 공개 일정"), true);
+assert.equal(JSON.stringify(home.body).includes("대구 0704(토)~0705(일) 오늘의 집회 공개 일정"), true);
+assert.equal(JSON.stringify(home.body).includes("UPCOMING"), true);
+assert.equal(JSON.stringify(home.body).includes("ENDED"), true);
+assert.equal(JSON.stringify(home.body).includes("ARCHIVED"), true);
+assert.equal(JSON.stringify(home.body).includes("WEAKLY_OBSERVED"), false);
+assert.equal(JSON.stringify(home.body).includes("traffic_control"), false);
+
+const issue = await app.handle({ method: "GET", path: "/issues/issue_1" });
+assert.equal(issue.status, 200);
+assert.equal(JSON.stringify(issue.body).includes("targets"), true);
+assert.equal(JSON.stringify(issue.body).includes("transit_occurrence"), true);
+assert.equal(JSON.stringify(issue.body).includes("route_checkpoint"), true);
+assert.equal(JSON.stringify(issue.body).includes("nationalSummary"), true);
+assert.equal(JSON.stringify(issue.body).includes("topicGrouping"), true);
+assert.equal(JSON.stringify(issue.body).includes("regionalSignals"), true);
+assert.equal(JSON.stringify(issue.body).includes("nationalTimeline"), true);
+assert.equal(JSON.stringify(issue.body).includes("crowdEstimates"), true);
+assert.equal(JSON.stringify(issue.body).includes("regionalCrowdEstimates"), true);
+assert.equal((issue.body as { nationalSummary: { regionCount: number; liveClaimCount: number } }).nationalSummary.regionCount >= 2, true);
+assert.equal((issue.body as { nationalSummary: { regionCount: number; liveClaimCount: number } }).nationalSummary.liveClaimCount >= 1, true);
+const issueRegionalSignals = (issue.body as { regionalSignals: Array<{ statusLabels: string[]; officialClaimCount: number; fieldClaimCount: number; disputeCount: number }> }).regionalSignals;
+assert.equal(issueRegionalSignals.every((signal) => Array.isArray(signal.statusLabels) && signal.statusLabels.length === 4), true);
+assert.equal(issueRegionalSignals.some((signal) => signal.statusLabels.some((label) => label.includes("공식"))), true);
+assert.equal(issueRegionalSignals.some((signal) => signal.statusLabels.some((label) => label.includes("이견"))), true);
+const issueGrouping = (issue.body as { topicGrouping: { basis: string[]; policy: string; regions: string[]; targetTypes: Array<{ label: string; count: number }> } }).topicGrouping;
+assert.equal(issueGrouping.basis.some((item) => item.includes("지역·시간이 다르면 별도 현장")), true);
+assert.equal(issueGrouping.policy, "이 묶음은 탐색 단위이며 사실 확정이 아닙니다.");
+assert.equal(issueGrouping.regions.length >= 2, true);
+assert.equal(issueGrouping.targetTypes.some((item) => item.label === "집회 현장" && item.count >= 1), true);
+const issueCrowdEstimates = (
+  issue.body as {
+    crowdEstimates: Array<{
+      id: string;
+      minCount: number;
+      maxCount: number;
+      confidence: string;
+      generated?: boolean;
+      limitations: string[];
+      claim: { sourceProvenance: string; evidenceStrength: string; riskLevel: string; normalizedStatement: string };
+    }>;
+  }
+).crowdEstimates;
+assert.equal(issueCrowdEstimates.some((estimate) => estimate.id === "derived_issue_1_crowd_estimate" && estimate.generated === true), true);
+assert.equal(issueCrowdEstimates.some((estimate) => estimate.minCount === 1200 && estimate.maxCount === 2600), true);
+assert.equal(JSON.stringify(issueCrowdEstimates).includes("자동 갱신 추정"), true);
+assert.equal(issueCrowdEstimates[0]?.claim.sourceProvenance, "musunil_ai_estimate");
+assert.equal(["multiple_proof_of_presence", "independent_sources_with_field_evidence", "single_source"].includes(issueCrowdEstimates[0]?.claim.evidenceStrength), true);
+assert.equal(issueCrowdEstimates[0]?.claim.riskLevel, "misleading_possible");
+assert.equal(issueCrowdEstimates[0]?.claim.normalizedStatement.includes("자동 규모 추정 Claim"), true);
+const regionalCrowdEstimates = (issue.body as { regionalCrowdEstimates: Array<{ regionLabel: string; minCount: number; maxCount: number; generated?: boolean }> }).regionalCrowdEstimates;
+assert.equal(regionalCrowdEstimates.some((estimate) => estimate.regionLabel === "서울" && estimate.generated === true), true);
+assert.equal(regionalCrowdEstimates.every((estimate) => estimate.maxCount >= estimate.minCount), true);
+const issueVerificationSignals = (issue.body as { verificationSignals: Array<{ id: string; label: string; summary: string }> }).verificationSignals;
+assert.equal(issueVerificationSignals.some((signal) => signal.id === "official_absent"), true);
+assert.equal(issueVerificationSignals.some((signal) => signal.id === "needs_verification"), true);
+assert.equal(issueVerificationSignals.some((signal) => signal.id === "device_attestation_cluster"), true);
+assert.equal(issueVerificationSignals.some((signal) => signal.id === "user_concentration"), true);
+const issueTimeline = (issue.body as { nationalTimeline: { summary: { label: string }; moments: Array<{ title: string; sourceProvenance?: string; evidenceStrength?: string; riskLevel?: string }> } }).nationalTimeline;
+assert.equal(["동시다발 확인", "순차 확산 확인", "단일 권역 확인"].includes(issueTimeline.summary.label), true);
+assert.equal(issueTimeline.moments.some((moment) => moment.title.includes("현장 영상 Claim")), true);
+assert.equal(issueTimeline.moments.some((moment) => moment.sourceProvenance && moment.evidenceStrength && moment.riskLevel), true);
+assert.equal(JSON.stringify(issue.body).includes("private/live/2026"), false);
+
+const sourceOnlyIssue = await app.handle({ method: "GET", path: "/issues/issue_real_public_sources" });
+assert.equal((sourceOnlyIssue.body as { crowdEstimates: unknown[] }).crowdEstimates.length, 0);
+
+const qualityStore = createSeedStore({ includeMockData: false });
+qualityStore.issues.push({
+  id: "issue_quality_confidence",
+  title: "규모 추정 품질 검증 집회",
+  normalizedTopicKey: "topic:quality-confidence",
+  topicTags: ["품질 검증", "집회"],
+  status: "active",
+  firstSeenAt: now,
+  lastUpdatedAt: now
+});
+for (let index = 0; index < 4; index += 1) {
+  const regionLabel = index < 2 ? "서울" : "부산";
+  qualityStore.occurrences.push({
+    id: `occ_quality_${index}`,
+    issueId: "issue_quality_confidence",
+    type: "static_assembly",
+    areaClusterId: `area_quality_${regionLabel}`,
+    regionLabel,
+    title: `${regionLabel} 규모 추정 품질 검증`,
+    lifecycleState: "LIVE",
+    claimIds: [`claim_quality_${index}`],
+    evidenceIds: [`ev_quality_${index}`]
+  });
+  qualityStore.evidence.push({
+    id: `ev_quality_${index}`,
+    evidenceType: "live_media",
+    uploadedAt: now,
+    capturedAt: new Date(now.getTime() - 60_000),
+    foregroundGps: true,
+    gpsAccuracyM: 30,
+    distanceToTargetM: 80,
+    deviceIntegrityStatus: "pass",
+    deviceIntegrityProvider: "play_integrity",
+    deviceIntegrityCheckedAt: now,
+    deviceIntegrityProofHash: `sha256-qualitydeviceintegrity${index}`,
+    proofOfPresenceStatus: "pass",
+    redactionStatus: "completed",
+    redactionProofHash: `sha256-qualityredactionproof${index}`,
+    publicStorageKey: `/media/redacted/quality-live-${index}.webm`,
+    hash: `quality-live-${index}`
+  });
+  qualityStore.claims.push({
+    id: `claim_quality_${index}`,
+    targetType: "occurrence",
+    targetId: `occ_quality_${index}`,
+    sourceProvenance: "verified_citizen_report",
+    claimantLabel: "위치 인증 제보",
+    statement: "",
+    normalizedStatement: "규모 추정 품질 검증용 현장 인증 Claim입니다.",
+    evidenceStrength: "media_time_location_crosscheck",
+    riskLevel: "rights_risk",
+    createdAt: now,
+    evidenceIds: [`ev_quality_${index}`],
+    disputedByClaimIds: []
+  });
+}
+const qualityApp = createApp(qualityStore);
+const qualityIssue = await qualityApp.handle({ method: "GET", path: "/issues/issue_quality_confidence" });
+assert.equal((qualityIssue.body as { crowdEstimates: Array<{ confidence: string; independentViewpointCount: number }> }).crowdEstimates[0]?.confidence, "medium");
+assert.equal((qualityIssue.body as { crowdEstimates: Array<{ confidence: string; independentViewpointCount: number }> }).crowdEstimates[0]?.independentViewpointCount, 4);
+const weakQualityEvidence = qualityStore.evidence.find((item) => item.id === "ev_quality_0");
+if (weakQualityEvidence) {
+  weakQualityEvidence.deviceIntegrityStatus = "unknown";
+  qualityStore.evidence.find((item) => item.id === "ev_quality_1")!.hash = weakQualityEvidence.hash;
+  qualityStore.evidence.find((item) => item.id === "ev_quality_2")!.hash = weakQualityEvidence.hash;
+}
+const weakQualityIssue = await qualityApp.handle({ method: "GET", path: "/issues/issue_quality_confidence" });
+assert.equal((weakQualityIssue.body as { crowdEstimates: Array<{ confidence: string }> }).crowdEstimates[0]?.confidence, "low");
+assert.equal(JSON.stringify(weakQualityIssue.body).includes("device_integrity"), true);
+
+const appRiskDashboard = await app.handle({ method: "GET", path: "/admin/risk-dashboard", headers: internalHeaders });
+assert.equal(appRiskDashboard.status, 200);
+assert.equal((appRiskDashboard.body as { summary: { userClusterCount: number; deviceAttestationClusterCount: number } }).summary.userClusterCount >= 1, true);
+assert.equal((appRiskDashboard.body as { summary: { userClusterCount: number; deviceAttestationClusterCount: number } }).summary.deviceAttestationClusterCount >= 1, true);
+assert.equal(
+  (appRiskDashboard.body as { evidenceSignals: { userClusters: Array<{ userBucket: string }>; deviceAttestationClusters: Array<{ deviceBucket: string }> } }).evidenceSignals.userClusters.every((cluster) =>
+    cluster.userBucket.startsWith("user_")
+  ),
+  true
+);
+assert.equal(JSON.stringify(appRiskDashboard.body).includes(user1Session.userId), false);
+assert.equal(JSON.stringify(appRiskDashboard.body).includes("field-device-cluster"), false);
+
+const crowd = await app.handle({ method: "GET", path: "/targets/crowd_density_signal/crowd_busan_mock" });
+assert.equal(crowd.status, 200);
+assert.equal(JSON.stringify(crowd.body).includes("부산 도심권 인파 밀집 가능성이 감지되었습니다."), true);
+assertPublicPayloadSafe(crowd.body);
+
+const publicSourceBody = {
+  targetType: "occurrence",
+  targetId: "occ_seoul_traffic_mock",
+  sourceProvenance: "government_or_police",
+  claimantLabel: "경찰/지자체 공개 안내",
+  normalizedStatement: "공개 자료에서 집회 주변 통제 안내가 확인되었습니다.",
+  evidenceStrength: "single_source",
+  riskLevel: "misleading_possible",
+  rawText: "공공 원천 원문은 공개 응답에 그대로 노출하지 않는다"
+};
+const publicSource = await app.handle({
+  method: "POST",
+  path: "/internal/ingest/public-source",
+  headers: internalHeaders,
+  body: publicSourceBody
+});
+assert.equal(publicSource.status, 201);
+assert.equal(JSON.stringify(publicSource.body).includes("공공 원천 원문은 공개 응답에 그대로 노출하지 않는다"), false);
+const duplicatePublicSource = await app.handle({
+  method: "POST",
+  path: "/internal/ingest/public-source",
+  headers: internalHeaders,
+  body: { ...publicSourceBody, rawText: "갱신된 공공 원천 원문도 공개 응답에 나오면 안 된다" }
+});
+assert.equal(duplicatePublicSource.status, 200);
+assert.equal(
+  store.claims.filter(
+    (claim) =>
+      claim.targetType === "occurrence" &&
+      claim.targetId === "occ_seoul_traffic_mock" &&
+      claim.claimantLabel === "경찰/지자체 공개 안내" &&
+      claim.normalizedStatement === "공개 자료에서 집회 주변 통제 안내가 확인되었습니다."
+  ).length,
+  1
+);
+assert.equal(
+  store.claims.find(
+    (claim) =>
+      claim.targetType === "occurrence" &&
+      claim.targetId === "occ_seoul_traffic_mock" &&
+      claim.claimantLabel === "경찰/지자체 공개 안내" &&
+      claim.normalizedStatement === "공개 자료에서 집회 주변 통제 안내가 확인되었습니다."
+  )?.statement,
+  "갱신된 공공 원천 원문도 공개 응답에 나오면 안 된다"
+);
+assert.equal(JSON.stringify(duplicatePublicSource.body).includes("갱신된 공공 원천 원문도 공개 응답에 나오면 안 된다"), false);
+assert.equal(JSON.stringify(home.body).includes("hazard_area"), false);
+assert.equal(JSON.stringify(home.body).includes("service_disruption"), false);
+
+const monthly = await app.handle({ method: "GET", path: "/transparency/monthly" });
+assert.equal(monthly.status, 200);
+
+const protectedApp = createApp(createSeedStore(), {
+  internalApiKey: "test_internal_key",
+  readiness: () => ({ ready: true, checks: [{ id: "test", ok: true, message: "ok" }] })
+});
+assert.equal((await protectedApp.handle({ method: "GET", path: "/ready" })).status, 200);
+assert.equal((await protectedApp.handle({ method: "GET", path: "/admin/review-queue" })).status, 401);
+assert.equal(
+  (await protectedApp.handle({ method: "GET", path: "/admin/review-queue", headers: { "x-musunil-internal-key": "wrong_key" } })).status,
+  401
+);
+assert.equal(
+  (await protectedApp.handle({ method: "GET", path: "/admin/review-queue", headers: internalHeaders })).status,
+  200
+);
+const riskDashboard = await protectedApp.handle({ method: "GET", path: "/admin/risk-dashboard", headers: internalHeaders });
+assert.equal(riskDashboard.status, 200);
+assert.equal((riskDashboard.body as { decisionPolicy: string }).decisionPolicy, "signals_prioritize_review_only");
+assert.equal((riskDashboard.body as { summary: { reviewQueueCount: number; pendingRedactionCount: number } }).summary.reviewQueueCount >= 0, true);
+assert.equal((riskDashboard.body as { issueRisks: Array<{ verificationSignals: unknown[] }> }).issueRisks.some((issue) => issue.verificationSignals.length > 0), true);
+assert.equal(JSON.stringify(riskDashboard.body).includes("private/live/2026"), false);
+assert.equal(JSON.stringify(riskDashboard.body).includes("privateMediaBase64"), false);
+const protectedPrivacyDashboard = await protectedApp.handle({ method: "GET", path: "/admin/privacy-dashboard", headers: internalHeaders });
+assert.equal(protectedPrivacyDashboard.status, 200);
+assert.equal((protectedPrivacyDashboard.body as { summary: { originalMediaStoredCount: number } }).summary.originalMediaStoredCount >= 1, true);
+assert.equal(JSON.stringify(protectedPrivacyDashboard.body).includes("private/live/2026"), false);
+assert.equal(JSON.stringify(protectedPrivacyDashboard.body).includes("preview-seoul"), false);
+
+const ingested = await protectedApp.handle({
+  method: "POST",
+  path: "/internal/ingest/public-occurrence",
+  headers: internalHeaders,
+  body: {
+    id: "occ_daegu_0710_public",
+    issueId: "issue_real_public_sources",
+    type: "static_assembly",
+    areaClusterId: "area_daegu",
+    regionLabel: "대구",
+    title: "대구 0710(금) 오늘의 집회 공개 일정",
+    startsAt: "2026-07-10T00:00:00.000+09:00",
+    lifecycleState: "UPCOMING",
+    claimantLabel: "대구경찰청 오늘의 집회시위",
+    normalizedStatement: "대구경찰청 게시판에 0710(금) 오늘의 집회 공개 일정 게시물이 등록되었습니다.",
+    rawText: "공개하면 안 되는 원문"
+  }
+});
+assert.equal(ingested.status, 201);
+assert.equal(JSON.stringify(ingested.body).includes("공개하면 안 되는 원문"), false);
+const duplicateIngest = await protectedApp.handle({
+  method: "POST",
+  path: "/internal/ingest/public-occurrence",
+  headers: internalHeaders,
+  body: {
+    id: "occ_daegu_0710_public",
+    issueId: "issue_real_public_sources",
+    type: "static_assembly",
+    areaClusterId: "area_daegu",
+    regionLabel: "대구",
+    title: "대구 0710(금) 오늘의 집회 공개 일정",
+    startsAt: "2026-07-10T00:00:00.000+09:00",
+    lifecycleState: "UPCOMING",
+    claimantLabel: "대구경찰청 오늘의 집회시위",
+    normalizedStatement: "대구경찰청 게시판에 0710(금) 오늘의 집회 공개 일정 게시물이 등록되었습니다."
+  }
+});
+assert.equal(duplicateIngest.status, 200);
+const topicIngest = await protectedApp.handle({
+  method: "POST",
+  path: "/internal/ingest/public-occurrence",
+  headers: internalHeaders,
+  body: {
+    id: "occ_election_integrity_topic_1",
+    topicTitle: "부정선거",
+    topicTags: ["부정선거 의혹", "선거 검증", "집회"],
+    type: "static_assembly",
+    areaClusterId: "area_seoul",
+    regionLabel: "서울",
+    title: "서울 선거 검증 요구 집회",
+    startsAt: "2026-07-11T10:00:00.000+09:00",
+    lifecycleState: "UPCOMING",
+    claimantLabel: "공개 집회 자료",
+    normalizedStatement: "공개 자료에 부정선거 의혹 제기 집회 목적이 포함되었습니다."
+  }
+});
+assert.equal(topicIngest.status, 201);
+const topicIssueId = (topicIngest.body as { occurrence: { issueId?: string } }).occurrence.issueId;
+assert.equal(typeof topicIssueId, "string");
+if (!topicIssueId) throw new Error("topic issue id missing");
+const topicIngestAgain = await protectedApp.handle({
+  method: "POST",
+  path: "/internal/ingest/public-occurrence",
+  headers: internalHeaders,
+  body: {
+    id: "occ_election_integrity_topic_2",
+    topicTitle: "선거 검증 요구",
+    type: "static_assembly",
+    areaClusterId: "area_busan",
+    regionLabel: "부산",
+    title: "부산 선거 검증 요구 집회",
+    startsAt: "2026-07-12T10:00:00.000+09:00",
+    lifecycleState: "UPCOMING",
+    claimantLabel: "공개 집회 자료",
+    normalizedStatement: "공개 자료에 선거 검증 요구 집회 목적이 포함되었습니다."
+  }
+});
+assert.equal(topicIngestAgain.status, 201);
+assert.equal((topicIngestAgain.body as { occurrence: { issueId?: string } }).occurrence.issueId, topicIssueId);
+const topicHome = await protectedApp.handle({ method: "GET", path: "/home" });
+assert.equal(JSON.stringify((topicHome.body as { issueCards: unknown }).issueCards).includes("부정선거 의혹 제기 집회"), true);
+assert.equal(JSON.stringify((topicHome.body as { issueCards: unknown }).issueCards).includes("\"title\":\"부정선거\""), false);
+const topicIssue = await protectedApp.handle({ method: "GET", path: `/issues/${topicIssueId}` });
+assert.equal(topicIssue.status, 200);
+assert.equal((topicIssue.body as { nationalSummary: { regionCount: number; targetCount: number } }).nationalSummary.regionCount, 2);
+assert.equal((topicIssue.body as { nationalSummary: { regionCount: number; targetCount: number } }).nationalSummary.targetCount, 2);
+assert.equal((topicIssue.body as { regionalSignals: Array<{ statusLabels: string[] }> }).regionalSignals.every((signal) => signal.statusLabels.length === 4), true);
+assert.equal((topicIssue.body as { topicGrouping: { topicTitle: string; basis: string[]; regions: string[] } }).topicGrouping.topicTitle, "부정선거 의혹 제기 집회");
+assert.equal((topicIssue.body as { topicGrouping: { basis: string[]; regions: string[] } }).topicGrouping.basis.some((item) => item.includes("공통 주제어")), true);
+assert.equal((topicIssue.body as { topicGrouping: { regions: string[] } }).topicGrouping.regions.length, 2);
+assert.equal((topicIssue.body as { crowdEstimates: unknown[] }).crowdEstimates.length, 0);
+assert.equal(JSON.stringify(topicIssue.body).includes("공개 일정과 현장 인증 전 초기 추정입니다."), false);
+assert.equal(JSON.stringify(topicIssue.body).includes("verificationSignals"), true);
+assert.equal(JSON.stringify(topicIssue.body).includes("nationalTimeline"), true);
+assert.equal((topicIssue.body as { regionalCrowdEstimates: Array<{ regionLabel: string }> }).regionalCrowdEstimates.length, 0);
+assert.equal((topicIssue.body as { nationalTimeline: { summary: { label: string }; moments: unknown[] } }).nationalTimeline.summary.label.length > 0, true);
+assert.equal((topicIssue.body as { nationalTimeline: { moments: unknown[] } }).nationalTimeline.moments.length > 0, true);
+const topicLaws = await protectedApp.handle({ method: "GET", path: "/laws" });
+assert.equal(topicLaws.status, 200);
+assert.equal(JSON.stringify(topicLaws.body).includes("공직선거법"), true);
+const ingestedLaw = await protectedApp.handle({
+  method: "POST",
+  path: "/internal/ingest/laws",
+  headers: internalHeaders,
+  body: {
+    source: "assembly_bill",
+    lawName: "집회 및 시위에 관한 법률",
+    billTitle: "집회 및 시위에 관한 법률 일부개정법률안",
+    stage: "접수",
+    statusDate: "2026-07-09T00:00:00.000+09:00",
+    assemblyBillId: "bill-test-assembly-act",
+    keywords: ["집회 및 시위에 관한 법률", "집회시위법", "집회"]
+  }
+});
+assert.equal(ingestedLaw.status, 200);
+assert.equal(JSON.stringify(ingestedLaw.body).includes("집회 및 시위에 관한 법률"), true);
+const seededPublicRefresh = await protectedApp.handle({
+  method: "POST",
+  path: "/internal/ingest/public-occurrence",
+  headers: internalHeaders,
+  body: {
+    id: "occ_daegu_0704_0705_public",
+    issueId: "issue_real_public_sources",
+    type: "static_assembly",
+    areaClusterId: "area_daegu",
+    regionLabel: "대구",
+    title: "대구 0704(토)~0705(일) 오늘의 집회 공개 일정",
+    startsAt: "2026-07-04T00:00:00.000+09:00",
+    endsAt: "2026-07-05T23:59:59.000+09:00",
+    lifecycleState: "ENDED",
+    claimantLabel: "대구경찰청 오늘의 집회시위",
+    normalizedStatement: "대구경찰청 게시판에 0704(토)~0705(일) 오늘의 집회 공개 일정 게시물이 등록되었습니다."
+  }
+});
+assert.equal(seededPublicRefresh.status, 200);
+
+function fakeJsonRequest(body: Buffer): Promise<unknown> {
+  const request = new EventEmitter() as EventEmitter & {
+    method?: string;
+    headers?: Record<string, string>;
+    destroy?: () => void;
+  };
+  request.method = "POST";
+  request.headers = { "content-length": String(body.length) };
+  request.destroy = () => {};
+  const result = readJsonBody(request);
+  queueMicrotask(() => {
+    request.emit("data", body);
+    request.emit("end");
+  });
+  return result;
+}
+
+function assertPublicPayloadSafe(body: unknown): void {
+  const text = JSON.stringify(body);
+  for (const field of [
+    '"statement"',
+    '"claimIds"',
+    '"evidenceIds"',
+    '"delayClaimIds"',
+    '"serviceStatusClaimIds"',
+    '"flowDirectionClaimIds"',
+    '"emergencySignalClaimIds"',
+    '"targetRefs"',
+    '"storageKey"',
+    '"publicStorageKey"',
+    '"hash"',
+    '"geoCell"',
+    '"gpsAccuracyM"',
+    '"distanceToTargetM"',
+    '"deviceIntegrityProvider"',
+    '"deviceIntegrityProofHash"',
+    '"deviceIntegrityCheckedAt"',
+    '"redactionProofHash"',
+    '"redactionCheckedAt"',
+    '"reviewTargetClaimId"'
+  ]) {
+    assert.equal(text.includes(field), false, `public payload leaked ${field}`);
+  }
+}
+
+async function anonymousSession(app: ReturnType<typeof createApp>): Promise<{ userId: string; token: string }> {
+  const response = await app.handle({ method: "POST", path: "/session/anonymous" });
+  assert.equal(response.status, 201);
+  const body = response.body as { userId: string; token: string; expiresAt: string };
+  assert.equal(typeof body.userId, "string");
+  assert.equal(typeof body.token, "string");
+  assert.equal(new Date(body.expiresAt).getTime() > Date.now(), true);
+  return body;
+}
+
+function liveVideoFields(id: string) {
+  return {
+    storageKey: `private/live/test/${id}.mp4`,
+    hash: `sha256-${id}`,
+    durationMs: 8000,
+    mediaMimeType: "video/mp4",
+    width: 1080,
+    height: 1920,
+    captureMode: "in_app_camera"
+  };
+}
+
+function userHeaders(session: { userId: string; token: string }): Record<string, string> {
+  return {
+    "x-musunil-user-id": session.userId,
+    "x-musunil-user-token": session.token
+  };
+}

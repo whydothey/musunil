@@ -1,0 +1,118 @@
+app:
+  name: "무슨일"
+  public_base_url: "https://musunil.com"
+  support_email: "CHANGE_ME_SUPPORT_EMAIL"
+  default_locale: "ko-KR"
+  timezone: "Asia/Seoul"
+
+api:
+  public_base_url: "https://api.musunil.com"
+
+web:
+  allowed_origins:
+    - "https://musunil.com"
+
+organization:
+  legal_name: "CHANGE_ME_LEGAL_NAME"
+  operator_name: "CHANGE_ME_OPERATOR_NAME"
+  business_registration_number: ""
+  privacy_officer_name: "CHANGE_ME_PRIVACY_OFFICER_NAME"
+  privacy_officer_email: "CHANGE_ME_PRIVACY_OFFICER_EMAIL"
+  location_info_manager_name: "CHANGE_ME_LOCATION_MANAGER_NAME"
+  location_info_manager_email: "CHANGE_ME_LOCATION_MANAGER_EMAIL"
+
+render:
+  environment: "production"
+  service_region: "singapore"
+
+security:
+  jwt_secret: ""
+  encryption_key: ""
+  internal_api_key: ""
+  media_encryption_key: "CHANGE_ME_MEDIA_ENCRYPTION_KEY_32_BYTES"
+
+postgres:
+  database_url: ""
+
+redis:
+  url: ""
+
+storage:
+  provider: "s3"
+  bucket: "CHANGE_ME_MEDIA_BUCKET"
+  region: "CHANGE_ME_MEDIA_REGION"
+  endpoint: ""
+  access_key_id: "CHANGE_ME_MEDIA_ACCESS_KEY_ID"
+  secret_access_key: "CHANGE_ME_MEDIA_SECRET_ACCESS_KEY"
+
+redaction:
+  engine_smoke_command: "CHANGE_ME_REDACTION_ENGINE_SMOKE_COMMAND_WITH_{input}_AND_{output}"
+
+mobile:
+  android_play_integrity_enabled: true
+  android_package_name: "CHANGE_ME_ANDROID_PACKAGE_NAME_OR_DISABLE_AND_ENABLE_IOS_APP_ATTEST"
+  android_play_integrity_service_account_json_b64: "CHANGE_ME_PLAY_INTEGRITY_SERVICE_ACCOUNT_JSON_B64"
+  ios_app_attest_enabled: false
+  ios_bundle_id: ""
+  ios_team_id: ""
+  integrity_smoke_command: "CHANGE_ME_MOBILE_INTEGRITY_DRY_RUN_COMMAND_PRINTING_mobile_integrity_provider_dry_run"
+
+public_data_sources:
+  national_assembly_bill_api_key: "CHANGE_ME_NATIONAL_ASSEMBLY_BILL_API_KEY_OR_SET_LAW_GO_KR_OC"
+  national_assembly_bill_api_url: "https://open.assembly.go.kr/portal/openapi/ALLBILLINFO"
+  law_go_kr_oc: ""
+  law_go_kr_base_url: "https://www.law.go.kr/DRF/lawSearch.do"
+  law_interest_keywords:
+    - "집회 및 시위에 관한 법률"
+    - "정보통신망법"
+    - "공직선거법"
+    - "국회법"
+    - "탄핵"
+    - "선거 검증"
+
+map:
+  provider: "openfreemap"
+  map_style_url: "https://tiles.openfreemap.org/styles/positron"
+  default_center:
+    lat: 36.5
+    lng: 127.8
+  default_zoom: 7
+  public_location_blur_meters: 200
+  sensitive_location_blur_meters: 500
+
+preview:
+  use_mock_data: false
+
+moderation:
+  live_report_max_upload_minutes: 5
+  max_public_location_accuracy_meters: 300
+  min_gps_accuracy_meters_for_live: 100
+  max_distance_to_report_location_meters: 200
+  candidate_occurrence_visibility_threshold: 0.7
+  auto_publish_low_risk_live_reports: false
+
+retention:
+  raw_claim_statement_days: 30
+  unverified_original_media_days: 30
+  verified_original_media_days: 180
+  precise_location_days: 30
+  audit_log_days: 3650
+
+features:
+  free_comments_enabled: false
+  voting_enabled: false
+  national_priority_cards_enabled: true
+  issue_follow_enabled: true
+  occurrence_follow_enabled: true
+  continuous_presence_enabled: true
+  transit_occurrence_enabled: true
+  crowd_density_enabled: true
+  route_segment_enabled: true
+  route_checkpoint_enabled: true
+
+payments:
+  donations_enabled: false
+
+ai:
+  provider: ""
+  api_key: ""

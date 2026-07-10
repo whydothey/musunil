@@ -1,0 +1,161 @@
+# 로컬 완료 상태
+
+외부 연결이 필요 없는 범위에서 완료한 항목이다.
+
+Last updated: 2026-07-10 04:58 KST
+
+## 완료
+
+- `docs/implementation_plan.md`
+- `AGENTS.md`
+- `config/musunil.user-inputs.template.yaml`
+- `docs/user-inputs-manual.md`
+- `packages/config`
+  - `MUSUNIL_USER_INPUTS_B64`
+  - `MUSUNIL_USER_INPUTS_FILE_PATH`
+  - `config/musunil.user-inputs.local.yaml`
+  - 템플릿은 명시적으로 허용한 self-check에서만 사용
+  - 템플릿 기본값은 production-safe로 preview/mock 비활성화
+- `packages/schemas`
+  - Claim, Evidence
+  - Issue, Occurrence
+  - ContinuousPresence
+  - TransitOccurrence
+  - CrowdDensitySignal
+  - RouteSegment, RouteCheckpoint
+  - AuditLog, TransparencyLog, NotificationOutbox
+  - Proof-of-Presence
+  - 자동 병합 금지
+  - 의미 있는 상태 변화 알림 필터
+  - 신고 수 자동 삭제 금지
+- `services/api`
+  - `GET /home`
+  - `GET /issues`
+  - `GET /issues/:id`
+  - `GET /occurrences/:id`
+  - `GET /continuous-presences/:id`
+  - `GET /transit-occurrences/:id`
+  - `GET /area-clusters`
+  - `GET /map`
+  - `POST /reports/live`
+  - `POST /reports/material`
+  - `POST /corrections/on-site`
+  - `POST /reports/rights-violation`
+  - `POST /rebuttals`
+  - `POST /subscriptions`
+  - `PATCH /subscriptions/:id`
+  - `GET /me/reports`
+  - `GET /me/subscriptions`
+  - `GET /transparency/logs`
+  - `GET /transparency/monthly`
+  - `POST /internal/ingest/public-source`
+  - `POST /internal/ingest/public-occurrence`
+  - `POST /internal/agents/reconcile-lifecycle`
+  - `POST /internal/notifications/dispatch`
+  - 공개 응답에서 내부 `claimIds/evidenceIds/*ClaimIds/targetRefs` 참조 제거
+- `apps/web/index.html`
+  - 홈 카드
+  - 시간/지역 필터
+  - MapLibre + OpenFreeMap 지도
+  - OpenFreeMap 기본 지도 provider 확정, 별도 지도 API key 없이 launch check 통과
+  - 지도식 클러스터 패널
+  - 객관 요약 상세
+  - LIVE 제보
+  - 상태 변경 알림 구독
+  - 운영 seed에서 프리뷰/mock 데이터 제거
+  - 운영형 Web fallback에서 프리뷰/mock 카드와 핀 제거
+  - Web API override를 localhost로 제한
+  - 홈 카드 사용자 라벨에서 내부 enum 원문 제거
+  - 데스크톱/모바일 실제 캡처 검증: overflow 0, clipped text 0, 지도 핀 겹침 0
+- 공개 원천 및 법 연결 준비
+  - 경찰청 2011~2023 집회 신고·개최 통계
+  - 대구경찰청 2020~2025 집회 신고·개최 현황
+  - 서울, 부산, 대구, 인천, 광주, 대전, 울산, 세종, 경기남부, 경기북부, 강원, 충북, 충남, 전북, 전남, 경북, 경남, 제주 18개 권역 공식 일정 parser
+  - `pnpm sources:coverage`
+  - `pnpm sources:laws`
+  - 법 원천 credential 존재 시 0건 dry-run 실패 가드
+  - production `/laws` preview 데이터 비노출 가드
+- 운영 준비 골격
+  - `/ready`
+  - `pnpm check:release`
+  - `pnpm launch:check`
+  - `pnpm launch:inputs`
+  - `pnpm launch:verify-inputs`
+  - `pnpm check:launch-sample`
+  - `pnpm check:render-runtime-config`
+  - `pnpm check:runtime-smoke`
+  - `pnpm check:web-smoke`
+  - `pnpm check:splus`
+  - `pnpm launch:ready`
+  - `pnpm launch:post-deploy-smoke`
+  - `pnpm launch:external-smoke`
+  - `pnpm storage:smoke`
+  - `pnpm redaction:smoke`
+  - `pnpm mobile:integrity-smoke`
+  - `pnpm smoke:api`
+  - `pnpm smoke:api -- --boundary-checks`
+  - 정적 Web `config.js` 생성: `pnpm build:web-config`
+  - 로컬 Web 정적 서버: `pnpm dev:web`
+  - 로컬 Web 정적 서버 보안 헤더 runtime smoke
+  - `docs/launch-readiness-checklist.md`
+  - 내부/admin 라우트 키 보호
+  - 사용자별 `/me/*`, 구독 생성/수정, 제보 소유권 기록 서버 서명 anonymous token 범위 확인
+  - LIVE 제보 anonymous token 필수화
+  - 운영 기본 LIVE 제보 `held_private` 검수 대기와 admin `--publish` 공개 전환
+  - API CORS allowed origin echo와 기본 보안 헤더
+  - 로컬 Web fallback 포트 `4173`, `4174` CORS 허용
+  - 관리자 검수 CLI: `pnpm admin:queue`, `pnpm admin:claim`
+  - worker-only redaction CLI: `pnpm admin:redaction`
+  - `POST /internal/ingest/public-occurrence`
+  - `POST /internal/ingest/laws`
+  - 공개 자료 Claim/Occurrence ingest 반복 실행 중복 방지
+  - 전국 공개 자료 worker dry-run
+  - 공개 자료 worker fetch 실패/0건 파싱 non-zero 종료
+  - 전국 18개 시도경찰청 권역 공개 자료 coverage registry
+  - `pnpm sources:coverage`
+  - `GET /public-sources/coverage`
+  - Web 상단 `일정 확인 active/total` 표시
+  - 공개 자료 부재를 집회 부재로 해석하지 않는 coverage policy
+  - 알림 dispatch worker local completion: due outbox를 `sent`로 마감
+  - 내부 privacy purge와 Render cron
+  - 알림 구독 `alertTypes`, mute, dedupe/cooldown guard
+  - Postgres `store_snapshots` 기반 v1 runtime persistence와 snapshot 저장 직렬화
+  - Postgres snapshot payload AES-GCM 암호화
+  - Postgres initial migration SQL: Claim/Evidence/Occurrence, ContinuousPresence, TransitOccurrence, CrowdDensitySignal, RouteSegment, RouteCheckpoint, reports
+  - Render 배포 초안: API `/ready` health check, API/Web 공개 config build + launch gate, DB migration pre-deploy, graceful shutdown, 공개 원천/알림 cron
+  - Render Blueprint 관리형 Postgres/Key Value 자동 생성과 `DATABASE_URL`/`REDIS_URL` 주입
+  - Render production runtime marker와 설정 실패 fallback mock/LIVE 자동 공개 차단
+  - production runtime not-ready 상태의 POST/PATCH write fail-closed
+  - Render Web의 API `MUSUNIL_USER_INPUTS_B64` 참조로 YAML secret 입력을 API 한 곳으로 축소
+  - Render API generated internal/user-token/encryption keys와 service env reference로 YAML 운영 secret 축소
+  - Render cron worker private `MUSUNIL_API_HOSTPORT` 주입과 worker fallback
+  - Render Static Site 보안 헤더 Blueprint 선언
+  - AI provider 없이도 현재 launch check 통과, provider를 켤 때만 `ai.api_key` 필수
+  - production LIVE 미디어 운영은 `storage.*`와 media encryption key 없이는 launch check 실패
+  - production LIVE 업로드는 S3-compatible storage adapter 또는 media encryption key 없이는 fail-closed, adapter 사용 시 원본 base64를 Store에 남기지 않고 PUT 바이트를 AES-GCM 암호화
+  - privacy purge는 외부 storage 원본 media DELETE 성공 후에만 DB storageKey/hash 제거
+  - production LIVE 현장 인증은 Android Play Integrity 또는 iOS App Attest 설정 없이는 launch check 실패
+  - 모바일 무결성 실제 provider dry-run 명령 주입: `mobile.integrity_smoke_command`
+  - `pnpm launch:external-smoke`는 storage, redaction, mobile integrity, law source dry-run을 단일 순서로 실행
+  - `pnpm launch:ready -- <yaml>`는 입력 검증, config encode check, Render runtime sample gate, external smoke, release check를 단일 순서로 실행
+  - `pnpm launch:post-deploy-smoke`는 배포 후 실제 API URL의 `/health`, `/ready`, public payload safety, coverage, laws, admin auth boundary를 비파괴로 확인
+  - `docs/splus-master-tracker.md`
+  - `docs/national-issue-splus-tracker.md`
+  - `docs/splus-completion-audit.md`
+  - `pnpm launch:inputs` 운영 YAML 초안 생성: Render generated secret은 비워 두고 실제 운영 값만 `CHANGE_ME_*`로 남김
+  - `pnpm launch:verify-inputs` 로컬 검증: Render 관리형 DB/Redis를 모의 주입해 사용자 YAML만 검증
+  - `pnpm config:encode` launch 검증 후 `MUSUNIL_USER_INPUTS_B64` 생성, placeholder YAML 인코딩 차단
+  - 기본 템플릿과 `pnpm launch:inputs` 모두 운영 입력값만 `CHANGE_ME_*`로 남김
+  - GitHub Actions `pnpm check:release` CI
+
+## 외부 연결 필요
+
+- 실제 storage credential로 `pnpm storage:smoke` 통과.
+- 실제 비식별 엔진 command로 `pnpm redaction:smoke` 통과.
+- 실제 Play Integrity 또는 App Attest verifier dry-run으로 `pnpm mobile:integrity-smoke` 통과.
+- 실제 법 원천 키로 `pnpm sources:laws` 1건 이상 dry-run과 `--post` 검증.
+- Render Dashboard에서 Blueprint 생성과 `MUSUNIL_USER_INPUTS_B64` 1회 입력.
+- 운영 DB/Redis 연결 상태에서 `/ready` 200 확인.
+- 실제 API URL 기준 `pnpm launch:post-deploy-smoke -- --require-laws` 통과.
+- Render cron 실제 실행과 실패 알림 확인.
+- FCM/APNs 실제 발송 provider를 켤 경우 별도 provider smoke.

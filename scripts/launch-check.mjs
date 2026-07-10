@@ -1,0 +1,523 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { loadUserInputs, validateLaunchConfig } from "../packages/config/src/index.ts";
+
+const cwd = resolve(import.meta.dirname, "..");
+const failures = [];
+
+let loaded;
+try {
+  loaded = loadUserInputs({ cwd });
+  failures.push(...validateLaunchConfig(loaded.config).map((issue) => `${issue.path}: ${issue.message}`));
+} catch (error) {
+  failures.push(error instanceof Error ? error.message : "failed to load user inputs");
+}
+
+const web = readFileSync(resolve(cwd, "apps/web/index.html"), "utf8");
+const userFacingDocs = [
+  "docs/product-principles.md",
+  "docs/data-fixtures-and-real-sources.md",
+  "docs/uiux-reference-notes.md",
+  "docs/local-completion-status.md",
+  "docs/launch-readiness-checklist.md"
+].map((path) => `${path}\n${readFileSync(resolve(cwd, path), "utf8")}`).join("\n");
+const webConfigJs = readFileSync(resolve(cwd, "apps/web/config.js"), "utf8");
+const webServer = readFileSync(resolve(cwd, "scripts/serve-web.mjs"), "utf8");
+const gitignore = readFileSync(resolve(cwd, ".gitignore"), "utf8");
+const renderYaml = readFileSync(resolve(cwd, "render.yaml"), "utf8");
+const renderApi = renderServiceBlock(renderYaml, "musunil-api");
+const renderWeb = renderServiceBlock(renderYaml, "musunil-web");
+const renderRedis = renderServiceBlock(renderYaml, "musunil-redis");
+const renderPublicSourceIngest = renderServiceBlock(renderYaml, "musunil-public-source-ingest");
+const renderLawSourceIngest = renderServiceBlock(renderYaml, "musunil-law-source-ingest");
+const renderNotificationDispatch = renderServiceBlock(renderYaml, "musunil-notification-dispatch");
+const renderPrivacyPurge = renderServiceBlock(renderYaml, "musunil-privacy-purge");
+const forbiddenPatterns = [
+  /[🪧📊⛺🚇👥🚧➰]/u,
+  /자유 댓글|추천\/비추천|찬반투표/u,
+  /hazard_area|service_disruption/u
+];
+for (const pattern of forbiddenPatterns) {
+  if (pattern.test(web)) failures.push(`forbidden UI pattern found: ${pattern}`);
+}
+for (const term of ["공식 원천", "일정 수집", "데이터 커버리지", "상충/반론", "원천 미확정"]) {
+  if ((web + "\n" + userFacingDocs).includes(term)) failures.push(`legacy user-facing term found: ${term}`);
+}
+for (const pattern of ["config/*.local.yaml", "config/*.secret.yaml", ".env", ".env.*", "*.pem", "*.key"]) {
+  if (!gitignore.split("\n").includes(pattern)) failures.push(`.gitignore must block local secret pattern: ${pattern}`);
+}
+
+const publicResponseFiles = [
+  "services/api/src/app.ts",
+  "packages/schemas/src/index.ts"
+].map((path) => readFileSync(resolve(cwd, path), "utf8")).join("\n");
+const schemasIndex = readFileSync(resolve(cwd, "packages/schemas/src/index.ts"), "utf8");
+if (!/function toPublicClaim/.test(publicResponseFiles)) failures.push("toPublicClaim guard is missing");
+if (!/function toPublicTarget/.test(publicResponseFiles)) failures.push("toPublicTarget guard is missing");
+if (!/function toPublicAreaCluster/.test(publicResponseFiles)) failures.push("toPublicAreaCluster guard is missing");
+if (/statement:\s*claim\.statement/.test(publicResponseFiles)) failures.push("raw Claim statement is exposed publicly");
+if (/evidenceIds:\s*claim\.evidenceIds/.test(publicResponseFiles)) failures.push("public Claim exposes internal evidence IDs");
+if (/storageKey:\s*evidence\?*\.storageKey/.test(publicResponseFiles)) failures.push("public media exposes private storage key");
+if (/hash:\s*evidence\?*\.hash/.test(publicResponseFiles)) failures.push("public media exposes original media hash");
+if (!/timingSafeEqual/.test(publicResponseFiles)) failures.push("internal key comparison must use timingSafeEqual");
+if (!/body_too_large/.test(readFileSync(resolve(cwd, "services/api/src/http-boundary.ts"), "utf8"))) failures.push("HTTP JSON body limit is missing");
+if (!/invalid_json/.test(readFileSync(resolve(cwd, "services/api/src/http-boundary.ts"), "utf8"))) failures.push("HTTP invalid JSON guard is missing");
+if (!/rate_limited/.test(readFileSync(resolve(cwd, "services/api/src/http-boundary.ts"), "utf8"))) failures.push("public write rate limit is missing");
+if (!/evidence\.evidenceType === "live_media" && evidence\.captureMode !== "in_app_camera"/.test(schemasIndex)) {
+  failures.push("Proof-of-Presence must only accept in-app camera LIVE media");
+}
+if (!/minDurationMs/.test(schemasIndex) || !/\(evidence\.durationMs \?\? 0\) < policy\.minDurationMs/.test(schemasIndex)) {
+  failures.push("Proof-of-Presence must reject too-short LIVE media");
+}
+const apiServer = readFileSync(resolve(cwd, "services/api/src/server.ts"), "utf8");
+const apiApp = readFileSync(resolve(cwd, "services/api/src/app.ts"), "utf8");
+const liveMediaStorage = readFileSync(resolve(cwd, "services/api/src/live-media-storage.ts"), "utf8");
+const storageSmoke = readFileSync(resolve(cwd, "scripts/storage-smoke.mjs"), "utf8");
+const redactionSmoke = readFileSync(resolve(cwd, "scripts/redaction-smoke.mjs"), "utf8");
+const mobileIntegritySmoke = readFileSync(resolve(cwd, "scripts/mobile-integrity-smoke.mjs"), "utf8");
+const postDeploySmoke = readFileSync(resolve(cwd, "scripts/post-deploy-smoke.mjs"), "utf8");
+const adminReview = readFileSync(resolve(cwd, "scripts/admin-review.mjs"), "utf8");
+const postgresStore = readFileSync(resolve(cwd, "services/api/src/postgres-store.ts"), "utf8");
+const packageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
+if (!/pingPostgres/.test(apiServer)) failures.push("/ready postgres ping is missing");
+if (!/tcpUrlReadyCheck\("redis"/.test(apiServer)) failures.push("/ready redis reachability check is missing");
+if (!/x-content-type-options/.test(apiServer) || !/nosniff/.test(apiServer)) failures.push("API x-content-type-options header is missing");
+if (!/referrer-policy/.test(apiServer) || !/no-referrer/.test(apiServer)) failures.push("API referrer-policy header is missing");
+if (!/cache-control/.test(apiServer) || !/no-store/.test(apiServer)) failures.push("API cache-control header is missing");
+if (!/"vary": "Origin"/.test(apiServer)) failures.push("API Vary: Origin header is missing");
+if (!/x-musunil-user-id/.test(apiServer)) failures.push("API CORS user scope header is missing");
+if (!/x-musunil-user-token/.test(apiServer)) failures.push("API CORS user token header is missing");
+if (!/userTokenSecret/.test(apiServer)) failures.push("API user token secret runtime wiring is missing");
+if (!/includeMockData/.test(apiServer) || !/stripPreviewData/.test(apiServer)) failures.push("production mock-data strip wiring is missing");
+if (!/autoPublishLiveReports/.test(apiServer) || !/moderation\.auto_publish_low_risk_live_reports/.test(apiServer)) {
+  failures.push("LIVE report moderation auto-publish wiring is missing");
+}
+if (!/createLiveMediaStorage/.test(apiServer) || !/liveMediaStorage:\s*runtime\.liveMediaStorage/.test(apiServer) || !/requireExternalLiveStorage:\s*runtime\.requireExternalLiveStorage/.test(apiServer)) {
+  failures.push("production LIVE media storage adapter wiring is missing");
+}
+if (!/delete:\s*async/.test(liveMediaStorage) || !/method:\s*"DELETE"/.test(liveMediaStorage) || !/privacy_purge_storage_unavailable/.test(apiApp)) {
+  failures.push("production privacy purge must delete external media objects before clearing storage keys");
+}
+if (!/createLiveMediaStorage/.test(storageSmoke) || !/storage_put_delete/.test(storageSmoke) || !/storage:smoke/.test(packageJson)) {
+  failures.push("storage PUT/DELETE launch smoke command is missing");
+}
+if (/checked:\s*"storage_put_delete"[\s\S]*storageKey/.test(storageSmoke)) {
+  failures.push("storage smoke must not print private storage keys");
+}
+if (
+  !/"launch:post-deploy-smoke"/.test(packageJson) ||
+  !/isDeployedHttpsUrl/.test(postDeploySmoke) ||
+  !/url\.protocol === "https:"/.test(postDeploySmoke) ||
+  !/AbortSignal\.timeout\(requestTimeoutMs\)/.test(postDeploySmoke) ||
+  !/redirect:\s*"manual"/.test(postDeploySmoke) ||
+  !/assertApiSecurityHeaders/.test(postDeploySmoke) ||
+  !/cors_boundary/.test(postDeploySmoke) ||
+  !/not-allowed\.musunil\.invalid/.test(postDeploySmoke) ||
+  !/assertPublicPayloadSafe/.test(postDeploySmoke) ||
+  !/\/issues/.test(postDeploySmoke) ||
+  !/\/issues\/\$\{encodeURIComponent/.test(postDeploySmoke) ||
+  !/\/targets\/issue\/\$\{encodeURIComponent/.test(postDeploySmoke) ||
+  !/\/laws\/\$\{encodeURIComponent/.test(postDeploySmoke) ||
+  !/\/map/.test(postDeploySmoke) ||
+  !/\/ready/.test(postDeploySmoke) ||
+  !/assertReadyCheck/.test(postDeploySmoke) ||
+  !/"config_source"/.test(postDeploySmoke) ||
+  !/"postgres"/.test(postDeploySmoke) ||
+  !/"redis"/.test(postDeploySmoke) ||
+  !/\/public-sources\/coverage/.test(postDeploySmoke) ||
+  !/--require-laws/.test(postDeploySmoke) ||
+  !/admin\/review-queue/.test(postDeploySmoke) ||
+  !/forbidden_engagement_surface_absent/.test(postDeploySmoke) ||
+  !/\/comments/.test(postDeploySmoke) ||
+  !/\/donations/.test(postDeploySmoke) ||
+  !/hazard_area/.test(postDeploySmoke) ||
+  !/service_disruption/.test(postDeploySmoke)
+) {
+  failures.push("post-deploy API smoke command must verify deployed readiness, coverage, laws, and admin auth boundary");
+}
+if (
+  !/redaction_engine_smoke/.test(redactionSmoke) ||
+  !/redaction\.engine_smoke_command/.test(redactionSmoke) ||
+  !/shellQuote/.test(redactionSmoke) ||
+  !/stdio:\s*\["ignore",\s*"pipe",\s*"pipe"\]/.test(redactionSmoke) ||
+  !/"redaction:smoke"/.test(packageJson) ||
+  !/redaction\.engine_smoke_command/.test(readFileSync(resolve(cwd, "packages/config/src/index.ts"), "utf8"))
+) {
+  failures.push("redaction engine launch smoke command is missing");
+}
+if (/process\.(stdout|stderr)\.write\(data\)/.test(mobileIntegritySmoke)) {
+  failures.push("mobile integrity smoke must not stream provider output into launch logs");
+}
+if (!/liveMediaEncryptionKey:\s*runtime\.liveMediaEncryptionKey/.test(apiServer) || !/security\.media_encryption_key/.test(apiServer)) {
+  failures.push("production LIVE media encryption key wiring is missing");
+}
+if (!/requireExternalLiveStorage/.test(apiApp) || !/live_storage_unavailable/.test(apiApp) || !/encryptLiveMediaBytes/.test(apiApp)) {
+  failures.push("production LIVE media must fail closed without external storage");
+}
+if (!/deviceIntegrityProofHash/.test(apiApp) || !/device_integrity_proof_required/.test(apiApp) || !/deviceIntegrityProvider/.test(apiApp)) {
+  failures.push("internal device integrity verifier provenance guard is missing");
+}
+if (!/function hasPublishableLiveEvidence/.test(apiApp) || !/function hasTrustedDeviceIntegrity/.test(apiApp) || !/device_integrity_required/.test(apiApp)) {
+  failures.push("public LIVE evidence must require trusted device integrity before publish");
+}
+const liveReport = apiApp.match(/function postLiveReport[\s\S]*?function liveUploadBytes/);
+const fieldVerification = apiApp.match(/function postFieldVerification[\s\S]*?function postMaterialReport/);
+if (
+  !liveReport ||
+  !fieldVerification ||
+  !/uploadedAt:\s*upload\.uploadedAt/.test(liveReport[0]) ||
+  /readDate\(data,\s*"uploadedAt"/.test(liveReport[0]) ||
+  !/uploadedAt:\s*new Date\(\)/.test(fieldVerification[0]) ||
+  /readDate\(data,\s*"uploadedAt"/.test(fieldVerification[0]) ||
+  !/"field_verification_queued_for_device_integrity"/.test(fieldVerification[0]) ||
+  !/visibility:\s*"held_private"/.test(fieldVerification[0])
+) {
+  failures.push("Proof-of-Presence upload time and field verification visibility must be server-authoritative");
+}
+const configIndex = readFileSync(resolve(cwd, "packages/config/src/index.ts"), "utf8");
+if (!/android_play_integrity_service_account_json_b64/.test(configIndex) || !/requireServiceAccountJsonB64/.test(configIndex) || !/ios_team_id/.test(readFileSync(resolve(cwd, "config/musunil.user-inputs.template.yaml"), "utf8"))) {
+  failures.push("mobile integrity verifier launch credentials are missing");
+}
+if (!/"mobile:integrity-smoke"/.test(packageJson) || !/mobile_integrity_provider_dry_run/.test(readFileSync(resolve(cwd, "scripts/mobile-integrity-smoke.mjs"), "utf8")) || !/integrity_smoke_command/.test(configIndex)) {
+  failures.push("mobile integrity verifier launch smoke command is missing");
+}
+const adminClaimReview = apiApp.match(/function patchAdminClaim[\s\S]*?function postReconcileLifecycle/);
+if (!adminClaimReview || !/claim\.fieldVerification/.test(adminClaimReview[0]) || !/device_integrity_required/.test(adminClaimReview[0])) {
+  failures.push("public field verification must require trusted device integrity before publish");
+}
+if (
+  !/function patchInternalEvidenceRedaction/.test(apiApp) ||
+  !/redaction_worker_required/.test(apiApp) ||
+  !/redaction_proof_required/.test(apiApp) ||
+  !/redactionProofHash/.test(apiApp) ||
+  !/hasCompletedRedaction/.test(apiApp) ||
+  !adminClaimReview ||
+  /publicStorageKey\s*=/.test(adminClaimReview[0]) ||
+  /redactionStatus\s*=\s*"completed"/.test(adminClaimReview[0])
+) {
+  failures.push("redacted media URLs must only be recorded by the internal redaction worker");
+}
+const adminCliClaim = adminReview.match(/command === "claim"[\s\S]*?} else if \(command ===/);
+if (!/"admin:redaction"/.test(packageJson) || !/command === "redaction"/.test(adminReview) || /redactedClipUrl/.test(adminCliClaim?.[0] ?? "")) {
+  failures.push("admin CLI redaction must use the worker-only route, not admin claim review");
+}
+if (!/productionRuntime/.test(apiServer) || !/includeMockData:\s*!productionRuntime/.test(apiServer) || !/autoPublishLiveReports:\s*false/.test(apiServer)) {
+  failures.push("API config-failure fallback must disable mock data in production and disable LIVE auto-publish");
+}
+if (!/requireReadyForWrites:\s*runtime\.requireReadyForWrites/.test(apiServer) || !/requireReadyForWrites:\s*production/.test(apiServer) || !/runtime_not_ready/.test(apiApp)) {
+  failures.push("production writes must fail closed when runtime is not ready");
+}
+if (!/persistQueue/.test(apiServer)) failures.push("Postgres snapshot writes must be serialized");
+if (!/encryptionKey/.test(apiServer) || !/savePostgresStore\(databaseUrl, app\.store, runtime\.encryptionKey\)/.test(apiServer)) {
+  failures.push("Postgres snapshot encryption key wiring is missing");
+}
+if (!/createCipheriv\("aes-256-gcm"/.test(postgresStore) || !/state_ciphertext/.test(postgresStore)) {
+  failures.push("Postgres snapshot encryption storage is missing");
+}
+if (!/withUserScope/.test(apiApp) || !/verifyUserToken/.test(apiApp) || !/user_scope_required/.test(apiApp)) failures.push("user-owned route token guard is missing");
+if (!/verifiedBodyUserId/.test(apiApp) || !/requireVerifiedBodyUserId/.test(apiApp)) failures.push("public report owner token guard is missing");
+if (!/userTokenTtlMs/.test(apiApp) || !/expiresAt/.test(apiApp)) failures.push("anonymous user tokens must expire");
+if (/x-musunil-user-secret/.test(apiApp)) failures.push("user token secret must not be read from request headers");
+if (!/held_private/.test(apiApp) || !/publicClaimsForTarget/.test(apiApp) || !/setClaimVisibility/.test(apiApp)) {
+  failures.push("held-private Claim visibility guard is missing");
+}
+if (!/allowsNotificationForSubscription/.test(apiApp)) failures.push("notification alertTypes/mute guard is missing");
+if (!/hasRecentNotification/.test(apiApp) || !/notificationCooldownMs/.test(apiApp)) failures.push("notification dedupe/cooldown guard is missing");
+if (!/local_dispatch_completed/.test(apiApp) || !/notification\.status = "sent"/.test(apiApp) || !/notification\.sentAt = now/.test(apiApp)) {
+  failures.push("notification dispatch must mark due outbox items sent");
+}
+if (!/postPrivacyPurgeExpired/.test(apiApp) || !/privacy_purge_completed/.test(apiApp)) failures.push("privacy retention purge route is missing");
+if (!/public_source_claim_refreshed/.test(apiApp)) failures.push("public source ingest idempotency guard is missing");
+if (!/public-sources\/coverage/.test(apiApp) || !/sourceCoverageReport/.test(apiApp)) failures.push("public source coverage API is missing");
+if (!/function homeCardOrderScore/.test(apiApp)) failures.push("API home cards must not rank archive/stat cards first");
+if (!/issueCards\(store, cards\)/.test(apiApp) || !/function issueCards/.test(apiApp) || !/function issueTargets/.test(apiApp)) {
+  failures.push("API home must expose issue-first cards with linked target groups");
+}
+if (!/targets: targets\.map/.test(apiApp) || !/\/issues\//.test(apiApp)) failures.push("issue detail API must return linked targets");
+if (!/resolveIssueIdForIngest/.test(apiApp) || !/topicTitle/.test(apiApp) || !/부정선거 의혹 제기 집회/.test(apiApp)) {
+  failures.push("public occurrence ingest must group explicit assembly topics into claim-safe Issues");
+}
+const publicCrowdEstimate = apiApp.match(/function toPublicCrowdEstimate[\s\S]*?function crowdEstimateEvidenceStrength/);
+if (!publicCrowdEstimate || !/sourceProvenance:\s*"musunil_ai_estimate"/.test(publicCrowdEstimate[0]) || !/evidenceStrength/.test(publicCrowdEstimate[0]) || !/riskLevel:\s*"misleading_possible"/.test(publicCrowdEstimate[0])) {
+  failures.push("public CrowdEstimate must expose AI estimate as Claim provenance/evidence/risk");
+}
+const derivedCrowdEstimate = apiApp.match(/function derivedCrowdEstimateForScope[\s\S]*?function lowerCrowdConfidence/);
+const crowdEstimateList = apiApp.match(/function crowdEstimatesForIssue[\s\S]*?function crowdEstimateHasPublicBasis/);
+if (!crowdEstimateList || !/crowdEstimateHasPublicBasis/.test(crowdEstimateList[0])) {
+  failures.push("stored CrowdEstimate values must require current public live or density basis");
+}
+if (!derivedCrowdEstimate || !/independentViewpointCount = new Set\(liveEvidence\.map/.test(derivedCrowdEstimate[0]) || /Math\.max\(regions\.size/.test(derivedCrowdEstimate[0])) {
+  failures.push("derived CrowdEstimate independent viewpoints must come from publishable live evidence, not target regions");
+}
+if (!derivedCrowdEstimate || !/measuredDensitySignals/.test(derivedCrowdEstimate[0]) || !/!liveEvidence\.length && !measuredDensitySignals\.length/.test(derivedCrowdEstimate[0])) {
+  failures.push("derived CrowdEstimate must not generate numeric ranges without live evidence or measured density signals");
+}
+if (/\$\{item\.routeId\} 경로/.test(apiApp)) failures.push("route checkpoint cards must not expose internal route ids as visible titles");
+const publicIngestWorker = readFileSync(resolve(cwd, "workers/public-source-ingest/src/index.ts"), "utf8");
+const publicSourceRegistry = readFileSync(resolve(cwd, "packages/schemas/src/public-sources.ts"), "utf8");
+if (!/response\.ok/.test(publicIngestWorker) || !/process\.exit\(1\)/.test(publicIngestWorker)) {
+  failures.push("public source ingest worker must fail non-zero when API posts fail");
+}
+if (!/public_source_parse_empty/.test(publicIngestWorker)) failures.push("public source ingest worker must fail when parser returns zero rows");
+if (!/law_source_parse_empty/.test(publicIngestWorker) || publicIngestWorker.indexOf("law_source_parse_empty") > publicIngestWorker.indexOf("laws_dry_run")) {
+  failures.push("law source ingest dry-run must fail when parser returns zero rows");
+}
+if (!/AbortController/.test(publicIngestWorker)) failures.push("public source ingest worker fetch timeout is missing");
+if (!/\/internal\/ingest\/public-occurrence/.test(publicIngestWorker)) failures.push("public source ingest worker must post public occurrences to the occurrence ingest route");
+if (!/policeRegions/.test(publicSourceRegistry) || !/sourceCoverageReport/.test(publicSourceRegistry)) failures.push("public source nationwide coverage registry is missing");
+if (!/absence_of_public_source_is_not_absence_of_assembly/.test(publicSourceRegistry)) {
+  failures.push("public source coverage must not treat source absence as no assembly");
+}
+if (!/seoul_assembly_control/.test(publicSourceRegistry) || !/sejong_today_assembly/.test(publicSourceRegistry) || !/daegu_today_assembly/.test(publicSourceRegistry) || !/daejeon_today_assembly/.test(publicSourceRegistry) || !/gangwon_today_assembly/.test(publicSourceRegistry) || !/busan_today_assembly/.test(publicSourceRegistry) || !/gyeonggi_south_today_assembly/.test(publicSourceRegistry) || !/gyeonggi_north_today_assembly/.test(publicSourceRegistry) || !/gwangju_today_assembly/.test(publicSourceRegistry) || !/incheon_today_assembly/.test(publicSourceRegistry) || !/gyeongbuk_today_assembly/.test(publicSourceRegistry) || !/gyeongnam_today_assembly/.test(publicSourceRegistry) || !/jeju_today_assembly/.test(publicSourceRegistry) || !/chungbuk_today_assembly/.test(publicSourceRegistry) || !/chungnam_today_assembly/.test(publicSourceRegistry) || !/jeonbuk_today_assembly/.test(publicSourceRegistry) || !/jeonnam_today_assembly/.test(publicSourceRegistry) || !/ulsan_today_assembly/.test(publicSourceRegistry) || !/needs_discovery/.test(publicSourceRegistry)) {
+  failures.push("public source registry must separate active sources from unresolved regions");
+}
+if (!/MUSUNIL_WEB_CONFIG/.test(web)) failures.push("web runtime config hook is missing");
+if (!/일정 확인/.test(web) || !/public-sources\/coverage/.test(web)) failures.push("web public source coverage status is missing");
+if (/const API = "http:\/\/localhost:4000"/.test(web)) failures.push("web API base is hardcoded to localhost");
+if (!/isLocalPage/.test(web) || !/storedApi = isLocalPage/.test(web) || !/apiParam = isLocalPage/.test(web)) {
+  failures.push("web API override must be localhost-only");
+}
+if (!/isPreviewApiBase/.test(web) || !/preview-only/.test(web) || !/isPreviewCard/.test(web)) {
+  failures.push("web production fallback must hide preview/mock data");
+}
+if (!/data-time-filter="now"/.test(web) || !/function matchesCardFilters/.test(web) || !/function cardOrderScore/.test(web)) {
+  failures.push("web home filters must drive real card ordering");
+}
+if (!/id="issues"/.test(web) || !/function renderIssues/.test(web) || !/selectedIssue/.test(web) || !/function renderIssueDetail/.test(web)) {
+  failures.push("web home must prioritize issue-first navigation");
+}
+if (!/detailMode === "issue"/.test(web) || !/followTargetType/.test(web)) failures.push("web follow action must subscribe to the selected issue when issue detail is open");
+if (!/data-time-filter="archive"/.test(web)) failures.push("web must keep past/archive records intentionally reachable");
+for (const term of ["요청사항", "S+", "s+", "국평오", "정통법", "객관화 보드"]) {
+  if (web.includes(term)) failures.push(`internal planning term leaked to web UI: ${term}`);
+}
+for (const token of ["--primary", "--official", "--pending", "--dispute", "--risk", "--transit", "--crowd", "--route", "--archive"]) {
+  if (!web.includes(token)) failures.push(`semantic color token missing: ${token}`);
+}
+if (/#325bd6|#a96513|#6552a3/i.test(web)) failures.push("legacy hard-coded map/status color found");
+if (!/chip\.schedule/.test(web) || !/chip\.archive/.test(web) || !/function semanticColor/.test(web)) {
+  failures.push("web color system must cover schedule/archive chips and map semantic colors");
+}
+if (!/<details class="coverage-panel"/.test(web)) failures.push("public source coverage panel must be secondary/collapsible");
+if (/data-tab-view="home">내정보/.test(web)) failures.push("mobile nav must not expose inactive personal tab");
+if (!/content-security-policy/.test(webServer) || !/permissions-policy/.test(webServer) || !/x-frame-options/.test(webServer)) {
+  failures.push("local static web security headers are missing");
+}
+validateWebRuntimeConfig(webConfigJs, failures, loaded?.config);
+if (!/healthCheckPath:\s*\/ready/.test(renderYaml)) failures.push("Render API health check must use /ready");
+for (const [serviceName, block] of [
+  ["musunil-api", renderApi],
+  ["musunil-web", renderWeb],
+  ["musunil-public-source-ingest", renderPublicSourceIngest],
+  ["musunil-law-source-ingest", renderLawSourceIngest],
+  ["musunil-notification-dispatch", renderNotificationDispatch],
+  ["musunil-privacy-purge", renderPrivacyPurge]
+]) {
+  if (!/key:\s*MUSUNIL_RUNTIME_ENV[\s\S]*?value:\s*production/.test(block)) failures.push(`${serviceName} must set MUSUNIL_RUNTIME_ENV=production`);
+}
+if (!/preDeployCommand:\s*pnpm db:migrate/.test(renderYaml)) failures.push("Render API preDeployCommand must run pnpm db:migrate");
+if (!/name:\s*musunil-api[\s\S]*?buildCommand:[^\n]*pnpm check[^\n]*pnpm build:web-config[^\n]*pnpm launch:check/.test(renderYaml)) {
+  failures.push("Render API build must run pnpm check, pnpm build:web-config, and pnpm launch:check");
+}
+if (!/name:\s*musunil-web[\s\S]*?buildCommand:[^\n]*pnpm build:web-config[^\n]*pnpm launch:check/.test(renderYaml)) {
+  failures.push("Render Web build must run pnpm build:web-config and pnpm launch:check");
+}
+for (const header of ["Cache-Control", "Content-Security-Policy", "Permissions-Policy", "Referrer-Policy", "X-Content-Type-Options", "X-Frame-Options"]) {
+  if (!hasRenderHeader(renderWeb, header)) failures.push(`Render Web static header is missing: ${header}`);
+}
+if (!/databases:\s*[\s\S]*-\s+name:\s*musunil-postgres\b[\s\S]*databaseName:\s*musunil\b[\s\S]*ipAllowList:\s*\[\]/.test(renderYaml)) {
+  failures.push("Render managed Postgres must be declared with private-network-only access");
+}
+if (!/type:\s*keyvalue\b/.test(renderRedis) || !/ipAllowList:\s*\[\]/.test(renderRedis)) {
+  failures.push("Render managed Key Value must be declared with private-network-only access");
+}
+if (!hasRenderPostgresEnv(renderApi, "DATABASE_URL") || !hasRenderKeyValueEnv(renderApi, "REDIS_URL")) {
+  failures.push("Render API must receive DATABASE_URL and REDIS_URL from managed resources");
+}
+if (!hasRenderSyncFalseEnv(renderApi, "MUSUNIL_USER_INPUTS_B64")) {
+  failures.push("Render API must prompt once for MUSUNIL_USER_INPUTS_B64");
+}
+if (!hasRenderGeneratedEnv(renderApi, "MUSUNIL_INTERNAL_API_KEY")) {
+  failures.push("Render API must generate MUSUNIL_INTERNAL_API_KEY for internal cron/admin calls");
+}
+if (!hasRenderGeneratedEnv(renderApi, "MUSUNIL_USER_TOKEN_SECRET")) {
+  failures.push("Render API must generate MUSUNIL_USER_TOKEN_SECRET for anonymous user tokens");
+}
+if (!hasRenderGeneratedEnv(renderApi, "MUSUNIL_ENCRYPTION_KEY")) {
+  failures.push("Render API must generate MUSUNIL_ENCRYPTION_KEY for encrypted snapshots");
+}
+if (!hasRenderPostgresEnv(renderWeb, "DATABASE_URL") || !hasRenderKeyValueEnv(renderWeb, "REDIS_URL")) {
+  failures.push("Render Web launch check must receive DATABASE_URL and REDIS_URL from managed resources");
+}
+if (!hasRenderEnvFromApiEnv(renderWeb, "MUSUNIL_USER_INPUTS_B64")) {
+  failures.push("Render Web must reuse MUSUNIL_USER_INPUTS_B64 from musunil-api");
+}
+if (/key:\s*MUSUNIL_USER_INPUTS_B64\s*\n\s*sync:\s*false/.test(renderWeb)) {
+  failures.push("Render Web must not prompt separately for full user-input YAML");
+}
+for (const key of ["MUSUNIL_USER_TOKEN_SECRET", "MUSUNIL_ENCRYPTION_KEY"]) {
+  if (!hasRenderEnvFromApiEnv(renderWeb, key)) failures.push(`Render Web must receive ${key} from musunil-api for launch validation`);
+}
+for (const [serviceName, block] of [
+  ["musunil-public-source-ingest", renderPublicSourceIngest],
+  ["musunil-law-source-ingest", renderLawSourceIngest],
+  ["musunil-notification-dispatch", renderNotificationDispatch],
+  ["musunil-privacy-purge", renderPrivacyPurge]
+]) {
+  if (!hasRenderApiHostportEnv(block)) failures.push(`${serviceName} must receive MUSUNIL_API_HOSTPORT from musunil-api`);
+  if (!hasRenderInternalKeyFromApiEnv(block)) failures.push(`${serviceName} must receive MUSUNIL_INTERNAL_API_KEY from musunil-api`);
+  if (serviceName === "musunil-law-source-ingest") {
+    if (!hasRenderEnvFromApiEnv(block, "MUSUNIL_USER_INPUTS_B64")) failures.push(`${serviceName} must reuse MUSUNIL_USER_INPUTS_B64 from musunil-api`);
+  } else if (/key:\s*MUSUNIL_USER_INPUTS_B64/.test(block)) {
+    failures.push(`${serviceName} must not prompt for full user-input YAML`);
+  }
+}
+if (!/maxShutdownDelaySeconds:\s*30/.test(renderYaml)) failures.push("Render API maxShutdownDelaySeconds must be set");
+if (!/SIGTERM/.test(readFileSync(resolve(cwd, "services/api/src/server.ts"), "utf8"))) failures.push("API graceful shutdown handler is missing");
+if (!/name:\s*musunil-public-source-ingest[\s\S]*?type:\s*cron|type:\s*cron[\s\S]*?name:\s*musunil-public-source-ingest/.test(renderYaml)) {
+  failures.push("public source ingest cron is missing from render.yaml");
+}
+if (!/startCommand:\s*pnpm --filter @musunil\/public-source-ingest dev -- --post/.test(renderPublicSourceIngest)) {
+  failures.push("public source ingest cron startCommand must post parsed public occurrences");
+}
+if (!/name:\s*musunil-law-source-ingest[\s\S]*?type:\s*cron|type:\s*cron[\s\S]*?name:\s*musunil-law-source-ingest/.test(renderYaml)) {
+  failures.push("law source ingest cron is missing from render.yaml");
+}
+if (!/schedule:\s*"17 0,12 \* \* \*"/.test(renderLawSourceIngest)) {
+  failures.push("law source ingest cron must run twice daily.");
+}
+if (!/startCommand:\s*pnpm --filter @musunil\/public-source-ingest dev -- --laws --post/.test(renderLawSourceIngest)) {
+  failures.push("law source ingest cron startCommand must post parsed law items");
+}
+if (!/name:\s*musunil-notification-dispatch[\s\S]*?type:\s*cron|type:\s*cron[\s\S]*?name:\s*musunil-notification-dispatch/.test(renderYaml)) {
+  failures.push("notification dispatch cron is missing from render.yaml");
+}
+if (!/startCommand:\s*pnpm dispatch:notifications/.test(renderNotificationDispatch)) {
+  failures.push("notification dispatch cron startCommand must run pnpm dispatch:notifications");
+}
+if (!/name:\s*musunil-privacy-purge[\s\S]*?type:\s*cron|type:\s*cron[\s\S]*?name:\s*musunil-privacy-purge/.test(renderYaml)) {
+  failures.push("privacy purge cron is missing from render.yaml");
+}
+if (!/startCommand:\s*pnpm privacy:purge/.test(renderPrivacyPurge)) {
+  failures.push("privacy purge cron startCommand must run pnpm privacy:purge");
+}
+
+if (failures.length > 0) {
+  console.error(["Launch check failed:", ...failures.map((failure) => `- ${failure}`)].join("\n"));
+  process.exit(1);
+}
+
+console.log(`Launch check passed with ${loaded?.source ?? "unknown"} config.`);
+
+function validateWebRuntimeConfig(source, failures, config) {
+  const forbiddenPublicBundlePatterns = [
+    /internal_api_key/i,
+    /internalApiKey/i,
+    /internal_base_url/i,
+    /jwt_secret/i,
+    /encryption_key/i,
+    /media_encryption_key/i,
+    /secret_access_key/i,
+    /secret_key/i,
+    /webhook_secret/i,
+    /private_key/i,
+    /database_url/i,
+    /postgres/i,
+    /redis/i,
+    /MUSUNIL_USER_INPUTS_B64/i
+  ];
+  for (const pattern of forbiddenPublicBundlePatterns) {
+    if (pattern.test(source)) failures.push(`forbidden web config secret/internal pattern found: ${pattern}`);
+  }
+
+  const match = source.match(/window\.MUSUNIL_WEB_CONFIG\s*=\s*({[\s\S]*?})\s*;?\s*$/);
+  if (!match) {
+    failures.push("web runtime config must assign a JSON object to window.MUSUNIL_WEB_CONFIG");
+    return;
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(match[1]);
+  } catch {
+    failures.push("web runtime config must be valid JSON");
+    return;
+  }
+
+  const allowedKeys = new Set(["apiBaseUrl", "mapStyleUrl"]);
+  for (const key of Object.keys(parsed)) {
+    if (!allowedKeys.has(key)) failures.push(`web runtime config exposes non-public key: ${key}`);
+  }
+  for (const key of allowedKeys) {
+    if (typeof parsed[key] !== "string" || parsed[key].length === 0) {
+      failures.push(`web runtime config missing public string: ${key}`);
+    }
+  }
+
+  if (config) {
+    const expectedApiBaseUrl = readConfigString(config, "api.public_base_url") ?? "http://localhost:4000";
+    const expectedMapStyleUrl = readConfigString(config, "map.map_style_url") ?? "https://tiles.openfreemap.org/styles/positron";
+    if (parsed.apiBaseUrl !== expectedApiBaseUrl) {
+      failures.push("web runtime config apiBaseUrl does not match api.public_base_url. Run pnpm build:web-config.");
+    }
+    if (parsed.mapStyleUrl !== expectedMapStyleUrl) {
+      failures.push("web runtime config mapStyleUrl does not match map.map_style_url. Run pnpm build:web-config.");
+    }
+  }
+}
+
+function readConfigString(config, path) {
+  const value = path.split(".").reduce((current, key) => {
+    if (!current || typeof current !== "object" || Array.isArray(current)) return undefined;
+    return current[key];
+  }, config);
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function renderServiceBlock(source, name) {
+  const lines = source.split("\n");
+  for (let start = 0; start < lines.length; start += 1) {
+    if (!/^\s*-\s+type:/.test(lines[start])) continue;
+    let end = start + 1;
+    while (end < lines.length && !/^\s*-\s+type:/.test(lines[end]) && !/^\S/.test(lines[end])) end += 1;
+    const block = lines.slice(start, end).join("\n");
+    if (new RegExp(`^ {4}name:\\s*${escapeRegExp(name)}\\s*$`, "m").test(block)) return block;
+  }
+  return "";
+}
+
+function hasRenderPostgresEnv(block, key) {
+  return new RegExp(`key:\\s*${escapeRegExp(key)}\\s*[\\s\\S]*fromDatabase:\\s*[\\s\\S]*name:\\s*musunil-postgres\\s*[\\s\\S]*property:\\s*connectionString`).test(block);
+}
+
+function hasRenderKeyValueEnv(block, key) {
+  return new RegExp(`key:\\s*${escapeRegExp(key)}\\s*[\\s\\S]*fromService:\\s*[\\s\\S]*type:\\s*keyvalue\\s*[\\s\\S]*name:\\s*musunil-redis\\s*[\\s\\S]*property:\\s*connectionString`).test(block);
+}
+
+function hasRenderApiHostportEnv(block) {
+  return new RegExp(`key:\\s*MUSUNIL_API_HOSTPORT\\s*[\\s\\S]*fromService:\\s*[\\s\\S]*type:\\s*web\\s*[\\s\\S]*name:\\s*musunil-api\\s*[\\s\\S]*property:\\s*hostport`).test(block);
+}
+
+function hasRenderInternalKeyFromApiEnv(block) {
+  return new RegExp(`key:\\s*MUSUNIL_INTERNAL_API_KEY\\s*[\\s\\S]*fromService:\\s*[\\s\\S]*type:\\s*web\\s*[\\s\\S]*name:\\s*musunil-api\\s*[\\s\\S]*envVarKey:\\s*MUSUNIL_INTERNAL_API_KEY`).test(block);
+}
+
+function hasRenderEnvFromApiEnv(block, key) {
+  return new RegExp(`key:\\s*${escapeRegExp(key)}\\s*[\\s\\S]*fromService:\\s*[\\s\\S]*type:\\s*web\\s*[\\s\\S]*name:\\s*musunil-api\\s*[\\s\\S]*envVarKey:\\s*${escapeRegExp(key)}`).test(block);
+}
+
+function hasRenderGeneratedEnv(block, key) {
+  return new RegExp(`key:\\s*${escapeRegExp(key)}\\s*\\n\\s*generateValue:\\s*true`).test(block);
+}
+
+function hasRenderSyncFalseEnv(block, key) {
+  return new RegExp(`key:\\s*${escapeRegExp(key)}\\s*\\n\\s*sync:\\s*false`).test(block);
+}
+
+function hasRenderHeader(block, name) {
+  return new RegExp(`headers:[\\s\\S]*name:\\s*${escapeRegExp(name)}\\s*\\n\\s*value:`).test(block);
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}

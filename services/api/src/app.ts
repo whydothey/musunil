@@ -1,0 +1,3582 @@
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import {
+  calculatePriorityScore,
+  evidenceStrengths,
+  hasProofOfPresence,
+  moderationDecisionFromRightsReports,
+  shouldNotify,
+  riskLevels,
+  sourceProvenances,
+  sourceCoverageReport,
+  targetTypes,
+  type AreaCluster,
+  type AuditLog,
+  type Claim,
+  type ContinuousPresence,
+  type CrowdDensitySignal,
+  type CrowdEstimate,
+  type Evidence,
+  type EvidenceStrength,
+  type Issue,
+  type IssueLawLink,
+  type LawItem,
+  type LifecycleState,
+  type NotificationOutbox,
+  type Occurrence,
+  type RiskLevel,
+  type SourceProvenance,
+  type RouteCheckpoint,
+  type RouteSegment,
+  type Subscription,
+  type TargetType,
+  type TransitOccurrence,
+  type TransparencyLog
+} from "../../../packages/schemas/src/index.ts";
+
+export type Store = {
+  areaClusters: AreaCluster[];
+  issues: Issue[];
+  lawItems: LawItem[];
+  issueLawLinks: IssueLawLink[];
+  occurrences: Occurrence[];
+  continuousPresences: ContinuousPresence[];
+  transitOccurrences: TransitOccurrence[];
+  crowdDensitySignals: CrowdDensitySignal[];
+  routeSegments: RouteSegment[];
+  routeCheckpoints: RouteCheckpoint[];
+  crowdEstimates: CrowdEstimate[];
+  claims: Claim[];
+  evidence: Evidence[];
+  subscriptions: Subscription[];
+  notificationOutbox: NotificationOutbox[];
+  auditLogs: AuditLog[];
+  transparencyLogs: TransparencyLog[];
+  reports: ReportRecord[];
+  liveUploads: LiveUploadRecord[];
+};
+
+export type SeedStoreOptions = {
+  includeMockData?: boolean;
+};
+
+type ReportRecord = {
+  id: string;
+  userId?: string;
+  reportType: "live" | "material" | "on_site_correction" | "rights_violation" | "rebuttal" | "field_verification";
+  targetType: TargetType;
+  targetId: string;
+  claimId: string;
+  createdAt: Date;
+};
+
+type LiveUploadRecord = {
+  storageKey: string;
+  userId: string;
+  targetType: TargetType;
+  targetId: string;
+  mediaMimeType: string;
+  byteSize: number;
+  hash: string;
+  uploadedAt: Date;
+  privateMediaBase64?: string;
+};
+
+export type LiveMediaStorage = {
+  put: (object: { storageKey: string; mediaMimeType: string; bytes: Buffer }) => Promise<void>;
+  delete?: (storageKey: string) => Promise<void>;
+};
+
+const notificationCooldownMs = 30 * 60 * 1000;
+const userTokenTtlMs = 30 * 24 * 60 * 60 * 1000;
+const dayMs = 24 * 60 * 60 * 1000;
+
+export type ApiRequest = {
+  method: string;
+  path: string;
+  headers?: Record<string, string | undefined>;
+  body?: unknown;
+};
+
+export type ApiResponse = {
+  status: number;
+  body: unknown;
+};
+
+export type ReadinessReport = {
+  ready: boolean;
+  checks: Array<{ id: string; ok: boolean; message: string }>;
+};
+
+export type AppOptions = {
+  readiness?: () => ReadinessReport | Promise<ReadinessReport>;
+  internalApiKey?: string;
+  userTokenSecret?: string;
+  autoPublishLiveReports?: boolean;
+  liveMediaStorage?: LiveMediaStorage;
+  liveMediaEncryptionKey?: string;
+  requireExternalLiveStorage?: boolean;
+  requireReadyForWrites?: boolean;
+  retention?: {
+    rawClaimStatementDays?: number;
+    unverifiedOriginalMediaDays?: number;
+    verifiedOriginalMediaDays?: number;
+    preciseLocationDays?: number;
+    auditLogDays?: number;
+  };
+};
+
+export function createApp(store: Store = emptyStore(), options: AppOptions = {}) {
+  return {
+    store,
+    handle: async (request: ApiRequest) => {
+      try {
+        return await handleRequest(store, request, options);
+      } catch (error) {
+        if (error instanceof ApiError) return json(error.status, { error: error.code });
+        throw error;
+      }
+    }
+  };
+}
+
+export function emptyStore(): Store {
+  return {
+    areaClusters: [],
+    issues: [],
+    lawItems: [],
+    issueLawLinks: [],
+    occurrences: [],
+    continuousPresences: [],
+    transitOccurrences: [],
+    crowdDensitySignals: [],
+    routeSegments: [],
+    routeCheckpoints: [],
+    crowdEstimates: [],
+    claims: [],
+    evidence: [],
+    subscriptions: [],
+    notificationOutbox: [],
+    auditLogs: [],
+    transparencyLogs: [],
+    reports: [],
+    liveUploads: []
+  };
+}
+
+export function createSeedStore(options: SeedStoreOptions = {}): Store {
+  const now = new Date("2026-07-07T09:00:00.000Z");
+  const store = emptyStore();
+  store.areaClusters.push(
+    { id: "area_national", label: "전국 집회 신고 통계", regionLabel: "전국", targetRefs: [] },
+    { id: "area_seoul", label: "서울 도심 일대", regionLabel: "서울", targetRefs: [] },
+    { id: "area_seoul_public", label: "서울 집회·통제정보 공개 자료", regionLabel: "서울", targetRefs: [] },
+    { id: "area_busan", label: "부산 서면-해운대 축", regionLabel: "부산", targetRefs: [] },
+    { id: "area_incheon", label: "인천 오늘의 집회/시위 공개 자료", regionLabel: "인천", targetRefs: [] },
+    { id: "area_daegu", label: "대구 오늘의 집회시위 공개 자료", regionLabel: "대구", targetRefs: [] },
+    { id: "area_gangwon", label: "강원 오늘의 주요집회 공개 자료", regionLabel: "강원", targetRefs: [] },
+    { id: "area_gyeonggi_south", label: "경기남부 오늘의 주요집회 공개 자료", regionLabel: "경기남부", targetRefs: [] },
+    { id: "area_gyeonggi_north", label: "경기북부 오늘의 주요집회 공개 자료", regionLabel: "경기북부", targetRefs: [] },
+    { id: "area_gwangju", label: "광주 오늘의집회시위 공개 자료", regionLabel: "광주", targetRefs: [] },
+    { id: "area_gyeongbuk", label: "경북 오늘의 집회시위 공개 자료", regionLabel: "경북", targetRefs: [] },
+    { id: "area_gyeongnam", label: "경남 오늘의 주요집회 공개 자료", regionLabel: "경남", targetRefs: [] },
+    { id: "area_jeju", label: "제주 오늘의집회 공개 자료", regionLabel: "제주", targetRefs: [] },
+    { id: "area_chungbuk", label: "충북 오늘의 집회 시위 공개 자료", regionLabel: "충북", targetRefs: [] },
+    { id: "area_chungnam", label: "충남 오늘의 주요집회 공개 자료", regionLabel: "충남", targetRefs: [] },
+    { id: "area_jeonbuk", label: "전북 집회시위안내 공개 자료", regionLabel: "전북", targetRefs: [] },
+    { id: "area_jeonnam", label: "전남 오늘의집회/시위 공개 자료", regionLabel: "전남", targetRefs: [] },
+    { id: "area_ulsan", label: "울산 오늘의 집회 공개 자료", regionLabel: "울산", targetRefs: [] },
+    { id: "area_sejong", label: "세종 오늘의 집회/시위 공개 자료", regionLabel: "세종", targetRefs: [] },
+    { id: "area_daejeon_public", label: "대전 오늘의주요집회 공개 자료", regionLabel: "대전", targetRefs: [] },
+    { id: "area_daejeon", label: "대전 정부청사권", regionLabel: "대전", targetRefs: [] }
+  );
+  store.issues.push(
+    {
+      id: "issue_real_public_sources",
+      title: "대구 7월 집회 신고 현황",
+      normalizedTopicKey: "real-public-assembly-sources",
+      topicTags: ["공개자료", "경찰청", "일정"],
+      status: "active",
+      firstSeenAt: now,
+      lastUpdatedAt: now
+    },
+    {
+      id: "issue_1",
+      title: "정보통신망법 개정 반대 집회",
+      normalizedTopicKey: "ict-network-law-amendment-opposition",
+      topicTags: ["정보통신망법 개정", "반대", "집회"],
+      status: "active",
+      firstSeenAt: now,
+      lastUpdatedAt: now
+    },
+    {
+      id: "issue_mock_mobility",
+      title: "대통령 탄핵 요구 행진",
+      normalizedTopicKey: "presidential-impeachment-demand",
+      topicTags: ["대통령 탄핵", "행진", "교통"],
+      status: "active",
+      firstSeenAt: now,
+      lastUpdatedAt: now
+    }
+  );
+  store.lawItems.push(
+    {
+      id: "law_info_network_amendment",
+      source: "assembly_bill",
+      lawName: "정보통신망 이용촉진 및 정보보호 등에 관한 법률",
+      billTitle: "정보통신망 이용촉진 및 정보보호 등에 관한 법률 일부개정법률안",
+      stage: "심사 중",
+      statusDate: now,
+      assemblyBillId: "preview-info-network-amendment",
+      summary: "정보통신망법 개정 논의와 연결될 수 있는 공개 의안 메타데이터입니다.",
+      officialUrl: "https://open.assembly.go.kr/",
+      keywords: ["정보통신망법", "정통법", "정보통신망 이용촉진 및 정보보호 등에 관한 법률"]
+    },
+    {
+      id: "law_national_assembly_impeachment",
+      source: "law_effective",
+      lawName: "국회법",
+      billTitle: "탄핵소추 절차 관련 법령",
+      stage: "현행 법령",
+      statusDate: now,
+      lawId: "preview-national-assembly-act",
+      summary: "대통령 탄핵 요구 이슈와 연결될 수 있는 국회 절차 관련 법령입니다.",
+      officialUrl: "https://www.law.go.kr/법령/국회법",
+      keywords: ["대통령 탄핵", "탄핵소추", "국회법"]
+    },
+    {
+      id: "law_public_official_election",
+      source: "law_effective",
+      lawName: "공직선거법",
+      billTitle: "선거 검증 요구 관련 법령",
+      stage: "현행 법령",
+      statusDate: now,
+      lawId: "preview-public-official-election-act",
+      summary: "선거 검증 요구나 부정선거 의혹 제기 이슈와 연결될 수 있는 선거 관련 법령입니다.",
+      officialUrl: "https://www.law.go.kr/법령/공직선거법",
+      keywords: ["부정선거", "선거 검증", "선관위", "공직선거법"]
+    }
+  );
+  store.issueLawLinks.push(
+    { issueId: "issue_1", lawItemId: "law_info_network_amendment", matchBasis: "keyword", confidence: "high", claimIds: [] },
+    { issueId: "issue_mock_mobility", lawItemId: "law_national_assembly_impeachment", matchBasis: "keyword", confidence: "high", claimIds: [] }
+  );
+  store.occurrences.push({
+    id: "occ_police_national_stats_2023",
+    issueId: "issue_real_public_sources",
+    type: "policy_site",
+    areaClusterId: "area_national",
+    regionLabel: "전국",
+    title: "경찰청 2011~2023 집회 신고·개최 통계",
+    startsAt: new Date("2023-12-31T00:00:00.000Z"),
+    lifecycleState: "ARCHIVED",
+    claimIds: [],
+    evidenceIds: []
+  }, {
+    id: "occ_daegu_stats_2025",
+    issueId: "issue_real_public_sources",
+    type: "policy_site",
+    areaClusterId: "area_daegu",
+    regionLabel: "대구",
+    title: "대구 2020~2025 집회 신고·개최 현황",
+    startsAt: new Date("2025-12-31T00:00:00.000Z"),
+    lifecycleState: "ARCHIVED",
+    claimIds: [],
+    evidenceIds: []
+  }, {
+    id: "occ_daegu_0709_public",
+    issueId: "issue_real_public_sources",
+    type: "static_assembly",
+    areaClusterId: "area_daegu",
+    regionLabel: "대구",
+    title: "대구 0709(목) 오늘의 집회 공개 일정",
+    startsAt: new Date("2026-07-08T15:00:00.000Z"),
+    lifecycleState: "UPCOMING",
+    claimIds: [],
+    evidenceIds: []
+  }, {
+    id: "occ_daegu_0707_public",
+    issueId: "issue_real_public_sources",
+    type: "static_assembly",
+    areaClusterId: "area_daegu",
+    regionLabel: "대구",
+    title: "대구 0707(화) 오늘의 집회 공개 일정",
+    startsAt: new Date("2026-07-06T15:00:00.000Z"),
+    lifecycleState: "ENDED",
+    claimIds: [],
+    evidenceIds: []
+  }, {
+    id: "occ_daegu_0706_public",
+    issueId: "issue_real_public_sources",
+    type: "static_assembly",
+    areaClusterId: "area_daegu",
+    regionLabel: "대구",
+    title: "대구 0706(월) 오늘의 집회 공개 일정",
+    startsAt: new Date("2026-07-05T15:00:00.000Z"),
+    lifecycleState: "ENDED",
+    claimIds: [],
+    evidenceIds: []
+  }, {
+    id: "occ_daegu_0704_0705_public",
+    issueId: "issue_real_public_sources",
+    type: "static_assembly",
+    areaClusterId: "area_daegu",
+    regionLabel: "대구",
+    title: "대구 0704(토)~0705(일) 오늘의 집회 공개 일정",
+    startsAt: new Date("2026-07-03T15:00:00.000Z"),
+    endsAt: new Date("2026-07-05T14:59:59.000Z"),
+    lifecycleState: "ENDED",
+    claimIds: [],
+    evidenceIds: []
+  }, {
+    id: "occ_1",
+    issueId: "issue_1",
+    type: "static_assembly",
+    areaClusterId: "area_seoul",
+    regionLabel: "서울",
+    title: "서울 인근 집회성 모임",
+    startsAt: now,
+    lifecycleState: "UNKNOWN",
+    claimIds: [],
+    evidenceIds: []
+  }, {
+    id: "occ_busan_march_mock",
+    issueId: "issue_mock_mobility",
+    type: "march",
+    areaClusterId: "area_busan",
+    regionLabel: "부산",
+    title: "부산 도심 행진 가능성",
+    startsAt: new Date("2026-07-07T11:30:00.000Z"),
+    lifecycleState: "UPCOMING",
+    claimIds: [],
+    evidenceIds: []
+  }, {
+    id: "occ_seoul_traffic_mock",
+    issueId: "issue_mock_mobility",
+    type: "traffic_control",
+    areaClusterId: "area_seoul",
+    regionLabel: "서울",
+    title: "서울 도심 교통 통제 주장",
+    startsAt: new Date("2026-07-07T10:00:00.000Z"),
+    lifecycleState: "STARTING_SOON",
+    claimIds: [],
+    evidenceIds: []
+  });
+  store.continuousPresences.push({
+    id: "presence_1",
+    issueId: "issue_1",
+    areaClusterId: "area_seoul",
+    regionLabel: "서울",
+    presenceType: "continuous_assembly",
+    state: "ONGOING",
+    claimIds: [],
+    evidenceIds: []
+  }, {
+    id: "presence_daejeon_mock",
+    issueId: "issue_1",
+    areaClusterId: "area_daejeon",
+    regionLabel: "대전",
+    presenceType: "relay_protest",
+    firstProofOfPresenceAt: new Date("2026-07-06T22:00:00.000Z"),
+    lastProofOfPresenceAt: new Date("2026-07-07T08:40:00.000Z"),
+    state: "WEAKLY_OBSERVED",
+    claimIds: [],
+    evidenceIds: []
+  });
+  store.transitOccurrences.push({
+    id: "transit_1",
+    issueId: "issue_1",
+    lineId: "서울 지하철 1호선",
+    stationIds: ["시청역", "종각역"],
+    direction: "종각 방향",
+    state: "UNKNOWN",
+    delayClaimIds: [],
+    serviceStatusClaimIds: [],
+    evidenceIds: []
+  }, {
+    id: "transit_busan_mock",
+    issueId: "issue_mock_mobility",
+    lineId: "부산 도시철도 2호선",
+    stationIds: ["서면역", "센텀시티역"],
+    direction: "해운대 방향",
+    state: "UNKNOWN",
+    delayClaimIds: [],
+    serviceStatusClaimIds: [],
+    evidenceIds: []
+  });
+  store.crowdDensitySignals.push({
+    id: "crowd_1",
+    issueId: "issue_1",
+    areaClusterId: "area_seoul",
+    densityLevel: "unknown",
+    bottleneckFlag: false,
+    flowDirectionClaimIds: [],
+    emergencySignalClaimIds: [],
+    evidenceIds: []
+  }, {
+    id: "crowd_busan_mock",
+    issueId: "issue_mock_mobility",
+    areaClusterId: "area_busan",
+    densityLevel: "high",
+    bottleneckFlag: true,
+    flowDirectionClaimIds: [],
+    emergencySignalClaimIds: [],
+    evidenceIds: []
+  });
+  store.routeSegments.push({ id: "route_segment_1", issueId: "issue_1", routeId: "route_1", verification: "claimed", claimIds: [], evidenceIds: [] });
+  store.routeSegments.push({ id: "route_segment_busan_mock", issueId: "issue_mock_mobility", routeId: "route_busan_mock", verification: "claimed", claimIds: [], evidenceIds: [] });
+  store.routeCheckpoints.push({
+    id: "checkpoint_1",
+    issueId: "issue_1",
+    routeId: "route_1",
+    checkpointType: "traffic_control",
+    passableStatus: "uncertain",
+    claimIds: [],
+    evidenceIds: []
+  }, {
+    id: "checkpoint_busan_mock",
+    issueId: "issue_mock_mobility",
+    routeId: "route_busan_mock",
+    checkpointType: "route_split",
+    passableStatus: "uncertain",
+    claimIds: [],
+    evidenceIds: []
+  });
+  findAreaCluster(store, "area_national")?.targetRefs.push(
+    { targetType: "occurrence", targetId: "occ_police_national_stats_2023" }
+  );
+  findAreaCluster(store, "area_daegu")?.targetRefs.push(
+    { targetType: "occurrence", targetId: "occ_daegu_stats_2025" },
+    { targetType: "occurrence", targetId: "occ_daegu_0709_public" },
+    { targetType: "occurrence", targetId: "occ_daegu_0707_public" },
+    { targetType: "occurrence", targetId: "occ_daegu_0706_public" },
+    { targetType: "occurrence", targetId: "occ_daegu_0704_0705_public" }
+  );
+  findAreaCluster(store, "area_seoul")?.targetRefs.push(
+    { targetType: "occurrence", targetId: "occ_1" },
+    { targetType: "continuous_presence", targetId: "presence_1" },
+    { targetType: "occurrence", targetId: "occ_seoul_traffic_mock" },
+    { targetType: "transit_occurrence", targetId: "transit_1" },
+    { targetType: "crowd_density_signal", targetId: "crowd_1" },
+    { targetType: "route_checkpoint", targetId: "checkpoint_1" }
+  );
+  findAreaCluster(store, "area_busan")?.targetRefs.push(
+    { targetType: "occurrence", targetId: "occ_busan_march_mock" },
+    { targetType: "transit_occurrence", targetId: "transit_busan_mock" },
+    { targetType: "crowd_density_signal", targetId: "crowd_busan_mock" },
+    { targetType: "route_segment", targetId: "route_segment_busan_mock" },
+    { targetType: "route_checkpoint", targetId: "checkpoint_busan_mock" }
+  );
+  findAreaCluster(store, "area_daejeon")?.targetRefs.push(
+    { targetType: "continuous_presence", targetId: "presence_daejeon_mock" },
+    { targetType: "route_segment", targetId: "route_segment_1" }
+  );
+  store.evidence.push(
+    {
+      id: "ev_police_national_stats_2023",
+      evidenceType: "official_doc",
+      uploadedAt: new Date("2025-05-12T00:00:00.000Z"),
+      proofOfPresenceStatus: "material_only"
+    },
+    {
+      id: "ev_daegu_stats_2025",
+      evidenceType: "official_doc",
+      uploadedAt: new Date("2026-05-12T00:00:00.000Z"),
+      proofOfPresenceStatus: "material_only"
+    },
+    {
+      id: "ev_daegu_0709_public",
+      evidenceType: "official_doc",
+      uploadedAt: new Date("2026-07-08T15:00:00.000Z"),
+      proofOfPresenceStatus: "material_only"
+    },
+    {
+      id: "ev_daegu_0707_public",
+      evidenceType: "official_doc",
+      uploadedAt: new Date("2026-07-06T08:00:00.000Z"),
+      proofOfPresenceStatus: "material_only"
+    },
+    {
+      id: "ev_daegu_0706_public",
+      evidenceType: "official_doc",
+      uploadedAt: new Date("2026-07-06T08:00:00.000Z"),
+      proofOfPresenceStatus: "material_only"
+    },
+    {
+      id: "ev_daegu_weekend_public",
+      evidenceType: "official_doc",
+      uploadedAt: new Date("2026-07-03T08:00:00.000Z"),
+      proofOfPresenceStatus: "material_only"
+    },
+    {
+      id: "ev_occ_live_1",
+      evidenceType: "live_media",
+      uploadedAt: now,
+      capturedAt: new Date("2026-07-07T08:57:00.000Z"),
+      geoCell: "preview-seoul-central",
+      publicRadiusM: 200,
+      foregroundGps: true,
+      gpsAccuracyM: 32,
+      distanceToTargetM: 90,
+      deviceIntegrityStatus: "pass",
+      deviceIntegrityProvider: "play_integrity",
+      deviceIntegrityCheckedAt: now,
+      deviceIntegrityProofHash: "sha256-previewdeviceintegrityocc1",
+      proofOfPresenceStatus: "pass",
+      storageKey: "private/live/2026/ev_occ_live_1/original.mp4",
+      publicStorageKey: "/media/redacted/preview-occ-live-1.webm",
+      redactionStatus: "completed",
+      redactionCheckedAt: now,
+      redactionProofHash: "sha256-previewredactionproofocc1",
+      mediaMimeType: "video/mp4",
+      durationMs: 8000,
+      width: 1080,
+      height: 1920,
+      captureMode: "in_app_camera",
+      hash: "preview-live-occ-1"
+    },
+    {
+      id: "ev_presence_1",
+      evidenceType: "live_media",
+      uploadedAt: now,
+      capturedAt: new Date("2026-07-07T08:52:00.000Z"),
+      geoCell: "preview-seoul-presence",
+      publicRadiusM: 200,
+      foregroundGps: true,
+      gpsAccuracyM: 45,
+      distanceToTargetM: 120,
+      deviceIntegrityStatus: "pass",
+      deviceIntegrityProvider: "play_integrity",
+      deviceIntegrityCheckedAt: now,
+      deviceIntegrityProofHash: "sha256-previewdeviceintegritypresence1",
+      proofOfPresenceStatus: "pass",
+      storageKey: "private/live/2026/ev_presence_1/original.mp4",
+      publicStorageKey: "/media/redacted/preview-presence-1.webm",
+      redactionStatus: "completed",
+      redactionCheckedAt: now,
+      redactionProofHash: "sha256-previewredactionproofpresence1",
+      mediaMimeType: "video/mp4",
+      durationMs: 7000,
+      width: 1080,
+      height: 1920,
+      captureMode: "in_app_camera",
+      hash: "preview-live-presence-1"
+    },
+    {
+      id: "ev_transit_1",
+      evidenceType: "citizen_report",
+      uploadedAt: now,
+      proofOfPresenceStatus: "unknown"
+    },
+    {
+      id: "ev_busan_media_mock",
+      evidenceType: "media_link",
+      uploadedAt: new Date("2026-07-07T08:35:00.000Z"),
+      proofOfPresenceStatus: "material_only"
+    },
+    {
+      id: "ev_busan_live_mock",
+      evidenceType: "live_media",
+      uploadedAt: new Date("2026-07-07T08:50:00.000Z"),
+      capturedAt: new Date("2026-07-07T08:48:00.000Z"),
+      geoCell: "preview-busan-central",
+      publicRadiusM: 220,
+      foregroundGps: true,
+      gpsAccuracyM: 38,
+      distanceToTargetM: 140,
+      deviceIntegrityStatus: "pass",
+      deviceIntegrityProvider: "play_integrity",
+      deviceIntegrityCheckedAt: new Date("2026-07-07T08:51:00.000Z"),
+      deviceIntegrityProofHash: "sha256-previewdeviceintegritybusan",
+      proofOfPresenceStatus: "pass",
+      storageKey: "private/live/2026/ev_busan_live_mock/original.mp4",
+      publicStorageKey: "/media/redacted/preview-busan-live.webm",
+      redactionStatus: "completed",
+      redactionCheckedAt: new Date("2026-07-07T08:51:00.000Z"),
+      redactionProofHash: "sha256-previewredactionproofbusan",
+      mediaMimeType: "video/mp4",
+      durationMs: 9000,
+      width: 1080,
+      height: 1920,
+      captureMode: "in_app_camera",
+      hash: "preview-live-busan"
+    },
+    {
+      id: "ev_daejeon_live_mock",
+      evidenceType: "live_media",
+      uploadedAt: new Date("2026-07-07T08:43:00.000Z"),
+      capturedAt: new Date("2026-07-07T08:40:00.000Z"),
+      geoCell: "preview-daejeon-government-complex",
+      publicRadiusM: 220,
+      foregroundGps: true,
+      gpsAccuracyM: 41,
+      distanceToTargetM: 130,
+      deviceIntegrityStatus: "pass",
+      deviceIntegrityProvider: "play_integrity",
+      deviceIntegrityCheckedAt: new Date("2026-07-07T08:44:00.000Z"),
+      deviceIntegrityProofHash: "sha256-previewdeviceintegritydaejeon",
+      proofOfPresenceStatus: "pass",
+      storageKey: "private/live/2026/ev_daejeon_live_mock/original.mp4",
+      publicStorageKey: "/media/redacted/preview-daejeon-live.webm",
+      redactionStatus: "completed",
+      redactionCheckedAt: new Date("2026-07-07T08:44:00.000Z"),
+      redactionProofHash: "sha256-previewredactionproofdaejeon",
+      mediaMimeType: "video/mp4",
+      durationMs: 8000,
+      width: 1080,
+      height: 1920,
+      captureMode: "in_app_camera",
+      hash: "preview-live-daejeon"
+    }
+  );
+  store.claims.push(
+    {
+      id: "claim_police_national_stats_2023",
+      targetType: "occurrence",
+      targetId: "occ_police_national_stats_2023",
+      sourceProvenance: "government_or_police",
+      claimantLabel: "경찰청 공공데이터포털",
+      statement: "",
+      normalizedStatement: "경찰청은 2011년부터 2023년까지의 집회 신고 및 실제 개최 현황 집계 데이터를 공개했습니다.",
+      evidenceStrength: "single_source",
+      riskLevel: "low",
+      createdAt: new Date("2025-05-12T00:00:00.000Z"),
+      evidenceIds: ["ev_police_national_stats_2023"],
+      disputedByClaimIds: []
+    },
+    {
+      id: "claim_daegu_stats_2025",
+      targetType: "occurrence",
+      targetId: "occ_daegu_stats_2025",
+      sourceProvenance: "government_or_police",
+      claimantLabel: "대구경찰청 공공데이터포털",
+      statement: "",
+      normalizedStatement: "대구경찰청은 2020년부터 2025년까지 경찰서별 집회·시위 신고 건수, 개최 건수, 참석인원 현황을 공개했습니다.",
+      evidenceStrength: "single_source",
+      riskLevel: "low",
+      createdAt: new Date("2026-05-12T00:00:00.000Z"),
+      evidenceIds: ["ev_daegu_stats_2025"],
+      disputedByClaimIds: []
+    },
+    {
+      id: "claim_daegu_0709_public",
+      targetType: "occurrence",
+      targetId: "occ_daegu_0709_public",
+      sourceProvenance: "government_or_police",
+      claimantLabel: "대구경찰청 오늘의 집회시위",
+      statement: "",
+      normalizedStatement: "대구경찰청 게시판에 0709(목) 오늘의 집회 공개 일정 게시물이 등록되었습니다.",
+      evidenceStrength: "single_source",
+      riskLevel: "low",
+      createdAt: new Date("2026-07-08T15:00:00.000Z"),
+      evidenceIds: ["ev_daegu_0709_public"],
+      disputedByClaimIds: []
+    },
+    {
+      id: "claim_daegu_0707_public",
+      targetType: "occurrence",
+      targetId: "occ_daegu_0707_public",
+      sourceProvenance: "government_or_police",
+      claimantLabel: "대구경찰청 오늘의 집회시위",
+      statement: "",
+      normalizedStatement: "대구경찰청 게시판에 0707(화) 오늘의 집회 공개 일정 게시물이 등록되었습니다.",
+      evidenceStrength: "single_source",
+      riskLevel: "low",
+      createdAt: new Date("2026-07-06T08:00:00.000Z"),
+      evidenceIds: ["ev_daegu_0707_public"],
+      disputedByClaimIds: []
+    },
+    {
+      id: "claim_daegu_0706_public",
+      targetType: "occurrence",
+      targetId: "occ_daegu_0706_public",
+      sourceProvenance: "government_or_police",
+      claimantLabel: "대구경찰청 오늘의 집회시위",
+      statement: "",
+      normalizedStatement: "대구경찰청 게시판에 0706(월) 오늘의 집회 공개 일정 게시물이 등록되었습니다.",
+      evidenceStrength: "single_source",
+      riskLevel: "low",
+      createdAt: new Date("2026-07-06T08:00:00.000Z"),
+      evidenceIds: ["ev_daegu_0706_public"],
+      disputedByClaimIds: []
+    },
+    {
+      id: "claim_daegu_weekend_public",
+      targetType: "occurrence",
+      targetId: "occ_daegu_0704_0705_public",
+      sourceProvenance: "government_or_police",
+      claimantLabel: "대구경찰청 오늘의 집회시위",
+      statement: "",
+      normalizedStatement: "대구경찰청 게시판에 0704(토)~0705(일) 오늘의 집회 공개 일정 게시물이 등록되었습니다.",
+      evidenceStrength: "single_source",
+      riskLevel: "low",
+      createdAt: new Date("2026-07-03T08:00:00.000Z"),
+      evidenceIds: ["ev_daegu_weekend_public"],
+      disputedByClaimIds: []
+    },
+    {
+      id: "claim_occ_live_1",
+      targetType: "occurrence",
+      targetId: "occ_1",
+      sourceProvenance: "verified_citizen_report",
+      claimantLabel: "위치 인증 제보",
+      statement: "",
+      normalizedStatement: "서울 도심 일대에서 위치 인증 제보가 접수되었습니다.",
+      evidenceStrength: "media_time_location_crosscheck",
+      riskLevel: "rights_risk",
+      createdAt: now,
+      evidenceIds: ["ev_occ_live_1"],
+      disputedByClaimIds: []
+    },
+    {
+      id: "claim_presence_1",
+      targetType: "continuous_presence",
+      targetId: "presence_1",
+      sourceProvenance: "verified_citizen_report",
+      claimantLabel: "위치 인증 제보",
+      statement: "",
+      normalizedStatement: "장기 현장의 최근 위치 인증 근거가 있습니다.",
+      evidenceStrength: "media_time_location_crosscheck",
+      riskLevel: "rights_risk",
+      createdAt: now,
+      evidenceIds: ["ev_presence_1"],
+      disputedByClaimIds: []
+    },
+    {
+      id: "claim_transit_1",
+      targetType: "transit_occurrence",
+      targetId: "transit_1",
+      sourceProvenance: "material_report",
+      claimantLabel: "자료 제보",
+      statement: "",
+      normalizedStatement: "일부 구간 대중교통 영향 가능성이 접수되었습니다.",
+      evidenceStrength: "single_source",
+      riskLevel: "misleading_possible",
+      createdAt: now,
+      evidenceIds: ["ev_transit_1"],
+      disputedByClaimIds: []
+    },
+    {
+      id: "claim_busan_march_media_mock",
+      targetType: "occurrence",
+      targetId: "occ_busan_march_mock",
+      sourceProvenance: "media_report",
+      claimantLabel: "지역 보도",
+      statement: "",
+      normalizedStatement: "부산 도심권에서 행진 가능성이 보도되었습니다.",
+      evidenceStrength: "single_source",
+      riskLevel: "misleading_possible",
+      createdAt: new Date("2026-07-07T08:35:00.000Z"),
+      evidenceIds: ["ev_busan_media_mock"],
+      disputedByClaimIds: []
+    },
+    {
+      id: "claim_busan_march_live_mock",
+      targetType: "occurrence",
+      targetId: "occ_busan_march_mock",
+      sourceProvenance: "verified_citizen_report",
+      claimantLabel: "위치 인증 제보",
+      statement: "",
+      normalizedStatement: "부산 현장에서 위치 인증 근거가 추가되었습니다.",
+      evidenceStrength: "media_time_location_crosscheck",
+      riskLevel: "rights_risk",
+      createdAt: new Date("2026-07-07T08:50:00.000Z"),
+      evidenceIds: ["ev_busan_live_mock"],
+      disputedByClaimIds: []
+    },
+    {
+      id: "claim_seoul_traffic_mock",
+      targetType: "occurrence",
+      targetId: "occ_seoul_traffic_mock",
+      sourceProvenance: "agency_action_request",
+      claimantLabel: "현장 통제 안내",
+      statement: "",
+      normalizedStatement: "서울 도심 일부 구간 통제 가능성이 안내되었습니다.",
+      evidenceStrength: "single_source",
+      riskLevel: "misleading_possible",
+      createdAt: new Date("2026-07-07T08:45:00.000Z"),
+      evidenceIds: [],
+      disputedByClaimIds: []
+    },
+    {
+      id: "claim_busan_transit_mock",
+      targetType: "transit_occurrence",
+      targetId: "transit_busan_mock",
+      sourceProvenance: "musunil_ai_estimate",
+      claimantLabel: "AI 영향 추정",
+      statement: "",
+      normalizedStatement: "행진 가능성과 인파 신호를 근거로 부산 도시철도 일부 혼잡 가능성을 추정했습니다.",
+      evidenceStrength: "single_source",
+      riskLevel: "misleading_possible",
+      createdAt: new Date("2026-07-07T08:52:00.000Z"),
+      evidenceIds: [],
+      disputedByClaimIds: []
+    },
+    {
+      id: "claim_daejeon_presence_mock",
+      targetType: "continuous_presence",
+      targetId: "presence_daejeon_mock",
+      sourceProvenance: "verified_citizen_report",
+      claimantLabel: "위치 인증 제보",
+      statement: "",
+      normalizedStatement: "대전 장기 현장은 최근 위치 인증 시점이 갱신되었습니다.",
+      evidenceStrength: "media_time_location_crosscheck",
+      riskLevel: "rights_risk",
+      createdAt: new Date("2026-07-07T08:43:00.000Z"),
+      evidenceIds: ["ev_daejeon_live_mock"],
+      disputedByClaimIds: []
+    },
+    {
+      id: "claim_crowd_busan_mock",
+      targetType: "crowd_density_signal",
+      targetId: "crowd_busan_mock",
+      sourceProvenance: "musunil_ai_estimate",
+      claimantLabel: "인파 밀집 추정",
+      statement: "",
+      normalizedStatement: "부산 도심권 인파 밀집 가능성이 감지되었습니다.",
+      evidenceStrength: "single_source",
+      riskLevel: "misleading_possible",
+      createdAt: new Date("2026-07-07T08:51:00.000Z"),
+      evidenceIds: [],
+      disputedByClaimIds: []
+    },
+    {
+      id: "claim_crowd_1",
+      targetType: "crowd_density_signal",
+      targetId: "crowd_1",
+      sourceProvenance: "musunil_ai_estimate",
+      claimantLabel: "인파 신호 추정",
+      statement: "",
+      normalizedStatement: "서울 도심 인파 밀집 신호는 아직 확인 중입니다.",
+      evidenceStrength: "none",
+      riskLevel: "misleading_possible",
+      createdAt: new Date("2026-07-07T08:30:00.000Z"),
+      evidenceIds: [],
+      disputedByClaimIds: []
+    },
+    {
+      id: "claim_checkpoint_1",
+      targetType: "route_checkpoint",
+      targetId: "checkpoint_1",
+      sourceProvenance: "agency_action_request",
+      claimantLabel: "현장 통제 안내",
+      statement: "",
+      normalizedStatement: "서울 도심 경로 지점의 통행 가능 여부는 확인 중입니다.",
+      evidenceStrength: "single_source",
+      riskLevel: "misleading_possible",
+      createdAt: new Date("2026-07-07T08:44:00.000Z"),
+      evidenceIds: [],
+      disputedByClaimIds: []
+    },
+    {
+      id: "claim_checkpoint_busan_mock",
+      targetType: "route_checkpoint",
+      targetId: "checkpoint_busan_mock",
+      sourceProvenance: "material_report",
+      claimantLabel: "자료 제보",
+      statement: "",
+      normalizedStatement: "부산 행진 경로가 두 갈래로 나뉠 수 있다는 자료가 접수되었습니다.",
+      evidenceStrength: "single_source",
+      riskLevel: "misleading_possible",
+      createdAt: new Date("2026-07-07T08:42:00.000Z"),
+      evidenceIds: [],
+      disputedByClaimIds: []
+    }
+  );
+  findOccurrence(store, "occ_police_national_stats_2023")?.claimIds.push("claim_police_national_stats_2023");
+  findOccurrence(store, "occ_police_national_stats_2023")?.evidenceIds.push("ev_police_national_stats_2023");
+  findOccurrence(store, "occ_daegu_stats_2025")?.claimIds.push("claim_daegu_stats_2025");
+  findOccurrence(store, "occ_daegu_stats_2025")?.evidenceIds.push("ev_daegu_stats_2025");
+  findOccurrence(store, "occ_daegu_0709_public")?.claimIds.push("claim_daegu_0709_public");
+  findOccurrence(store, "occ_daegu_0709_public")?.evidenceIds.push("ev_daegu_0709_public");
+  findOccurrence(store, "occ_daegu_0707_public")?.claimIds.push("claim_daegu_0707_public");
+  findOccurrence(store, "occ_daegu_0707_public")?.evidenceIds.push("ev_daegu_0707_public");
+  findOccurrence(store, "occ_daegu_0706_public")?.claimIds.push("claim_daegu_0706_public");
+  findOccurrence(store, "occ_daegu_0706_public")?.evidenceIds.push("ev_daegu_0706_public");
+  findOccurrence(store, "occ_daegu_0704_0705_public")?.claimIds.push("claim_daegu_weekend_public");
+  findOccurrence(store, "occ_daegu_0704_0705_public")?.evidenceIds.push("ev_daegu_weekend_public");
+  findOccurrence(store, "occ_1")?.claimIds.push("claim_occ_live_1");
+  findOccurrence(store, "occ_1")?.evidenceIds.push("ev_occ_live_1");
+  findOccurrence(store, "occ_busan_march_mock")?.claimIds.push("claim_busan_march_media_mock", "claim_busan_march_live_mock");
+  findOccurrence(store, "occ_busan_march_mock")?.evidenceIds.push("ev_busan_media_mock", "ev_busan_live_mock");
+  findOccurrence(store, "occ_seoul_traffic_mock")?.claimIds.push("claim_seoul_traffic_mock");
+  store.continuousPresences[0]?.claimIds.push("claim_presence_1");
+  store.continuousPresences[0]?.evidenceIds.push("ev_presence_1");
+  store.continuousPresences[1]?.claimIds.push("claim_daejeon_presence_mock");
+  store.continuousPresences[1]?.evidenceIds.push("ev_daejeon_live_mock");
+  store.transitOccurrences[0]?.serviceStatusClaimIds.push("claim_transit_1");
+  store.transitOccurrences[0]?.evidenceIds.push("ev_transit_1");
+  store.transitOccurrences[1]?.serviceStatusClaimIds.push("claim_busan_transit_mock");
+  store.crowdDensitySignals[0]?.flowDirectionClaimIds.push("claim_crowd_1");
+  store.crowdDensitySignals[1]?.flowDirectionClaimIds.push("claim_crowd_busan_mock");
+  store.routeCheckpoints[0]?.claimIds.push("claim_checkpoint_1");
+  store.routeCheckpoints[1]?.claimIds.push("claim_checkpoint_busan_mock");
+  store.crowdEstimates.push({
+    id: "estimate_issue_1_preview",
+    targetType: "issue",
+    targetId: "issue_1",
+    observedAt: now,
+    minCount: 1200,
+    maxCount: 2600,
+    confidence: "low",
+    method: "hybrid",
+    evidenceCount: 4,
+    independentViewpointCount: 3,
+    limitations: ["프리뷰 공개자료 기준", "현장 영상 공개본과 인파 신호가 일부 지역에 집중되어 있습니다."]
+  });
+  return options.includeMockData === false ? stripPreviewData(store) : store;
+}
+
+export function stripPreviewData(store: Store): Store {
+  store.issues = store.issues.filter((item) => !isPreviewSeedId(item.id) && !item.topicTags.includes("mock"));
+  store.lawItems = store.lawItems.filter((item) => !isPreviewSeedId(item.id) && !item.assemblyBillId?.startsWith("preview-") && !item.lawId?.startsWith("preview-"));
+  store.occurrences = store.occurrences.filter((item) => !isPreviewSeedId(item.id));
+  store.continuousPresences = store.continuousPresences.filter((item) => !isPreviewSeedId(item.id));
+  store.transitOccurrences = store.transitOccurrences.filter((item) => !isPreviewSeedId(item.id));
+  store.crowdDensitySignals = store.crowdDensitySignals.filter((item) => !isPreviewSeedId(item.id));
+  store.routeSegments = store.routeSegments.filter((item) => !isPreviewSeedId(item.id));
+  store.routeCheckpoints = store.routeCheckpoints.filter((item) => !isPreviewSeedId(item.id));
+  store.crowdEstimates = store.crowdEstimates.filter((item) => !isPreviewSeedId(item.id) && targetExists(store, item.targetType, item.targetId));
+  store.claims = store.claims.filter((item) => !isPreviewSeedId(item.id) && targetExists(store, item.targetType, item.targetId));
+  store.evidence = store.evidence.filter((item) => !isPreviewSeedId(item.id));
+
+  const claimIds = new Set(store.claims.map((item) => item.id));
+  const evidenceIds = new Set(store.evidence.map((item) => item.id));
+  const issueIds = new Set(store.issues.map((item) => item.id));
+  const lawIds = new Set(store.lawItems.map((item) => item.id));
+  store.issueLawLinks = store.issueLawLinks
+    .filter((item) => issueIds.has(item.issueId) && lawIds.has(item.lawItemId))
+    .map((item) => ({ ...item, claimIds: item.claimIds.filter((id) => claimIds.has(id)) }));
+  for (const item of store.occurrences) cleanRefs(item, claimIds, evidenceIds);
+  for (const item of store.continuousPresences) cleanRefs(item, claimIds, evidenceIds);
+  for (const item of store.routeSegments) cleanRefs(item, claimIds, evidenceIds);
+  for (const item of store.routeCheckpoints) cleanRefs(item, claimIds, evidenceIds);
+  for (const item of store.transitOccurrences) {
+    item.delayClaimIds = item.delayClaimIds.filter((id) => claimIds.has(id));
+    item.serviceStatusClaimIds = item.serviceStatusClaimIds.filter((id) => claimIds.has(id));
+    item.evidenceIds = item.evidenceIds.filter((id) => evidenceIds.has(id));
+  }
+  for (const item of store.crowdDensitySignals) {
+    item.flowDirectionClaimIds = item.flowDirectionClaimIds.filter((id) => claimIds.has(id));
+    item.emergencySignalClaimIds = item.emergencySignalClaimIds.filter((id) => claimIds.has(id));
+    item.evidenceIds = item.evidenceIds.filter((id) => evidenceIds.has(id));
+  }
+
+  for (const area of store.areaClusters) area.targetRefs = area.targetRefs.filter((ref) => targetExists(store, ref.targetType, ref.targetId));
+  store.areaClusters = store.areaClusters.filter((item) => !isPreviewSeedId(item.id) || item.targetRefs.length > 0);
+  store.subscriptions = store.subscriptions.filter((item) => targetExists(store, item.targetType, item.targetId));
+  store.notificationOutbox = store.notificationOutbox.filter((item) => targetExists(store, item.targetType, item.targetId));
+  store.reports = store.reports.filter((item) => targetExists(store, item.targetType, item.targetId) && claimIds.has(item.claimId));
+  return store;
+}
+
+function cleanRefs(item: { claimIds: string[]; evidenceIds: string[] }, claimIds: Set<string>, evidenceIds: Set<string>): void {
+  item.claimIds = item.claimIds.filter((id) => claimIds.has(id));
+  item.evidenceIds = item.evidenceIds.filter((id) => evidenceIds.has(id));
+}
+
+function isPreviewSeedId(id: string): boolean {
+  return (
+    id.includes("_mock") ||
+    [
+      "area_seoul",
+      "area_busan",
+      "area_daejeon",
+      "issue_1",
+      "occ_1",
+      "presence_1",
+      "transit_1",
+      "crowd_1",
+      "route_segment_1",
+      "checkpoint_1",
+      "ev_occ_live_1",
+      "ev_presence_1",
+      "ev_transit_1",
+      "claim_occ_live_1",
+      "claim_presence_1",
+      "claim_transit_1",
+      "claim_crowd_1",
+      "claim_checkpoint_1",
+      "law_info_network_amendment",
+      "law_national_assembly_impeachment",
+      "law_public_official_election"
+    ].includes(id)
+  );
+}
+
+function targetExists(store: Store, targetType: TargetType, targetId: string): boolean {
+  if (targetType === "issue") return store.issues.some((item) => item.id === targetId);
+  if (targetType === "occurrence") return store.occurrences.some((item) => item.id === targetId);
+  if (targetType === "continuous_presence") return store.continuousPresences.some((item) => item.id === targetId);
+  if (targetType === "transit_occurrence") return store.transitOccurrences.some((item) => item.id === targetId);
+  if (targetType === "crowd_density_signal") return store.crowdDensitySignals.some((item) => item.id === targetId);
+  if (targetType === "route_segment") return store.routeSegments.some((item) => item.id === targetId);
+  if (targetType === "route_checkpoint") return store.routeCheckpoints.some((item) => item.id === targetId);
+  return false;
+}
+
+async function handleRequest(store: Store, request: ApiRequest, options: AppOptions): Promise<ApiResponse> {
+  const url = new URL(request.path, "http://localhost");
+  const path = url.pathname;
+
+  if (request.method === "GET" && path === "/health") return json(200, { ok: true });
+  if (request.method === "GET" && path === "/ready") {
+    const readiness = await (options.readiness?.() ?? defaultReadiness());
+    return json(readiness.ready ? 200 : 503, readiness);
+  }
+  if (options.requireReadyForWrites && request.method !== "GET") {
+    const readiness = await (options.readiness?.() ?? defaultReadiness());
+    if (!readiness.ready) return json(503, { error: "runtime_not_ready", checks: readiness.checks });
+  }
+  if (request.method === "POST" && path === "/session/anonymous") return postAnonymousSession(options);
+  if (request.method === "GET" && path === "/home") {
+    const cards = homeCards(store);
+    return json(200, { issueCards: issueCards(store, cards), cards });
+  }
+  if (request.method === "GET" && path === "/laws") return getLaws(store);
+  if (request.method === "GET" && path.startsWith("/laws/")) return getLaw(store, path.split("/")[2]);
+  if (request.method === "GET" && path.startsWith("/targets/") && path.endsWith("/live-claims")) {
+    return getTargetLiveClaims(store, path.split("/")[2], path.split("/")[3]);
+  }
+  if (request.method === "GET" && path.startsWith("/targets/")) return getTargetDetail(store, path.split("/")[2], path.split("/")[3]);
+  if (request.method === "GET" && path === "/issues") return json(200, { issues: store.issues.map(toPublicIssue) });
+  if (request.method === "GET" && path.startsWith("/issues/")) return getIssue(store, path.split("/")[2]);
+  if (request.method === "GET" && path.startsWith("/occurrences/")) return getOccurrence(store, path.split("/")[2]);
+  if (request.method === "GET" && path.startsWith("/continuous-presences/")) {
+    return getTargetById(store, "continuous_presence", path.split("/")[2], "continuous_presence_not_found");
+  }
+  if (request.method === "GET" && path.startsWith("/transit-occurrences/")) {
+    return getTargetById(store, "transit_occurrence", path.split("/")[2], "transit_occurrence_not_found");
+  }
+  if (request.method === "GET" && path === "/area-clusters") return json(200, { areaClusters: store.areaClusters.map(toPublicAreaCluster) });
+  if (request.method === "GET" && path === "/public-sources/coverage") return json(200, { coverage: sourceCoverageReport() });
+  if (request.method === "GET" && path === "/map") return getMap(store);
+  if (request.method === "GET" && path === "/me/reports") {
+    return withUserScope(request, options, url.searchParams.get("userId"), (userId) => getMyReports(store, userId));
+  }
+  if (request.method === "GET" && path === "/me/subscriptions") {
+    return withUserScope(request, options, url.searchParams.get("userId"), (userId) => getMySubscriptions(store, userId));
+  }
+  if (request.method === "GET" && path === "/transparency/logs") return json(200, { logs: store.transparencyLogs });
+  if (request.method === "GET" && path === "/transparency/monthly") return getTransparencyMonthly(store);
+  if (request.method === "POST" && path === "/uploads/live") return await postLiveUpload(store, request, options);
+  if (request.method === "POST" && path === "/reports/live") return postLiveReport(store, request, options);
+  if (request.method === "POST" && path.startsWith("/claims/") && path.endsWith("/field-verifications")) {
+    return postFieldVerification(store, path.split("/")[2], request, options);
+  }
+  if (request.method === "POST" && path === "/reports/material") return postMaterialReport(store, request, options);
+  if (request.method === "POST" && path === "/corrections/on-site") return postOnSiteCorrection(store, request, options);
+  if (request.method === "POST" && path === "/reports/rights-violation") return postRightsViolation(store, request, options);
+  if (request.method === "POST" && path === "/rebuttals") return postRebuttal(store, request, options);
+  if (request.method === "POST" && path === "/subscriptions") return postSubscription(store, request, options);
+  if (request.method === "PATCH" && path.startsWith("/subscriptions/")) {
+    return patchSubscription(store, path.split("/")[2], request, options);
+  }
+  if (request.method === "GET" && path === "/admin/privacy-dashboard") return withInternalAuth(request, options, () => getAdminPrivacyDashboard(store, options));
+  if (request.method === "GET" && path === "/admin/risk-dashboard") return withInternalAuth(request, options, () => getAdminRiskDashboard(store));
+  if (request.method === "GET" && path === "/admin/review-queue") return withInternalAuth(request, options, () => getAdminReviewQueue(store));
+  if (request.method === "PATCH" && path.startsWith("/admin/claims/")) {
+    return withInternalAuth(request, options, () => patchAdminClaim(store, path.split("/")[3], request.body));
+  }
+  if (request.method === "POST" && path === "/internal/ingest/public-source") return withInternalAuth(request, options, () => postInternalIngest(store, request.body));
+  if (request.method === "POST" && path === "/internal/ingest/public-occurrence") {
+    return withInternalAuth(request, options, () => postInternalIngestPublicOccurrence(store, request.body));
+  }
+  if (request.method === "POST" && path === "/internal/ingest/laws") {
+    return withInternalAuth(request, options, () => postInternalIngestLaws(store, request.body));
+  }
+  if (request.method === "PATCH" && path.startsWith("/internal/evidence/") && path.endsWith("/device-integrity")) {
+    return withInternalAuth(request, options, () => patchInternalDeviceIntegrity(store, path.split("/")[3], request.body));
+  }
+  if (request.method === "PATCH" && path.startsWith("/internal/evidence/") && path.endsWith("/redaction")) {
+    return withInternalAuth(request, options, () => patchInternalEvidenceRedaction(store, path.split("/")[3], request.body));
+  }
+  if (request.method === "POST" && path === "/internal/agents/reconcile-lifecycle") return withInternalAuth(request, options, () => postReconcileLifecycle(store, request.body));
+  if (request.method === "POST" && path === "/internal/notifications/dispatch") return withInternalAuth(request, options, () => postNotificationDispatch(store));
+  if (request.method === "POST" && path === "/internal/privacy/purge-expired") return await withInternalAuth(request, options, () => postPrivacyPurgeExpired(store, options));
+
+  return json(404, { error: "not_found" });
+}
+
+function defaultReadiness(): ReadinessReport {
+  return {
+    ready: false,
+    checks: [{ id: "runtime", ok: false, message: "readiness callback is not configured" }]
+  };
+}
+
+function withInternalAuth(request: ApiRequest, options: AppOptions, action: () => ApiResponse | Promise<ApiResponse>): ApiResponse | Promise<ApiResponse> {
+  if (!options.internalApiKey) return json(503, { error: "internal_api_key_not_configured" });
+  if (constantTimeStringEqual(request.headers?.["x-musunil-internal-key"], options.internalApiKey)) return action();
+  return json(401, { error: "internal_auth_required" });
+}
+
+function withUserScope(request: ApiRequest, options: AppOptions, userId: string | null, action: (userId: string) => ApiResponse): ApiResponse {
+  if (!userId) return json(400, { error: "userId_required" });
+  if (!verifyUserToken(request.headers?.["x-musunil-user-token"], userId, options.userTokenSecret)) {
+    return json(401, { error: "user_scope_required" });
+  }
+  return action(userId);
+}
+
+function postAnonymousSession(options: AppOptions): ApiResponse {
+  if (!options.userTokenSecret) return json(503, { error: "user_token_secret_not_configured" });
+  const userId = `anon_${randomUUID()}`;
+  const expiresAt = Date.now() + userTokenTtlMs;
+  return json(201, { userId, token: signUserToken(userId, expiresAt, options.userTokenSecret), expiresAt: new Date(expiresAt).toISOString() });
+}
+
+function constantTimeStringEqual(candidate: string | undefined, expected: string): boolean {
+  if (!candidate) return false;
+  const candidateBuffer = Buffer.from(candidate);
+  const expectedBuffer = Buffer.from(expected);
+  if (candidateBuffer.length !== expectedBuffer.length) return false;
+  return timingSafeEqual(candidateBuffer, expectedBuffer);
+}
+
+function signUserToken(userId: string, expiresAt: number, secret: string): string {
+  const payload = `${userId}.${expiresAt}`;
+  return `${payload}.${createHmac("sha256", secret).update(payload).digest("base64url")}`;
+}
+
+function verifyUserToken(token: string | undefined, userId: string, secret: string | undefined): boolean {
+  if (!token || !secret) return false;
+  const [tokenUserId, expiresAtText] = token.split(".");
+  const expiresAt = Number(expiresAtText);
+  if (tokenUserId !== userId || !Number.isFinite(expiresAt) || expiresAt < Date.now()) return false;
+  return constantTimeStringEqual(token, signUserToken(userId, expiresAt, secret));
+}
+
+function verifiedBodyUserId(request: ApiRequest, options: AppOptions, data: Record<string, unknown>): string | undefined {
+  const userId = readOptionalString(data, "userId");
+  if (!userId) return undefined;
+  if (!verifyUserToken(request.headers?.["x-musunil-user-token"], userId, options.userTokenSecret)) {
+    throw new ApiError(401, "user_scope_required");
+  }
+  return userId;
+}
+
+function requireVerifiedBodyUserId(request: ApiRequest, options: AppOptions, data: Record<string, unknown>): string {
+  const userId = verifiedBodyUserId(request, options, data);
+  if (!userId) throw new ApiError(401, "user_scope_required");
+  return userId;
+}
+
+function homeCards(store: Store) {
+  const occurrenceCards = store.occurrences.map((occurrence) => {
+    const claims = publicClaimsForTarget(store, "occurrence", occurrence.id);
+    const publicEvidenceIds = new Set(claims.flatMap((claim) => claim.evidenceIds));
+    const evidence = store.evidence.filter((item) => publicEvidenceIds.has(item.id));
+    const sourceDiversity = new Set(claims.map((claim) => claim.sourceProvenance)).size;
+    const officialSourcePreviewBoost = occurrence.issueId === "issue_real_public_sources" ? 12 : 0;
+    const score = calculatePriorityScore({
+      recency: 1,
+      updateVelocity: claims.length,
+      proofOfPresenceGrowth: evidence.filter((item) => item.proofOfPresenceStatus === "pass").length,
+      publicImpact: claims.length > 1 ? 1 : 0,
+      safetyOrTransitImpact: occurrence.type === "traffic_control" || occurrence.type === "public_safety" ? 2 : 0,
+      sourceDiversity,
+      claimConflict: claims.filter((claim) => claim.disputedByClaimIds.length > 0).length,
+      evidenceStrength: maxEvidenceStrengthScore(claims),
+      manipulationSuspicion: 0,
+      massReportPenalty: 0,
+      singleSourcePenalty: sourceDiversity <= 1 ? 1 : 0
+    }) + officialSourcePreviewBoost;
+
+    return {
+      id: occurrence.id,
+      issueId: occurrence.issueId,
+      targetType: "occurrence",
+      title: occurrence.title,
+      regionLabel: occurrence.regionLabel,
+	      lifecycleState: occurrence.lifecycleState,
+	      chips: chipsForClaims(claims),
+	      sourceSummary: sourceSummaryForClaims(claims),
+	      updatedAt: latestDate([occurrence.startsAt, occurrence.endsAt, ...claims.map((claim) => claim.createdAt)])?.toISOString(),
+	      priorityScore: score,
+      current: evidence.length ? "확인 중" : "관측 대기",
+      peak: "-",
+      proof: evidence.length
+    };
+  });
+
+  const specialCards = [
+    ...store.continuousPresences.map((item) => ({
+      id: item.id,
+      issueId: item.issueId,
+      targetType: "continuous_presence",
+      title: `${item.regionLabel} 장기 현장`,
+      regionLabel: item.regionLabel,
+      lifecycleState: "ONGOING_SERIES",
+      chips: ["장기 진행 중", "세션 구분 없음"],
+      updatedAt: item.lastProofOfPresenceAt?.toISOString(),
+      priorityScore: 8,
+      current: presenceStateLabel(item.state),
+      peak: "-",
+      proof: item.evidenceIds.length
+    })),
+    ...store.transitOccurrences.map((item) => ({
+      id: item.id,
+      issueId: item.issueId,
+      targetType: "transit_occurrence",
+      title: `${item.lineId} 대중교통 영향`,
+      regionLabel: item.stationIds.join(", "),
+      lifecycleState: item.state,
+      chips: ["대중교통 영향", item.direction ?? "방향 확인 중"],
+      updatedAt: undefined,
+      priorityScore: 7,
+      current: "지연 주장",
+      peak: "-",
+      proof: item.evidenceIds.length
+    })),
+    ...store.crowdDensitySignals.map((item) => {
+      const cluster = store.areaClusters.find((area) => area.id === item.areaClusterId);
+      return {
+        id: item.id,
+        issueId: item.issueId,
+        targetType: "crowd_density_signal",
+        title: `${cluster?.regionLabel ?? "현장"} 인파 밀집 신호`,
+        regionLabel: cluster?.label ?? "지역 확인 중",
+        lifecycleState: "UNKNOWN",
+        chips: ["주최 없음", item.bottleneckFlag ? "병목 가능" : "흐름 확인"],
+        updatedAt: undefined,
+        priorityScore: item.densityLevel === "high" || item.densityLevel === "critical" ? 7 : 4,
+        current: densityLabel(item.densityLevel),
+        peak: "-",
+        proof: item.evidenceIds.length
+      };
+    }),
+    ...store.routeCheckpoints.map((item) => {
+      const routeLabel = routeDisplayLabel(item.routeId);
+      return {
+        id: item.id,
+        issueId: item.issueId,
+        targetType: "route_checkpoint",
+        title: `${routeLabel} 경로 확인 지점`,
+        regionLabel: routeLabel,
+        lifecycleState: "UNKNOWN",
+        chips: ["경로 지점", item.passableStatus === "blocked" ? "차단 주장" : "통행 확인 중"],
+        updatedAt: undefined,
+        priorityScore: 4,
+        current: checkpointTypeLabel(item.checkpointType),
+        peak: passableStatusLabel(item.passableStatus),
+        proof: item.evidenceIds.length
+      };
+    })
+  ];
+
+  return [...occurrenceCards, ...specialCards].sort((a, b) => homeCardOrderScore(a) - homeCardOrderScore(b));
+}
+
+function issueCards(store: Store, cards = homeCards(store)) {
+  return store.issues
+    .filter((issue) => issue.normalizedTopicKey !== "real-public-assembly-sources")
+    .map((issue) => {
+      const relatedCards = cards.filter((card) => card.issueId === issue.id);
+      const relatedTargets = issueTargets(store, issue.id);
+      const relatedClaims = [
+        ...publicClaimsForTarget(store, "issue", issue.id),
+        ...relatedTargets.flatMap(({ targetType, target }) => publicClaimsForTarget(store, targetType, target.id))
+      ];
+      const regions = new Set(relatedTargets.map(({ targetType, target }) => targetRegionLabel(store, targetType, target)).filter(Boolean));
+      const currentCount = relatedCards.filter((card) => !["ARCHIVED", "ENDED", "CANCELED", "POSTPONED"].includes(card.lifecycleState)).length;
+      const needsCount = relatedCards.filter((card) => card.lifecycleState === "UNKNOWN" || Number(card.proof || 0) === 0).length;
+      const updatedAt = latestDate([
+        issue.lastUpdatedAt,
+        ...relatedCards.map((card) => (card.updatedAt ? new Date(card.updatedAt) : undefined)),
+        ...relatedClaims.map((claim) => claim.createdAt)
+      ])?.toISOString();
+      const sourceSummary = sourceSummaryForClaims(relatedClaims);
+      return {
+        id: issue.id,
+        targetType: "issue",
+        title: issue.title,
+        status: issue.status,
+        topicTags: issue.topicTags,
+        updatedAt,
+        targetCount: relatedCards.length,
+        currentCount,
+        regionCount: regions.size,
+        officialCount: sourceSummary.official,
+        disputeCount: relatedClaims.filter((claim) => claim.disputedByClaimIds.length > 0).length,
+        needsVerificationCount: needsCount,
+        sourceSummary,
+        chips: [
+          currentCount ? `${currentCount}건 진행·예정` : "기록 중심",
+          regions.size ? `${regions.size}개 지역` : "지역 확인 중",
+          sourceSummary.official ? "공식 자료 있음" : "출처 확인 중"
+        ],
+        lifecycleState: currentCount ? "ONGOING_SERIES" : issue.status === "archived" ? "ARCHIVED" : "UNKNOWN"
+      };
+    })
+    .filter((issue) => issue.targetCount > 0)
+    .sort((a, b) => {
+      const stateRank = (card: { lifecycleState: string }) => (card.lifecycleState === "ARCHIVED" ? 1 : 0);
+      return stateRank(a) - stateRank(b) || new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+    });
+}
+
+function issueTargets(store: Store, issueId: string): Array<{ targetType: TargetType; target: TargetRecord }> {
+  return [
+    ...store.occurrences.filter((target) => target.issueId === issueId).map((target) => ({ targetType: "occurrence" as const, target })),
+    ...store.continuousPresences.filter((target) => target.issueId === issueId).map((target) => ({ targetType: "continuous_presence" as const, target })),
+    ...store.transitOccurrences.filter((target) => target.issueId === issueId).map((target) => ({ targetType: "transit_occurrence" as const, target })),
+    ...store.crowdDensitySignals.filter((target) => target.issueId === issueId).map((target) => ({ targetType: "crowd_density_signal" as const, target })),
+    ...store.routeSegments.filter((target) => target.issueId === issueId).map((target) => ({ targetType: "route_segment" as const, target })),
+    ...store.routeCheckpoints.filter((target) => target.issueId === issueId).map((target) => ({ targetType: "route_checkpoint" as const, target }))
+  ];
+}
+
+function homeCardOrderScore(card: { lifecycleState: string; targetType: string; priorityScore: number }) {
+  const stateRank: Record<string, number> = {
+    LIVE: 0,
+    UPCOMING: 0,
+    STARTING_SOON: 1,
+    ONGOING_SERIES: 1,
+    UNKNOWN: 2,
+    PAUSED: 3,
+    MOVING: 3,
+    ENDING_SOON: 3,
+    ENDED: 8,
+    ARCHIVED: 9,
+    CANCELED: 10,
+    POSTPONED: 10
+  };
+  const typeNudge = card.targetType === "occurrence" ? 0 : 8;
+  return (stateRank[card.lifecycleState] ?? 5) * 100 + typeNudge - card.priorityScore;
+}
+
+function presenceStateLabel(state: ContinuousPresence["state"]): string {
+  return {
+    ONGOING: "장기 진행 중",
+    WEAKLY_OBSERVED: "약하게 관측",
+    PAUSED: "일시 중단",
+    ENDING_SOON: "종료 임박",
+    ENDED: "종료",
+    ARCHIVED: "기록"
+  }[state];
+}
+
+function checkpointTypeLabel(type: RouteCheckpoint["checkpointType"]): string {
+  return {
+    police_block: "차벽",
+    traffic_control: "교통 통제",
+    standoff: "대치",
+    route_split: "경로 분기",
+    unknown: "확인 중"
+  }[type];
+}
+
+function passableStatusLabel(status: RouteCheckpoint["passableStatus"]): string {
+  return {
+    passable: "통행 가능",
+    blocked: "차단",
+    uncertain: "확인 중"
+  }[status];
+}
+
+function findOccurrence(store: Store, id: string): Occurrence | undefined {
+  return store.occurrences.find((item) => item.id === id);
+}
+
+function routeDisplayLabel(routeId: string): string {
+  if (routeId.includes("busan")) return "부산 도심";
+  if (routeId.includes("route_1")) return "서울 도심";
+  return "경로";
+}
+
+function findAreaCluster(store: Store, id: string): AreaCluster | undefined {
+  return store.areaClusters.find((item) => item.id === id);
+}
+
+function densityLabel(level: CrowdDensitySignal["densityLevel"]): string {
+  return (
+    {
+      low: "낮음",
+      medium: "보통",
+      high: "높음",
+      critical: "매우 높음",
+      unknown: "확인 중"
+    } as const
+  )[level];
+}
+
+function getIssue(store: Store, id: string | undefined): ApiResponse {
+  const issue = store.issues.find((item) => item.id === id);
+  if (!issue) return json(404, { error: "issue_not_found" });
+  const targets = issueTargets(store, issue.id);
+  const estimates = crowdEstimatesForIssue(store, issue.id);
+  return json(200, {
+    issue: toPublicIssue(issue),
+    nationalSummary: issueNationalSummary(store, issue.id),
+    topicGrouping: issueTopicGrouping(store, issue),
+    regionalSignals: issueRegionalSignals(store, issue.id),
+    nationalTimeline: issueNationalTimeline(store, issue.id),
+    crowdEstimates: estimates.map(toPublicCrowdEstimate),
+    regionalCrowdEstimates: regionalCrowdEstimatesForIssue(store, issue.id),
+    verificationSignals: issueVerificationSignals(store, issue.id),
+    claims: publicClaimsForTarget(store, "issue", issue.id).map(toPublicClaim),
+    targets: targets.map(({ targetType, target }) => ({
+      targetType,
+      item: toPublicTarget(targetType, target, publicClaimsForTarget(store, targetType, target.id))
+    })),
+    occurrences: store.occurrences
+      .filter((occurrence) => occurrence.issueId === issue.id)
+      .map((occurrence) => toPublicOccurrence(occurrence, publicClaimsForTarget(store, "occurrence", occurrence.id)))
+  });
+}
+
+function issueTopicGrouping(store: Store, issue: Issue) {
+  const targets = issueTargets(store, issue.id);
+  const claims = issueClaims(store, issue.id, targets);
+  const regions = uniqueSorted(targets.map(({ targetType, target }) => targetRegionLabel(store, targetType, target)).filter((value): value is string => Boolean(value)));
+  const days = uniqueSorted(targets.map(({ target }) => targetFirstSeenAt(target) ?? targetUpdatedAt(target)).filter((value): value is Date => value instanceof Date).map((date) => date.toISOString().slice(0, 10)));
+  const targetTypes = countLabels(targets.map(({ targetType }) => issueTargetTypeLabel(targetType)));
+  const sourceSummary = sourceSummaryForClaims(claims);
+  return {
+    topicTitle: issue.title,
+    topicTags: issue.topicTags,
+    normalizedTopicKey: issue.normalizedTopicKey,
+    regions,
+    days,
+    targetTypes,
+    sourceSummary,
+    basis: [
+      issue.topicTags.length ? `공통 주제어: ${issue.topicTags.slice(0, 4).join(" · ")}` : "공통 주제어 확인 중",
+      `${regions.length || 0}개 권역의 ${targets.length}개 현장을 같은 주제로 탐색`,
+      `${claims.length}건의 공개 Claim과 ${sourceSummary.official}건의 공식 자료를 함께 확인`,
+      "지역·시간이 다르면 별도 현장으로 유지"
+    ],
+    policy: "이 묶음은 탐색 단위이며 사실 확정이 아닙니다."
+  };
+}
+
+function uniqueSorted(values: string[]): string[] {
+  return [...new Set(values)].sort((a, b) => a.localeCompare(b, "ko-KR"));
+}
+
+function countLabels(values: string[]) {
+  const counts = new Map<string, number>();
+  for (const value of values) counts.set(value, (counts.get(value) || 0) + 1);
+  return [...counts.entries()].map(([label, count]) => ({ label, count }));
+}
+
+function issueTargetTypeLabel(targetType: TargetType): string {
+  return (
+    {
+      issue: "이슈",
+      occurrence: "집회 현장",
+      continuous_presence: "장기 현장",
+      transit_occurrence: "대중교통 영향",
+      crowd_density_signal: "인파 신호",
+      route_segment: "경로 구간",
+      route_checkpoint: "경로 지점"
+    } as const
+  )[targetType];
+}
+
+function issueNationalSummary(store: Store, issueId: string) {
+  const targets = issueTargets(store, issueId);
+  const targetClaims = targets.flatMap(({ targetType, target }) => publicClaimsForTarget(store, targetType, target.id));
+  const issueClaims = publicClaimsForTarget(store, "issue", issueId);
+  const claims = [...issueClaims, ...targetClaims];
+  const regions = new Set(targets.map(({ targetType, target }) => targetRegionLabel(store, targetType, target)).filter(Boolean));
+  const currentTargetCount = targets.filter(({ target }) => !["ARCHIVED", "ENDED", "CANCELED", "POSTPONED"].includes(targetLifecycle(target))).length;
+  const latestEstimate = crowdEstimatesForIssue(store, issueId)[0];
+  return {
+    regionCount: regions.size,
+    targetCount: targets.length,
+    currentTargetCount,
+    publicClaimCount: claims.length,
+    officialClaimCount: claims.filter((claim) => claim.sourceProvenance === "government_or_police").length,
+    fieldClaimCount: claims.filter(isFieldSource).length,
+    liveClaimCount: claims.filter((claim) => hasPublicLiveEvidence(store, claim)).length,
+    needsVerificationCount: targets.filter(({ targetType, target }) => publicClaimsForTarget(store, targetType, target.id).length === 0 || targetLifecycle(target) === "UNKNOWN").length,
+    disputeCount: claims.filter(isDisputeSource).length,
+    latestUpdatedAt: latestDate([...claims.map((claim) => claim.createdAt), ...targets.map(({ target }) => targetUpdatedAt(target))])?.toISOString(),
+    estimateRange: latestEstimate ? { minCount: latestEstimate.minCount, maxCount: latestEstimate.maxCount, confidence: latestEstimate.confidence } : undefined
+  };
+}
+
+function issueRegionalSignals(store: Store, issueId: string) {
+  const byRegion = new Map<string, ReturnType<typeof emptyRegionalSignal>>();
+  for (const { targetType, target } of issueTargets(store, issueId)) {
+    const region = targetRegionLabel(store, targetType, target) || "지역 확인 중";
+    const signal = byRegion.get(region) ?? emptyRegionalSignal(region);
+    byRegion.set(region, signal);
+    const claims = publicClaimsForTarget(store, targetType, target.id);
+    signal.targetCount += 1;
+    if (!["ARCHIVED", "ENDED", "CANCELED", "POSTPONED"].includes(targetLifecycle(target))) signal.currentTargetCount += 1;
+    signal.publicClaimCount += claims.length;
+    signal.officialClaimCount += claims.filter((claim) => claim.sourceProvenance === "government_or_police").length;
+    signal.fieldClaimCount += claims.filter(isFieldSource).length;
+    signal.liveClaimCount += claims.filter((claim) => hasPublicLiveEvidence(store, claim)).length;
+    signal.disputeCount += claims.filter(isDisputeSource).length;
+    if (!claims.length || targetLifecycle(target) === "UNKNOWN") signal.needsVerificationCount += 1;
+    const updatedAt = latestDate([signal.latestUpdatedAt ? new Date(signal.latestUpdatedAt) : undefined, targetUpdatedAt(target), ...claims.map((claim) => claim.createdAt)]);
+    signal.latestUpdatedAt = updatedAt?.toISOString();
+  }
+  return [...byRegion.values()]
+    .map((signal) => ({ ...signal, statusLabels: regionalSignalStatusLabels(signal) }))
+    .sort((a, b) => b.currentTargetCount - a.currentTargetCount || b.liveClaimCount - a.liveClaimCount || a.regionLabel.localeCompare(b.regionLabel));
+}
+
+function emptyRegionalSignal(regionLabel: string) {
+  return {
+    regionLabel,
+    targetCount: 0,
+    currentTargetCount: 0,
+    publicClaimCount: 0,
+    officialClaimCount: 0,
+    fieldClaimCount: 0,
+    liveClaimCount: 0,
+    needsVerificationCount: 0,
+    disputeCount: 0,
+    latestUpdatedAt: undefined as string | undefined,
+    statusLabels: [] as string[]
+  };
+}
+
+function regionalSignalStatusLabels(signal: ReturnType<typeof emptyRegionalSignal>): string[] {
+  return [
+    signal.officialClaimCount ? `공식 ${signal.officialClaimCount}건` : "공식 자료 없음",
+    signal.liveClaimCount ? `현장 영상 ${signal.liveClaimCount}건` : signal.fieldClaimCount ? `현장 Claim ${signal.fieldClaimCount}건` : "현장 자료 없음",
+    signal.disputeCount ? `이견 ${signal.disputeCount}건` : "이견 없음",
+    signal.needsVerificationCount ? `더 확인 필요 ${signal.needsVerificationCount}건` : "확인 신호 충분"
+  ];
+}
+
+function issueNationalTimeline(store: Store, issueId: string) {
+  const moments = issueTargets(store, issueId).flatMap(({ targetType, target }) => {
+    const claims = publicClaimsForTarget(store, targetType, target.id);
+    const evidence = publicEvidenceForClaims(store, claims);
+    const regionLabel = targetRegionLabel(store, targetType, target) || "지역 확인 중";
+    const firstAt = earliestDate([targetFirstSeenAt(target), ...claims.map((claim) => claim.createdAt), ...evidence.map((item) => item.capturedAt ?? item.uploadedAt)]);
+    return [
+      ...(firstAt
+        ? [
+            {
+              id: `first_${targetType}_${target.id}`,
+              kind: "region_first_seen",
+              regionLabel,
+              targetType,
+              targetId: target.id,
+              at: firstAt.toISOString(),
+              title: `${regionLabel} 첫 확인`,
+              body: `${targetTitle(targetType, target)} 기준 첫 공개 신호입니다.`
+            }
+          ]
+        : []),
+      ...claims.map((claim) => {
+        const live = publicEvidenceForClaims(store, [claim]).some(hasPublishableLiveEvidence);
+        return {
+          id: claim.id,
+          kind: live ? "live_claim" : claim.sourceProvenance === "government_or_police" ? "official_claim" : isDisputeSource(claim) ? "dispute_claim" : "claim",
+          regionLabel,
+          targetType,
+          targetId: target.id,
+          at: claim.createdAt.toISOString(),
+          title: live ? `${regionLabel} 현장 영상 Claim` : `${regionLabel} ${claimKindLabel(claim)}`,
+          body: claim.normalizedStatement,
+          sourceProvenance: claim.sourceProvenance,
+          evidenceStrength: claim.evidenceStrength,
+          riskLevel: claim.riskLevel
+        };
+      })
+    ];
+  });
+  const sorted = moments.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+  return { summary: timelineSummary(sorted), moments: sorted.slice(0, 16) };
+}
+
+function timelineSummary(moments: Array<{ kind: string; regionLabel: string; at: string }>) {
+  const firstByRegion = new Map<string, Date>();
+  for (const moment of moments.filter((item) => item.kind === "live_claim" || item.kind === "official_claim" || item.kind === "region_first_seen")) {
+    const at = new Date(moment.at);
+    const current = firstByRegion.get(moment.regionLabel);
+    if (!current || at < current) firstByRegion.set(moment.regionLabel, at);
+  }
+  const times = [...firstByRegion.values()].sort((a, b) => a.getTime() - b.getTime());
+  if (!times.length) return { pattern: "unknown", label: "시간축 확인 중", summary: "공개 Claim이 쌓이면 지역별 첫 확인 시점을 비교합니다." };
+  if (times.length === 1) return { pattern: "single_region", label: "단일 권역 확인", summary: `${[...firstByRegion.keys()][0]} 기준 공개 신호가 먼저 확인되었습니다.`, regionCount: 1 };
+  const spanMinutes = Math.round((times[times.length - 1].getTime() - times[0].getTime()) / 60000);
+  const pattern = spanMinutes <= 180 ? "simultaneous" : "sequential";
+  return {
+    pattern,
+    label: pattern === "simultaneous" ? "동시다발 확인" : "순차 확산 확인",
+    summary: `${firstByRegion.size}개 권역의 첫 공개 신호 간격은 약 ${spanMinutes}분입니다.`,
+    regionCount: firstByRegion.size,
+    spanMinutes
+  };
+}
+
+function targetFirstSeenAt(target: TargetRecord): Date | undefined {
+  if ("firstProofOfPresenceAt" in target) return target.firstProofOfPresenceAt;
+  if ("startsAt" in target) return target.startsAt;
+  return undefined;
+}
+
+function targetTitle(targetType: TargetType, target: TargetRecord): string {
+  if ("title" in target && typeof target.title === "string") return target.title;
+  if (targetType === "continuous_presence") return `${(target as ContinuousPresence).regionLabel} 장기 현장`;
+  if (targetType === "transit_occurrence") return `${(target as TransitOccurrence).lineId} 대중교통 영향`;
+  if (targetType === "crowd_density_signal") return "인파 밀집 신호";
+  if (targetType === "route_checkpoint") return "경로 확인 지점";
+  return "공개 대상";
+}
+
+function isDisputeSource(claim: Claim): boolean {
+  return claim.sourceProvenance === "rebuttal" || claim.sourceProvenance === "rights_violation_report" || claim.disputedByClaimIds.length > 0;
+}
+
+function isFieldSource(claim: Claim): boolean {
+  return claim.sourceProvenance === "verified_citizen_report" || claim.sourceProvenance === "material_report";
+}
+
+function claimKindLabel(claim: Claim): string {
+  if (claim.sourceProvenance === "government_or_police") return "공식 자료 Claim";
+  if (claim.sourceProvenance === "media_report") return "보도 Claim";
+  if (claim.sourceProvenance === "musunil_ai_estimate") return "AI 추정 Claim";
+  if (isDisputeSource(claim)) return "반론·정정 Claim";
+  return "공개 Claim";
+}
+
+function crowdEstimatesForIssue(store: Store, issueId: string): CrowdEstimate[] {
+  const targetIds = new Set(issueTargets(store, issueId).map(({ target }) => target.id));
+  const derived = derivedCrowdEstimateForIssue(store, issueId);
+  const stored = store.crowdEstimates
+    .filter((estimate) => (estimate.targetType === "issue" && estimate.targetId === issueId) || targetIds.has(estimate.targetId))
+    .filter((estimate) => crowdEstimateHasPublicBasis(store, estimate))
+    .sort((a, b) => b.observedAt.getTime() - a.observedAt.getTime());
+  return derived ? [derived, ...stored] : stored;
+}
+
+function crowdEstimateHasPublicBasis(store: Store, estimate: CrowdEstimate): boolean {
+  const targets =
+    estimate.targetType === "issue"
+      ? issueTargets(store, estimate.targetId)
+      : targetRecord(store, estimate.targetType, estimate.targetId)
+        ? [{ targetType: estimate.targetType, target: targetRecord(store, estimate.targetType, estimate.targetId)! }]
+        : [];
+  const claims = estimate.targetType === "issue" ? issueClaims(store, estimate.targetId, targets) : targets.flatMap(({ targetType, target }) => publicClaimsForTarget(store, targetType, target.id));
+  return (
+    publicEvidenceForClaims(store, claims).some(hasPublishableLiveEvidence) ||
+    targets.some(({ targetType, target }) => targetType === "crowd_density_signal" && (target as CrowdDensitySignal).densityLevel !== "unknown")
+  );
+}
+
+function derivedCrowdEstimateForIssue(store: Store, issueId: string): CrowdEstimate | undefined {
+  const targets = issueTargets(store, issueId);
+  const claims = issueClaims(store, issueId, targets);
+  return derivedCrowdEstimateForScope(store, `derived_${issueId}_crowd_estimate`, issueId, targets, claims, [
+    "자동 갱신 추정이며 참석 인원 확정치가 아닙니다.",
+    publicEvidenceForClaims(store, claims).some((item) => item.evidenceType === "live_media")
+      ? "현장 영상 Claim과 인파 신호가 일부 지역에 편중될 수 있습니다."
+      : "현장 영상 Claim이 부족해 공개 Claim 기반으로만 계산했습니다."
+  ]);
+}
+
+function regionalCrowdEstimatesForIssue(store: Store, issueId: string) {
+  const byRegion = new Map<string, Array<{ targetType: TargetType; target: TargetRecord }>>();
+  for (const item of issueTargets(store, issueId)) {
+    const region = targetRegionLabel(store, item.targetType, item.target) || "지역 확인 중";
+    byRegion.set(region, [...(byRegion.get(region) ?? []), item]);
+  }
+  return [...byRegion.entries()]
+    .map(([regionLabel, targets]) => {
+      const claims = targets.flatMap(({ targetType, target }) => publicClaimsForTarget(store, targetType, target.id));
+      const estimate = derivedCrowdEstimateForScope(store, `derived_${issueId}_${regionLabel}_crowd_estimate`, issueId, targets, claims, [
+        `${regionLabel} 권역 기준 자동 갱신 추정입니다.`,
+        "지역별 현장 영상과 인파 신호 분포에 따라 범위가 달라질 수 있습니다."
+      ]);
+      return estimate ? { regionLabel, ...toPublicCrowdEstimate(estimate) } : undefined;
+    })
+    .filter((estimate): estimate is NonNullable<typeof estimate> => Boolean(estimate))
+    .sort((a, b) => b.maxCount - a.maxCount || a.regionLabel.localeCompare(b.regionLabel));
+}
+
+function derivedCrowdEstimateForScope(
+  store: Store,
+  id: string,
+  issueId: string,
+  targets: Array<{ targetType: TargetType; target: TargetRecord }>,
+  claims: Claim[],
+  limitations: string[]
+): CrowdEstimate | undefined {
+  if (!targets.length && !claims.length) return undefined;
+  const evidence = publicEvidenceForClaims(store, claims);
+  const liveEvidence = evidence.filter(hasPublishableLiveEvidence);
+  const densitySignals = targets.filter((item) => item.targetType === "crowd_density_signal").map((item) => item.target as CrowdDensitySignal);
+  const measuredDensitySignals = densitySignals.filter((item) => item.densityLevel !== "unknown");
+  if (!liveEvidence.length && !measuredDensitySignals.length) return undefined;
+  const currentTargetCount = targets.filter(({ target }) => !["ARCHIVED", "ENDED", "CANCELED", "POSTPONED"].includes(targetLifecycle(target))).length;
+  const densityBase = measuredDensitySignals.reduce((sum, item) => sum + ({ low: 60, medium: 180, high: 500, critical: 1200, unknown: 0 }[item.densityLevel] ?? 0), 0);
+  const minCount = Math.max(liveEvidence.length, Math.round(liveEvidence.length * 120 + densityBase * 0.35));
+  const maxCount = Math.max(minCount + (liveEvidence.length ? 120 : 60), Math.round(liveEvidence.length * 420 + densityBase + currentTargetCount * 180));
+  const observedAt = latestDate([...claims.map((claim) => claim.createdAt), ...evidence.map((item) => item.uploadedAt), ...targets.map(({ target }) => targetUpdatedAt(target))]) ?? new Date();
+  const independentViewpointCount = new Set(liveEvidence.map((item) => item.geoCell ?? item.id)).size;
+  const baseConfidence: CrowdEstimate["confidence"] =
+    liveEvidence.length >= 12 && independentViewpointCount >= 4 ? "high" : liveEvidence.length >= 3 && independentViewpointCount >= 2 ? "medium" : "low";
+  const qualityWarning =
+    repeatedCount(liveEvidence.map((item) => item.hash).filter((value): value is string => typeof value === "string" && value.length > 0)) > 0 ||
+    liveEvidence.some((item) => item.foregroundGps !== true || Number(item.gpsAccuracyM || 999) > 80 || item.deviceIntegrityStatus !== "pass");
+  return {
+    id,
+    targetType: "issue",
+    targetId: issueId,
+    observedAt,
+    minCount,
+    maxCount,
+    confidence: qualityWarning ? lowerCrowdConfidence(baseConfidence) : baseConfidence,
+    method: liveEvidence.length && measuredDensitySignals.length ? "hybrid" : liveEvidence.length ? "proof_of_presence_density" : "source_claim",
+    evidenceCount: evidence.length || claims.length,
+    independentViewpointCount,
+    limitations
+  };
+}
+
+function lowerCrowdConfidence(confidence: CrowdEstimate["confidence"]): CrowdEstimate["confidence"] {
+  return confidence === "high" ? "medium" : confidence === "medium" ? "low" : "low";
+}
+
+function issueClaims(store: Store, issueId: string, targets = issueTargets(store, issueId)): Claim[] {
+  return [
+    ...publicClaimsForTarget(store, "issue", issueId),
+    ...targets.flatMap(({ targetType, target }) => publicClaimsForTarget(store, targetType, target.id))
+  ];
+}
+
+function publicEvidenceForClaims(store: Store, claims: Claim[]): Evidence[] {
+  const ids = new Set(claims.flatMap((claim) => claim.evidenceIds));
+  return store.evidence.filter((item) => ids.has(item.id));
+}
+
+function issueVerificationSignals(store: Store, issueId: string) {
+  const targets = issueTargets(store, issueId);
+  const claims = issueClaims(store, issueId, targets);
+  const evidence = publicEvidenceForClaims(store, claims);
+  const proofEvidence = evidence.filter(
+    (item) => hasPublishableLiveEvidence(item) || (item.evidenceType === "sensor" && item.proofOfPresenceStatus === "pass" && hasTrustedDeviceIntegrity(item))
+  );
+  const liveEvidence = evidence.filter(hasPublishableLiveEvidence);
+  const regionalSignals = issueRegionalSignals(store, issueId);
+  const duplicateHashes = repeatedCount(liveEvidence.map((item) => item.hash).filter((value): value is string => typeof value === "string" && value.length > 0));
+  const duplicateDeviceBuckets = repeatedCount(proofEvidence.map((item) => item.deviceAttestationBucket).filter((value): value is string => typeof value === "string" && value.length > 0));
+  const lowAccuracy = liveEvidence.filter((item) => item.foregroundGps !== true || Number(item.gpsAccuracyM || 999) > 80).length;
+  const weakDeviceIntegrity = evidence.filter(
+    (item) =>
+      (item.evidenceType === "live_media" && item.proofOfPresenceStatus === "pass" && !hasPublishableLiveEvidence(item)) ||
+      (item.evidenceType === "sensor" && item.proofOfPresenceStatus === "pass" && !hasTrustedDeviceIntegrity(item))
+  ).length;
+  const userConcentration = issueUserConcentration(store, claims);
+  const signals: Array<{ id: string; severity: "low" | "medium" | "high"; label: string; summary: string; count?: number }> = [];
+  const officialCount = claims.filter((claim) => claim.sourceProvenance === "government_or_police").length;
+  const needsVerification = regionalSignals.reduce((sum, item) => sum + item.needsVerificationCount, 0);
+  if (!officialCount) signals.push({ id: "official_absent", severity: "medium", label: "공식 자료 없음", summary: "현재 공개 화면은 현장·자료 Claim 중심입니다.", count: 0 });
+  if (needsVerification) signals.push({ id: "needs_verification", severity: "medium", label: "추가 확인 필요", summary: "출처나 현장 자료가 부족한 관련 현장이 있습니다.", count: needsVerification });
+  if (duplicateHashes) signals.push({ id: "duplicate_media_hash", severity: "high", label: "중복 영상 해시", summary: "같은 영상 해시가 여러 Claim에 반복되었습니다.", count: duplicateHashes });
+  if (duplicateDeviceBuckets) signals.push({ id: "device_attestation_cluster", severity: "medium", label: "기기 군집", summary: "같은 기기 attestation bucket의 현장 Claim이 반복되었습니다.", count: duplicateDeviceBuckets });
+  if (weakDeviceIntegrity) signals.push({ id: "device_integrity", severity: "medium", label: "기기 무결성 확인", summary: "일부 현장 인증은 기기 무결성 상태를 다시 확인해야 합니다.", count: weakDeviceIntegrity });
+  if (userConcentration) signals.push({ id: "user_concentration", severity: "medium", label: "사용자 편중", summary: "공개 Claim 일부가 같은 제출자에 편중되어 있습니다.", count: userConcentration.maxCount });
+  if (lowAccuracy) signals.push({ id: "gps_quality", severity: "medium", label: "GPS 품질 확인", summary: "일부 현장 인증은 위치 정확도 기준을 다시 확인해야 합니다.", count: lowAccuracy });
+  const liveTotal = regionalSignals.reduce((sum, item) => sum + item.liveClaimCount, 0);
+  const dominant = Math.max(0, ...regionalSignals.map((item) => item.liveClaimCount));
+  if (liveTotal >= 4 && dominant / liveTotal > 0.75) signals.push({ id: "regional_concentration", severity: "low", label: "지역 편중", summary: "현장 영상 Claim이 특정 권역에 집중되어 있습니다.", count: dominant });
+  return signals.length ? signals : [{ id: "no_unusual_signal", severity: "low", label: "특이 신호 없음", summary: "현재 공개 Claim 기준으로 즉시 드러나는 반복·품질 신호는 없습니다." }];
+}
+
+function repeatedCount(values: string[]): number {
+  const counts = new Map<string, number>();
+  for (const value of values) counts.set(value, (counts.get(value) || 0) + 1);
+  return [...counts.values()].filter((count) => count > 1).reduce((sum, count) => sum + count, 0);
+}
+
+function issueUserConcentration(store: Store, claims: Claim[]): { maxCount: number; total: number } | undefined {
+  const claimIds = new Set(claims.map((claim) => claim.id));
+  const reports = store.reports.filter((report) => report.userId && claimIds.has(report.claimId));
+  if (reports.length < 3) return undefined;
+  const counts = new Map<string, number>();
+  for (const report of reports) counts.set(report.userId as string, (counts.get(report.userId as string) || 0) + 1);
+  const maxCount = Math.max(0, ...counts.values());
+  return maxCount >= 2 && maxCount / reports.length >= 0.6 ? { maxCount, total: reports.length } : undefined;
+}
+
+function getOccurrence(store: Store, id: string | undefined): ApiResponse {
+  const occurrence = store.occurrences.find((item) => item.id === id);
+  if (!occurrence) return json(404, { error: "occurrence_not_found" });
+  const claims = publicClaimsForTarget(store, "occurrence", occurrence.id);
+  const evidenceIds = new Set(claims.flatMap((claim) => claim.evidenceIds));
+  return json(200, {
+    occurrence: toPublicOccurrence(occurrence, claims),
+    claims: claims.map(toPublicClaim),
+    evidenceCount: evidenceIds.size
+  });
+}
+
+function getTargetDetail(store: Store, targetTypeValue: string | undefined, id: string | undefined): ApiResponse {
+  if (!targetTypeValue || !(targetTypes as readonly string[]).includes(targetTypeValue) || !id) return json(404, { error: "target_not_found" });
+  const targetType = targetTypeValue as TargetType;
+  const target = targetRecord(store, targetType, id);
+  if (!target) return json(404, { error: "target_not_found" });
+  const claims = publicClaimsForTarget(store, targetType, id);
+  const evidenceIds = new Set(claims.flatMap((claim) => claim.evidenceIds));
+  return json(200, {
+    target: toPublicTarget(targetType, target, claims),
+    claims: claims.map(toPublicClaim),
+    evidenceCount: evidenceIds.size
+  });
+}
+
+function getTargetLiveClaims(store: Store, targetTypeValue: string | undefined, id: string | undefined): ApiResponse {
+  if (!targetTypeValue || !(targetTypes as readonly string[]).includes(targetTypeValue) || !id) return json(404, { error: "target_not_found" });
+  const targetType = targetTypeValue as TargetType;
+  if (!targetRecord(store, targetType, id)) return json(404, { error: "target_not_found" });
+  const liveClaims = targetType === "issue" ? liveClaimsForIssue(store, id) : liveClaimsForTarget(store, targetType, id);
+  return json(200, {
+    targetType,
+    targetId: id,
+    liveClaims: liveClaims.map((claim) => toPublicLiveClaim(store, claim))
+  });
+}
+
+function getTargetById(store: Store, targetType: TargetType, id: string | undefined, error: string): ApiResponse {
+  if (!id) return json(404, { error });
+  const item = targetRecord(store, targetType, id);
+  if (!item) return json(404, { error });
+  const claims = publicClaimsForTarget(store, targetType, id);
+  return json(200, { item: toPublicTarget(targetType, item, claims), claims: claims.map(toPublicClaim), evidenceCount: publicCounts(claims).evidenceCount });
+}
+
+function getMap(store: Store): ApiResponse {
+  return json(200, {
+    clusters: store.areaClusters.map((cluster) => ({
+      id: cluster.id,
+      label: cluster.label,
+      regionLabel: cluster.regionLabel,
+      targets: cluster.targetRefs.length
+    })),
+    pins: store.occurrences.map((occurrence) => ({
+      id: occurrence.id,
+      targetType: "occurrence",
+      areaClusterId: occurrence.areaClusterId,
+      title: occurrence.title,
+      lifecycleState: occurrence.lifecycleState
+    }))
+  });
+}
+
+function getLaws(store: Store): ApiResponse {
+  return json(200, { laws: lawCards(store) });
+}
+
+function getLaw(store: Store, id: string | undefined): ApiResponse {
+  const law = store.lawItems.find((item) => item.id === id);
+  if (!law) return json(404, { error: "law_not_found" });
+  const links = store.issueLawLinks.filter((item) => item.lawItemId === law.id && store.issues.some((issue) => issue.id === item.issueId));
+  const issueIds = new Set(links.map((item) => item.issueId));
+  const relatedTargets = [...issueIds].flatMap((issueId) => issueTargets(store, issueId));
+  return json(200, {
+    law: toPublicLawItem(store, law),
+    issueLinks: links.map(toPublicIssueLawLink),
+    issues: store.issues
+      .filter((issue) => issueIds.has(issue.id))
+      .map((issue) => ({
+        ...toPublicIssue(issue),
+        link: toPublicIssueLawLink(links.find((link) => link.issueId === issue.id))
+      })),
+    relatedTargets: relatedTargets.map(({ targetType, target }) => ({
+      targetType,
+      item: toPublicTarget(targetType, target, publicClaimsForTarget(store, targetType, target.id))
+    }))
+  });
+}
+
+function lawCards(store: Store) {
+  return store.lawItems
+    .map((law) => toPublicLawItem(store, law))
+    .sort((a, b) => Number(b.interestScore || 0) - Number(a.interestScore || 0) || new Date(b.lastUpdatedAt || 0).getTime() - new Date(a.lastUpdatedAt || 0).getTime());
+}
+
+function toPublicIssueLawLink(link: IssueLawLink | undefined) {
+  if (!link) return undefined;
+  return {
+    issueId: link.issueId,
+    lawItemId: link.lawItemId,
+    matchBasis: link.matchBasis,
+    confidence: link.confidence,
+    claimCount: link.claimIds.length
+  };
+}
+
+function getMyReports(store: Store, userId: string): ApiResponse {
+  return json(200, { reports: store.reports.filter((report) => report.userId === userId) });
+}
+
+function getMySubscriptions(store: Store, userId: string): ApiResponse {
+  return json(200, { subscriptions: store.subscriptions.filter((subscription) => subscription.userId === userId) });
+}
+
+async function postLiveUpload(store: Store, request: ApiRequest, options: AppOptions): Promise<ApiResponse> {
+  const data = asObject(request.body);
+  const userId = requireVerifiedBodyUserId(request, options, data);
+  const targetType = readTargetType(data, "targetType", "occurrence");
+  const targetId = readString(data, "targetId");
+  if (!targetExists(store, targetType, targetId)) return json(404, { error: "target_not_found" });
+  const mediaMimeType = readOptionalString(data, "mediaMimeType") ?? "video/webm";
+  if (!mediaMimeType.startsWith("video/")) return json(422, { error: "live_upload_invalid" });
+  const bytes = liveUploadBytes(readString(data, "mediaBase64"));
+  const byteSize = bytes.length;
+  if (byteSize <= 0 || byteSize > 4 * 1024 * 1024) return json(422, { error: "live_upload_invalid" });
+  const hash = `sha256-${createHash("sha256").update(bytes).digest("base64url")}`;
+  const storageKey = `private/live/browser/${userId}/${randomUUID()}.${mediaMimeType.includes("mp4") ? "mp4" : "webm"}`;
+  const uploadedAt = new Date();
+  const upload: LiveUploadRecord = { storageKey, userId, targetType, targetId, mediaMimeType, byteSize, hash, uploadedAt };
+  if (options.liveMediaStorage) {
+    if (options.requireExternalLiveStorage && !options.liveMediaEncryptionKey) throw new ApiError(503, "live_storage_unavailable");
+    try {
+      const storageBytes = options.liveMediaEncryptionKey ? encryptLiveMediaBytes(bytes, options.liveMediaEncryptionKey) : bytes;
+      await options.liveMediaStorage.put({ storageKey, mediaMimeType: options.liveMediaEncryptionKey ? "application/vnd.musunil.live-media+json" : mediaMimeType, bytes: storageBytes });
+    } catch {
+      throw new ApiError(503, "live_storage_unavailable");
+    }
+  } else {
+    if (options.requireExternalLiveStorage) throw new ApiError(503, "live_storage_unavailable");
+    upload.privateMediaBase64 = bytes.toString("base64");
+  }
+  store.liveUploads.push(upload);
+  audit(store, "hold", targetType, targetId, "live media upload stored privately before redaction");
+  return json(201, {
+    status: "live_upload_stored_private",
+    storageKey,
+    uploadedAt: uploadedAt.toISOString(),
+    byteSize,
+    hash
+  });
+}
+
+function postLiveReport(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
+  const data = asObject(request.body);
+  const userId = requireVerifiedBodyUserId(request, options, data);
+  const targetType = readTargetType(data, "targetType", "occurrence");
+  const targetId = readString(data, "targetId");
+  const capturedAt = readDate(data, "capturedAt");
+  const storageKey = readString(data, "storageKey");
+  const hash = readString(data, "hash");
+  const upload = store.liveUploads.find((item) => item.storageKey === storageKey);
+  if (!upload || upload.userId !== userId || upload.targetType !== targetType || upload.targetId !== targetId || upload.hash !== hash) {
+    return json(422, { error: "live_upload_not_found" });
+  }
+  const durationMs = readNumber(data, "durationMs");
+  if (data.captureMode !== "in_app_camera" || !durationMs || durationMs <= 0) return json(422, { error: "proof_of_presence_failed" });
+  const evidence: Evidence = {
+    id: randomUUID(),
+    evidenceType: "live_media",
+    capturedAt,
+    uploadedAt: upload.uploadedAt,
+    storageKey,
+    hash,
+    durationMs,
+    mediaMimeType: upload.mediaMimeType,
+    byteSize: upload.byteSize,
+    width: readNumber(data, "width"),
+    height: readNumber(data, "height"),
+    captureMode: "in_app_camera",
+    redactionStatus: "pending",
+    publicRadiusM: 200,
+    foregroundGps: data.foregroundGps === true,
+    gpsAccuracyM: readNumber(data, "gpsAccuracyM"),
+    distanceToTargetM: readNumber(data, "distanceToTargetM"),
+    deviceIntegrityStatus: deviceIntegrityStatusFromPublicInput(data),
+    deviceAttestationBucket: deviceAttestationBucket(data)
+  };
+
+  if (!hasProofOfPresence(evidence, { maxUploadMinutes: 5, minDurationMs: 5000, minGpsAccuracyM: 100, maxDistanceToTargetM: 200 })) {
+    return json(422, { error: "proof_of_presence_failed" });
+  }
+
+  evidence.proofOfPresenceStatus = "pass";
+  const claim = addClaim(store, {
+    visibility: "held_private",
+    targetType,
+    targetId,
+    sourceProvenance: "verified_citizen_report",
+    claimantLabel: readOptionalString(data, "claimantLabel") ?? "위치 인증 시민 제보",
+    statement: readOptionalString(data, "rawText") ?? "",
+    normalizedStatement: "위치 인증 제보가 접수되었습니다.",
+    evidenceStrength: "media_time_location_crosscheck",
+    riskLevel: "rights_risk",
+    evidenceIds: [evidence.id]
+  }, { attach: false });
+
+  store.evidence.push(evidence);
+  rememberReport(store, userId, "live", targetType, targetId, claim.id);
+  audit(store, "hold", targetType, targetId, "live video report held for redaction and review before public visibility");
+  return json(202, {
+    status: "live_report_queued_for_review",
+    claim: toPublicClaim(claim),
+    evidenceId: evidence.id
+  });
+}
+
+function liveUploadBytes(mediaBase64: string): Buffer {
+  const normalized = mediaBase64.includes(",") ? mediaBase64.split(",").pop() || "" : mediaBase64;
+  const bytes = Buffer.from(normalized, "base64");
+  if (!bytes.length || bytes.toString("base64").replace(/=+$/, "") !== normalized.replace(/\s/g, "").replace(/=+$/, "")) throw new ApiError(422, "live_upload_invalid");
+  return bytes;
+}
+
+export function encryptLiveMediaBytes(bytes: Buffer, secret: string): Buffer {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", mediaEncryptionKey(secret), iv);
+  const ciphertext = Buffer.concat([cipher.update(bytes), cipher.final()]);
+  return Buffer.from(JSON.stringify({
+    version: "v1",
+    iv: iv.toString("base64"),
+    tag: cipher.getAuthTag().toString("base64"),
+    ciphertext: ciphertext.toString("base64")
+  }));
+}
+
+export function decryptLiveMediaBytes(payload: Buffer, secret: string): Buffer {
+  const data = asObject(JSON.parse(payload.toString("utf8")));
+  if (data.version !== "v1") throw new Error("Invalid live media encryption payload.");
+  const decipher = createDecipheriv("aes-256-gcm", mediaEncryptionKey(secret), Buffer.from(readString(data, "iv"), "base64"));
+  decipher.setAuthTag(Buffer.from(readString(data, "tag"), "base64"));
+  return Buffer.concat([decipher.update(Buffer.from(readString(data, "ciphertext"), "base64")), decipher.final()]);
+}
+
+function mediaEncryptionKey(secret: string): Buffer {
+  return createHash("sha256").update(secret).digest();
+}
+
+function deviceAttestationBucket(data: Record<string, unknown>): string | undefined {
+  const value = readOptionalString(data, "deviceAttestation") ?? readOptionalString(data, "deviceAttestationBucket");
+  return value ? `device_${createHash("sha256").update(value).digest("hex").slice(0, 16)}` : undefined;
+}
+
+function deviceIntegrityStatusFromPublicInput(data: Record<string, unknown>): "fail" | "unknown" {
+  return data.deviceIntegrityStatus === "fail" ? "fail" : "unknown";
+}
+
+function postFieldVerification(store: Store, claimId: string | undefined, request: ApiRequest, options: AppOptions): ApiResponse {
+  const reviewedClaim = store.claims.find((claim) => claim.id === claimId && isPublicClaim(claim));
+  if (!reviewedClaim || !hasPublicLiveEvidence(store, reviewedClaim)) return json(404, { error: "live_claim_not_found" });
+  const data = asObject(request.body);
+  const userId = requireVerifiedBodyUserId(request, options, data);
+  const capturedAt = readDate(data, "capturedAt");
+  const verdict = readFieldVerification(data);
+  const evidence: Evidence = {
+    id: randomUUID(),
+    evidenceType: "sensor",
+    capturedAt,
+    uploadedAt: new Date(),
+    foregroundGps: data.foregroundGps === true,
+    gpsAccuracyM: readNumber(data, "gpsAccuracyM"),
+    distanceToTargetM: readNumber(data, "distanceToTargetM"),
+    deviceIntegrityStatus: deviceIntegrityStatusFromPublicInput(data),
+    deviceAttestationBucket: deviceAttestationBucket(data),
+    proofOfPresenceStatus: "unknown"
+  };
+  if (!hasProofOfPresence(evidence, { maxUploadMinutes: 5, minDurationMs: 5000, minGpsAccuracyM: 100, maxDistanceToTargetM: 200 })) {
+    return json(422, { error: "proof_of_presence_failed" });
+  }
+
+  evidence.proofOfPresenceStatus = "pass";
+  const claim = addClaim(store, {
+    visibility: "held_private",
+    targetType: reviewedClaim.targetType,
+    targetId: reviewedClaim.targetId,
+    sourceProvenance: "verified_citizen_report",
+    claimantLabel: "현장 인증 판단",
+    statement: "",
+    normalizedStatement: fieldVerificationStatement(verdict),
+    evidenceStrength: "multiple_proof_of_presence",
+    riskLevel: verdict === "rights_review_needed" ? "rights_risk" : verdict === "field_aligned" ? "low" : "misleading_possible",
+    evidenceIds: [evidence.id],
+    reviewTargetClaimId: reviewedClaim.id,
+    fieldVerification: verdict
+  }, { attach: false });
+  store.evidence.push(evidence);
+  rememberReport(store, userId, "field_verification", reviewedClaim.targetType, reviewedClaim.targetId, claim.id);
+  audit(store, "hold", reviewedClaim.targetType, reviewedClaim.targetId, "field verification held for trusted device integrity before public visibility");
+  return json(202, { status: "field_verification_queued_for_device_integrity", evidenceId: evidence.id, claim: toPublicClaim(claim), liveClaim: toPublicLiveClaim(store, reviewedClaim) });
+}
+
+function postMaterialReport(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
+  const data = asObject(request.body);
+  const userId = verifiedBodyUserId(request, options, data);
+  const targetType = readTargetType(data, "targetType", "occurrence");
+  const targetId = readString(data, "targetId");
+  const evidence: Evidence = {
+    id: randomUUID(),
+    evidenceType: "material_media",
+    uploadedAt: new Date(),
+    proofOfPresenceStatus: "material_only"
+  };
+  const claim = addClaim(store, {
+    targetType,
+    targetId,
+    sourceProvenance: "material_report",
+    claimantLabel: readOptionalString(data, "claimantLabel") ?? "자료 제보",
+    statement: readOptionalString(data, "rawText") ?? "",
+    normalizedStatement: "자료 제보가 접수되었습니다.",
+    evidenceStrength: "single_source",
+    riskLevel: "misleading_possible",
+    evidenceIds: [evidence.id]
+  });
+
+  store.evidence.push(evidence);
+  attachEvidence(store, targetType, targetId, evidence.id);
+  rememberReport(store, userId, "material", targetType, targetId, claim.id);
+  audit(store, "correction", targetType, targetId, "material report accepted as Claim/Evidence");
+  return json(201, { status: "material_report_received", claim: toPublicClaim(claim), evidenceId: evidence.id });
+}
+
+function postOnSiteCorrection(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
+  const data = asObject(request.body);
+  const userId = verifiedBodyUserId(request, options, data);
+  const targetType = readTargetType(data, "targetType", "occurrence");
+  const targetId = readString(data, "targetId");
+  const claim = addClaim(store, {
+    targetType,
+    targetId,
+    sourceProvenance: "verified_citizen_report",
+    claimantLabel: readOptionalString(data, "claimantLabel") ?? "현장 정정",
+    statement: readOptionalString(data, "rawText") ?? "",
+    normalizedStatement: readString(data, "normalizedStatement"),
+    evidenceStrength: readEvidenceStrength(data, "evidenceStrength", "multiple_proof_of_presence"),
+    riskLevel: readRiskLevel(data, "riskLevel", "misleading_possible"),
+    evidenceIds: []
+  });
+
+  rememberReport(store, userId, "on_site_correction", targetType, targetId, claim.id);
+  audit(store, "correction", targetType, targetId, "on-site correction added as Claim");
+  return json(201, { status: "on_site_correction_received", claim: toPublicClaim(claim) });
+}
+
+function postRightsViolation(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
+  const data = asObject(request.body);
+  const userId = verifiedBodyUserId(request, options, data);
+  const targetType = readTargetType(data, "targetType", "occurrence");
+  const targetId = readString(data, "targetId");
+  const riskLevel = readRiskLevel(data, "riskLevel", "rights_risk");
+  const claim = addClaim(store, {
+    targetType,
+    targetId,
+    sourceProvenance: "rights_violation_report",
+    claimantLabel: readOptionalString(data, "claimantLabel") ?? "권리침해 신고",
+    statement: readOptionalString(data, "rawText") ?? "",
+    normalizedStatement: "권리침해 신고가 접수되었습니다.",
+    evidenceStrength: "single_source",
+    riskLevel,
+    evidenceIds: []
+  });
+  const decision = moderationDecisionFromRightsReports({ count: 1, highestRiskLevel: riskLevel, coordinatedAttackSuspected: false });
+
+  rememberReport(store, userId, "rights_violation", targetType, targetId, claim.id);
+  audit(store, decision === "mask_or_hold_for_review" ? "hold" : "correction", targetType, targetId, "rights report queued without automatic deletion");
+  return json(201, { status: "rights_violation_report_received", decision, claim: toPublicClaim(claim) });
+}
+
+function postRebuttal(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
+  const data = asObject(request.body);
+  const userId = verifiedBodyUserId(request, options, data);
+  const targetType = readTargetType(data, "targetType", "occurrence");
+  const targetId = readString(data, "targetId");
+  const claim = addClaim(store, {
+    targetType,
+    targetId,
+    sourceProvenance: "rebuttal",
+    claimantLabel: readOptionalString(data, "claimantLabel") ?? "반론 제출자",
+    statement: readOptionalString(data, "rawText") ?? "",
+    normalizedStatement: readString(data, "normalizedStatement"),
+    evidenceStrength: readEvidenceStrength(data, "evidenceStrength", "single_source"),
+    riskLevel: readRiskLevel(data, "riskLevel", "misleading_possible"),
+    evidenceIds: []
+  });
+
+  rememberReport(store, userId, "rebuttal", targetType, targetId, claim.id);
+  audit(store, "rebuttal", targetType, targetId, "rebuttal added as Claim");
+  return json(201, { status: "rebuttal_received", claim: toPublicClaim(claim) });
+}
+
+function postSubscription(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
+  const data = asObject(request.body);
+  const userId = readString(data, "userId");
+  if (!verifyUserToken(request.headers?.["x-musunil-user-token"], userId, options.userTokenSecret)) return json(401, { error: "user_scope_required" });
+  const subscription: Subscription = {
+    id: randomUUID(),
+    userId,
+    targetType: readTargetType(data, "targetType", "occurrence"),
+    targetId: readString(data, "targetId"),
+    alertLevel: data.alertLevel === "all" || data.alertLevel === "normal" ? data.alertLevel : "major_only",
+    alertTypes: Array.isArray(data.alertTypes) ? data.alertTypes.filter((item): item is string => typeof item === "string") : ["state_changed"]
+  };
+
+  store.subscriptions.push(subscription);
+  return json(201, { status: "subscription_created", subscription });
+}
+
+function patchSubscription(store: Store, id: string | undefined, request: ApiRequest, options: AppOptions): ApiResponse {
+  const subscription = store.subscriptions.find((item) => item.id === id);
+  if (!subscription) return json(404, { error: "subscription_not_found" });
+  if (!verifyUserToken(request.headers?.["x-musunil-user-token"], subscription.userId, options.userTokenSecret)) return json(401, { error: "user_scope_required" });
+  const data = asObject(request.body);
+  if (data.alertLevel === "major_only" || data.alertLevel === "normal" || data.alertLevel === "all") subscription.alertLevel = data.alertLevel;
+  if (Array.isArray(data.alertTypes)) subscription.alertTypes = data.alertTypes.filter((item): item is string => typeof item === "string");
+  if (typeof data.mutedUntil === "string") subscription.mutedUntil = new Date(data.mutedUntil);
+  return json(200, { status: "subscription_updated", subscription });
+}
+
+function postInternalIngest(store: Store, body: unknown): ApiResponse {
+  const data = asObject(body);
+  const targetType = readTargetType(data, "targetType", "issue");
+  const targetId = readString(data, "targetId");
+  const sourceProvenance = readSourceProvenance(data, "sourceProvenance", "government_or_police");
+  const claimantLabel = readOptionalString(data, "claimantLabel") ?? "공공자료 수집";
+  const normalizedStatement = readString(data, "normalizedStatement");
+  const existingClaim = store.claims.find(
+    (claim) =>
+      claim.targetType === targetType &&
+      claim.targetId === targetId &&
+      claim.sourceProvenance === sourceProvenance &&
+      claim.claimantLabel === claimantLabel &&
+      claim.normalizedStatement === normalizedStatement
+  );
+  if (existingClaim) {
+    const rawText = readOptionalString(data, "rawText");
+    if (rawText) existingClaim.statement = rawText;
+    audit(store, "correction", targetType, targetId, "public source refreshed without duplicate Claim");
+    return json(200, { status: "public_source_claim_refreshed", claim: toPublicClaim(existingClaim) });
+  }
+  const claim = addClaim(store, {
+    targetType,
+    targetId,
+    sourceProvenance,
+    claimantLabel,
+    statement: readOptionalString(data, "rawText") ?? "",
+    normalizedStatement,
+    evidenceStrength: readEvidenceStrength(data, "evidenceStrength", "single_source"),
+    riskLevel: readRiskLevel(data, "riskLevel", "misleading_possible"),
+    evidenceIds: []
+  });
+  audit(store, "correction", targetType, targetId, "public source ingested as Claim");
+  return json(201, { status: "public_source_claim_received", claim: toPublicClaim(claim) });
+}
+
+function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiResponse {
+  const data = asObject(body);
+  const id = readString(data, "id");
+  const areaClusterId = readString(data, "areaClusterId");
+  let issueId = readOptionalString(data, "issueId");
+  const normalizedStatement = readString(data, "normalizedStatement");
+  let occurrence = store.occurrences.find((item) => item.id === id);
+  const created = !occurrence;
+
+  if (!store.areaClusters.some((item) => item.id === areaClusterId)) throw new ApiError(404, "area_cluster_not_found");
+  if (issueId && !store.issues.some((item) => item.id === issueId)) throw new ApiError(404, "issue_not_found");
+  issueId ??= resolveIssueIdForIngest(store, data);
+
+  if (!occurrence) {
+    occurrence = {
+      id,
+      issueId,
+      type: readOccurrenceType(data, "type", "static_assembly"),
+      areaClusterId,
+      regionLabel: readString(data, "regionLabel"),
+      title: readString(data, "title"),
+      startsAt: readOptionalDate(data, "startsAt"),
+      endsAt: readOptionalDate(data, "endsAt"),
+      lifecycleState: readLifecycleState(data, "lifecycleState", "UNKNOWN"),
+      claimIds: [],
+      evidenceIds: []
+    };
+    store.occurrences.push(occurrence);
+    const cluster = findAreaCluster(store, areaClusterId);
+    if (!cluster?.targetRefs.some((item) => item.targetType === "occurrence" && item.targetId === id)) {
+      cluster?.targetRefs.push({ targetType: "occurrence", targetId: id });
+    }
+  } else {
+    occurrence.issueId ??= issueId;
+    occurrence.title = readString(data, "title");
+    occurrence.regionLabel = readString(data, "regionLabel");
+    occurrence.startsAt = readOptionalDate(data, "startsAt") ?? occurrence.startsAt;
+    occurrence.endsAt = readOptionalDate(data, "endsAt") ?? occurrence.endsAt;
+    occurrence.lifecycleState = readLifecycleState(data, "lifecycleState", occurrence.lifecycleState);
+  }
+
+  const existingClaim = store.claims.find((claim) => claim.targetType === "occurrence" && claim.targetId === id && claim.normalizedStatement === normalizedStatement);
+  if (existingClaim) {
+    const rawText = readOptionalString(data, "rawText");
+    if (rawText) existingClaim.statement = rawText;
+    audit(store, "correction", "occurrence", id, "public occurrence refreshed without duplicate Claim");
+    return json(200, {
+      status: "public_occurrence_refreshed",
+      occurrence: toPublicOccurrence(occurrence, publicClaimsForTarget(store, "occurrence", occurrence.id)),
+      claim: toPublicClaim(existingClaim)
+    });
+  }
+
+  const evidence: Evidence = {
+    id: randomUUID(),
+    evidenceType: "official_doc",
+    uploadedAt: readOptionalDate(data, "evidenceUploadedAt") ?? new Date(),
+    proofOfPresenceStatus: "material_only"
+  };
+  store.evidence.push(evidence);
+  attachEvidence(store, "occurrence", id, evidence.id);
+  const claim = addClaim(store, {
+    targetType: "occurrence",
+    targetId: id,
+    sourceProvenance: readSourceProvenance(data, "sourceProvenance", "government_or_police"),
+    claimantLabel: readOptionalString(data, "claimantLabel") ?? "공개 자료",
+    statement: readOptionalString(data, "rawText") ?? "",
+    normalizedStatement,
+    evidenceStrength: readEvidenceStrength(data, "evidenceStrength", "single_source"),
+    riskLevel: readRiskLevel(data, "riskLevel", "low"),
+    evidenceIds: [evidence.id]
+  });
+  refreshIssueLawLinks(store);
+  audit(store, created ? "split" : "correction", "occurrence", id, "public occurrence ingested as Claim/Evidence");
+  return json(created ? 201 : 200, {
+    status: created ? "public_occurrence_created" : "public_occurrence_updated",
+    occurrence: toPublicOccurrence(occurrence, publicClaimsForTarget(store, "occurrence", occurrence.id)),
+    claim: toPublicClaim(claim)
+  });
+}
+
+function postInternalIngestLaws(store: Store, body: unknown): ApiResponse {
+  const data = asObject(body);
+  const records = Array.isArray(data.laws) ? data.laws : [data];
+  const upserted: LawItem[] = [];
+  for (const record of records) {
+    if (!record || typeof record !== "object" || Array.isArray(record)) throw new ApiError(400, "law_record_must_be_object");
+    const law = readLawItem(record as Record<string, unknown>);
+    const existing = store.lawItems.find((item) => item.id === law.id);
+    if (existing) Object.assign(existing, law);
+    else store.lawItems.push(law);
+    upserted.push(law);
+  }
+  refreshIssueLawLinks(store);
+  return json(200, {
+    status: "laws_ingested",
+    laws: upserted.map((law) => toPublicLawItem(store, law))
+  });
+}
+
+type IssueTopicInput = {
+  title: string;
+  topicTags: string[];
+};
+
+function resolveIssueIdForIngest(store: Store, data: Record<string, unknown>): string | undefined {
+  const explicitTopic = readOptionalString(data, "topicTitle");
+  const inferredTopic = explicitTopic ? topicFromTitle(explicitTopic) : topicFromText(`${readOptionalString(data, "title") ?? ""} ${readOptionalString(data, "normalizedStatement") ?? ""}`);
+  if (!inferredTopic) return undefined;
+  const topicTags = readOptionalStringArray(data, "topicTags");
+  return ensureIssue(store, {
+    title: inferredTopic.title,
+    topicTags: topicTags.length ? topicTags : inferredTopic.topicTags
+  }).id;
+}
+
+function ensureIssue(store: Store, input: IssueTopicInput): Issue {
+  const normalizedTopicKey = normalizedTopicKeyFor(input.title);
+  const existing = store.issues.find((issue) => issue.normalizedTopicKey === normalizedTopicKey);
+  if (existing) return existing;
+  const now = new Date();
+  const issue: Issue = {
+    id: `issue_${createHash("sha1").update(normalizedTopicKey).digest("hex").slice(0, 12)}`,
+    title: input.title,
+    normalizedTopicKey,
+    topicTags: input.topicTags,
+    status: "active",
+    firstSeenAt: now,
+    lastUpdatedAt: now
+  };
+  store.issues.push(issue);
+  return issue;
+}
+
+function topicFromTitle(rawTitle: string): IssueTopicInput | undefined {
+  const text = rawTitle.trim();
+  if (!text) return undefined;
+  if (/부정선거|선거\s*검증|선관위/.test(text)) return { title: "부정선거 의혹 제기 집회", topicTags: ["부정선거 의혹", "선거 검증", "집회"] };
+  if (/정보통신망법|정통법/.test(text)) {
+    const stance = /반대|폐지/.test(text) ? "반대" : /찬성|지지/.test(text) ? "찬성" : "관련";
+    return { title: `정보통신망법 개정 ${stance} 집회`, topicTags: ["정보통신망법 개정", stance, "집회"] };
+  }
+  if (/탄핵/.test(text)) return { title: "대통령 탄핵 요구 집회", topicTags: ["대통령 탄핵", "요구", "집회"] };
+  return { title: /집회|행진|시위|항의|요구|반대|찬성|의혹|검증/.test(text) ? text : `${text} 관련 집회`, topicTags: [text, "집회"] };
+}
+
+function topicFromText(text: string): IssueTopicInput | undefined {
+  if (/부정선거|선거\s*검증|선관위/.test(text)) return topicFromTitle("부정선거");
+  if (/정보통신망법|정통법/.test(text)) return topicFromTitle(text);
+  if (/탄핵/.test(text)) return topicFromTitle("대통령 탄핵");
+  return undefined;
+}
+
+function normalizedTopicKeyFor(title: string): string {
+  return `topic:${title.normalize("NFKC").toLowerCase().replace(/\s+/g, "-")}`;
+}
+
+function getAdminReviewQueue(store: Store): ApiResponse {
+  return json(200, {
+    claims: store.claims
+      .filter((claim) => claim.riskLevel !== "low" || claim.sourceProvenance === "rights_violation_report" || claim.sourceProvenance === "rebuttal")
+      .map(toPublicClaim),
+    transparencyLogs: store.transparencyLogs.slice(-50)
+  });
+}
+
+function getAdminRiskDashboard(store: Store): ApiResponse {
+  const reviewClaims = store.claims.filter((claim) => claim.riskLevel !== "low" || claim.sourceProvenance === "rights_violation_report" || claim.sourceProvenance === "rebuttal");
+  const duplicateHashes = duplicateMediaHashes(store);
+  const userClusters = reportUserClusters(store);
+  const deviceClusters = deviceAttestationClusters(store);
+  const lowGpsEvidence = store.evidence.filter((item) => item.evidenceType === "live_media" && (item.foregroundGps !== true || Number(item.gpsAccuracyM || 999) > 80));
+  const deviceIntegrityEvidence = store.evidence.filter((item) => (item.evidenceType === "live_media" || item.evidenceType === "sensor") && item.deviceIntegrityStatus !== "pass");
+  const pendingRedaction = store.evidence.filter((item) => item.evidenceType === "live_media" && item.redactionStatus !== "completed");
+  const issueRisks = store.issues
+    .map((issue) => {
+      const signals = issueVerificationSignals(store, issue.id).filter((signal) => signal.id !== "no_unusual_signal");
+      const claims = issueClaims(store, issue.id);
+      const riskScore = signals.reduce((sum, signal) => sum + ({ low: 1, medium: 2, high: 3 }[signal.severity] ?? 0), 0) + claims.filter((claim) => claim.riskLevel !== "low").length;
+      return {
+        issueId: issue.id,
+        title: issue.title,
+        riskScore,
+        reviewClaimCount: claims.filter((claim) => reviewClaims.some((review) => review.id === claim.id)).length,
+        verificationSignals: signals,
+        latestUpdatedAt: issue.lastUpdatedAt.toISOString()
+      };
+    })
+    .filter((issue) => issue.riskScore > 0 || issue.verificationSignals.length > 0)
+    .sort((a, b) => b.riskScore - a.riskScore || a.title.localeCompare(b.title));
+  return json(200, {
+    generatedAt: new Date().toISOString(),
+    decisionPolicy: "signals_prioritize_review_only",
+    summary: {
+      reviewQueueCount: reviewClaims.length,
+      highRiskClaimCount: reviewClaims.filter((claim) => claim.riskLevel === "high_legal_privacy_risk" || claim.riskLevel === "must_hold_private").length,
+      heldPrivateClaimCount: store.claims.filter((claim) => claim.visibility === "held_private").length,
+      rightsReportCount: store.claims.filter((claim) => claim.sourceProvenance === "rights_violation_report").length,
+      duplicateMediaHashCount: duplicateHashes.reduce((sum, group) => sum + group.count, 0),
+      userClusterCount: userClusters.length,
+      deviceAttestationClusterCount: deviceClusters.length,
+      lowGpsEvidenceCount: lowGpsEvidence.length,
+      deviceIntegrityReviewCount: deviceIntegrityEvidence.length,
+      pendingRedactionCount: pendingRedaction.length,
+      holdAuditCount: store.auditLogs.filter((log) => log.action === "hold").length
+    },
+    issueRisks,
+    evidenceSignals: {
+      duplicateMediaHashes: duplicateHashes,
+      userClusters,
+      deviceAttestationClusters: deviceClusters,
+      lowGpsEvidence: lowGpsEvidence.map((item) => ({ evidenceId: item.id, gpsAccuracyM: item.gpsAccuracyM, foregroundGps: item.foregroundGps })),
+      deviceIntegrityEvidence: deviceIntegrityEvidence.map((item) => ({
+        evidenceId: item.id,
+        deviceIntegrityStatus: item.deviceIntegrityStatus ?? "unknown",
+        deviceIntegrityProvider: item.deviceIntegrityProvider,
+        deviceIntegrityCheckedAt: item.deviceIntegrityCheckedAt?.toISOString()
+      })),
+      pendingRedaction: pendingRedaction.map((item) => ({ evidenceId: item.id, uploadedAt: item.uploadedAt.toISOString() }))
+    },
+    recentAudit: store.auditLogs.slice(-20).map((log) => ({ ...log, createdAt: log.createdAt.toISOString() }))
+  });
+}
+
+function duplicateMediaHashes(store: Store) {
+  const groups = new Map<string, Evidence[]>();
+  for (const evidence of store.evidence) {
+    if (evidence.evidenceType === "live_media" && evidence.hash) groups.set(evidence.hash, [...(groups.get(evidence.hash) ?? []), evidence]);
+  }
+  return [...groups.entries()]
+    .filter(([, items]) => items.length > 1)
+    .map(([hash, items]) => ({ hash, count: items.length, evidenceIds: items.map((item) => item.id) }));
+}
+
+function reportUserClusters(store: Store) {
+  const groups = new Map<string, ReportRecord[]>();
+  for (const report of store.reports) {
+    if (!report.userId) continue;
+    groups.set(report.userId, [...(groups.get(report.userId) ?? []), report]);
+  }
+  return [...groups.entries()]
+    .filter(([, reports]) => reports.length >= 2)
+    .map(([userId, reports]) => ({
+      userBucket: `user_${createHash("sha256").update(userId).digest("hex").slice(0, 12)}`,
+      reportCount: reports.length,
+      claimIds: reports.map((report) => report.claimId),
+      targetRefs: reports.map((report) => ({ targetType: report.targetType, targetId: report.targetId }))
+    }));
+}
+
+function deviceAttestationClusters(store: Store) {
+  const groups = new Map<string, Evidence[]>();
+  for (const evidence of store.evidence) {
+    if (evidence.deviceAttestationBucket) groups.set(evidence.deviceAttestationBucket, [...(groups.get(evidence.deviceAttestationBucket) ?? []), evidence]);
+  }
+  return [...groups.entries()]
+    .filter(([, items]) => items.length > 1)
+    .map(([deviceBucket, items]) => ({ deviceBucket, count: items.length, evidenceIds: items.map((item) => item.id) }));
+}
+
+function getAdminPrivacyDashboard(store: Store, options: AppOptions): ApiResponse {
+  const preview = privacyPurgePreview(store, options);
+  const liveEvidence = store.evidence.filter((item) => item.evidenceType === "live_media");
+  const pendingRedaction = liveEvidence.filter((item) => item.redactionStatus !== "completed");
+  const preciseLocation = store.evidence.filter(hasPreciseLocationFields);
+  const originalMedia = liveEvidence.filter((item) => item.storageKey);
+  return json(200, {
+    generatedAt: new Date().toISOString(),
+    policy: "private_originals_precise_location_never_public",
+    retentionDays: preview.retentionDays,
+    summary: {
+      heldPrivateClaimCount: store.claims.filter((claim) => claim.visibility === "held_private").length,
+      rightsReviewClaimCount: store.claims.filter((claim) => claim.riskLevel === "rights_risk" || claim.sourceProvenance === "rights_violation_report").length,
+      pendingRedactionCount: pendingRedaction.length,
+      originalMediaStoredCount: originalMedia.length,
+      preciseLocationStoredCount: preciseLocation.length,
+      privateUploadBufferCount: store.liveUploads.filter((upload) => upload.privateMediaBase64).length
+    },
+    purgePreview: preview.eligibleCounts,
+    pendingRedaction: pendingRedaction.map((item) => ({ evidenceId: item.id, uploadedAt: item.uploadedAt.toISOString(), redactionStatus: item.redactionStatus ?? "pending" })),
+    preciseLocationEvidence: preciseLocation.map((item) => ({
+      evidenceId: item.id,
+      uploadedAt: item.uploadedAt.toISOString(),
+      hasGeoCell: Boolean(item.geoCell),
+      hasGpsAccuracy: item.gpsAccuracyM !== undefined,
+      hasDistanceToTarget: item.distanceToTargetM !== undefined
+    })),
+    rightsQueue: store.claims
+      .filter((claim) => claim.visibility === "held_private" || claim.riskLevel === "rights_risk" || claim.sourceProvenance === "rights_violation_report")
+      .map(toPublicClaim)
+  });
+}
+
+function patchInternalDeviceIntegrity(store: Store, id: string | undefined, body: unknown): ApiResponse {
+  const evidence = store.evidence.find((item) => item.id === id && (item.evidenceType === "live_media" || item.evidenceType === "sensor"));
+  if (!evidence) return json(404, { error: "evidence_not_found" });
+  const data = asObject(body);
+  const status = data.deviceIntegrityStatus;
+  if (status !== "pass" && status !== "fail" && status !== "unknown") throw new ApiError(400, "device_integrity_status_invalid");
+  const provider = readOptionalString(data, "provider");
+  if (provider !== "play_integrity" && provider !== "app_attest") throw new ApiError(400, "device_integrity_provider_invalid");
+  const proofHash = deviceIntegrityProofHash(data);
+  evidence.deviceIntegrityStatus = status;
+  evidence.deviceIntegrityProvider = provider;
+  evidence.deviceIntegrityCheckedAt = new Date();
+  evidence.deviceIntegrityProofHash = proofHash;
+  audit(store, status === "pass" ? "correction" : "hold", "evidence", evidence.id, "device integrity result recorded by trusted verifier");
+  return json(200, {
+    status: "device_integrity_recorded",
+    evidence: {
+      id: evidence.id,
+      evidenceType: evidence.evidenceType,
+      deviceIntegrityStatus: evidence.deviceIntegrityStatus,
+      deviceIntegrityProvider: evidence.deviceIntegrityProvider,
+      deviceIntegrityCheckedAt: evidence.deviceIntegrityCheckedAt.toISOString(),
+      deviceIntegrityProofHash: evidence.deviceIntegrityProofHash
+    }
+  });
+}
+
+function deviceIntegrityProofHash(data: Record<string, unknown>): string {
+  const token = readOptionalString(data, "attestationToken");
+  if (token) return `sha256-${createHash("sha256").update(token).digest("base64url")}`;
+  const hash = readOptionalString(data, "attestationHash");
+  if (hash && /^sha256-[A-Za-z0-9_-]{16,}$/.test(hash)) return hash;
+  throw new ApiError(400, "device_integrity_proof_required");
+}
+
+function patchInternalEvidenceRedaction(store: Store, id: string | undefined, body: unknown): ApiResponse {
+  const evidence = store.evidence.find((item) => item.id === id && item.evidenceType === "live_media");
+  if (!evidence) return json(404, { error: "evidence_not_found" });
+  const data = asObject(body);
+  const redactedClipUrl = publicMediaUrl(readOptionalString(data, "redactedClipUrl"));
+  if (!redactedClipUrl) throw new ApiError(400, "redactedClipUrl_invalid");
+  const proofHash = redactionProofHash(data);
+  evidence.publicStorageKey = redactedClipUrl;
+  evidence.redactionStatus = "completed";
+  evidence.redactionCheckedAt = new Date();
+  evidence.redactionProofHash = proofHash;
+  audit(store, "mask", "evidence", evidence.id, "redacted public media recorded by trusted worker");
+  return json(200, {
+    status: "redaction_recorded",
+    evidence: {
+      id: evidence.id,
+      evidenceType: evidence.evidenceType,
+      redactionStatus: evidence.redactionStatus,
+      redactionCheckedAt: evidence.redactionCheckedAt.toISOString(),
+      redactionProofHash: evidence.redactionProofHash,
+      publicMediaUrl: publicMediaUrl(evidence.publicStorageKey)
+    }
+  });
+}
+
+function redactionProofHash(data: Record<string, unknown>): string {
+  const proof = readOptionalString(data, "redactionProofToken");
+  if (proof) return `sha256-${createHash("sha256").update(proof).digest("base64url")}`;
+  const hash = readOptionalString(data, "redactionProofHash");
+  if (hash && /^sha256-[A-Za-z0-9_-]{16,}$/.test(hash)) return hash;
+  throw new ApiError(400, "redaction_proof_required");
+}
+
+function patchAdminClaim(store: Store, id: string | undefined, body: unknown): ApiResponse {
+  const claim = store.claims.find((item) => item.id === id);
+  if (!claim) return json(404, { error: "claim_not_found" });
+  const data = asObject(body);
+  claim.riskLevel = readRiskLevel(data, "riskLevel", claim.riskLevel);
+  const visibility = readClaimVisibility(data, "visibility");
+  const normalizedStatement = readOptionalString(data, "normalizedStatement");
+  if (normalizedStatement) claim.normalizedStatement = normalizedStatement;
+  const redactedClipUrl = readOptionalString(data, "redactedClipUrl");
+  if (redactedClipUrl) throw new ApiError(400, "redaction_worker_required");
+  const liveEvidence = claim.evidenceIds
+    .map((evidenceId) => store.evidence.find((item) => item.id === evidenceId))
+    .filter((evidence): evidence is Evidence => evidence?.evidenceType === "live_media");
+  if (visibility === "public" && liveEvidence.some((evidence) => !hasCompletedRedaction(evidence))) {
+    throw new ApiError(400, "live_redaction_required");
+  }
+  if (visibility === "public" && liveEvidence.some((evidence) => !hasTrustedDeviceIntegrity(evidence))) {
+    throw new ApiError(400, "device_integrity_required");
+  }
+  const fieldVerificationEvidence = claim.fieldVerification
+    ? claim.evidenceIds
+        .map((evidenceId) => store.evidence.find((item) => item.id === evidenceId))
+        .filter((evidence): evidence is Evidence => evidence?.evidenceType === "sensor")
+    : [];
+  if (visibility === "public" && claim.fieldVerification && (!fieldVerificationEvidence.length || fieldVerificationEvidence.some((evidence) => !hasTrustedDeviceIntegrity(evidence)))) {
+    throw new ApiError(400, "device_integrity_required");
+  }
+  if (visibility) setClaimVisibility(store, claim, visibility);
+  audit(store, "correction", "claim", claim.id, readOptionalString(data, "publicReason") ?? "admin reviewed Claim");
+  return json(200, { status: "claim_reviewed", claim: toPublicClaim(claim) });
+}
+
+function postReconcileLifecycle(store: Store, body: unknown): ApiResponse {
+  const data = asObject(body);
+  const id = readString(data, "targetId");
+  const occurrence = store.occurrences.find((item) => item.id === id);
+  if (!occurrence) return json(404, { error: "occurrence_not_found" });
+  const proofCount = occurrence.evidenceIds
+    .map((evidenceId) => store.evidence.find((item) => item.id === evidenceId))
+    .filter((item) => item?.proofOfPresenceStatus === "pass").length;
+
+  if (proofCount > 0 && occurrence.lifecycleState === "UNKNOWN") {
+    occurrence.lifecycleState = "LIVE";
+    audit(store, "state_change", "occurrence", occurrence.id, "proof-of-presence evidence moved UNKNOWN to LIVE");
+    queueNotifications(store, "state_changed", "occurrence", occurrence.id, "상태 변화", `${occurrence.title}이 진행 중으로 전환됐습니다.`);
+  }
+  return json(200, { status: "reconciled", lifecycleState: occurrence.lifecycleState, proofCount });
+}
+
+function postNotificationDispatch(store: Store): ApiResponse {
+  const now = new Date();
+  const due = store.notificationOutbox.filter((item) => item.status === "pending" && item.scheduledFor <= now);
+  for (const notification of due) {
+    notification.status = "sent";
+    notification.sentAt = now;
+    audit(store, "notification", notification.targetType, notification.targetId, "notification outbox marked sent by local dispatcher");
+  }
+  // ponytail: external push providers are wired later; local dispatch still closes due outbox items so cron is idempotent.
+  return json(200, {
+    status: "local_dispatch_completed",
+    dispatchedCount: due.length,
+    pendingCount: store.notificationOutbox.filter((item) => item.status === "pending").length,
+    notifications: due
+  });
+}
+
+async function postPrivacyPurgeExpired(store: Store, options: AppOptions): Promise<ApiResponse> {
+  const preview = privacyPurgePreview(store, options);
+  const cutoffs = privacyCutoffs(options);
+  let statementsCleared = 0;
+  let evidenceCleared = 0;
+  let originalMediaCleared = 0;
+  let liveUploadBuffersCleared = 0;
+  const originalMediaToDelete = store.evidence.filter((evidence) => {
+    const mediaBefore = evidence.redactionStatus === "completed" ? cutoffs.verifiedMediaBefore : cutoffs.unverifiedMediaBefore;
+    return evidence.evidenceType === "live_media" && Boolean(evidence.storageKey) && evidence.uploadedAt.getTime() < mediaBefore;
+  });
+
+  if (options.liveMediaStorage?.delete) {
+    try {
+      await Promise.all(originalMediaToDelete.map((evidence) => options.liveMediaStorage!.delete!(evidence.storageKey!)));
+    } catch {
+      throw new ApiError(503, "privacy_purge_storage_unavailable");
+    }
+  }
+
+  for (const claim of store.claims) {
+    if (claim.statement && claim.createdAt.getTime() < cutoffs.rawBefore) {
+      claim.statement = "";
+      statementsCleared += 1;
+    }
+  }
+  for (const evidence of store.evidence) {
+    if (evidence.uploadedAt.getTime() < cutoffs.preciseBefore) {
+      if (hasPreciseLocationFields(evidence)) evidenceCleared += 1;
+      evidence.geoCell = undefined;
+      evidence.gpsAccuracyM = undefined;
+      evidence.distanceToTargetM = undefined;
+    }
+    if (originalMediaToDelete.includes(evidence)) {
+      evidence.storageKey = undefined;
+      evidence.hash = undefined;
+      originalMediaCleared += 1;
+    }
+  }
+  for (const upload of store.liveUploads) {
+    if (upload.privateMediaBase64 && upload.uploadedAt.getTime() < cutoffs.unverifiedMediaBefore) {
+      upload.privateMediaBase64 = undefined;
+      liveUploadBuffersCleared += 1;
+    }
+  }
+
+  const auditBeforeCount = store.auditLogs.length;
+  store.auditLogs = store.auditLogs.filter((log) => log.createdAt.getTime() >= cutoffs.auditBefore);
+  return json(200, {
+    status: "privacy_purge_completed",
+    previewBeforePurge: preview.eligibleCounts,
+    statementsCleared,
+    evidenceCleared,
+    originalMediaCleared,
+    liveUploadBuffersCleared,
+    auditLogsDeleted: auditBeforeCount - store.auditLogs.length
+  });
+}
+
+function privacyPurgePreview(store: Store, options: AppOptions) {
+  const cutoffs = privacyCutoffs(options);
+  return {
+    retentionDays: cutoffs.retentionDays,
+    eligibleCounts: {
+      rawStatements: store.claims.filter((claim) => claim.statement && claim.createdAt.getTime() < cutoffs.rawBefore).length,
+      preciseLocationFields: store.evidence.filter((evidence) => hasPreciseLocationFields(evidence) && evidence.uploadedAt.getTime() < cutoffs.preciseBefore).length,
+      originalMedia: store.evidence.filter((evidence) => {
+        const mediaBefore = evidence.redactionStatus === "completed" ? cutoffs.verifiedMediaBefore : cutoffs.unverifiedMediaBefore;
+        return evidence.evidenceType === "live_media" && Boolean(evidence.storageKey) && evidence.uploadedAt.getTime() < mediaBefore;
+      }).length,
+      liveUploadBuffers: store.liveUploads.filter((upload) => upload.privateMediaBase64 && upload.uploadedAt.getTime() < cutoffs.unverifiedMediaBefore).length,
+      auditLogs: store.auditLogs.filter((log) => log.createdAt.getTime() < cutoffs.auditBefore).length
+    }
+  };
+}
+
+function privacyCutoffs(options: AppOptions) {
+  const now = Date.now();
+  const retentionDays = {
+    rawClaimStatementDays: options.retention?.rawClaimStatementDays ?? 30,
+    unverifiedOriginalMediaDays: options.retention?.unverifiedOriginalMediaDays ?? 30,
+    verifiedOriginalMediaDays: options.retention?.verifiedOriginalMediaDays ?? 180,
+    preciseLocationDays: options.retention?.preciseLocationDays ?? 30,
+    auditLogDays: options.retention?.auditLogDays ?? 3650
+  };
+  return {
+    retentionDays,
+    rawBefore: now - retentionDays.rawClaimStatementDays * dayMs,
+    unverifiedMediaBefore: now - retentionDays.unverifiedOriginalMediaDays * dayMs,
+    verifiedMediaBefore: now - retentionDays.verifiedOriginalMediaDays * dayMs,
+    preciseBefore: now - retentionDays.preciseLocationDays * dayMs,
+    auditBefore: now - retentionDays.auditLogDays * dayMs
+  };
+}
+
+function hasPreciseLocationFields(evidence: Evidence): boolean {
+  return Boolean(evidence.geoCell) || evidence.gpsAccuracyM !== undefined || evidence.distanceToTargetM !== undefined;
+}
+
+function getTransparencyMonthly(store: Store): ApiResponse {
+  const counts: Record<string, number> = {};
+  for (const log of store.auditLogs) counts[log.action] = (counts[log.action] ?? 0) + 1;
+  return json(200, { month: new Date().toISOString().slice(0, 7), counts });
+}
+
+function toPublicLawItem(store: Store, law: LawItem) {
+  const links = store.issueLawLinks.filter((link) => link.lawItemId === law.id && store.issues.some((issue) => issue.id === link.issueId));
+  const issueIds = new Set(links.map((link) => link.issueId));
+  const relatedTargets = [...issueIds].flatMap((issueId) => issueTargets(store, issueId));
+  const claims = publicClaimsForIssueIds(store, issueIds);
+  const lastUpdatedAt = latestDate([
+    law.statusDate,
+    law.effectiveDate,
+    ...store.issues.filter((issue) => issueIds.has(issue.id)).map((issue) => issue.lastUpdatedAt),
+    ...claims.map((claim) => claim.createdAt)
+  ]);
+  return {
+    id: law.id,
+    source: law.source,
+    lawName: law.lawName,
+    billTitle: law.billTitle,
+    stage: law.stage,
+    statusDate: law.statusDate?.toISOString(),
+    effectiveDate: law.effectiveDate?.toISOString(),
+    assemblyBillId: law.assemblyBillId,
+    lawId: law.lawId,
+    summary: law.summary,
+    officialUrl: law.officialUrl,
+    keywords: law.keywords,
+    linkedIssueCount: issueIds.size,
+    relatedTargetCount: relatedTargets.length,
+    recentClaimCount: claims.length,
+    interestScore: links.length * 40 + relatedTargets.length * 7 + claims.length * 3 + (lastUpdatedAt ? 1 : 0),
+    lastUpdatedAt: lastUpdatedAt?.toISOString()
+  };
+}
+
+function publicClaimsForIssueIds(store: Store, issueIds: Set<string>): Claim[] {
+  const claims = new Map<string, Claim>();
+  for (const issueId of issueIds) {
+    for (const claim of publicClaimsForTarget(store, "issue", issueId)) claims.set(claim.id, claim);
+    for (const { targetType, target } of issueTargets(store, issueId)) {
+      for (const claim of publicClaimsForTarget(store, targetType, target.id)) claims.set(claim.id, claim);
+    }
+  }
+  return [...claims.values()];
+}
+
+function refreshIssueLawLinks(store: Store): void {
+  const next = new Map<string, IssueLawLink>();
+  const validClaimIds = new Set(store.claims.filter(isPublicClaim).map((claim) => claim.id));
+  for (const link of store.issueLawLinks.filter((item) => item.matchBasis === "manual")) {
+    if (!store.issues.some((issue) => issue.id === link.issueId) || !store.lawItems.some((law) => law.id === link.lawItemId)) continue;
+    next.set(`${link.issueId}:${link.lawItemId}`, { ...link, claimIds: uniqueStrings(link.claimIds.filter((id) => validClaimIds.has(id))) });
+  }
+
+  for (const law of store.lawItems) {
+    for (const issue of store.issues) {
+      const match = matchLawToIssue(store, law, issue);
+      if (!match) continue;
+      const key = `${issue.id}:${law.id}`;
+      const existing = next.get(key);
+      next.set(key, {
+        issueId: issue.id,
+        lawItemId: law.id,
+        matchBasis: existing?.matchBasis === "manual" ? "manual" : match.matchBasis,
+        confidence: higherConfidence(existing?.confidence, match.confidence),
+        claimIds: uniqueStrings([...(existing?.claimIds ?? []), ...match.claimIds.filter((id) => validClaimIds.has(id))])
+      });
+    }
+  }
+  store.issueLawLinks = [...next.values()];
+}
+
+function matchLawToIssue(
+  store: Store,
+  law: LawItem,
+  issue: Issue
+): { matchBasis: IssueLawLink["matchBasis"]; confidence: IssueLawLink["confidence"]; claimIds: string[] } | undefined {
+  const directText = normalizeSearchText(`${issue.title} ${issue.topicTags.join(" ")}`);
+  const claims = publicClaimsForIssueIds(store, new Set([issue.id]));
+  const claimMatches = (term: string) => claims.filter((claim) => normalizeSearchText(claim.normalizedStatement).includes(term)).map((claim) => claim.id);
+  for (const { term, matchBasis } of lawSearchTerms(law)) {
+    const normalizedTerm = normalizeSearchText(term);
+    if (normalizedTerm.length < 2) continue;
+    if (directText.includes(normalizedTerm)) return { matchBasis, confidence: "high", claimIds: claimMatches(normalizedTerm) };
+    const claimIds = claimMatches(normalizedTerm);
+    if (claimIds.length > 0) return { matchBasis, confidence: "medium", claimIds };
+  }
+  return undefined;
+}
+
+function lawSearchTerms(law: LawItem): Array<{ term: string; matchBasis: IssueLawLink["matchBasis"] }> {
+  return [
+    ...law.keywords.map((term) => ({ term, matchBasis: "keyword" as const })),
+    { term: law.lawName, matchBasis: "law_name" as const },
+    ...(law.billTitle ? [{ term: law.billTitle, matchBasis: "bill_title" as const }] : [])
+  ];
+}
+
+function higherConfidence(left: IssueLawLink["confidence"] | undefined, right: IssueLawLink["confidence"]): IssueLawLink["confidence"] {
+  const rank = { low: 0, medium: 1, high: 2 };
+  return left && rank[left] > rank[right] ? left : right;
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values)];
+}
+
+function normalizeSearchText(value: string): string {
+  return value.normalize("NFKC").toLowerCase().replace(/\s+/g, "");
+}
+
+function readLawItem(data: Record<string, unknown>): LawItem {
+  const source = readLawSource(data);
+  const lawName = readString(data, "lawName");
+  const billTitle = readOptionalString(data, "billTitle");
+  return {
+    id: readOptionalString(data, "id") ?? lawIdForInput(source, data, lawName, billTitle),
+    source,
+    lawName,
+    billTitle,
+    stage: readString(data, "stage"),
+    statusDate: readOptionalDate(data, "statusDate"),
+    effectiveDate: readOptionalDate(data, "effectiveDate"),
+    assemblyBillId: readOptionalString(data, "assemblyBillId"),
+    lawId: readOptionalString(data, "lawId"),
+    summary: readOptionalString(data, "summary"),
+    officialUrl: readOptionalString(data, "officialUrl"),
+    keywords: readLawKeywords(data, lawName, billTitle)
+  };
+}
+
+function lawIdForInput(source: LawItem["source"], data: Record<string, unknown>, lawName: string, billTitle: string | undefined): string {
+  const basis = [source, readOptionalString(data, "assemblyBillId"), readOptionalString(data, "lawId"), lawName, billTitle].filter(Boolean).join("|");
+  return `law_${createHash("sha1").update(basis).digest("hex").slice(0, 16)}`;
+}
+
+function readLawSource(data: Record<string, unknown>): LawItem["source"] {
+  const value = data.source;
+  if (value === "assembly_bill" || value === "law_effective") return value;
+  throw new ApiError(400, "source_invalid");
+}
+
+function readLawKeywords(data: Record<string, unknown>, lawName: string, billTitle: string | undefined): string[] {
+  const keywords = new Set([lawName, ...(billTitle ? [billTitle] : [])]);
+  const value = data.keywords;
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (typeof item === "string" && item.trim().length > 0) keywords.add(item.trim());
+    }
+  }
+  return [...keywords].slice(0, 12);
+}
+
+function addClaim(
+  store: Store,
+  input: Omit<Claim, "id" | "createdAt" | "occurredAt" | "observedAt" | "disputedByClaimIds">,
+  options: { attach?: boolean } = {}
+): Claim {
+  assertTargetExists(store, input.targetType, input.targetId);
+  const claim: Claim = {
+    id: randomUUID(),
+    createdAt: new Date(),
+    disputedByClaimIds: [],
+    ...input
+  };
+  store.claims.push(claim);
+  if (options.attach !== false) attachClaim(store, input.targetType, input.targetId, claim.id);
+  return claim;
+}
+
+function attachClaim(store: Store, targetType: TargetType, targetId: string, claimId: string): void {
+  const target = targetRecord(store, targetType, targetId);
+  if (!target) return;
+  if ("claimIds" in target && !target.claimIds.includes(claimId)) target.claimIds.push(claimId);
+  if (targetType === "transit_occurrence" && !(target as TransitOccurrence).serviceStatusClaimIds.includes(claimId)) {
+    (target as TransitOccurrence).serviceStatusClaimIds.push(claimId);
+  }
+  if (targetType === "crowd_density_signal" && !(target as CrowdDensitySignal).flowDirectionClaimIds.includes(claimId)) {
+    (target as CrowdDensitySignal).flowDirectionClaimIds.push(claimId);
+  }
+}
+
+function attachEvidence(store: Store, targetType: TargetType, targetId: string, evidenceId: string): void {
+  const target = targetRecord(store, targetType, targetId);
+  if (target && "evidenceIds" in target && !target.evidenceIds.includes(evidenceId)) target.evidenceIds.push(evidenceId);
+}
+
+function setClaimVisibility(store: Store, claim: Claim, visibility: NonNullable<Claim["visibility"]>): void {
+  claim.visibility = visibility;
+  if (visibility === "public") {
+    attachClaim(store, claim.targetType, claim.targetId, claim.id);
+    for (const evidenceId of claim.evidenceIds) attachEvidence(store, claim.targetType, claim.targetId, evidenceId);
+    if (claim.reviewTargetClaimId && claim.fieldVerification && claim.fieldVerification !== "field_aligned") {
+      const reviewed = store.claims.find((item) => item.id === claim.reviewTargetClaimId);
+      if (reviewed && !reviewed.disputedByClaimIds.includes(claim.id)) reviewed.disputedByClaimIds.push(claim.id);
+    }
+    return;
+  }
+
+  for (const reviewed of store.claims) reviewed.disputedByClaimIds = reviewed.disputedByClaimIds.filter((id) => id !== claim.id);
+
+  const target = targetRecord(store, claim.targetType, claim.targetId);
+  if (!target) return;
+  if ("claimIds" in target) target.claimIds = target.claimIds.filter((id) => id !== claim.id);
+  if ("evidenceIds" in target) target.evidenceIds = target.evidenceIds.filter((id) => !claim.evidenceIds.includes(id));
+  if (claim.targetType === "transit_occurrence") {
+    const transit = target as TransitOccurrence;
+    transit.delayClaimIds = transit.delayClaimIds.filter((id) => id !== claim.id);
+    transit.serviceStatusClaimIds = transit.serviceStatusClaimIds.filter((id) => id !== claim.id);
+  }
+  if (claim.targetType === "crowd_density_signal") {
+    const crowd = target as CrowdDensitySignal;
+    crowd.flowDirectionClaimIds = crowd.flowDirectionClaimIds.filter((id) => id !== claim.id);
+    crowd.emergencySignalClaimIds = crowd.emergencySignalClaimIds.filter((id) => id !== claim.id);
+  }
+}
+
+function audit(store: Store, action: AuditLog["action"], targetType: AuditLog["targetType"], targetId: string, reason: string): void {
+  store.auditLogs.push({
+    id: randomUUID(),
+    action,
+    targetType,
+    targetId,
+    createdAt: new Date(),
+    reason
+  });
+  store.transparencyLogs.push({
+    id: randomUUID(),
+    action,
+    targetType,
+    targetId,
+    createdAt: new Date(),
+    publicReason: reason
+  });
+}
+
+function rememberReport(store: Store, userId: string | undefined, reportType: ReportRecord["reportType"], targetType: TargetType, targetId: string, claimId: string): void {
+  store.reports.push({
+    id: randomUUID(),
+    userId,
+    reportType,
+    targetType,
+    targetId,
+    claimId,
+    createdAt: new Date()
+  });
+}
+
+function queueNotifications(store: Store, notificationType: NotificationOutbox["notificationType"], targetType: TargetType, targetId: string, title: string, body: string): void {
+  if (!shouldNotify(notificationType)) return;
+  const now = new Date();
+  for (const subscription of store.subscriptions.filter((item) => item.targetType === targetType && item.targetId === targetId)) {
+    if (!allowsNotificationForSubscription(subscription, notificationType, now)) continue;
+    const dedupeKey = `${subscription.userId}:${targetType}:${targetId}:${notificationType}`;
+    if (hasRecentNotification(store, dedupeKey, now)) continue;
+    store.notificationOutbox.push({
+      id: randomUUID(),
+      userId: subscription.userId,
+      targetType,
+      targetId,
+      notificationType,
+      dedupeKey,
+      title,
+      body,
+      uncertaintyLabel: "evidence_aligned",
+      scheduledFor: now,
+      status: "pending"
+    });
+  }
+}
+
+function allowsNotificationForSubscription(
+  subscription: Subscription,
+  notificationType: NotificationOutbox["notificationType"],
+  now: Date
+): boolean {
+  if (subscription.mutedUntil && subscription.mutedUntil > now) return false;
+  if (subscription.alertTypes.length > 0 && !subscription.alertTypes.includes(notificationType)) return false;
+  if (subscription.alertLevel === "all") return true;
+  if (subscription.alertLevel === "normal") return notificationType !== "correction_reflected" && notificationType !== "rebuttal_added";
+  return notificationType === "state_changed" || notificationType === "transit_impact_changed";
+}
+
+function hasRecentNotification(store: Store, dedupeKey: string, now: Date): boolean {
+  return store.notificationOutbox.some((item) => {
+    if (item.dedupeKey !== dedupeKey) return false;
+    if (item.status === "pending") return true;
+    const sentOrScheduledAt = item.sentAt ?? item.scheduledFor;
+    return now.getTime() - sentOrScheduledAt.getTime() < notificationCooldownMs;
+  });
+}
+
+function assertTargetExists(store: Store, targetType: TargetType, targetId: string): void {
+  if (!targetRecord(store, targetType, targetId)) throw new ApiError(404, "target_not_found");
+}
+
+type TargetRecord =
+  | Issue
+  | Occurrence
+  | ContinuousPresence
+  | TransitOccurrence
+  | CrowdDensitySignal
+  | RouteSegment
+  | RouteCheckpoint;
+
+function targetRecord(store: Store, targetType: TargetType, targetId: string): TargetRecord | undefined {
+  if (targetType === "issue") return store.issues.find((item) => item.id === targetId);
+  if (targetType === "occurrence") return store.occurrences.find((item) => item.id === targetId);
+  if (targetType === "continuous_presence") return store.continuousPresences.find((item) => item.id === targetId);
+  if (targetType === "transit_occurrence") return store.transitOccurrences.find((item) => item.id === targetId);
+  if (targetType === "crowd_density_signal") return store.crowdDensitySignals.find((item) => item.id === targetId);
+  if (targetType === "route_segment") return store.routeSegments.find((item) => item.id === targetId);
+  return store.routeCheckpoints.find((item) => item.id === targetId);
+}
+
+function toPublicIssue(issue: Issue) {
+  return {
+    id: issue.id,
+    title: issue.title,
+    topicTags: issue.topicTags,
+    status: issue.status,
+    firstSeenAt: issue.firstSeenAt.toISOString(),
+    lastUpdatedAt: issue.lastUpdatedAt.toISOString()
+  };
+}
+
+function toPublicAreaCluster(cluster: AreaCluster) {
+  return {
+    id: cluster.id,
+    label: cluster.label,
+    regionLabel: cluster.regionLabel,
+    targetCount: cluster.targetRefs.length
+  };
+}
+
+function toPublicOccurrence(occurrence: Occurrence, claims?: Claim[]) {
+  const counts = claims ? publicCounts(claims) : { claimCount: occurrence.claimIds.length, evidenceCount: occurrence.evidenceIds.length };
+  return {
+    id: occurrence.id,
+    issueId: occurrence.issueId,
+    type: occurrence.type,
+    regionLabel: occurrence.regionLabel,
+    title: occurrence.title,
+    lifecycleState: occurrence.lifecycleState,
+    startsAt: occurrence.startsAt?.toISOString(),
+    endsAt: occurrence.endsAt?.toISOString(),
+    claimCount: counts.claimCount,
+    evidenceCount: counts.evidenceCount
+  };
+}
+
+function toPublicCrowdEstimate(estimate: CrowdEstimate) {
+  const claim = {
+    id: `claim_${estimate.id}`,
+    sourceProvenance: "musunil_ai_estimate" as const,
+    claimantLabel: "무슨일 자동 규모 추정",
+    normalizedStatement: `${estimate.minCount}~${estimate.maxCount}명 범위의 자동 규모 추정 Claim입니다.`,
+    evidenceStrength: crowdEstimateEvidenceStrength(estimate.method),
+    riskLevel: "misleading_possible" as const
+  };
+  return {
+    id: estimate.id,
+    targetType: estimate.targetType,
+    targetId: estimate.targetId,
+    observedAt: estimate.observedAt.toISOString(),
+    minCount: estimate.minCount,
+    maxCount: estimate.maxCount,
+    confidence: estimate.confidence,
+    method: estimate.method,
+    evidenceCount: estimate.evidenceCount,
+    independentViewpointCount: estimate.independentViewpointCount,
+    claim,
+    generated: estimate.id.startsWith("derived_"),
+    limitations: estimate.limitations
+  };
+}
+
+function crowdEstimateEvidenceStrength(method: CrowdEstimate["method"]): EvidenceStrength {
+  if (method === "hybrid") return "independent_sources_with_field_evidence";
+  if (method === "proof_of_presence_density") return "multiple_proof_of_presence";
+  return "single_source";
+}
+
+function targetRegionLabel(store: Store, targetType: TargetType, target: TargetRecord): string | undefined {
+  if ("regionLabel" in target && typeof target.regionLabel === "string") return target.regionLabel;
+  if ("areaClusterId" in target && typeof target.areaClusterId === "string") return store.areaClusters.find((cluster) => cluster.id === target.areaClusterId)?.regionLabel;
+  if (targetType === "transit_occurrence") {
+    const transit = target as TransitOccurrence;
+    if (transit.lineId.includes("부산")) return "부산";
+    if (transit.lineId.includes("서울")) return "서울";
+  }
+  if ("routeId" in target && typeof target.routeId === "string") {
+    const label = routeDisplayLabel(target.routeId);
+    if (label.includes("부산")) return "부산";
+    if (label.includes("서울")) return "서울";
+  }
+  return undefined;
+}
+
+function targetLifecycle(target: TargetRecord): string {
+  if ("lifecycleState" in target) return target.lifecycleState;
+  if ("state" in target) return target.state;
+  return "UNKNOWN";
+}
+
+function targetUpdatedAt(target: TargetRecord): Date | undefined {
+  if ("startsAt" in target) return target.startsAt;
+  if ("lastProofOfPresenceAt" in target) return target.lastProofOfPresenceAt;
+  return undefined;
+}
+
+function toPublicTarget(targetType: TargetType, target: TargetRecord, claims: Claim[]) {
+  const counts = publicCounts(claims);
+  if (targetType === "issue") return toPublicIssue(target as Issue);
+  if (targetType === "occurrence") return toPublicOccurrence(target as Occurrence, claims);
+  if (targetType === "continuous_presence") {
+    const item = target as ContinuousPresence;
+    return {
+      id: item.id,
+      issueId: item.issueId,
+      campaignId: item.campaignId,
+      areaClusterId: item.areaClusterId,
+      regionLabel: item.regionLabel,
+      presenceType: item.presenceType,
+      firstProofOfPresenceAt: item.firstProofOfPresenceAt?.toISOString(),
+      lastProofOfPresenceAt: item.lastProofOfPresenceAt?.toISOString(),
+      state: item.state,
+      ...counts
+    };
+  }
+  if (targetType === "transit_occurrence") {
+    const item = target as TransitOccurrence;
+    return {
+      id: item.id,
+      issueId: item.issueId,
+      lineId: item.lineId,
+      stationIds: item.stationIds,
+      direction: item.direction,
+      state: item.state,
+      ...counts
+    };
+  }
+  if (targetType === "crowd_density_signal") {
+    const item = target as CrowdDensitySignal;
+    return {
+      id: item.id,
+      issueId: item.issueId,
+      areaClusterId: item.areaClusterId,
+      densityLevel: item.densityLevel,
+      bottleneckFlag: item.bottleneckFlag,
+      ...counts
+    };
+  }
+  if (targetType === "route_segment") {
+    const item = target as RouteSegment;
+    return {
+      id: item.id,
+      issueId: item.issueId,
+      routeId: item.routeId,
+      verification: item.verification,
+      ...counts
+    };
+  }
+  const item = target as RouteCheckpoint;
+  return {
+    id: item.id,
+    issueId: item.issueId,
+    routeId: item.routeId,
+    checkpointType: item.checkpointType,
+    passableStatus: item.passableStatus,
+    ...counts
+  };
+}
+
+function liveClaimsForTarget(store: Store, targetType: TargetType, targetId: string): Claim[] {
+  return sortLiveClaims(store, publicClaimsForTarget(store, targetType, targetId).filter((claim) => hasPublicLiveEvidence(store, claim)));
+}
+
+function liveClaimsForIssue(store: Store, issueId: string): Claim[] {
+  const targetKeys = new Set([
+    `issue:${issueId}`,
+    ...issueTargets(store, issueId).map(({ targetType, target }) => `${targetType}:${target.id}`)
+  ]);
+  return sortLiveClaims(
+    store,
+    store.claims.filter((claim) => isPublicClaim(claim) && targetKeys.has(`${claim.targetType}:${claim.targetId}`) && hasPublicLiveEvidence(store, claim))
+  );
+}
+
+function sortLiveClaims(store: Store, claims: Claim[]): Claim[] {
+  return [...claims].sort((a, b) => liveClaimObservedAt(store, b).getTime() - liveClaimObservedAt(store, a).getTime());
+}
+
+function liveClaimObservedAt(store: Store, claim: Claim): Date {
+  const evidence = claim.evidenceIds
+    .map((id) => store.evidence.find((item) => item.id === id))
+    .find((item) => item?.evidenceType === "live_media");
+  return evidence?.capturedAt ?? evidence?.uploadedAt ?? claim.createdAt;
+}
+
+function hasPublicLiveEvidence(store: Store, claim: Claim): boolean {
+  return claim.evidenceIds
+    .map((id) => store.evidence.find((evidence) => evidence.id === id))
+    .some(hasPublishableLiveEvidence);
+}
+
+type CompletedRedactionEvidence = Evidence & {
+  evidenceType: "live_media";
+  proofOfPresenceStatus: "pass";
+  redactionStatus: "completed";
+  redactionProofHash: string;
+  publicStorageKey: string;
+};
+
+type TrustedDeviceEvidence = Evidence & {
+  deviceIntegrityStatus: "pass";
+  deviceIntegrityProvider: NonNullable<Evidence["deviceIntegrityProvider"]>;
+  deviceIntegrityProofHash: string;
+};
+
+type PublishableLiveEvidence = CompletedRedactionEvidence & TrustedDeviceEvidence;
+
+function hasCompletedRedaction(evidence: Evidence | undefined): evidence is CompletedRedactionEvidence {
+  return (
+    evidence?.evidenceType === "live_media" &&
+    evidence.proofOfPresenceStatus === "pass" &&
+    evidence.redactionStatus === "completed" &&
+    Boolean(evidence.redactionProofHash) &&
+    Boolean(publicMediaUrl(evidence.publicStorageKey))
+  );
+}
+
+function hasTrustedDeviceIntegrity(evidence: Evidence | undefined): evidence is TrustedDeviceEvidence {
+  return evidence?.deviceIntegrityStatus === "pass" && Boolean(evidence.deviceIntegrityProvider) && Boolean(evidence.deviceIntegrityProofHash);
+}
+
+function hasPublishableLiveEvidence(evidence: Evidence | undefined): evidence is PublishableLiveEvidence {
+  return hasCompletedRedaction(evidence) && hasTrustedDeviceIntegrity(evidence);
+}
+
+function toPublicLiveClaim(store: Store, claim: Claim) {
+  const evidence = claim.evidenceIds
+    .map((id) => store.evidence.find((item) => item.id === id))
+    .find(hasPublishableLiveEvidence);
+  const target = targetRecord(store, claim.targetType, claim.targetId);
+  return {
+    targetType: claim.targetType,
+    targetId: claim.targetId,
+    targetTitle: target ? targetTitle(claim.targetType, target) : "공개 대상",
+    regionLabel: target ? targetRegionLabel(store, claim.targetType, target) : undefined,
+    claim: toPublicClaim(claim),
+    capturedAt: evidence?.capturedAt?.toISOString(),
+    uploadedAt: evidence?.uploadedAt.toISOString(),
+    durationMs: evidence?.durationMs,
+    publicRadiusM: evidence?.publicRadiusM,
+    proofOfPresenceStatus: evidence?.proofOfPresenceStatus ?? "unknown",
+    redactionStatus: evidence?.redactionStatus ?? "pending",
+    media: { redactedClipUrl: publicMediaUrl(evidence?.publicStorageKey) },
+    fieldVerification: fieldVerificationSummary(store, claim.id)
+  };
+}
+
+function publicMediaUrl(publicStorageKey: string | undefined): string | undefined {
+  if (!publicStorageKey) return undefined;
+  if (publicStorageKey.startsWith("/media/redacted/") && !publicStorageKey.includes("..")) return publicStorageKey;
+  try {
+    const url = new URL(publicStorageKey);
+    if (url.protocol === "https:" && !url.username && !url.password && !url.pathname.includes("/private/")) return url.toString();
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
+
+function fieldVerificationSummary(store: Store, claimId: string) {
+  const reviews = store.claims.filter((claim) => isPublicClaim(claim) && claim.reviewTargetClaimId === claimId);
+  const aligned = reviews.filter((claim) => claim.fieldVerification === "field_aligned").length;
+  const disputed = reviews.filter((claim) => claim.fieldVerification === "different_place_possible" || claim.fieldVerification === "context_insufficient").length;
+  return {
+    aligned,
+    disputed,
+    statusLabel: disputed > 0 ? "현장 이견 있음" : aligned > 0 ? "현장 일치 Claim 있음" : "현장 판단 대기"
+  };
+}
+
+function publicCounts(claims: Claim[]) {
+  return {
+    claimCount: claims.length,
+    evidenceCount: new Set(claims.flatMap((claim) => claim.evidenceIds)).size
+  };
+}
+
+function toPublicClaim(claim: Claim) {
+  return {
+    id: claim.id,
+    visibility: claim.visibility ?? "public",
+    targetType: claim.targetType,
+    targetId: claim.targetId,
+    sourceProvenance: claim.sourceProvenance,
+    claimantLabel: claim.claimantLabel,
+    normalizedStatement: claim.normalizedStatement,
+    evidenceStrength: claim.evidenceStrength,
+    riskLevel: claim.riskLevel,
+    createdAt: claim.createdAt.toISOString(),
+    evidenceCount: claim.evidenceIds.length,
+    disputedCount: claim.disputedByClaimIds.length
+  };
+}
+
+function isPublicClaim(claim: Claim): boolean {
+  return claim.visibility !== "held_private";
+}
+
+function publicClaimsForTarget(store: Store, targetType: TargetType, targetId: string): Claim[] {
+  return store.claims.filter((claim) => isPublicClaim(claim) && claim.targetType === targetType && claim.targetId === targetId);
+}
+
+function chipsForClaims(claims: Claim[]): string[] {
+  const chips = new Set<string>();
+  if (claims.some((claim) => claim.sourceProvenance === "government_or_police")) chips.add("공식 발표 있음");
+  if (claims.some((claim) => claim.sourceProvenance === "media_report")) chips.add("언론 보도 있음");
+  if (claims.some((claim) => claim.sourceProvenance === "verified_citizen_report")) chips.add("위치 인증 제보 있음");
+  if (new Set(claims.map((claim) => claim.sourceProvenance)).size > 1) chips.add("여러 주장 있음");
+  return [...chips].slice(0, 3);
+}
+
+function sourceSummaryForClaims(claims: Claim[]) {
+  return {
+    official: claims.filter((claim) => claim.sourceProvenance === "government_or_police").length,
+    media: claims.filter((claim) => claim.sourceProvenance === "media_report").length,
+    field: claims.filter((claim) => claim.sourceProvenance === "verified_citizen_report" || claim.sourceProvenance === "material_report").length,
+    estimate: claims.filter((claim) => claim.sourceProvenance === "musunil_ai_estimate").length
+  };
+}
+
+function maxEvidenceStrengthScore(claims: Claim[]): number {
+  return Math.max(0, ...claims.map((claim) => evidenceStrengths.indexOf(claim.evidenceStrength)));
+}
+
+function latestDate(dates: Array<Date | undefined>): Date | undefined {
+  const timestamps = dates.filter((date): date is Date => date instanceof Date).map((date) => date.getTime());
+  if (timestamps.length === 0) return undefined;
+  return new Date(Math.max(...timestamps));
+}
+
+function earliestDate(dates: Array<Date | undefined>): Date | undefined {
+  const timestamps = dates.filter((date): date is Date => date instanceof Date).map((date) => date.getTime());
+  if (timestamps.length === 0) return undefined;
+  return new Date(Math.min(...timestamps));
+}
+
+function asObject(body: unknown): Record<string, unknown> {
+  if (!body || typeof body !== "object" || Array.isArray(body)) throw new ApiError(400, "body_must_be_object");
+  return body as Record<string, unknown>;
+}
+
+function readString(data: Record<string, unknown>, key: string): string {
+  const value = data[key];
+  if (typeof value !== "string" || value.length === 0) throw new ApiError(400, `${key}_required`);
+  return value;
+}
+
+function readOptionalString(data: Record<string, unknown>, key: string): string | undefined {
+  const value = data[key];
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function readOptionalStringArray(data: Record<string, unknown>, key: string): string[] {
+  const value = data[key];
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0).map((item) => item.trim()).slice(0, 5);
+}
+
+function readClaimVisibility(data: Record<string, unknown>, key: string): NonNullable<Claim["visibility"]> | undefined {
+  const value = data[key];
+  if (value === undefined) return undefined;
+  if (value === "public" || value === "held_private") return value;
+  throw new ApiError(400, `${key}_invalid`);
+}
+
+function readNumber(data: Record<string, unknown>, key: string): number | undefined {
+  const value = data[key];
+  if (value === undefined) return undefined;
+  if (typeof value !== "number" || Number.isNaN(value)) throw new ApiError(400, `${key}_must_be_number`);
+  return value;
+}
+
+function readDate(data: Record<string, unknown>, key: string, fallback?: Date): Date {
+  const value = data[key];
+  if (value === undefined) {
+    if (fallback) return fallback;
+    throw new ApiError(400, `${key}_required`);
+  }
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) throw new ApiError(400, `${key}_must_be_date`);
+  return date;
+}
+
+function readOptionalDate(data: Record<string, unknown>, key: string): Date | undefined {
+  const value = data[key];
+  if (value === undefined) return undefined;
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) throw new ApiError(400, `${key}_must_be_date`);
+  return date;
+}
+
+function readOccurrenceType(data: Record<string, unknown>, key: string, fallback: Occurrence["type"]): Occurrence["type"] {
+  const value = data[key] ?? fallback;
+  const allowed: ReadonlyArray<Occurrence["type"]> = ["static_assembly", "march", "traffic_control", "policy_site", "counter_assembly", "public_safety"];
+  if (typeof value === "string" && allowed.includes(value as Occurrence["type"])) return value as Occurrence["type"];
+  throw new ApiError(400, `${key}_invalid`);
+}
+
+function readLifecycleState(data: Record<string, unknown>, key: string, fallback: LifecycleState): LifecycleState {
+  const value = data[key] ?? fallback;
+  const allowed: readonly LifecycleState[] = [
+    "UPCOMING",
+    "STARTING_SOON",
+    "LIVE",
+    "PAUSED",
+    "MOVING",
+    "ENDING_SOON",
+    "ENDED",
+    "ARCHIVED",
+    "CANCELED",
+    "POSTPONED",
+    "UNKNOWN",
+    "ONGOING_SERIES"
+  ];
+  if (typeof value === "string" && allowed.includes(value as LifecycleState)) return value as LifecycleState;
+  throw new ApiError(400, `${key}_invalid`);
+}
+
+function readTargetType(data: Record<string, unknown>, key: string, fallback: TargetType): TargetType {
+  const value = data[key] ?? fallback;
+  if (typeof value === "string" && (targetTypes as readonly string[]).includes(value)) return value as TargetType;
+  throw new ApiError(400, `${key}_invalid`);
+}
+
+function readRiskLevel(data: Record<string, unknown>, key: string, fallback: RiskLevel): RiskLevel {
+  const value = data[key] ?? fallback;
+  if (typeof value === "string" && (riskLevels as readonly string[]).includes(value)) return value as RiskLevel;
+  throw new ApiError(400, `${key}_invalid`);
+}
+
+function readEvidenceStrength(data: Record<string, unknown>, key: string, fallback: EvidenceStrength): EvidenceStrength {
+  const value = data[key] ?? fallback;
+  if (typeof value === "string" && (evidenceStrengths as readonly string[]).includes(value)) return value as EvidenceStrength;
+  throw new ApiError(400, `${key}_invalid`);
+}
+
+function readSourceProvenance(data: Record<string, unknown>, key: string, fallback: SourceProvenance): SourceProvenance {
+  const value = data[key] ?? fallback;
+  if (typeof value === "string" && (sourceProvenances as readonly string[]).includes(value)) return value as SourceProvenance;
+  throw new ApiError(400, `${key}_invalid`);
+}
+
+function readFieldVerification(data: Record<string, unknown>): NonNullable<Claim["fieldVerification"]> {
+  const value = data.fieldVerification;
+  if (value === "field_aligned" || value === "different_place_possible" || value === "context_insufficient" || value === "rights_review_needed") return value;
+  throw new ApiError(400, "fieldVerification_invalid");
+}
+
+function fieldVerificationStatement(value: NonNullable<Claim["fieldVerification"]>): string {
+  return (
+    {
+      field_aligned: "현장 인증 사용자가 영상 Claim이 현장과 일치한다고 판단했습니다.",
+      different_place_possible: "현장 인증 사용자가 다른 현장 가능성을 제기했습니다.",
+      context_insufficient: "현장 인증 사용자가 시간·맥락 부족을 제기했습니다.",
+      rights_review_needed: "현장 인증 사용자가 권리 검토 필요성을 제기했습니다."
+    } as const
+  )[value];
+}
+
+function json(status: number, body: unknown): ApiResponse {
+  return { status, body };
+}
+
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code: string;
+
+  constructor(status: number, code: string) {
+    super(code);
+    this.status = status;
+    this.code = code;
+  }
+}

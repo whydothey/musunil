@@ -1,0 +1,10 @@
+{
+  "name": "@musunil/schemas",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --disable-warning=ExperimentalWarning --experimental-strip-types src/self-check.ts"
+  }
+}

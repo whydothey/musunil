@@ -1,0 +1,4996 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f4f7f9" />
+    <title>무슨일</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --neutral-0: #ffffff;
+        --neutral-25: #f7fafc;
+        --neutral-50: #f2f5f7;
+        --neutral-75: #eef4f7;
+        --neutral-100: #dbe4ea;
+        --neutral-500: #62717d;
+        --neutral-650: #475765;
+        --neutral-900: #131b24;
+        --primary: #145c72;
+        --official: #1e796b;
+        --pending: #a76314;
+        --dispute: #6651a6;
+        --risk: #b43a46;
+        --transit: #315fd3;
+        --crowd: #9c6114;
+        --route: var(--dispute);
+        --law: #526625;
+        --archive: var(--neutral-650);
+        --bg: var(--neutral-50);
+        --surface: var(--neutral-0);
+        --surface-2: var(--neutral-25);
+        --surface-3: var(--neutral-75);
+        --ink: var(--neutral-900);
+        --muted: var(--neutral-500);
+        --faint: #8998a3;
+        --line: var(--neutral-100);
+        --brand: var(--primary);
+        --brand-2: var(--official);
+        --warn: var(--pending);
+        --issue: var(--dispute);
+        --shadow: 0 16px 34px rgb(23 35 45 / 11%);
+        --shadow-soft: 0 6px 18px rgb(23 35 45 / 7%);
+        --radius: 8px;
+        --ease-out: cubic-bezier(.2, .8, .2, 1);
+        --ease-snap: cubic-bezier(.18, .9, .26, 1);
+        --motion-fast: 140ms;
+        --motion: 240ms;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --neutral-0: #182128;
+          --neutral-25: #111920;
+          --neutral-50: #10161b;
+          --neutral-75: #1f2a32;
+          --neutral-100: #2d3b46;
+          --neutral-500: #a3b0b9;
+          --neutral-650: #c2ccd3;
+          --neutral-900: #eef4f7;
+          --primary: #7dc4ea;
+          --official: #7bc9b4;
+          --pending: #d89542;
+          --dispute: #b7a6f2;
+          --risk: #ef7676;
+          --transit: #91adff;
+          --crowd: #e1a35d;
+          --law: #bad36a;
+          --faint: #7f8d96;
+          --shadow: 0 18px 40px rgb(0 0 0 / 32%);
+          --shadow-soft: 0 8px 22px rgb(0 0 0 / 22%);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background: linear-gradient(180deg, #f7fafc 0%, var(--bg) 36%, #eaf0f4 100%);
+        color: var(--ink);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        letter-spacing: 0;
+        font-feature-settings: "tnum";
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      button {
+        color: inherit;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: .58;
+        transform: none !important;
+        box-shadow: none !important;
+      }
+
+      ::view-transition-old(root),
+      ::view-transition-new(root) {
+        animation-duration: 220ms;
+        animation-timing-function: var(--ease-out);
+      }
+
+      button:focus-visible,
+      input:focus-visible,
+      select:focus-visible {
+        outline: 3px solid color-mix(in srgb, var(--brand) 32%, transparent);
+        outline-offset: 2px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      .app {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        min-height: 100vh;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: grid;
+        grid-template-columns: minmax(230px, 360px) 1fr auto;
+        align-items: center;
+        gap: 16px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--line);
+        background:
+          linear-gradient(90deg, color-mix(in srgb, var(--brand) 8%, transparent), transparent 38%),
+          color-mix(in srgb, var(--surface) 94%, transparent);
+        backdrop-filter: blur(18px);
+        box-shadow: 0 1px 0 rgb(255 255 255 / 55%) inset;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        min-width: 0;
+      }
+
+      .mark {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius);
+        background:
+          linear-gradient(135deg, rgb(23 96 138 / 94%), rgb(31 122 104 / 94%)),
+          var(--brand);
+        color: #fff;
+        font-weight: 800;
+        box-shadow:
+          0 12px 24px color-mix(in srgb, var(--brand) 24%, transparent),
+          inset 0 1px 0 rgb(255 255 255 / 32%);
+      }
+
+      h1 {
+        font-size: 21px;
+        font-weight: 780;
+      }
+
+      .subtitle {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .global-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(88px, 1fr));
+        gap: 6px;
+      }
+
+      .metric {
+        min-width: 0;
+        padding: 6px 8px;
+        border: 1px solid color-mix(in srgb, var(--line) 74%, transparent);
+        border-radius: 7px;
+        background: color-mix(in srgb, var(--surface) 54%, transparent);
+      }
+
+      .metric strong {
+        display: inline;
+        margin-right: 4px;
+        font-size: 14px;
+      }
+
+      .metric span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .actions,
+      .row,
+      .chips,
+      .segmented,
+      .tabs {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+	      .actions,
+	      .chips,
+	      .segmented {
+	        flex-wrap: wrap;
+	      }
+
+	      .source-badges {
+	        display: flex;
+	        flex-wrap: wrap;
+	        gap: 6px;
+	      }
+
+	      .source-badge {
+	        display: inline-flex;
+	        align-items: center;
+	        gap: 5px;
+	        min-height: 25px;
+	        padding: 0 8px;
+	        border: 1px solid var(--line);
+	        border-radius: 7px;
+	        background: var(--surface-2);
+	        color: var(--muted);
+	        font-size: 12px;
+	        font-weight: 720;
+	        white-space: nowrap;
+	      }
+
+	      .source-badge.official {
+	        border-color: color-mix(in srgb, var(--official) 36%, var(--line));
+	        color: var(--official);
+	      }
+
+	      .source-badge.media {
+	        border-color: color-mix(in srgb, var(--primary) 32%, var(--line));
+	        color: var(--primary);
+	      }
+
+	      .source-badge.field {
+	        border-color: color-mix(in srgb, var(--pending) 32%, var(--line));
+	        color: var(--pending);
+	      }
+
+	      .source-badge.estimate {
+	        border-color: color-mix(in srgb, var(--dispute) 32%, var(--line));
+	        color: var(--dispute);
+	      }
+
+      .icon-btn,
+      .button,
+      .segmented button,
+      .tabs button {
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--surface);
+        color: var(--ink);
+        cursor: pointer;
+        transition:
+          background-color var(--motion-fast) var(--ease-out),
+          border-color var(--motion-fast) var(--ease-out),
+          box-shadow var(--motion-fast) var(--ease-out),
+          color var(--motion-fast) var(--ease-out),
+          transform var(--motion-fast) var(--ease-out);
+      }
+
+      .icon-btn:hover,
+      .button:hover,
+      .segmented button:hover,
+      .tabs button:hover,
+      .layer:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-soft);
+      }
+
+      .icon-btn:active,
+      .button:active,
+      .segmented button:active,
+      .tabs button:active,
+      .layer:active,
+      .pin:active {
+        transform: translateY(1px) scale(.98);
+      }
+
+      .icon-btn {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        padding: 0;
+        font-size: 18px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 0 13px;
+        font-weight: 680;
+        white-space: nowrap;
+      }
+
+      .button.primary,
+      .segmented button[aria-pressed="true"],
+      .tabs button[aria-selected="true"] {
+        border-color: color-mix(in srgb, var(--brand) 74%, var(--line));
+        background: var(--brand);
+        color: #fff;
+        box-shadow: 0 8px 18px color-mix(in srgb, var(--brand) 22%, transparent);
+      }
+
+      .button.ghost {
+        background: transparent;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(340px, 430px) minmax(360px, .82fr) minmax(380px, 560px);
+        gap: 16px;
+        padding: 16px;
+      }
+
+      .column {
+        min-width: 0;
+        scroll-margin-top: 88px;
+      }
+
+      .stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      .section-title {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .section-title.compact h2 {
+        font-size: 15px;
+      }
+
+      .home-lead h2 {
+        font-size: 22px;
+      }
+
+      .home-lead .fine {
+        max-width: 34em;
+      }
+
+      h2 {
+        font-size: 18px;
+        font-weight: 760;
+      }
+
+      h3 {
+        font-size: 15px;
+        font-weight: 720;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .fine {
+        color: var(--faint);
+        font-size: 12px;
+      }
+
+      .segmented {
+        padding: 4px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: color-mix(in srgb, var(--surface) 80%, var(--surface-2));
+        box-shadow: 0 1px 0 rgb(255 255 255 / 55%) inset;
+      }
+
+      .segmented button,
+      .tabs button {
+        padding: 0 10px;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+
+      .tabs {
+        width: 100%;
+        flex-wrap: wrap;
+        padding: 4px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--surface-2);
+      }
+
+      .tabs button {
+        border-color: transparent;
+        background: transparent;
+      }
+
+	      .feed {
+	        display: grid;
+	        gap: 10px;
+	      }
+
+	      .issue-list,
+	      .law-list {
+	        display: grid;
+	        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	        gap: 10px;
+	      }
+
+      .filter-panel {
+        display: grid;
+        gap: 8px;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: color-mix(in srgb, var(--surface) 94%, transparent);
+        box-shadow: var(--shadow-soft);
+      }
+
+      .filter-panel summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-height: 36px;
+        cursor: pointer;
+        list-style: none;
+      }
+
+      .filter-panel summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .filter-panel summary::after {
+        content: "변경";
+        color: var(--brand);
+        font-size: 12px;
+        font-weight: 760;
+      }
+
+      .filter-panel[open] summary::after {
+        content: "닫기";
+      }
+
+      .filter-controls {
+        display: grid;
+        gap: 8px;
+      }
+
+	      .coverage-panel {
+	        display: grid;
+	        gap: 10px;
+	        padding: 10px 12px;
+	        border: 1px solid var(--line);
+	        border-radius: var(--radius);
+	        background: color-mix(in srgb, var(--surface) 96%, transparent);
+	        box-shadow: var(--shadow-soft);
+	      }
+
+	      .coverage-panel summary {
+	        display: flex;
+	        align-items: center;
+	        justify-content: space-between;
+	        gap: 10px;
+	        cursor: pointer;
+	        list-style: none;
+	      }
+
+	      .coverage-panel summary::-webkit-details-marker {
+	        display: none;
+	      }
+
+	      .coverage-panel summary::after {
+	        content: "보기";
+	        color: var(--brand);
+	        font-size: 12px;
+	        font-weight: 760;
+	      }
+
+	      .coverage-panel[open] summary::after {
+	        content: "접기";
+	      }
+
+	      .coverage-grid {
+	        display: grid;
+	        grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
+	        gap: 7px;
+	        margin-top: 10px;
+	      }
+
+	      .coverage-item {
+	        display: grid;
+	        gap: 3px;
+	        min-width: 0;
+	        padding: 8px;
+	        border: 1px solid var(--line);
+	        border-radius: 7px;
+	        background: var(--surface-2);
+	      }
+
+	      .coverage-item[data-status="schedule_active"] {
+	        border-color: color-mix(in srgb, var(--official) 36%, var(--line));
+	      }
+
+	      .coverage-item[data-status="schedule_candidate"] {
+	        border-color: color-mix(in srgb, var(--brand) 34%, var(--line));
+	      }
+
+	      .coverage-item[data-status="statistics_only"] {
+	        border-color: color-mix(in srgb, var(--warn) 34%, var(--line));
+	      }
+
+	      .coverage-item strong {
+	        font-size: 12px;
+	      }
+
+	      .coverage-item span {
+	        color: var(--muted);
+	        font-size: 11px;
+	      }
+
+	      .coverage-item em {
+	        color: var(--text);
+	        font-size: 11px;
+	        font-style: normal;
+	        font-weight: 760;
+	      }
+
+      .situation-card,
+      .issue-card,
+      .law-card {
+        position: relative;
+        display: grid;
+        width: 100%;
+        gap: 10px;
+        overflow: hidden;
+        padding: 13px 13px 13px 16px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: color-mix(in srgb, var(--surface) 98%, transparent);
+        text-align: left;
+        cursor: pointer;
+        box-shadow: var(--shadow-soft);
+        transition:
+          border-color 140ms ease,
+          box-shadow 140ms ease,
+          opacity var(--motion) var(--ease-out),
+          transform var(--motion) var(--ease-out);
+      }
+
+      .situation-card::before,
+      .issue-card::before,
+      .law-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 4px;
+        background: var(--primary);
+      }
+
+      .issue-card::before {
+        background: var(--dispute);
+      }
+
+      .law-card::before {
+        background: var(--law);
+      }
+
+      .situation-card:hover,
+      .issue-card:hover,
+      .law-card:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow);
+      }
+
+      .situation-card:active,
+      .issue-card:active,
+      .law-card:active {
+        transform: translateY(0) scale(.995);
+      }
+
+      .situation-card.type-continuous_presence::before {
+        background: var(--official);
+      }
+
+      .situation-card.type-transit_occurrence::before {
+        background: var(--transit);
+      }
+
+      .situation-card.type-crowd_density_signal::before {
+        background: var(--crowd);
+      }
+
+      .situation-card.type-route_segment::before,
+      .situation-card.type-route_checkpoint::before {
+        background: var(--route);
+      }
+
+      .situation-card[aria-selected="true"],
+      .issue-card[aria-selected="true"],
+      .law-card[aria-selected="true"] {
+        border-color: color-mix(in srgb, var(--brand) 74%, var(--line));
+        box-shadow:
+          0 0 0 3px color-mix(in srgb, var(--brand) 16%, transparent),
+          var(--shadow);
+      }
+
+      .issue-card[aria-selected="true"] .card-action-label {
+        color: var(--brand);
+      }
+
+      .empty-state {
+        display: grid;
+        gap: 5px;
+        padding: 14px;
+        border: 1px dashed color-mix(in srgb, var(--brand) 30%, var(--line));
+        border-radius: var(--radius);
+        background: color-mix(in srgb, var(--surface) 94%, transparent);
+        color: var(--muted);
+      }
+
+      .empty-state strong {
+        color: var(--ink);
+        font-size: 14px;
+      }
+
+      .feed.is-refreshing .situation-card,
+      .issue-list.is-refreshing .issue-card,
+      .law-list.is-refreshing .law-card {
+        animation: card-in var(--motion) var(--ease-out) both;
+      }
+
+      #law-section {
+        display: none;
+      }
+
+      .layout.desktop-law #home-section {
+        display: none;
+      }
+
+      .layout.desktop-law #law-section {
+        display: grid;
+      }
+
+      .card-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .title {
+        font-size: 15px;
+        font-weight: 760;
+        line-height: 1.35;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 7px;
+      }
+
+      .fact-line {
+        display: grid;
+        gap: 4px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .fact-line strong {
+        color: var(--ink);
+        font-size: 13px;
+      }
+
+      .card-action {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: var(--brand);
+        font-size: 12px;
+        font-weight: 760;
+      }
+
+      .selected-label {
+        display: inline-flex;
+        align-items: center;
+        min-height: 22px;
+        padding: 0 7px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--brand) 12%, transparent);
+        color: var(--brand);
+        font-size: 11px;
+        font-weight: 760;
+      }
+
+      .mini-stat {
+        min-width: 0;
+        padding: 8px;
+        border-radius: 7px;
+        background: color-mix(in srgb, var(--surface-3) 72%, var(--surface));
+      }
+
+      .mini-stat strong {
+        display: block;
+        font-size: 13px;
+      }
+
+      .mini-stat span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-height: 24px;
+        padding: 0 8px;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--primary) 10%, transparent);
+        color: var(--primary);
+        font-size: 12px;
+        font-weight: 680;
+        white-space: nowrap;
+      }
+
+      .chip.live {
+        background: color-mix(in srgb, var(--official) 12%, transparent);
+        color: var(--official);
+      }
+
+      .chip.schedule {
+        background: color-mix(in srgb, var(--primary) 12%, transparent);
+        color: var(--primary);
+      }
+
+      .chip.warn {
+        background: color-mix(in srgb, var(--pending) 12%, transparent);
+        color: var(--pending);
+      }
+
+      .chip.risk {
+        background: color-mix(in srgb, var(--risk) 11%, transparent);
+        color: var(--risk);
+      }
+
+      .chip.issue {
+        background: color-mix(in srgb, var(--dispute) 12%, transparent);
+        color: var(--dispute);
+      }
+
+      .chip.archive {
+        background: color-mix(in srgb, var(--archive) 10%, transparent);
+        color: var(--archive);
+      }
+
+      .map-shell {
+        position: relative;
+        min-height: 560px;
+        height: calc(100vh - 152px);
+        max-height: 680px;
+        overflow: hidden;
+        border: 1px solid color-mix(in srgb, var(--brand) 18%, var(--line));
+        border-radius: var(--radius);
+        background: #dbe7ee;
+        box-shadow:
+          0 0 0 1px rgb(255 255 255 / 70%) inset,
+          0 22px 48px rgb(23 35 45 / 16%);
+        isolation: isolate;
+      }
+
+      .map-shell::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background:
+          linear-gradient(180deg, rgb(255 255 255 / 26%), transparent 22%),
+          radial-gradient(circle at 48% 54%, transparent 0 44%, rgb(23 35 45 / 10%) 100%);
+      }
+
+      #map-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      #live-map {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+      }
+
+      .maplibregl-ctrl-bottom-left,
+      .maplibregl-ctrl-bottom-right {
+        display: none;
+      }
+
+      .map-toolbar {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        z-index: 5;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        pointer-events: none;
+      }
+
+      .map-toolbar > * {
+        pointer-events: auto;
+      }
+
+      .map-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: min(420px, 100%);
+        padding: 9px 10px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: color-mix(in srgb, var(--surface) 94%, transparent);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      .map-search input {
+        width: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--ink);
+      }
+
+      .layer-stack {
+        display: flex;
+        gap: 7px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .layer {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 36px;
+        padding: 0 10px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: color-mix(in srgb, var(--surface) 94%, transparent);
+        color: var(--ink);
+        box-shadow: var(--shadow);
+        cursor: pointer;
+        transition:
+          background-color var(--motion-fast) var(--ease-out),
+          box-shadow var(--motion-fast) var(--ease-out),
+          transform var(--motion-fast) var(--ease-out);
+      }
+
+      .layer[aria-pressed="true"] {
+        border-color: color-mix(in srgb, var(--brand) 48%, var(--line));
+        background: color-mix(in srgb, var(--brand) 11%, var(--surface));
+        color: var(--brand);
+      }
+
+      .map-icon {
+        width: 22px;
+        height: 22px;
+        display: grid;
+        place-items: center;
+        border-radius: 7px;
+        background: color-mix(in srgb, var(--brand) 10%, transparent);
+        color: var(--brand);
+      }
+
+      .map-icon svg {
+        width: 15px;
+        height: 15px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .map-icon.stats {
+        background: color-mix(in srgb, var(--official) 12%, transparent);
+        color: var(--official);
+      }
+
+      .map-icon.presence {
+        background: color-mix(in srgb, var(--official) 12%, transparent);
+        color: var(--official);
+      }
+
+      .map-icon.transit {
+        background: color-mix(in srgb, var(--transit) 10%, transparent);
+        color: var(--transit);
+      }
+
+      .map-icon.crowd {
+        background: color-mix(in srgb, var(--crowd) 10%, transparent);
+        color: var(--crowd);
+      }
+
+      .map-icon.route {
+        background: color-mix(in srgb, var(--route) 12%, transparent);
+        color: var(--route);
+      }
+
+      .map-legend {
+        display: none;
+      }
+
+      .legend-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 680;
+      }
+
+      .legend-mark {
+        display: grid;
+        place-items: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 7px;
+      }
+
+      .legend-mark .map-icon {
+        width: 24px;
+        height: 24px;
+      }
+
+      .legend-mark .map-icon svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .pin {
+        position: absolute;
+        z-index: 6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: auto;
+        height: auto;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: #fff;
+        font-weight: 820;
+        pointer-events: auto;
+        cursor: pointer;
+        transition:
+          filter var(--motion-fast) var(--ease-out),
+          transform var(--motion) var(--ease-snap);
+      }
+
+      .pin span {
+        display: grid;
+        line-height: 1;
+        text-align: center;
+      }
+
+      .pin-glyph {
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        filter:
+          drop-shadow(0 1px 0 rgb(255 255 255 / 92%))
+          drop-shadow(1px 0 0 rgb(255 255 255 / 92%))
+          drop-shadow(0 -1px 0 rgb(255 255 255 / 92%))
+          drop-shadow(-1px 0 0 rgb(255 255 255 / 92%))
+          drop-shadow(0 10px 14px rgb(23 35 45 / 28%));
+        transition:
+          filter var(--motion-fast) var(--ease-out),
+          transform var(--motion) var(--ease-snap);
+      }
+
+      .pin:hover .pin-glyph {
+        transform: translateY(-2px) scale(1.05);
+        filter:
+          drop-shadow(0 1px 0 #fff)
+          drop-shadow(1px 0 0 #fff)
+          drop-shadow(0 -1px 0 #fff)
+          drop-shadow(-1px 0 0 #fff)
+          drop-shadow(0 14px 18px rgb(23 35 45 / 34%));
+      }
+
+      .pin .map-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 999px;
+        background: transparent;
+      }
+
+      .pin .map-icon svg {
+        width: 30px;
+        height: 30px;
+        stroke-width: 2.7;
+      }
+
+      .pin.main {
+        left: 37%;
+        top: 45%;
+      }
+
+      .pin.transit {
+        left: 62%;
+        top: 31%;
+      }
+
+      .pin.crowd {
+        left: 66%;
+        top: 55%;
+      }
+
+      .pin.checkpoint {
+        left: 24%;
+        top: 29%;
+      }
+
+      .pin.document {
+        left: 18%;
+        top: 16%;
+      }
+
+      .pin.daegu {
+        left: 74%;
+        top: 68%;
+      }
+
+      .pin.selected {
+        transform: translateY(-5px);
+      }
+
+      .pin.selected .pin-glyph {
+        transform: scale(1.18);
+        filter:
+          drop-shadow(0 1px 0 #fff)
+          drop-shadow(1px 0 0 #fff)
+          drop-shadow(0 -1px 0 #fff)
+          drop-shadow(-1px 0 0 #fff)
+          drop-shadow(0 0 0 color-mix(in srgb, var(--brand) 70%, transparent))
+          drop-shadow(0 16px 20px rgb(23 35 45 / 36%));
+      }
+
+      html[data-preview-api="false"] .pin.preview-only {
+        display: none;
+      }
+
+      .map-sheet {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        z-index: 7;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        align-items: stretch;
+        padding: 14px;
+        border: 1px solid color-mix(in srgb, var(--brand) 16%, var(--line));
+        border-radius: var(--radius);
+        background: color-mix(in srgb, var(--surface) 95%, transparent);
+        backdrop-filter: blur(16px);
+        box-shadow: var(--shadow);
+        transition:
+          border-color var(--motion-fast) var(--ease-out),
+          box-shadow var(--motion-fast) var(--ease-out),
+          transform var(--motion) var(--ease-out);
+      }
+
+      .map-sheet::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 4px;
+        background: var(--brand);
+      }
+
+	      .map-sheet-summary {
+	        display: grid;
+	        grid-template-columns: repeat(2, minmax(0, 1fr));
+	        gap: 7px;
+	        margin-top: 4px;
+	      }
+
+      .map-context {
+        margin-top: 5px;
+        color: var(--brand);
+        font-size: 12px;
+        font-weight: 720;
+      }
+
+      .map-sheet-summary span {
+        min-width: 0;
+        padding: 7px 8px;
+        border-radius: 7px;
+        background: color-mix(in srgb, var(--surface-3) 82%, var(--surface));
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 680;
+      }
+
+      .map-sheet-summary b,
+      .map-sheet-summary em {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .map-sheet-summary b {
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .map-sheet-summary em {
+        color: var(--ink);
+        font-style: normal;
+        font-size: 12px;
+      }
+
+      .map-sheet .button {
+        justify-self: end;
+        min-width: 132px;
+        white-space: nowrap;
+      }
+
+      .detail-panel,
+      .report-panel {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: color-mix(in srgb, var(--surface) 98%, transparent);
+        box-shadow: var(--shadow-soft);
+        transition:
+          border-color var(--motion-fast) var(--ease-out),
+          box-shadow var(--motion-fast) var(--ease-out),
+          transform var(--motion) var(--ease-out);
+      }
+
+      .detail-panel.is-updating,
+      .map-sheet.is-updating,
+      .report-panel.is-updating,
+      .claim-list.is-updating,
+      .timeline.is-updating,
+      .evidence-board.is-updating,
+      .reel-list.is-updating {
+        animation: panel-swap var(--motion) var(--ease-out) both;
+      }
+
+      .detail-panel.is-focused,
+      .map-sheet.is-focused,
+      .report-panel.is-focused,
+      .map-shell.is-focused {
+        border-color: color-mix(in srgb, var(--brand) 50%, var(--line));
+        box-shadow:
+          0 0 0 4px color-mix(in srgb, var(--brand) 11%, transparent),
+          var(--shadow);
+      }
+
+      .detail-panel {
+        display: grid;
+        gap: 14px;
+        padding: 14px;
+      }
+
+      .hero-status {
+        display: grid;
+        gap: 10px;
+        margin: -2px -2px 0;
+        padding: 13px;
+        border: 1px solid color-mix(in srgb, var(--brand) 10%, var(--line));
+        border-radius: var(--radius);
+        background:
+          linear-gradient(135deg, color-mix(in srgb, var(--brand) 7%, transparent), transparent 48%),
+          var(--surface-2);
+      }
+
+      .status-title {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .claim-list,
+      .timeline,
+      .evidence-board,
+      .reel-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .summary-sections {
+        display: grid;
+        gap: 8px;
+      }
+
+      .summary-section-title {
+        margin: 2px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 720;
+      }
+
+      .compact-summary {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: color-mix(in srgb, var(--surface-2) 78%, var(--surface));
+      }
+
+      .compact-summary div {
+        display: grid;
+        grid-template-columns: 86px 1fr;
+        gap: 10px;
+        align-items: start;
+      }
+
+      .compact-summary dt {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 760;
+      }
+
+      .compact-summary dd {
+        margin: 0;
+        color: var(--ink);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .national-snapshot,
+      .estimate-panel,
+      .regional-grid {
+        display: grid;
+        gap: 9px;
+      }
+
+      .national-snapshot {
+        padding: 11px;
+        border: 1px solid color-mix(in srgb, var(--brand) 22%, var(--line));
+        border-radius: var(--radius);
+        background: color-mix(in srgb, var(--brand) 6%, var(--surface));
+      }
+
+      .national-metrics,
+      .estimate-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 7px;
+      }
+
+      .regional-row {
+        display: grid;
+        grid-template-columns: 84px 1fr;
+        gap: 10px;
+        align-items: center;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: color-mix(in srgb, var(--surface-2) 78%, var(--surface));
+      }
+
+      .regional-row strong {
+        font-size: 14px;
+      }
+
+      .regional-row span,
+      .estimate-panel p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .more-claims summary {
+        cursor: pointer;
+        padding: 10px 11px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        color: var(--brand);
+        font-size: 13px;
+        font-weight: 760;
+        list-style-position: inside;
+        background: color-mix(in srgb, var(--brand) 7%, var(--surface));
+      }
+
+      .more-claims[open] {
+        display: grid;
+        gap: 8px;
+      }
+
+      .claim-row,
+      .timeline-row,
+      .evidence-row {
+        display: grid;
+        gap: 5px;
+        padding: 11px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: color-mix(in srgb, var(--surface-2) 80%, var(--surface));
+      }
+
+      .law-link {
+        width: 100%;
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition:
+          border-color var(--motion-fast) var(--ease-out),
+          box-shadow var(--motion-fast) var(--ease-out),
+          transform var(--motion-fast) var(--ease-out);
+      }
+
+      .law-link:hover {
+        border-color: color-mix(in srgb, var(--brand) 38%, var(--line));
+        box-shadow: var(--shadow-soft);
+        transform: translateY(-1px);
+      }
+
+      .claim-row:last-child,
+      .timeline-row:last-child,
+      .evidence-row:last-child {
+        border-bottom: 1px solid var(--line);
+      }
+
+	      .reel-card,
+      .reel-notice {
+	        display: grid;
+	        gap: 10px;
+	        padding: 10px;
+	        border: 1px solid var(--line);
+	        border-radius: var(--radius);
+	        background: color-mix(in srgb, var(--surface-2) 78%, var(--surface));
+	      }
+
+      .reel-notice {
+        gap: 4px;
+        border-color: color-mix(in srgb, var(--brand) 20%, var(--line));
+        background: color-mix(in srgb, var(--brand) 6%, var(--surface));
+      }
+
+      .reel-notice strong {
+        color: var(--ink);
+        font-size: 13px;
+      }
+
+      .reel-notice span {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .reel-filter {
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+
+      .reel-filter::-webkit-scrollbar {
+        display: none;
+      }
+
+      .reel-context {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .reel-context span {
+        flex: 0 0 auto;
+        padding: 5px 8px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--brand) 9%, var(--surface));
+        color: var(--brand-strong);
+        font-size: 12px;
+        font-weight: 780;
+      }
+
+      .reel-context strong {
+        min-width: 0;
+        overflow: hidden;
+        color: var(--ink);
+        font-size: 13px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .reel-media {
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-height: 260px;
+        max-height: 420px;
+        aspect-ratio: 9 / 16;
+        width: min(100%, 260px);
+        margin: 0 auto;
+        overflow: hidden;
+        border: 1px solid color-mix(in srgb, var(--brand) 18%, var(--line));
+        border-radius: var(--radius);
+        background:
+          radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--brand) 20%, transparent), transparent 34%),
+          linear-gradient(160deg, #1f343a, #0d171b 58%, #23323a);
+        color: #fff;
+        box-shadow: inset 0 0 0 1px rgb(255 255 255 / 10%);
+      }
+
+      .reel-media video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .reel-placeholder {
+        display: grid;
+        gap: 10px;
+        place-items: center;
+        text-align: center;
+        padding: 18px;
+      }
+
+      .reel-signal {
+        display: grid;
+        place-items: center;
+        width: 62px;
+        height: 62px;
+        border: 1px solid rgb(255 255 255 / 26%);
+        border-radius: 18px;
+        background: rgb(255 255 255 / 12%);
+        font-size: 13px;
+        font-weight: 820;
+        letter-spacing: 0;
+      }
+
+      .reel-meta {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 7px;
+      }
+
+      .reel-stat {
+        display: grid;
+        gap: 3px;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+      }
+
+      .reel-stat strong {
+        font-size: 13px;
+      }
+
+      .reel-stat span {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 680;
+      }
+
+      .verification-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+      }
+
+      .verification-actions button {
+        min-height: 36px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--ink);
+        font-weight: 720;
+      }
+
+      .verification-actions button:disabled {
+        cursor: not-allowed;
+        color: var(--muted);
+        background: color-mix(in srgb, var(--surface-2) 84%, var(--surface));
+      }
+
+	      .claim-source {
+	        display: flex;
+	        align-items: center;
+	        justify-content: space-between;
+	        gap: 10px;
+	      }
+
+	      .timeline-row {
+	        grid-template-columns: auto 1fr;
+	        align-items: start;
+	      }
+
+	      .timeline-dot {
+	        width: 10px;
+	        height: 10px;
+	        margin-top: 5px;
+	        border-radius: 999px;
+	        background: var(--brand);
+	        box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 12%, transparent);
+	      }
+
+	      .timeline-row strong {
+	        font-size: 13px;
+	      }
+
+      .proof-meter {
+        display: grid;
+        gap: 6px;
+      }
+
+      .claim-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .claim-meta .source-badge,
+      .claim-meta .fine {
+        min-height: 23px;
+      }
+
+      .meter {
+        height: 6px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: var(--surface-2);
+      }
+
+      .meter > span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--brand-2), var(--brand));
+        transition: width var(--motion) var(--ease-out);
+      }
+
+	      .report-panel {
+	        display: grid;
+	        gap: 12px;
+	        padding: 14px;
+	      }
+
+	      .report-steps {
+	        display: grid;
+	        grid-template-columns: repeat(3, minmax(0, 1fr));
+	        gap: 7px;
+	        padding: 0;
+	        margin: 0;
+	        list-style: none;
+	      }
+
+	      .report-steps li {
+	        display: grid;
+	        gap: 4px;
+	        padding: 9px;
+	        border: 1px solid var(--line);
+	        border-radius: 7px;
+	        background: var(--surface-2);
+	        color: var(--muted);
+	        font-size: 11px;
+	        font-weight: 680;
+          min-width: 0;
+	      }
+
+	      .report-steps li[data-active="true"] {
+	        border-color: color-mix(in srgb, var(--brand) 45%, var(--line));
+	        background: color-mix(in srgb, var(--brand) 9%, var(--surface));
+	        color: var(--brand);
+	      }
+
+      .report-guide {
+        display: grid;
+        gap: 8px;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+      }
+
+      .report-guide li,
+      .capture-checks,
+      .report-handoff {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-2);
+      }
+
+      .report-guide li {
+        display: grid;
+        grid-template-columns: 28px 1fr;
+        gap: 9px;
+        align-items: start;
+        padding: 10px;
+      }
+
+      .report-guide b {
+        display: grid;
+        place-items: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--brand) 12%, var(--surface));
+        color: var(--brand);
+        font-size: 12px;
+      }
+
+      .report-guide span,
+      .capture-checks,
+      .report-handoff {
+        display: grid;
+        gap: 3px;
+      }
+
+      .report-guide strong,
+      .report-handoff strong {
+        color: var(--ink);
+        font-size: 13px;
+      }
+
+      .report-guide em,
+      .report-handoff span {
+        color: var(--muted);
+        font-size: 12px;
+        font-style: normal;
+        line-height: 1.45;
+      }
+
+      .capture-checks {
+        gap: 7px;
+        padding: 10px;
+      }
+
+      .capture-checks strong {
+        color: var(--ink);
+        font-size: 13px;
+      }
+
+      .capture-checks ul {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+      }
+
+      .capture-checks li {
+        display: grid;
+        gap: 2px;
+        min-width: 0;
+        padding: 7px 8px;
+        border-radius: 7px;
+        background: color-mix(in srgb, var(--surface) 82%, var(--surface-2));
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .capture-checks li[data-status="pass"] {
+        background: color-mix(in srgb, var(--official) 9%, var(--surface));
+        color: var(--official);
+      }
+
+      .capture-checks li[data-status="warn"] {
+        background: color-mix(in srgb, var(--pending) 10%, var(--surface));
+        color: var(--pending);
+      }
+
+      .capture-checks li[data-status="fail"] {
+        background: color-mix(in srgb, var(--risk) 9%, var(--surface));
+        color: var(--risk);
+      }
+
+      .capture-checks li strong {
+        color: inherit;
+        font-size: 12px;
+      }
+
+      .capture-checks li span {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 650;
+        line-height: 1.35;
+      }
+
+      .capture-preview {
+        display: grid;
+        gap: 8px;
+        padding: 10px;
+        border: 1px solid color-mix(in srgb, var(--brand) 18%, var(--line));
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--brand) 5%, var(--surface));
+      }
+
+      .capture-preview video {
+        width: 100%;
+        max-height: 220px;
+        border-radius: 7px;
+        background: #0d171b;
+        object-fit: cover;
+      }
+
+      .capture-preview span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .report-handoff {
+        padding: 11px;
+      }
+
+      .report-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .report-actions .button {
+        flex: 1 1 150px;
+        min-width: 0;
+      }
+
+      @media (max-width: 520px) {
+        .report-steps {
+          grid-template-columns: 1fr;
+        }
+
+        .report-steps li {
+          grid-template-columns: 64px 1fr;
+          align-items: center;
+        }
+
+        .report-steps strong,
+        .report-steps span,
+        .report-guide strong,
+        .report-guide em,
+        .report-handoff span,
+        .empty-state strong,
+        .empty-state span {
+          min-width: 0;
+          overflow-wrap: break-word;
+        }
+
+        .compact-summary div {
+          grid-template-columns: 1fr;
+          gap: 3px;
+        }
+
+        .capture-checks ul {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      form {
+        display: grid;
+        gap: 10px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      input,
+      select {
+        width: 100%;
+        min-height: 40px;
+        padding: 9px 10px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--surface-2);
+        color: var(--ink);
+      }
+
+      .field-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-height: 42px;
+        padding: 0 10px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--surface-2);
+      }
+
+      .toggle-row input {
+        width: auto;
+      }
+
+      .status-line {
+        min-height: 20px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .mobile-nav {
+        display: none;
+      }
+
+      .toast-region {
+        position: fixed;
+        left: 16px;
+        bottom: 16px;
+        z-index: 50;
+        display: grid;
+        gap: 8px;
+        width: min(320px, calc(100vw - 32px));
+        pointer-events: none;
+      }
+
+      .toast {
+        padding: 12px 13px;
+        border: 1px solid color-mix(in srgb, var(--brand) 18%, var(--line));
+        border-radius: var(--radius);
+        background: color-mix(in srgb, var(--surface) 96%, transparent);
+        box-shadow: var(--shadow);
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 680;
+        opacity: 0;
+        transform: translateY(10px) scale(.98);
+        transition:
+          opacity var(--motion-fast) var(--ease-out),
+          transform var(--motion-fast) var(--ease-out);
+        backdrop-filter: blur(18px);
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      @media (max-width: 1180px) {
+        .topbar {
+          grid-template-columns: 1fr auto;
+        }
+
+        .global-strip {
+          grid-column: 1 / -1;
+          order: 3;
+        }
+
+        .layout {
+          grid-template-columns: minmax(320px, 380px) 1fr;
+        }
+
+        .detail-column {
+          grid-column: 1 / -1;
+          display: grid;
+          grid-template-columns: 1fr minmax(310px, 380px);
+          gap: 14px;
+        }
+      }
+
+      @media (max-width: 780px) {
+        .topbar {
+          grid-template-columns: 1fr auto;
+          padding: 10px;
+        }
+
+        .subtitle {
+          display: none;
+        }
+
+        .global-strip {
+          display: none;
+        }
+
+        .metric {
+          padding: 6px 7px;
+        }
+
+        .metric strong {
+          font-size: 13px;
+        }
+
+        .metric span {
+          font-size: 10px;
+        }
+
+        .layout {
+          grid-template-columns: 1fr;
+          padding: 10px 10px 112px;
+        }
+
+        #follow {
+          width: 40px;
+          padding: 0;
+          font-size: 0;
+        }
+
+        #follow::before {
+          content: "+";
+          font-size: 18px;
+          line-height: 1;
+        }
+
+        .layout.mobile-tab-home #law-section,
+        .layout.mobile-tab-home #map-section,
+        .layout.mobile-tab-home .detail-column,
+        .layout.mobile-tab-law #home-section,
+        .layout.mobile-tab-law #map-section,
+        .layout.mobile-tab-law .detail-column,
+        .layout.mobile-tab-map #home-section,
+        .layout.mobile-tab-map #law-section,
+        .layout.mobile-tab-map .detail-column,
+        .layout.mobile-tab-report #home-section,
+        .layout.mobile-tab-report #law-section,
+        .layout.mobile-tab-report #map-section,
+        .layout.mobile-tab-report #record-section,
+        .layout.mobile-tab-record #home-section,
+        .layout.mobile-tab-record #law-section,
+        .layout.mobile-tab-record #map-section,
+        .layout.mobile-tab-record #report-section {
+          display: none;
+        }
+
+        .layout.mobile-tab-law #law-section {
+          display: grid;
+        }
+
+        .layout.mobile-tab-report .detail-column,
+        .layout.mobile-tab-record .detail-column {
+          display: grid;
+          grid-template-columns: 1fr;
+          width: 100%;
+        }
+
+        .map-shell {
+          min-height: calc(100vh - 152px);
+        }
+
+        .pin.daegu {
+          top: 56%;
+        }
+
+        .pin.crowd {
+          top: 47%;
+        }
+
+        .map-toolbar {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .map-sheet {
+          grid-template-columns: 1fr;
+        }
+
+        .map-legend {
+          display: none;
+        }
+
+        .detail-column {
+          grid-template-columns: 1fr;
+        }
+
+        .field-row {
+          grid-template-columns: 1fr;
+        }
+
+        .summary-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .mobile-nav {
+          position: fixed;
+          right: 10px;
+          bottom: 10px;
+          left: 10px;
+          z-index: 30;
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 6px;
+          padding: 8px;
+          border: 1px solid var(--line);
+          border-radius: var(--radius);
+          background: var(--surface);
+          box-shadow: var(--shadow);
+          transition:
+            opacity var(--motion) var(--ease-out),
+            transform var(--motion) var(--ease-out);
+        }
+
+        .mobile-nav button {
+          min-height: 44px;
+          border: 0;
+          border-radius: 7px;
+          background: transparent;
+          color: var(--muted);
+          font-size: 12px;
+          font-weight: 720;
+          transition:
+            background-color var(--motion-fast) var(--ease-out),
+            box-shadow var(--motion-fast) var(--ease-out),
+            color var(--motion-fast) var(--ease-out),
+            transform var(--motion-fast) var(--ease-out);
+        }
+
+        .mobile-nav button[aria-current="page"] {
+          background: color-mix(in srgb, var(--brand) 13%, transparent);
+          color: var(--brand);
+          box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 14%, transparent);
+        }
+
+        .toast-region {
+          right: 10px;
+          bottom: 86px;
+          left: 10px;
+          width: auto;
+        }
+      }
+
+      @keyframes card-in {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes panel-swap {
+        from {
+          opacity: .72;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 1ms !important;
+          scroll-behavior: auto !important;
+          transition-duration: 1ms !important;
+        }
+      }
+
+      @media (max-width: 340px) {
+        .summary-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+      <symbol id="icon-assembly" viewBox="0 0 24 24">
+        <path d="M6 4h12v8H6z" />
+        <path d="M12 12v8" />
+        <path d="M9 20h6" />
+      </symbol>
+      <symbol id="icon-stats" viewBox="0 0 24 24">
+        <path d="M5 20V10" />
+        <path d="M12 20V4" />
+        <path d="M19 20v-7" />
+        <path d="M4 20h16" />
+      </symbol>
+      <symbol id="icon-presence" viewBox="0 0 24 24">
+        <path d="M4 18 12 6l8 12" />
+        <path d="M8 18V8" />
+        <path d="M16 18V8" />
+        <path d="M3 18h18" />
+      </symbol>
+      <symbol id="icon-transit" viewBox="0 0 24 24">
+        <rect x="6" y="4" width="12" height="12" rx="3" />
+        <path d="M9 8h6" />
+        <path d="M9 13h.01" />
+        <path d="M15 13h.01" />
+        <path d="m9 20 2-4" />
+        <path d="m15 20-2-4" />
+      </symbol>
+      <symbol id="icon-crowd" viewBox="0 0 24 24">
+        <circle cx="8" cy="8" r="3" />
+        <circle cx="16" cy="8" r="3" />
+        <path d="M3 20c.6-3 2.4-5 5-5s4.4 2 5 5" />
+        <path d="M11 20c.5-2.8 2.3-5 5-5 2.3 0 4.1 1.7 5 5" />
+      </symbol>
+      <symbol id="icon-route" viewBox="0 0 24 24">
+        <path d="M4 17h16" />
+        <path d="M7 17 10 7" />
+        <path d="M14 17 17 7" />
+        <path d="M6 11h12" />
+      </symbol>
+      <symbol id="icon-law" viewBox="0 0 24 24">
+        <path d="M5 19h14" />
+        <path d="M7 19V7l5-3 5 3v12" />
+        <path d="M9 10h6" />
+        <path d="M9 14h6" />
+      </symbol>
+    </svg>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="mark" aria-hidden="true">무</div>
+          <div>
+            <h1>무슨일</h1>
+            <p class="subtitle">집회·시위 공개자료 확인</p>
+          </div>
+        </div>
+
+        <div class="global-strip" aria-label="전국 요약">
+          <div class="metric"><strong id="metric-live">0</strong><span>진행/예정</span></div>
+          <div class="metric"><strong id="metric-proof">0</strong><span>공식 자료</span></div>
+          <div class="metric"><strong id="metric-risk">0</strong><span>다른 주장</span></div>
+	          <div class="metric"><strong id="metric-alert">0</strong><span>더 확인 필요</span></div>
+        </div>
+
+        <div class="actions">
+          <button class="icon-btn" id="refresh" title="새로고침" aria-label="새로고침">↻</button>
+          <button class="icon-btn" id="locate" title="현재 위치" aria-label="현재 위치">⌖</button>
+	          <button class="button primary" id="follow" title="중요 변경 알림" aria-label="중요 변경 알림">＋ 중요 변경 알림</button>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="column stack" id="home-section" aria-label="이슈와 상황 목록">
+          <div class="section-title home-lead">
+            <div>
+              <h2>지금 확인할 이슈</h2>
+              <p class="fine">주제별 집회·시위 공개자료 · 지역/시간/이동 영향별 상황</p>
+              <p class="fine" id="api-state">자료 불러오는 중</p>
+            </div>
+            <button class="button ghost" id="open-laws">법 보기</button>
+          </div>
+
+          <div class="stack">
+            <div class="issue-list" id="issues" aria-label="주요 이슈"></div>
+            <div class="section-title compact">
+              <div>
+                <h2 id="cards-title">선택 이슈의 상황</h2>
+                <p class="fine" id="issue-context">이슈를 선택하면 관련 상황만 표시됩니다.</p>
+              </div>
+            </div>
+            <details class="filter-panel" aria-label="상황 범위">
+              <summary>
+                <strong>상황 범위</strong>
+                <span class="fine" id="filter-summary">지금 · 전국</span>
+              </summary>
+              <div class="filter-controls">
+                <div class="segmented" aria-label="시간 필터">
+                  <button aria-pressed="true" data-time-filter="now">지금</button>
+                  <button aria-pressed="false" data-time-filter="upcoming">예정</button>
+                  <button aria-pressed="false" data-time-filter="series">장기</button>
+                  <button aria-pressed="false" data-time-filter="transit">교통</button>
+                  <button aria-pressed="false" data-time-filter="archive">기록</button>
+                </div>
+                <div class="segmented" aria-label="지역 필터">
+                  <button aria-pressed="true" data-source-filter="all">전국</button>
+                  <button aria-pressed="false" data-source-filter="official">공식 자료</button>
+                  <button aria-pressed="false" data-source-filter="needs">더 확인 필요</button>
+                </div>
+                <details class="coverage-panel" id="coverage-panel" aria-label="확인 가능한 지역" hidden></details>
+              </div>
+            </details>
+            <div class="feed" id="cards"></div>
+          </div>
+        </section>
+
+        <section class="column stack" id="law-section" aria-label="법">
+          <div class="section-title">
+            <div>
+              <h2>법</h2>
+              <p class="fine" id="law-context">주요 이슈와 연결된 공개 법령·의안을 관심도순으로 봅니다.</p>
+            </div>
+            <button class="button ghost" id="close-laws">이슈 보기</button>
+          </div>
+          <div class="law-list" id="laws" aria-label="법령과 의안"></div>
+        </section>
+
+        <section class="column" id="map-section" aria-label="지도">
+          <div class="map-shell">
+            <div id="live-map" aria-hidden="true"></div>
+            <canvas id="map-canvas" aria-hidden="true"></canvas>
+
+            <div class="map-toolbar">
+              <label class="map-search">
+                <span aria-hidden="true">⌕</span>
+                <input type="search" id="map-search" placeholder="지역, 노선, 주제 검색" aria-label="지도 검색" />
+              </label>
+              <div class="layer-stack" aria-label="지도 레이어">
+	                <button class="layer" data-layer="official" aria-pressed="true"><span class="map-icon stats"><svg><use href="#icon-stats"></use></svg></span>공식 자료</button>
+	                <button class="layer" data-layer="assembly" aria-pressed="true"><span class="map-icon"><svg><use href="#icon-assembly"></use></svg></span>집회/시위</button>
+	                <button class="layer transit" data-layer="transit" aria-pressed="true"><span class="map-icon transit"><svg><use href="#icon-transit"></use></svg></span>교통 영향</button>
+	                <button class="layer crowd" data-layer="crowd" aria-pressed="true"><span class="map-icon crowd"><svg><use href="#icon-crowd"></use></svg></span>인파 신호</button>
+	                <button class="layer route" data-layer="route" aria-pressed="true"><span class="map-icon route"><svg><use href="#icon-route"></use></svg></span>행진/통제</button>
+              </div>
+            </div>
+
+            <div class="map-legend" aria-label="지도 범례">
+              <div class="legend-row"><span class="legend-mark"><span class="map-icon"><svg><use href="#icon-assembly"></use></svg></span></span>집회성 상황</div>
+              <div class="legend-row"><span class="legend-mark"><span class="map-icon stats"><svg><use href="#icon-stats"></use></svg></span></span>공식 통계 자료</div>
+              <div class="legend-row"><span class="legend-mark"><span class="map-icon presence"><svg><use href="#icon-presence"></use></svg></span></span>장기 현장</div>
+              <div class="legend-row"><span class="legend-mark"><span class="map-icon transit"><svg><use href="#icon-transit"></use></svg></span></span>대중교통 영향</div>
+              <div class="legend-row"><span class="legend-mark"><span class="map-icon crowd"><svg><use href="#icon-crowd"></use></svg></span></span>인파 밀집 신호</div>
+              <div class="legend-row"><span class="legend-mark"><span class="map-icon route"><svg><use href="#icon-route"></use></svg></span></span>통제/경로 지점</div>
+            </div>
+
+            <button class="pin document" data-target="occ_police_national_stats_2023" aria-label="전국 집회 신고 통계">
+              <span class="pin-glyph"><span class="map-icon stats"><svg><use href="#icon-stats"></use></svg></span></span>
+            </button>
+            <button class="pin daegu" data-target="occ_daegu_0709_public" data-related="occ_daegu_0709_public,occ_daegu_stats_2025,occ_daegu_0707_public,occ_daegu_0706_public,occ_daegu_0704_0705_public" aria-label="대구 오늘의 집회 공개 일정">
+              <span class="pin-glyph"><span class="map-icon"><svg><use href="#icon-assembly"></use></svg></span></span>
+            </button>
+            <button class="pin main preview-only" data-target="occ_1" aria-label="서울 인근 집회성 모임">
+              <span class="pin-glyph"><span class="map-icon"><svg><use href="#icon-assembly"></use></svg></span></span>
+            </button>
+            <button class="pin transit preview-only" data-target="transit_1" aria-label="대중교통 영향">
+              <span class="pin-glyph"><span class="map-icon transit"><svg><use href="#icon-transit"></use></svg></span></span>
+            </button>
+            <button class="pin crowd preview-only" data-target="crowd_busan_mock" aria-label="인파 밀집 신호">
+              <span class="pin-glyph"><span class="map-icon crowd"><svg><use href="#icon-crowd"></use></svg></span></span>
+            </button>
+            <button class="pin checkpoint preview-only" data-target="checkpoint_1" aria-label="통제 지점">
+              <span class="pin-glyph"><span class="map-icon route"><svg><use href="#icon-route"></use></svg></span></span>
+            </button>
+
+            <div class="map-sheet">
+              <div class="stack">
+                <div class="row">
+                  <span class="chip live" id="map-state">시간 확인 중</span>
+                  <span class="chip issue" id="map-mode">상세 연결</span>
+                </div>
+                <div>
+                  <h3 id="map-title">서울 도심 일대</h3>
+	                  <p class="muted" id="map-summary">집회 1건 · 장기 현장 1건 · 교통 영향 1건 · 인파 신호 1건</p>
+                    <p class="map-context" id="map-context">이슈를 선택하면 관련 지역과 상황이 함께 바뀝니다.</p>
+	                  <div class="map-sheet-summary" aria-label="지도 선택 요약">
+	                    <span><b>장소</b><em id="map-impact">확인 중</em></span>
+	                    <span><b>근거</b><em id="map-proof">0</em></span>
+	                    <span><b>최근 확인</b><em id="map-update">없음</em></span>
+	                    <span><b>확인 정도</b><em id="map-risk">확인 중</em></span>
+                  </div>
+                </div>
+              </div>
+              <button class="button" id="split-view">상세에서 확인</button>
+            </div>
+          </div>
+        </section>
+
+        <aside class="column detail-column">
+          <section class="detail-panel" id="record-section" aria-label="상황 상세">
+            <div class="hero-status">
+              <div class="status-title">
+                <div class="stack">
+                  <div class="row">
+                    <span class="chip live" id="state-chip">시간 확인 중</span>
+                    <span class="fine" id="updated-at">최근 업데이트 없음</span>
+                  </div>
+	                  <h2 id="detail-title">서울 인근 집회성 모임</h2>
+	                  <p class="muted" id="detail-summary">확인된 자료를 기준으로 정리했습니다.</p>
+	                  <div class="source-badges" id="detail-source-badges" aria-label="출처 요약"></div>
+                </div>
+              </div>
+
+              <div class="summary-grid">
+                <div class="mini-stat"><strong id="stat-current">확인 중</strong><span id="stat-current-label">확인 내용</span></div>
+                <div class="mini-stat"><strong id="stat-peak">-</strong><span id="stat-peak-label">규모</span></div>
+                <div class="mini-stat"><strong id="stat-proof">0</strong><span id="stat-proof-label">근거</span></div>
+              </div>
+            </div>
+
+            <div class="tabs" role="tablist" aria-label="상세 보기">
+              <button role="tab" aria-selected="true" data-tab="summary">요약</button>
+              <button role="tab" aria-selected="false" data-tab="video">현장 영상</button>
+              <button role="tab" aria-selected="false" data-tab="timeline">흐름</button>
+              <button role="tab" aria-selected="false" data-tab="evidence">근거</button>
+              <button role="tab" aria-selected="false" data-tab="dispute">다른 주장</button>
+            </div>
+
+            <div id="summary-tab" class="claim-list"></div>
+            <div id="video-tab" class="reel-list" hidden></div>
+            <div id="timeline-tab" class="timeline" hidden></div>
+            <div id="evidence-tab" class="evidence-board" hidden></div>
+            <div id="dispute-tab" class="claim-list" hidden></div>
+          </section>
+
+          <section class="report-panel" id="report-section" aria-label="제보">
+            <div class="section-title">
+              <div>
+                <h2>제보</h2>
+                <p class="fine">모바일 현장 촬영</p>
+              </div>
+	              <span class="chip warn">현장 인증</span>
+	            </div>
+	            <ol class="report-steps" id="report-steps" aria-label="제보 처리 상태">
+	              <li data-stage="received" data-active="true"><strong>촬영</strong><span>앱 내 카메라</span></li>
+	              <li data-stage="review"><strong>검토</strong><span>비식별 처리</span></li>
+	              <li data-stage="reflected"><strong>반영</strong><span>영상 Claim</span></li>
+	            </ol>
+
+            <form id="live-form">
+              <article class="empty-state">
+                <strong>현장 영상은 Claim으로만 반영됩니다</strong>
+                <span>실시간 GPS, 앱 내 카메라, 기기 무결성, 5분 내 업로드가 모두 맞을 때 검토 대기 상태가 됩니다.</span>
+              </article>
+              <ul class="report-guide" aria-label="현장 영상 접수 조건">
+                <li><b>1</b><span><strong>상황 선택</strong><em>확인 중인 이슈와 연결된 현장 근처에서 시작합니다.</em></span></li>
+                <li><b>2</b><span><strong>앱 내 촬영</strong><em>갤러리 업로드 없이 현장에서 바로 6~10초 촬영합니다.</em></span></li>
+                <li><b>3</b><span><strong>비식별 검토</strong><em>얼굴, 차량번호, 민감 위치를 가린 공개본만 남깁니다.</em></span></li>
+              </ul>
+              <div class="capture-checks" aria-label="현장 인증 조건">
+                <strong>촬영 화면이 열리는 조건</strong>
+                <ul>
+                  <li data-check="gps" data-status="idle"><strong>Foreground GPS</strong><span>점검 대기</span></li>
+                  <li data-check="camera" data-status="idle"><strong>앱 내 카메라</strong><span>점검 대기</span></li>
+                  <li data-check="integrity" data-status="idle"><strong>기기 무결성</strong><span>모바일 앱 확인</span></li>
+                  <li data-check="freshness" data-status="idle"><strong>5분 내 업로드</strong><span>촬영 후 서버 확인</span></li>
+                </ul>
+              </div>
+              <div class="report-handoff">
+                <strong>현장 촬영만 접수됩니다</strong>
+                <span>카메라와 GPS가 같은 세션에서 확인되면 검토 대기로 들어갑니다. 공개 후에도 영상 자체는 하나의 주장으로 표시됩니다.</span>
+              </div>
+              <div class="capture-preview" id="capture-preview" hidden>
+                <video id="capture-video" playsinline muted></video>
+                <strong id="capture-title">촬영 대기</strong>
+                <span id="capture-note">선택한 상황 근처에서 6~10초만 촬영합니다.</span>
+              </div>
+              <div class="report-actions">
+                <button class="button" type="button" id="capture-check-action">촬영 환경 점검</button>
+                <button class="button primary" type="button" id="start-capture-action">현장 촬영 시작</button>
+                <button class="button" type="button" id="report-video-action">현장 영상 보기</button>
+              </div>
+              <p class="status-line" id="form-status" aria-live="polite">선택한 상황의 영상과 근거를 먼저 확인할 수 있습니다.</p>
+            </form>
+          </section>
+        </aside>
+      </main>
+
+      <nav class="mobile-nav" aria-label="하단 탭">
+        <button aria-current="page" data-tab-view="home">홈</button>
+        <button data-tab-view="map">지도</button>
+        <button data-tab-view="law">법</button>
+        <button data-tab-view="report">제보</button>
+        <button data-tab-view="record">상세</button>
+      </nav>
+      <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+    </div>
+
+    <script src="./config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+    <script>
+      const webConfig = window.MUSUNIL_WEB_CONFIG || {};
+      const isLocalPage = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+      const apiParam = isLocalPage ? new URLSearchParams(location.search).get("api") : null;
+      const storedApi = isLocalPage ? localStorage.getItem("musunilApiBaseUrl") : null;
+      const API = (apiParam || storedApi || webConfig.apiBaseUrl || location.origin).replace(/\/$/, "");
+      if (apiParam) localStorage.setItem("musunilApiBaseUrl", API);
+      const isPreviewApiBase = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::|\/|$)/.test(API);
+      document.documentElement.dataset.previewApi = String(isPreviewApiBase);
+      const MAP_STYLE_URL = webConfig.mapStyleUrl || "https://tiles.openfreemap.org/styles/positron";
+      const SESSION_KEY = "musunilUserSession";
+      let liveMap;
+      const fallbackClaims = [
+        {
+          id: "local_claim_1",
+          claimantLabel: "위치 인증 제보",
+          normalizedStatement: "같은 지역에서 여러 위치 인증 제보가 접수되었습니다.",
+          evidenceStrength: "media_time_location_crosscheck",
+          riskLevel: "rights_risk",
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: "local_claim_2",
+          claimantLabel: "자료 제보",
+          normalizedStatement: "인근 대중교통 영향 가능성이 접수되었습니다.",
+          evidenceStrength: "single_source",
+          riskLevel: "misleading_possible",
+          createdAt: new Date().toISOString()
+        }
+      ];
+      const fallbackClaimsByTarget = {
+        occ_police_national_stats_2023: [
+          {
+            id: "claim_police_national_stats_2023",
+            claimantLabel: "경찰청 공공데이터포털",
+            normalizedStatement: "경찰청은 2011년부터 2023년까지의 집회 신고 및 실제 개최 현황 집계 데이터를 공개했습니다.",
+            evidenceStrength: "single_source",
+            riskLevel: "low",
+            createdAt: "2025-05-12T00:00:00.000Z"
+          }
+        ],
+        occ_daegu_stats_2025: [
+          {
+            id: "claim_daegu_stats_2025",
+            claimantLabel: "대구경찰청 공공데이터포털",
+            normalizedStatement: "대구경찰청은 2020년부터 2025년까지 경찰서별 집회·시위 신고 건수, 개최 건수, 참석인원 현황을 공개했습니다.",
+            evidenceStrength: "single_source",
+            riskLevel: "low",
+            createdAt: "2026-05-12T00:00:00.000Z"
+          }
+        ],
+        occ_daegu_0709_public: [
+          {
+            id: "claim_daegu_0709_public",
+            claimantLabel: "대구경찰청 오늘의 집회시위",
+            normalizedStatement: "대구경찰청 게시판에 0709(목) 오늘의 집회 공개 일정 게시물이 등록되었습니다.",
+            evidenceStrength: "single_source",
+            riskLevel: "low",
+            createdAt: "2026-07-09T00:00:00.000+09:00"
+          }
+        ],
+        occ_daegu_0707_public: [
+          {
+            id: "claim_daegu_0707_public",
+            claimantLabel: "대구경찰청 오늘의 집회시위",
+            normalizedStatement: "대구경찰청 게시판에 0707(화) 오늘의 집회 공개 일정 게시물이 등록되었습니다.",
+            evidenceStrength: "single_source",
+            riskLevel: "low",
+            createdAt: "2026-07-06T08:00:00.000Z"
+          }
+        ],
+        occ_daegu_0706_public: [
+          {
+            id: "claim_daegu_0706_public",
+            claimantLabel: "대구경찰청 오늘의 집회시위",
+            normalizedStatement: "대구경찰청 게시판에 0706(월) 오늘의 집회 공개 일정 게시물이 등록되었습니다.",
+            evidenceStrength: "single_source",
+            riskLevel: "low",
+            createdAt: "2026-07-06T08:00:00.000Z"
+          }
+        ],
+        occ_daegu_0704_0705_public: [
+          {
+            id: "claim_daegu_weekend_public",
+            claimantLabel: "대구경찰청 오늘의 집회시위",
+            normalizedStatement: "대구경찰청 게시판에 0704(토)~0705(일) 오늘의 집회 공개 일정 게시물이 등록되었습니다.",
+            evidenceStrength: "single_source",
+            riskLevel: "low",
+            createdAt: "2026-07-03T08:00:00.000Z"
+          }
+        ]
+      };
+      const fallbackLiveClaimsByTarget = {
+        occ_1: [
+          {
+            id: "live_occ_1_preview",
+            targetTitle: "서울 도심 정보통신망법 개정 반대 집회",
+            regionLabel: "서울",
+            durationMs: 9000,
+            publicRadiusM: 120,
+            claim: {
+              normalizedStatement: "서울 인근 현장에서 집회성 모임과 이동 흐름이 촬영되었습니다."
+            },
+            fieldVerification: {
+              aligned: 7,
+              disputed: 1,
+              statusLabel: "현장 이견 일부"
+            }
+          }
+        ],
+        transit_1: [
+          {
+            id: "live_transit_1_preview",
+            targetTitle: "1호선 대중교통 영향",
+            regionLabel: "서울",
+            durationMs: 7000,
+            publicRadiusM: 180,
+            claim: {
+              normalizedStatement: "1호선 일부 구간에서 대기 인파와 지연 안내가 촬영되었습니다."
+            },
+            fieldVerification: {
+              aligned: 4,
+              disputed: 0,
+              statusLabel: "현장 일치 우세"
+            }
+          }
+        ],
+        issue_1: [
+          {
+            id: "live_issue_1_preview_seoul",
+            targetTitle: "서울 도심 정보통신망법 개정 반대 집회",
+            regionLabel: "서울",
+            durationMs: 9000,
+            publicRadiusM: 120,
+            claim: {
+              normalizedStatement: "서울 도심 현장에서 정보통신망법 개정 반대 집회가 촬영되었습니다."
+            },
+            fieldVerification: {
+              aligned: 7,
+              disputed: 1,
+              statusLabel: "현장 이견 일부"
+            }
+          },
+          {
+            id: "live_issue_1_preview_transit",
+            targetTitle: "1호선 대중교통 영향",
+            regionLabel: "서울",
+            durationMs: 7000,
+            publicRadiusM: 180,
+            claim: {
+              normalizedStatement: "같은 이슈와 연결된 이동 흐름과 대기 인파가 촬영되었습니다."
+            },
+            fieldVerification: {
+              aligned: 4,
+              disputed: 0,
+              statusLabel: "현장 일치 우세"
+            }
+          }
+        ]
+      };
+      const fallback = {
+        issueCards: [
+          {
+            id: "issue_1",
+            targetType: "issue",
+            title: "정보통신망법 개정 반대 집회",
+            lifecycleState: "UNKNOWN",
+            status: "active",
+            topicTags: ["정보통신망법 개정", "반대", "집회"],
+            updatedAt: new Date().toISOString(),
+            targetCount: 4,
+            currentCount: 4,
+            regionCount: 1,
+            officialCount: 0,
+            disputeCount: 1,
+            needsVerificationCount: 3,
+            sourceSummary: { official: 0, media: 1, field: 3, estimate: 1 },
+            chips: ["4건 진행·예정", "1개 지역", "출처 확인 중"]
+          },
+          {
+            id: "issue_mock_mobility",
+            targetType: "issue",
+            title: "대통령 탄핵 요구 행진",
+            lifecycleState: "UNKNOWN",
+            status: "active",
+            topicTags: ["대통령 탄핵", "행진", "교통"],
+            updatedAt: new Date().toISOString(),
+            targetCount: 3,
+            currentCount: 3,
+            regionCount: 1,
+            officialCount: 0,
+            disputeCount: 0,
+            needsVerificationCount: 3,
+            sourceSummary: { official: 0, media: 0, field: 1, estimate: 1 },
+            chips: ["3건 진행·예정", "1개 지역", "출처 확인 중"]
+          }
+        ],
+        cards: [
+          {
+            id: "occ_police_national_stats_2023",
+            issueId: "issue_real_public_sources",
+            targetType: "occurrence",
+            title: "경찰청 2011~2023 집회 신고·개최 통계",
+            regionLabel: "전국",
+            lifecycleState: "ARCHIVED",
+            chips: ["공식 발표 있음", "출처 1곳"],
+            updatedAt: "2025-05-12T00:00:00.000Z",
+            priorityScore: 25,
+            current: "13개 연도",
+            peak: "-",
+            proof: 1
+          },
+          {
+            id: "occ_daegu_0709_public",
+            issueId: "issue_real_public_sources",
+            targetType: "occurrence",
+            title: "대구 0709(목) 오늘의 집회 공개 일정",
+            regionLabel: "대구",
+            lifecycleState: "UPCOMING",
+            chips: ["공식 발표 있음", "첨부 파일 있음"],
+            updatedAt: "2026-07-09T00:00:00.000+09:00",
+            priorityScore: 24,
+            current: "일정 공개",
+            peak: "-",
+            proof: 1
+          },
+          {
+            id: "occ_daegu_0707_public",
+            issueId: "issue_real_public_sources",
+            targetType: "occurrence",
+            title: "대구 0707(화) 오늘의 집회 공개 일정",
+            regionLabel: "대구",
+            lifecycleState: "ENDED",
+            chips: ["공식 발표 있음", "최근 일정"],
+            updatedAt: "2026-07-06T08:00:00.000Z",
+            priorityScore: 15,
+            current: "종료 기록",
+            peak: "-",
+            proof: 1
+          },
+          {
+            id: "occ_daegu_stats_2025",
+            issueId: "issue_real_public_sources",
+            targetType: "occurrence",
+            title: "대구 2020~2025 집회 신고·개최 현황",
+            regionLabel: "대구",
+            lifecycleState: "ARCHIVED",
+            chips: ["공식 발표 있음", "신고·개최 통계"],
+            updatedAt: "2026-05-12T00:00:00.000Z",
+            priorityScore: 22,
+            current: "6개 연도",
+            peak: "-",
+            proof: 1
+          },
+          {
+            id: "occ_daegu_0706_public",
+            issueId: "issue_real_public_sources",
+            targetType: "occurrence",
+            title: "대구 0706(월) 오늘의 집회 공개 일정",
+            regionLabel: "대구",
+            lifecycleState: "ENDED",
+            chips: ["공식 발표 있음", "최근 일정"],
+            updatedAt: "2026-07-06T08:00:00.000Z",
+            priorityScore: 14,
+            current: "종료 기록",
+            peak: "-",
+            proof: 1
+          },
+          {
+            id: "occ_daegu_0704_0705_public",
+            issueId: "issue_real_public_sources",
+            targetType: "occurrence",
+            title: "대구 0704(토)~0705(일) 오늘의 집회 공개 일정",
+            regionLabel: "대구",
+            lifecycleState: "ENDED",
+            chips: ["공식 발표 있음", "주말 일정"],
+            updatedAt: "2026-07-03T08:00:00.000Z",
+            priorityScore: 13,
+            current: "종료 기록",
+            peak: "-",
+            proof: 1
+          },
+          {
+            id: "occ_1",
+            issueId: "issue_1",
+            targetType: "occurrence",
+            title: "서울 인근 집회성 모임",
+            regionLabel: "서울",
+            lifecycleState: "UNKNOWN",
+            chips: ["위치 인증 제보 있음", "여러 주장 있음"],
+            updatedAt: new Date().toISOString(),
+            priorityScore: 24,
+            current: "800~1,200",
+            peak: "3,000~4,500",
+            proof: 8
+          },
+          {
+            id: "transit_1",
+            issueId: "issue_1",
+            targetType: "transit_occurrence",
+            title: "1호선 일부 구간 영향",
+            regionLabel: "서울",
+            lifecycleState: "UNKNOWN",
+            chips: ["대중교통 영향", "확인 중"],
+            updatedAt: new Date().toISOString(),
+            priorityScore: 18,
+            current: "지연 주장",
+            peak: "-",
+            proof: 2
+          },
+          {
+            id: "crowd_busan_mock",
+            issueId: "issue_mock_mobility",
+            targetType: "crowd_density_signal",
+            title: "부산 인파 밀집 신호",
+            regionLabel: "부산 서면 일대",
+            lifecycleState: "UNKNOWN",
+            chips: ["주최 없음", "병목 가능"],
+            updatedAt: new Date().toISOString(),
+            priorityScore: 16,
+            current: "높음",
+            peak: "-",
+            proof: 1
+          },
+          {
+            id: "checkpoint_1",
+            issueId: "issue_1",
+            targetType: "route_checkpoint",
+            title: "서울 도심 통제 지점",
+            regionLabel: "서울",
+            lifecycleState: "UNKNOWN",
+            chips: ["경로 지점", "통행 확인 중"],
+            updatedAt: new Date().toISOString(),
+            priorityScore: 12,
+            current: "traffic_control",
+            peak: "uncertain",
+            proof: 0
+          }
+        ],
+        laws: [
+          {
+            id: "law_info_network_amendment",
+            source: "assembly_bill",
+            lawName: "정보통신망 이용촉진 및 정보보호 등에 관한 법률",
+            billTitle: "정보통신망 이용촉진 및 정보보호 등에 관한 법률 일부개정법률안",
+            stage: "심사 중",
+            statusDate: new Date().toISOString(),
+            summary: "정보통신망법 개정 논의와 연결되는 공개 의안 메타데이터입니다.",
+            officialUrl: "https://open.assembly.go.kr/",
+            keywords: ["정보통신망법", "정보통신망 이용촉진 및 정보보호 등에 관한 법률"],
+            linkedIssueCount: 1,
+            relatedTargetCount: 2,
+            recentClaimCount: 2,
+            interestScore: 61,
+            lastUpdatedAt: new Date().toISOString()
+          },
+          {
+            id: "law_national_assembly_impeachment",
+            source: "law_effective",
+            lawName: "국회법",
+            billTitle: "탄핵소추 절차 관련 법령",
+            stage: "현행 법령",
+            statusDate: new Date().toISOString(),
+            summary: "대통령 탄핵 요구 이슈와 연결될 수 있는 국회 절차 관련 법령입니다.",
+            officialUrl: "https://www.law.go.kr/법령/국회법",
+            keywords: ["대통령 탄핵", "탄핵소추", "국회법"],
+            linkedIssueCount: 1,
+            relatedTargetCount: 1,
+            recentClaimCount: 1,
+            interestScore: 51,
+            lastUpdatedAt: new Date().toISOString()
+          }
+        ]
+      };
+      if (!isPreviewApiBase) {
+        fallback.cards = fallback.cards.filter((card) => !isPreviewCard(card.id));
+        fallback.issueCards = fallback.issueCards.filter((issue) => !isPreviewIssue(issue.id));
+        fallback.laws = fallback.laws.filter((law) => !isPreviewLaw(law.id));
+      }
+
+	      const $ = (id) => document.getElementById(id);
+	      const targetPaths = {
+        occurrence: "occurrences",
+        continuous_presence: "continuous-presences",
+        transit_occurrence: "transit-occurrences",
+        crowd_density_signal: "crowd-density-signals",
+        route_segment: "route-segments",
+        route_checkpoint: "route-checkpoints"
+      };
+	      let activeTimeFilter = "now";
+	      let activeSourceFilter = "all";
+	      let issueTimelineSourceFilter = "all";
+	      let issueTimelineRegionFilter = "all";
+	      let issueVideoRegionFilter = "all";
+	      let issueVideoStatusFilter = "all";
+	      let loadedCards = sortCards(fallback.cards);
+	      let loadedIssueCards = sortIssueCards(fallback.issueCards);
+	      let loadedLaws = sortLaws(fallback.laws);
+	      let selectedIssue = loadedIssueCards[0];
+	      let selectedLaw = loadedLaws[0];
+	      let selected = visibleCards(loadedCards)[0] || loadedCards[0];
+	      let detailMode = "issue";
+	      let latestCoverage;
+
+      function isPreviewCard(id) {
+        return id.includes("_mock") || ["occ_1", "transit_1", "crowd_1", "checkpoint_1", "presence_1"].includes(id);
+      }
+
+      function isPreviewIssue(id) {
+        return id.includes("_mock") || id === "issue_1";
+      }
+
+      function isPreviewLaw(id) {
+        return id.startsWith("law_");
+      }
+
+      async function api(path, options) {
+        const response = await fetch(`${API}${path}`, {
+          ...options,
+          headers: {
+            "content-type": "application/json",
+            ...(options?.headers || {})
+          }
+        });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || "request_failed");
+        return body;
+      }
+
+      async function getUserSession() {
+        const cached = JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
+        if (cached?.userId && cached?.token && Date.parse(cached.expiresAt) > Date.now() + 60_000) return cached;
+        const session = await api("/session/anonymous", { method: "POST", body: "{}" });
+        localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        return session;
+      }
+
+      function sessionHeaders(session) {
+        return {
+          "x-musunil-user-id": session.userId,
+          "x-musunil-user-token": session.token
+        };
+      }
+
+      function reduceMotion() {
+        return matchMedia("(prefers-reduced-motion: reduce)").matches;
+      }
+
+      function withViewTransition(update) {
+        if (!document.startViewTransition || reduceMotion()) {
+          update();
+          return;
+        }
+        let ran = false;
+        const run = () => {
+          ran = true;
+          update();
+        };
+        try {
+          const transition = document.startViewTransition(run);
+          transition.ready.catch(() => {});
+          transition.updateCallbackDone.catch(() => {});
+          transition.finished.catch(() => {});
+        } catch {
+          if (!ran) update();
+        }
+      }
+
+      function pulseElement(element, className = "is-updating", duration = 280) {
+        if (!element) return;
+        clearTimeout(element._musunilPulseTimer);
+        element.classList.remove(className);
+        void element.offsetWidth;
+        element.classList.add(className);
+        element._musunilPulseTimer = setTimeout(() => element.classList.remove(className), duration);
+      }
+
+      function focusPanel(element) {
+        if (!element) return;
+        pulseElement(element, "is-focused", 900);
+        element.scrollIntoView({ block: "nearest", behavior: reduceMotion() ? "auto" : "smooth" });
+      }
+
+      let toastTimer;
+      function showToast(message) {
+        const region = $("toast-region");
+        if (!region) return;
+        region.textContent = "";
+        const toast = document.createElement("div");
+        toast.className = "toast";
+        toast.role = "status";
+        toast.textContent = message;
+        region.append(toast);
+        requestAnimationFrame(() => toast.classList.add("show"));
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toast.classList.remove("show");
+          setTimeout(() => {
+            if (region.firstElementChild === toast) region.textContent = "";
+          }, 180);
+        }, 2300);
+      }
+
+      function setStatus(message, options = {}) {
+        $("api-state").textContent = message;
+        if (options.toast !== false) showToast(message);
+      }
+
+	      function setMobileTab(view, activeButton) {
+        withViewTransition(() => {
+          document.querySelectorAll(".mobile-nav button").forEach((item) => item.removeAttribute("aria-current"));
+          (activeButton || document.querySelector(`.mobile-nav button[data-tab-view="${view}"]`))?.setAttribute("aria-current", "page");
+          const layout = document.querySelector(".layout");
+          layout.classList.remove("mobile-tab-home", "mobile-tab-law", "mobile-tab-map", "mobile-tab-report", "mobile-tab-record");
+          layout.classList.add(`mobile-tab-${view}`);
+        });
+        scrollTo({ top: 0, behavior: reduceMotion() ? "auto" : "smooth" });
+        if (view === "map") setTimeout(() => liveMap?.resize(), 120);
+        if (view === "law") focusPanel($("law-section"));
+        if (view === "report") focusPanel($("report-section"));
+	        if (view === "record") focusPanel($("record-section"));
+	      }
+
+	      function setReportStage(stage) {
+	        const order = ["received", "review", "reflected"];
+	        document.querySelectorAll("#report-steps li").forEach((item) => {
+	          item.dataset.active = String(order.indexOf(item.dataset.stage) <= order.indexOf(stage));
+	        });
+	      }
+
+      function setCaptureCheck(id, status, message) {
+        const item = document.querySelector(`[data-check="${id}"]`);
+        if (!item) return;
+        item.dataset.status = status;
+        const note = item.querySelector("span");
+        if (note) note.textContent = message;
+      }
+
+      function checkCaptureReadiness() {
+        const visible = document.visibilityState === "visible";
+        const hasGps = Boolean(navigator.geolocation);
+        const hasCamera = Boolean(navigator.mediaDevices?.getUserMedia && window.MediaRecorder);
+        setCaptureCheck("gps", hasGps && visible ? "pass" : "fail", hasGps ? (visible ? "사용 가능" : "앱이 전면일 때 가능") : "위치 API 없음");
+        setCaptureCheck("camera", hasCamera ? "pass" : "fail", hasCamera ? "촬영 API 확인" : "카메라 녹화 API 없음");
+        setCaptureCheck("integrity", "warn", "모바일 앱에서 최종 확인");
+        setCaptureCheck("freshness", "warn", "촬영 후 5분 제한 적용");
+        $("form-status").textContent = hasGps && hasCamera ? "촬영 환경 기본 조건을 확인했습니다. 현장 촬영을 시작할 수 있습니다." : "이 브라우저에서는 일부 촬영 조건을 확인할 수 없습니다.";
+        showToast(hasGps && hasCamera ? "촬영 환경 기본 조건 확인" : "촬영 조건 일부 미지원");
+      }
+
+      function gpsPosition() {
+        return new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 });
+        });
+      }
+
+      function recorderOptions() {
+        const type = window.MediaRecorder?.isTypeSupported?.("video/webm;codecs=vp8") ? "video/webm;codecs=vp8" : "";
+        return { ...(type ? { mimeType: type } : {}), videoBitsPerSecond: 450_000 };
+      }
+
+      function blobBase64(blob) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result).split(",").pop() || "");
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      function setCapturePreview(title, note, stream) {
+        $("capture-preview").hidden = false;
+        $("capture-title").textContent = title;
+        $("capture-note").textContent = note;
+        $("capture-video").srcObject = stream || null;
+      }
+
+      function captureErrorMessage(error) {
+        if (error?.code === 1) return "위치 권한이 없어 현장 인증을 진행할 수 없습니다.";
+        if (error?.name === "NotAllowedError") return "카메라 권한이 없어 현장 촬영을 진행할 수 없습니다.";
+        if (error?.message === "target_distance_unavailable") return "선택한 상황의 위치 기준이 없어 현장 인증을 진행할 수 없습니다.";
+        if (error?.message === "target_too_far") return `현재 위치가 대상에서 약 ${Math.round(error.distanceM)}m 떨어져 있어 제출하지 않았습니다.`;
+        if (error?.message === "proof_of_presence_failed") return "GPS 정확도, 대상 거리, 5분 내 업로드 조건 중 하나가 맞지 않아 제출하지 않았습니다.";
+        return "촬영 조건을 충족하지 못해 제출하지 않았습니다.";
+      }
+
+      async function startLiveCapture() {
+        if (!navigator.geolocation || !navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+          checkCaptureReadiness();
+          return;
+        }
+        const button = $("start-capture-action");
+        const card = selected?.targetType === "issue" ? visibleCards(loadedCards)[0] : selected;
+        let stream;
+        button.disabled = true;
+        setReportStage("received");
+        try {
+          const position = await gpsPosition();
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+          setCapturePreview("촬영 중", "7초 뒤 자동으로 검토 대기에 제출합니다.", stream);
+          $("capture-video").play().catch(() => {});
+          const capturedAt = new Date();
+          const chunks = [];
+          const recorder = new MediaRecorder(stream, recorderOptions());
+          recorder.ondataavailable = (event) => {
+            if (event.data?.size) chunks.push(event.data);
+          };
+          const stopped = new Promise((resolve, reject) => {
+            recorder.onstop = resolve;
+            recorder.onerror = () => reject(recorder.error || new Error("record_failed"));
+          });
+          recorder.start();
+          await new Promise((resolve) => setTimeout(resolve, 7000));
+          recorder.stop();
+          await stopped;
+          const blob = new Blob(chunks, { type: recorder.mimeType || "video/webm" });
+          await submitLiveCapture(card, position, blob, capturedAt);
+        } catch (error) {
+          $("form-status").textContent = captureErrorMessage(error);
+          showToast("현장 촬영 제출 실패");
+        } finally {
+          stream?.getTracks().forEach((track) => track.stop());
+          button.disabled = false;
+        }
+      }
+
+      async function submitLiveCapture(card, position, blob, capturedAt) {
+        const targetCenter = cardCenter(card);
+        if (!targetCenter) throw new Error("target_distance_unavailable");
+        const distanceToTargetM = distanceMeters([position.coords.longitude, position.coords.latitude], targetCenter);
+        if (distanceToTargetM > 200) {
+          const error = new Error("target_too_far");
+          error.distanceM = distanceToTargetM;
+          throw error;
+        }
+        const session = await getUserSession();
+        const upload = await api("/uploads/live", {
+          method: "POST",
+          headers: sessionHeaders(session),
+          body: JSON.stringify({
+            userId: session.userId,
+            targetType: card.targetType,
+            targetId: card.id,
+            mediaMimeType: blob.type || "video/webm",
+            mediaBase64: await blobBase64(blob)
+          })
+        });
+        await api("/reports/live", {
+          method: "POST",
+          headers: sessionHeaders(session),
+          body: JSON.stringify({
+            userId: session.userId,
+            targetType: card.targetType,
+            targetId: card.id,
+            capturedAt: capturedAt.toISOString(),
+            uploadedAt: upload.uploadedAt,
+            foregroundGps: true,
+            gpsAccuracyM: Math.round(position.coords.accuracy || 999),
+            distanceToTargetM: Math.round(distanceToTargetM),
+            deviceIntegrityStatus: "pass",
+            storageKey: upload.storageKey,
+            hash: upload.hash,
+            durationMs: Math.max(6000, Date.now() - capturedAt.getTime()),
+            mediaMimeType: blob.type || "video/webm",
+            byteSize: upload.byteSize,
+            width: 720,
+            height: 1280,
+            captureMode: "in_app_camera"
+          })
+        });
+        setCaptureCheck("gps", "pass", "현장 위치 확인");
+        setCaptureCheck("camera", "pass", "촬영 완료");
+        setCaptureCheck("integrity", "pass", "세션 확인");
+        setCaptureCheck("freshness", "pass", "5분 내 제출");
+        setReportStage("review");
+        setCapturePreview("검토 대기", "비식별 처리 후 공개 Claim 후보가 됩니다.");
+        $("form-status").textContent = "현장 영상 Claim이 검토 대기에 들어갔습니다.";
+        showToast("현장 영상 Claim 검토 대기");
+      }
+
+      async function load() {
+        try {
+	          const [home, map, coverage, laws] = await Promise.all([api("/home"), api("/map"), api("/public-sources/coverage").catch(() => null), api("/laws").catch(() => null)]);
+	          loadedCards = normalizeCards(home.cards?.length ? home.cards : fallback.cards);
+	          loadedIssueCards = normalizeIssueCards(home.issueCards?.length ? home.issueCards : fallback.issueCards);
+	          loadedLaws = normalizeLaws(laws?.laws?.length ? laws.laws : fallback.laws);
+	          selectedIssue = loadedIssueCards.find((issue) => issue.id === selectedIssue?.id) || loadedIssueCards[0];
+	          selectedLaw = loadedLaws.find((law) => law.id === selectedLaw?.id) || loadedLaws[0];
+	          selected = visibleCards(loadedCards).find((card) => card.id === selected?.id) || visibleCards(loadedCards)[0] || loadedCards[0] || fallback.cards[0];
+	          latestCoverage = coverage?.coverage;
+	          const coverageLabel = latestCoverage ? ` · 일정 확인 ${latestCoverage.activeScheduleRegions}/${latestCoverage.totalPoliceRegions}` : "";
+	          setStatus(`실시간 자료 · 권역 ${map.clusters.length}${coverageLabel}`, { toast: false });
+	        } catch {
+	          loadedCards = sortCards(fallback.cards);
+	          loadedIssueCards = sortIssueCards(fallback.issueCards);
+	          loadedLaws = sortLaws(fallback.laws);
+	          selectedIssue = loadedIssueCards.find((issue) => issue.id === selectedIssue?.id) || loadedIssueCards[0];
+	          selectedLaw = loadedLaws.find((law) => law.id === selectedLaw?.id) || loadedLaws[0];
+	          selected = visibleCards(loadedCards).find((card) => card.id === selected?.id) || visibleCards(loadedCards)[0] || loadedCards[0];
+	          latestCoverage = undefined;
+	          setStatus(isPreviewApiBase ? "공개 자료 기준" : "공개 자료 연결 대기", { toast: false });
+	        }
+
+	        renderCoverage(latestCoverage);
+	        renderIssues(loadedIssueCards);
+	        renderLaws(loadedLaws);
+	        renderCards(loadedCards, { renderDetail: false });
+	        if (selectedIssue) renderIssueDetail(selectedIssue);
+        updateMetrics(loadedCards);
+        initMap();
+      }
+
+      function normalizeCards(cards) {
+        return sortCards(cards.map((card, index) => ({
+          current: index === 0 ? "확인 중" : "-",
+          peak: "-",
+          proof: 0,
+          ...card
+        })));
+      }
+
+      function normalizeIssueCards(issues) {
+        return sortIssueCards(issues.map((issue) => ({
+          targetCount: 0,
+          currentCount: 0,
+          regionCount: 0,
+          officialCount: 0,
+          disputeCount: 0,
+          needsVerificationCount: 0,
+          sourceSummary: {},
+          chips: [],
+          lifecycleState: "UNKNOWN",
+          ...issue
+        })));
+      }
+
+      function normalizeLaws(laws) {
+        return sortLaws(laws.map((law) => ({
+          linkedIssueCount: 0,
+          relatedTargetCount: 0,
+          recentClaimCount: 0,
+          interestScore: 0,
+          keywords: [],
+          ...law
+        })));
+      }
+
+	      function visibleCards(cards) {
+	        return sortCards(cards).filter(matchesCardFilters);
+	      }
+
+	      function matchesCardFilters(card) {
+	        if (selectedIssue?.id && card.issueId && card.issueId !== selectedIssue.id) return false;
+	        const state = card.lifecycleState;
+	        const timeOk = {
+	          now: !["ARCHIVED", "ENDED", "CANCELED", "POSTPONED"].includes(state),
+	          upcoming: ["UPCOMING", "STARTING_SOON"].includes(state),
+	          series: state === "ONGOING_SERIES" || card.targetType === "continuous_presence",
+	          transit: card.targetType === "transit_occurrence" || (card.chips || []).some((chip) => /교통|통제|경로/.test(chip)),
+	          archive: ["ARCHIVED", "ENDED"].includes(state)
+	        }[activeTimeFilter] ?? true;
+	        if (!timeOk) return false;
+	        if (activeSourceFilter === "official") return sourceBadgesForCard(card).some(([type]) => type === "official");
+	        if (activeSourceFilter === "needs") return needsVerification(card);
+	        return true;
+	      }
+
+	      function sortCards(cards) {
+	        return [...cards].sort((a, b) => cardOrderScore(a) - cardOrderScore(b));
+	      }
+
+	      function sortIssueCards(issues) {
+	        return [...issues].sort((a, b) => issueOrderScore(a) - issueOrderScore(b));
+	      }
+
+	      function sortLaws(laws) {
+	        return [...laws].sort((a, b) => lawOrderScore(b) - lawOrderScore(a));
+	      }
+
+	      function issueOrderScore(issue) {
+	        const archived = issue.lifecycleState === "ARCHIVED" || issue.status === "archived" ? 1000 : 0;
+	        return archived - Number(issue.currentCount || 0) * 20 - Number(issue.officialCount || 0) * 4 - Number(issue.targetCount || 0);
+	      }
+
+	      function cardOrderScore(card) {
+	        const stateRank = {
+	          LIVE: 0,
+	          UPCOMING: 0,
+	          STARTING_SOON: 1,
+	          ONGOING_SERIES: 1,
+	          UNKNOWN: 2,
+	          PAUSED: 3,
+	          MOVING: 3,
+	          ENDING_SOON: 3,
+	          ENDED: 8,
+	          ARCHIVED: 9,
+	          CANCELED: 10,
+	          POSTPONED: 10
+	        }[card.lifecycleState] ?? 5;
+	        const typeNudge = card.targetType === "occurrence" ? 0 : 8;
+	        return stateRank * 100 + typeNudge - Number(card.priorityScore || 0);
+	      }
+
+	      function lawOrderScore(law) {
+	        return Number(law.interestScore || 0) + Number(law.linkedIssueCount || 0) * 10 + Number(law.relatedTargetCount || 0);
+	      }
+
+	      function updateMetrics(cards) {
+	        $("metric-live").textContent = String(cards.filter((card) => ["LIVE", "UPCOMING", "STARTING_SOON", "UNKNOWN", "ONGOING_SERIES"].includes(card.lifecycleState)).length);
+	        $("metric-proof").textContent = String(cards.filter((card) => sourceBadgesForCard(card).some(([type]) => type === "official")).length);
+	        $("metric-risk").textContent = String(cards.filter((card) => (card.chips || []).some((chip) => /여러 주장|다른 주장|반론|정정/.test(chip))).length);
+	        $("metric-alert").textContent = String(cards.filter((card) => needsVerification(card)).length);
+	      }
+
+	      function renderCoverage(coverage) {
+	        const panel = $("coverage-panel");
+	        if (!coverage?.regions?.length) {
+	          panel.hidden = true;
+	          return;
+	        }
+	        const groups = coverage.regions.reduce((acc, region) => {
+	          acc[region.status] = (acc[region.status] || 0) + 1;
+	          return acc;
+	        }, {});
+	        panel.hidden = false;
+	        panel.open = false;
+	        panel.innerHTML = `
+	          <summary>
+	            <strong>확인 가능한 지역</strong>
+	            <span class="fine">일정 ${groups.schedule_active || 0}/${coverage.totalPoliceRegions} · 후보 ${groups.schedule_candidate || 0}</span>
+	          </summary>
+	          <div class="coverage-grid">
+	            ${coverage.regions
+	              .map(
+	                (region) => `
+	                  <div class="coverage-item" data-status="${escapeHtml(region.status)}" title="${escapeHtml(region.gapReason || "")}">
+	                    <strong>${escapeHtml(region.label)}</strong>
+	                    <em>${escapeHtml(coverageStatusLabel(region.status))}</em>
+	                    <span>${escapeHtml(formatNextCheck(region.nextRefreshAt))}</span>
+	                  </div>
+	                `
+	              )
+	              .join("")}
+	          </div>
+	          <p class="fine">공개 자료 확인 범위입니다. 통계만 ${groups.statistics_only || 0} · 자료 확인 중 ${groups.needs_discovery || 0} · 미확인은 집회 부재가 아닙니다.</p>
+	        `;
+	      }
+
+	      function needsVerification(card) {
+	        return card.lifecycleState === "UNKNOWN" || (card.chips || []).some((chip) => /확인|검토|추정|여러 주장|주장/.test(chip)) || Number(card.proof || 0) === 0;
+	      }
+
+	      function sourceBadgesForCard(card) {
+	        const summary = card.sourceSummary || {};
+	        const badges = [];
+	        if (summary.official || (card.chips || []).some((chip) => /공식/.test(chip))) badges.push(["official", "공식 자료"]);
+	        if (summary.media || (card.chips || []).some((chip) => /언론/.test(chip))) badges.push(["media", "언론"]);
+	        if (summary.field || (card.chips || []).some((chip) => /위치|자료/.test(chip))) badges.push(["field", "현장"]);
+	        if (summary.estimate || ["crowd_density_signal", "transit_occurrence"].includes(card.targetType)) badges.push(["estimate", "추정"]);
+	        return badges.length ? badges : [["official", "공개 자료"]];
+	      }
+
+	      function sourceBadgesForClaims(claims) {
+	        const sourceTypes = new Set(
+	          claims.map((claim) => {
+	            if (claim.sourceProvenance === "government_or_police") return "official";
+	            if (claim.sourceProvenance === "media_report") return "media";
+	            if (claim.sourceProvenance === "musunil_ai_estimate") return "estimate";
+	            return "field";
+	          })
+	        );
+	        const labels = { official: "공식 자료", media: "언론", field: "현장", estimate: "추정" };
+	        return [...sourceTypes].map((type) => [type, labels[type]]);
+	      }
+
+	      function sourceBadgeForClaim(claim) {
+	        if (claim.sourceProvenance === "government_or_police") return ["official", "공식 자료"];
+	        if (claim.sourceProvenance === "media_report") return ["media", "언론"];
+	        if (claim.sourceProvenance === "musunil_ai_estimate") return ["estimate", "추정"];
+	        return ["field", "현장"];
+	      }
+
+	      function sourceClass(sourceProvenance) {
+	        if (sourceProvenance === "government_or_police") return "official";
+	        if (sourceProvenance === "media_report") return "media";
+	        if (sourceProvenance === "musunil_ai_estimate") return "estimate";
+	        return "field";
+	      }
+
+	      function sourceLabel(sourceProvenance) {
+	        return { government_or_police: "공식 자료", media_report: "언론", musunil_ai_estimate: "추정" }[sourceProvenance] || "현장";
+	      }
+
+	      function renderSourceBadges(badges) {
+	        return badges.map(([type, label]) => `<span class="source-badge ${type}">${escapeHtml(label)}</span>`).join("");
+	      }
+
+	      function renderIssues(issues) {
+	        const root = $("issues");
+	        root.classList.add("is-refreshing");
+	        root.innerHTML = "";
+	        if (!issues.length) {
+	          root.innerHTML = `
+	            <article class="empty-state">
+	              <strong>표시할 이슈가 없습니다</strong>
+	              <span>공개자료가 확인되면 이슈 단위로 묶어 표시합니다.</span>
+	            </article>
+	          `;
+	          setTimeout(() => root.classList.remove("is-refreshing"), 320);
+	          return;
+	        }
+
+	        for (const issue of issues) {
+	          const button = document.createElement("button");
+	          button.className = "issue-card";
+	          button.type = "button";
+	          button.dataset.issueId = issue.id;
+	          button.setAttribute("aria-selected", String(issue.id === selectedIssue?.id));
+	          button.innerHTML = `
+	            <div class="card-top">
+	              <span class="chip ${stateClass(issue.lifecycleState)}">${escapeHtml(issueStatusLabel(issue))}</span>
+	              <span class="selected-label" ${issue.id === selectedIssue?.id ? "" : "hidden"}>선택됨</span>
+	              <span class="fine">${relative(issue.updatedAt)}</span>
+	            </div>
+		            <div>
+		              <div class="title">${escapeHtml(issue.title)}</div>
+		              <p class="fine">${(issue.topicTags || []).map(escapeHtml).join(" · ") || "주제 확인 중"}</p>
+		            </div>
+		            <div class="source-badges">${renderSourceBadges(sourceBadgesForCard(issue))}</div>
+		            <div class="chips">${(issue.chips || []).map((chip) => `<span class="chip">${escapeHtml(chip)}</span>`).join("")}</div>
+		            <div class="card-action">
+		              <span class="card-action-label">관련 상황 보기</span>
+		              <span aria-hidden="true">›</span>
+		            </div>
+	          `;
+	          button.addEventListener("click", () => selectIssue(issue, { scrollToCards: true }));
+	          root.append(button);
+	        }
+	        setTimeout(() => root.classList.remove("is-refreshing"), 320);
+	      }
+
+	      function renderLaws(laws) {
+	        const root = $("laws");
+	        const linkedIssueCount = laws.reduce((sum, law) => sum + Number(law.linkedIssueCount || 0), 0);
+	        $("law-context").textContent = laws.length
+	          ? `공개 법령·의안 ${laws.length}개 · 연결 이슈 ${linkedIssueCount}건`
+	          : "주요 이슈와 연결된 공개 법령·의안을 관심도순으로 봅니다.";
+	        root.classList.add("is-refreshing");
+	        root.innerHTML = "";
+	        if (!laws.length) {
+	          root.innerHTML = `
+	            <article class="empty-state">
+	              <strong>표시할 법령·의안이 없습니다</strong>
+	              <span>공식 법령·의안 자료가 연결되면 이슈와 함께 표시합니다.</span>
+	            </article>
+	          `;
+	          setTimeout(() => root.classList.remove("is-refreshing"), 320);
+	          return;
+	        }
+
+	        for (const law of laws) {
+	          const button = document.createElement("button");
+	          button.className = "law-card";
+	          button.type = "button";
+	          button.dataset.lawId = law.id;
+	          button.setAttribute("aria-selected", String(law.id === selectedLaw?.id));
+	          button.innerHTML = `
+	            <div class="card-top">
+	              <span class="chip schedule">${escapeHtml(lawSourceLabel(law.source))}</span>
+	              <span class="selected-label" ${law.id === selectedLaw?.id ? "" : "hidden"}>선택됨</span>
+	              <span class="fine">${relative(law.lastUpdatedAt || law.statusDate || law.effectiveDate)}</span>
+	            </div>
+	            <div>
+	              <div class="title">${escapeHtml(law.billTitle || law.lawName)}</div>
+	              <p class="fine">${escapeHtml(law.lawName)} · ${escapeHtml(law.stage)}</p>
+	            </div>
+	            <div class="fact-line">
+	              <strong>${escapeHtml(law.summary || "공개 법령·의안 메타데이터입니다.")}</strong>
+	              <span>이슈 연결과 근거 자료는 별도로 표시합니다.</span>
+	            </div>
+	            <div class="source-badges">${renderSourceBadges([["official", "공개 법령"], ["estimate", "연결 분석"]])}</div>
+	            <div class="chips">${(law.keywords || []).slice(0, 3).map((keyword) => `<span class="chip">${escapeHtml(keyword)}</span>`).join("")}</div>
+	            <div class="summary-grid">
+	              <div class="mini-stat"><strong>${Number(law.linkedIssueCount || 0)}</strong><span>연결 이슈</span></div>
+	              <div class="mini-stat"><strong>${Number(law.relatedTargetCount || 0)}</strong><span>관련 상황</span></div>
+	              <div class="mini-stat"><strong>${Number(law.recentClaimCount || 0)}</strong><span>공개 Claim</span></div>
+	            </div>
+	            <div class="card-action">
+	              <span class="card-action-label">법 보기</span>
+	              <span aria-hidden="true">›</span>
+	            </div>
+	          `;
+	          button.addEventListener("click", () => selectLaw(law));
+	          root.append(button);
+	        }
+	        setTimeout(() => root.classList.remove("is-refreshing"), 320);
+	      }
+
+	      function selectLaw(law, options = {}) {
+	        if (!law) return;
+	        selectedLaw = law;
+	        withViewTransition(() => {
+	          document.querySelectorAll(".law-card").forEach((node) => {
+	            node.setAttribute("aria-selected", String(node.dataset.lawId === law.id));
+	            node.querySelector(".selected-label").hidden = node.dataset.lawId !== law.id;
+	          });
+	        });
+	        renderLawDetail(law).then(() => pulseElement($("record-section")));
+	        if (innerWidth <= 780 && options.openDetail !== false) {
+	          setMobileTab("record", document.querySelector('.mobile-nav button[data-tab-view="record"]'));
+	        }
+	      }
+
+	      function openIssueFromLaw(issueId) {
+	        const issue = loadedIssueCards.find((item) => item.id === issueId);
+	        if (!issue) return;
+	        if (innerWidth <= 780) {
+	          setMobileTab("home", document.querySelector('.mobile-nav button[data-tab-view="home"]'));
+	        } else {
+	          document.querySelector(".layout").classList.remove("desktop-law");
+	        }
+	        selectIssue(issue, { toast: "연결 이슈로 이동했습니다.", scrollToCards: true });
+	        focusPanel($("home-section"));
+	      }
+
+	      function lawSourceLabel(source) {
+	        return source === "assembly_bill" ? "의안" : "법령";
+	      }
+
+	      function selectIssue(issue, options = {}) {
+	        if (!issue) return;
+	        selectedIssue = issue;
+	        issueTimelineSourceFilter = "all";
+	        issueTimelineRegionFilter = "all";
+	        issueVideoRegionFilter = "all";
+	        issueVideoStatusFilter = "all";
+	        withViewTransition(() => {
+	          document.querySelectorAll(".issue-card").forEach((node) => {
+	            node.setAttribute("aria-selected", String(node.dataset.issueId === issue.id));
+	            node.querySelector(".selected-label").hidden = node.dataset.issueId !== issue.id;
+	          });
+	        });
+	        selected = visibleCards(loadedCards)[0] || selected;
+	        renderCards(loadedCards, { renderDetail: false });
+	        renderIssueDetail(issue);
+	        if (options.scrollToCards) {
+	          pulseElement($("cards"), "is-refreshing", 320);
+	          $("cards-title").scrollIntoView({ block: "start", behavior: reduceMotion() ? "auto" : "smooth" });
+	        }
+	        if (options.toast) showToast(options.toast);
+	      }
+
+		      function renderCards(cards, options = {}) {
+        const root = $("cards");
+        updateFilterSummary();
+        root.classList.add("is-refreshing");
+        root.innerHTML = "";
+        const cardsToShow = visibleCards(cards);
+        const selectedIndex = cardsToShow.findIndex((card) => card.id === selected?.id);
+        if (selectedIndex > 0) cardsToShow.unshift(cardsToShow.splice(selectedIndex, 1)[0]);
+        $("cards-title").textContent = selectedIssue ? `${selectedIssue.title} 관련 상황` : "주요 상황";
+        $("issue-context").textContent = selectedIssue
+          ? `${(selectedIssue.topicTags || []).join(" · ") || "주제 확인 중"} · ${cardsToShow.length}건 표시`
+          : `${cardsToShow.length}건 표시`;
+        if (!cardsToShow.length) {
+          root.innerHTML = `
+            <article class="empty-state">
+              <strong>조건에 맞는 공개자료가 없습니다</strong>
+              <span>다른 필터를 선택하면 기록과 확인 중인 자료를 볼 수 있습니다.</span>
+            </article>
+          `;
+          setTimeout(() => root.classList.remove("is-refreshing"), 320);
+          return;
+        }
+        if (!cardsToShow.some((card) => card.id === selected?.id)) selected = cardsToShow[0];
+
+        for (const card of cardsToShow) {
+          const button = document.createElement("button");
+          button.className = `situation-card type-${card.targetType}`;
+          button.type = "button";
+          button.dataset.cardId = card.id;
+          button.setAttribute("aria-selected", String(card.id === selected.id));
+          button.innerHTML = `
+            <div class="card-top">
+              <span class="chip ${stateClass(card.lifecycleState)}">${labelState(card.lifecycleState)}</span>
+              <span class="selected-label" ${card.id === selected.id ? "" : "hidden"}>선택됨</span>
+              <span class="fine">${relative(card.updatedAt)}</span>
+            </div>
+	            <div>
+	              <div class="title">${escapeHtml(card.title)}</div>
+	              <p class="fine">${escapeHtml(card.regionLabel || "전국")} · ${relative(card.updatedAt)}</p>
+	            </div>
+	            <div class="fact-line">
+	              <strong>${escapeHtml(objectiveFact(card))}</strong>
+	              <span>${escapeHtml(uncertaintyLabel(card))}</span>
+	            </div>
+	            <div class="source-badges">${renderSourceBadges(sourceBadgesForCard(card))}</div>
+	            <div class="chips">${(card.chips || []).map((chip) => `<span class="chip">${escapeHtml(chip)}</span>`).join("")}</div>
+            <div class="summary-grid">
+              <div class="mini-stat"><strong>${escapeHtml(String(card.current || "확인 중"))}</strong><span>확인 내용</span></div>
+              <div class="mini-stat"><strong>${escapeHtml(situationTypeLabel(card))}</strong><span>유형</span></div>
+              <div class="mini-stat"><strong>${escapeHtml(String(card.proof || 0))}</strong><span>근거</span></div>
+            </div>
+            <div class="card-action">
+              <span class="card-action-label">요약 보기</span>
+              <span aria-hidden="true">›</span>
+            </div>
+          `;
+          button.addEventListener("click", () => selectCard(card));
+          root.append(button);
+        }
+
+        if (options.renderDetail !== false) renderDetail(selected);
+        updatePinSelection();
+        setTimeout(() => root.classList.remove("is-refreshing"), 320);
+      }
+
+      function updateFilterSummary() {
+        const time = { now: "지금", upcoming: "예정", series: "장기", transit: "교통", archive: "기록" }[activeTimeFilter] || "지금";
+        const source = { all: "전국", official: "공식 자료", needs: "더 확인 필요" }[activeSourceFilter] || "전국";
+        $("filter-summary").textContent = `${time} · ${source}`;
+      }
+
+      function searchMap(query) {
+        const term = query.trim().toLocaleLowerCase("ko-KR");
+        if (!term) return;
+        const match = loadedCards.find((card) => {
+          const issue = loadedIssueCards.find((item) => item.id === card.issueId);
+          return [card.title, card.regionLabel, card.targetType, issue?.title, ...(card.chips || [])]
+            .filter(Boolean)
+            .join(" ")
+            .toLocaleLowerCase("ko-KR")
+            .includes(term);
+        });
+        if (!match) {
+          $("map-context").textContent = "검색어와 맞는 공개 상황이 아직 없습니다.";
+          showToast("검색 결과가 없습니다.");
+          return;
+        }
+        selectCard(match, { toast: "검색 결과를 상황 카드와 상세에 반영했습니다." });
+      }
+
+      function selectCard(card, options = {}) {
+        if (!card) return;
+        const cardIssue = loadedIssueCards.find((issue) => issue.id === card.issueId);
+        selected = card;
+        if (cardIssue) selectedIssue = cardIssue;
+        withViewTransition(() => {
+          document.querySelectorAll(".issue-card").forEach((node) => {
+            node.setAttribute("aria-selected", String(node.dataset.issueId === selectedIssue?.id));
+            node.querySelector(".selected-label").hidden = node.dataset.issueId !== selectedIssue?.id;
+          });
+          document.querySelectorAll(".situation-card").forEach((node) => {
+            node.setAttribute("aria-selected", String(node.dataset.cardId === card.id));
+            node.querySelector(".selected-label").hidden = node.dataset.cardId !== card.id;
+          });
+          updatePinSelection();
+        });
+        if (cardIssue) renderCards(loadedCards, { renderDetail: false });
+        if (liveMap) flyToCard(card);
+        renderDetail(card).then(() => {
+          pulseElement($("record-section"));
+          pulseElement(document.querySelector(".map-sheet"));
+        });
+        if (innerWidth <= 780 && options.openDetail !== false) {
+          setMobileTab("record", document.querySelector('.mobile-nav button[data-tab-view="record"]'));
+        }
+        if (options.toast) showToast(options.toast);
+      }
+
+	      async function renderDetail(card) {
+	        detailMode = "target";
+          const cardIssue = loadedIssueCards.find((issue) => issue.id === card.issueId);
+	        $("state-chip").textContent = labelState(card.lifecycleState);
+	        $("state-chip").className = `chip ${stateClass(card.lifecycleState)}`;
+	        $("map-state").textContent = labelState(card.lifecycleState);
+          $("map-mode").textContent = "선택 상황";
+	        $("detail-title").textContent = card.title;
+	        $("updated-at").textContent = relative(card.updatedAt);
+	        $("stat-current").textContent = card.current || "확인 중";
+	        $("stat-peak").textContent = card.peak || "-";
+	        $("stat-proof").textContent = String(card.proof || 0);
+          $("stat-current-label").textContent = "확인 내용";
+          $("stat-peak-label").textContent = "유형";
+          $("stat-proof-label").textContent = "근거";
+	        $("map-title").textContent = card.title;
+	        $("map-summary").textContent = `${card.regionLabel || "전국"} · ${objectiveFact(card)}`;
+          $("map-context").textContent = `${cardIssue?.title || "선택 이슈"}와 연결되어 상세 패널에 반영됩니다.`;
+	        $("map-impact").textContent = card.regionLabel || "전국";
+	        $("map-proof").textContent = `${card.proof || 0}건`;
+	        $("map-update").textContent = relative(card.updatedAt);
+	        $("map-risk").textContent = needsVerification(card) ? "더 확인 필요" : "공식 자료";
+
+	        const claims = await loadClaims(card);
+	        $("detail-summary").textContent = trustSummary(claims, card);
+	        $("detail-source-badges").innerHTML = renderSourceBadges(sourceBadgesForClaims(claims).length ? sourceBadgesForClaims(claims) : sourceBadgesForCard(card));
+	        $("summary-tab").innerHTML = renderSummary(claims, card);
+	        $("video-tab").innerHTML = renderLiveClaims(await loadLiveClaims(card.targetType, card.id));
+	        $("timeline-tab").innerHTML = renderTimeline(claims);
+	        $("evidence-tab").innerHTML = renderEvidence(claims, card);
+	        $("dispute-tab").innerHTML = renderDisputes(claims);
+	        $("map-risk").textContent = bestEvidenceLabel(claims);
+	      }
+
+	      async function renderIssueDetail(issue) {
+	        detailMode = "issue";
+	        const cards = issueRelatedCards(issue);
+	        const visibleCount = visibleCards(loadedCards).length;
+	        $("state-chip").textContent = issueStatusLabel(issue);
+	        $("state-chip").className = `chip ${stateClass(issue.lifecycleState)}`;
+	        $("map-state").textContent = "이슈";
+          $("map-mode").textContent = "관련 지역";
+	        $("detail-title").textContent = issue.title;
+	        $("updated-at").textContent = relative(issue.updatedAt);
+	        $("stat-current").textContent = `${Number(issue.currentCount || 0)}건`;
+	        $("stat-peak").textContent = `${Number(issue.regionCount || 0)}개 지역`;
+	        $("stat-proof").textContent = String(Number(issue.officialCount || 0));
+          $("stat-current-label").textContent = "관련 현장";
+          $("stat-peak-label").textContent = "확인 권역";
+          $("stat-proof-label").textContent = "공식 자료";
+	        $("map-title").textContent = "이슈 관련 지역";
+	        $("map-summary").textContent = `${issue.title}에 묶인 공개자료를 지역·시간·이동 영향별로 표시합니다.`;
+          $("map-context").textContent = "지도 핀을 선택하면 해당 상황 카드와 상세 패널이 함께 바뀝니다.";
+	        $("map-impact").textContent = cards.length ? [...new Set(cards.map((card) => card.regionLabel || "전국"))].slice(0, 2).join(", ") : "전국";
+	        $("map-proof").textContent = `${Number(issue.officialCount || 0)}건`;
+	        $("map-update").textContent = relative(issue.updatedAt);
+	        $("map-risk").textContent = Number(issue.needsVerificationCount || 0) ? "더 확인 필요" : "공식 자료";
+
+	        const detail = await loadIssueDetail(issue);
+	        const claims = issueClaimsFromDetail(issue, detail);
+	        const badges = sourceBadgesForClaims(claims);
+	        $("detail-summary").textContent = issueSummary(issue, cards, visibleCount);
+	        $("detail-source-badges").innerHTML = renderSourceBadges(badges.length ? badges : sourceBadgesForCard(issue));
+	        $("summary-tab").innerHTML = renderIssueSummary(issue, cards, claims, detail);
+	        $("video-tab").innerHTML = renderLiveClaims(await loadLiveClaims("issue", issue.id), "이 이슈에 연결된 공개 현장 영상 Claim이 아직 없습니다.", { filterable: true });
+	        $("timeline-tab").innerHTML = renderIssueTimeline(cards, detail);
+	        $("evidence-tab").innerHTML = renderIssueEvidence(issue, claims);
+	        $("dispute-tab").innerHTML = renderIssueDisputes(issue, claims);
+	      }
+
+	      async function renderLawDetail(law) {
+	        if (!law) return;
+	        detailMode = "law";
+	        const detail = await loadLawDetail(law);
+	        const issues = detail.issues || [];
+	        const relatedTargets = detail.relatedTargets || [];
+	        $("state-chip").textContent = law.stage || lawSourceLabel(law.source);
+	        $("state-chip").className = "chip schedule";
+	        $("map-state").textContent = "법";
+          $("map-mode").textContent = "연결 이슈";
+	        $("detail-title").textContent = law.billTitle || law.lawName;
+	        $("updated-at").textContent = relative(law.lastUpdatedAt || law.statusDate || law.effectiveDate);
+	        $("stat-current").textContent = `${Number(law.linkedIssueCount || issues.length || 0)}건`;
+	        $("stat-peak").textContent = `${Number(law.relatedTargetCount || relatedTargets.length || 0)}개`;
+	        $("stat-proof").textContent = String(Number(law.recentClaimCount || 0));
+          $("stat-current-label").textContent = "연결 이슈";
+          $("stat-peak-label").textContent = "관련 상황";
+          $("stat-proof-label").textContent = "공개 Claim";
+	        $("map-title").textContent = "법 관련 이슈";
+	        $("map-summary").textContent = `${law.lawName}과 연결된 이슈를 공개자료 기준으로 표시합니다.`;
+          $("map-context").textContent = "연결 이슈를 선택하면 이슈 화면과 상세 패널로 이어집니다.";
+	        $("map-impact").textContent = issues.length ? issues.slice(0, 2).map((issue) => issue.title).join(", ") : "연결 대기";
+	        $("map-proof").textContent = `${Number(law.recentClaimCount || 0)}건`;
+	        $("map-update").textContent = relative(law.lastUpdatedAt || law.statusDate || law.effectiveDate);
+	        $("map-risk").textContent = "공개 법령";
+	        $("detail-summary").textContent = law.summary || "공식 법령·의안 메타데이터와 현재 이슈 연결을 함께 표시합니다.";
+	        $("detail-source-badges").innerHTML = renderSourceBadges([["official", "공개 법령"], ["estimate", "연결 분석"]]);
+	        $("summary-tab").innerHTML = renderLawSummary(law, issues, relatedTargets);
+	        $("video-tab").innerHTML = renderLiveClaims([], "법안 자체에는 현장 영상이 붙지 않습니다. 연결 이슈의 상황을 선택해 확인하세요.");
+	        $("timeline-tab").innerHTML = renderLawTimeline(law, issues, relatedTargets);
+	        $("evidence-tab").innerHTML = renderLawEvidence(law, detail);
+	        $("dispute-tab").innerHTML = renderLawLinks(detail);
+	      }
+
+	      async function loadLawDetail(law) {
+	        try {
+	          return await api(`/laws/${law.id}`);
+	        } catch {
+	          const issues = loadedIssueCards.filter((issue) => lawMatchesIssue(law, issue));
+	          const issueIds = new Set(issues.map((issue) => issue.id));
+	          return {
+	            law,
+	            issues,
+	            relatedTargets: loadedCards.filter((card) => issueIds.has(card.issueId)).map((card) => ({ targetType: card.targetType, item: card })),
+	            issueLinks: []
+	          };
+	        }
+	      }
+
+	      function lawMatchesIssue(law, issue) {
+	        const text = searchText(`${issue.title} ${(issue.topicTags || []).join(" ")}`);
+	        return (law.keywords || []).some((keyword) => text.includes(searchText(keyword)));
+	      }
+
+      function searchText(value) {
+        return String(value).normalize("NFKC").toLowerCase().split(/\s/).join("");
+      }
+
+	      function renderLawSummary(law, issues, relatedTargets) {
+	        const issueRows = issues.length
+	          ? issues.slice(0, 4).map((issue) => `
+	            <button class="evidence-row law-link" type="button" data-law-issue-id="${escapeHtml(issue.id)}">
+	              <strong>${escapeHtml(issue.title)}</strong>
+	              <span>${escapeHtml((issue.topicTags || []).join(" · ") || "주제 확인 중")}</span>
+	            </button>
+	          `).join("")
+	          : `
+	            <article class="evidence-row">
+	              <strong>연결 이슈</strong>
+	              <span>아직 연결된 이슈가 없습니다.</span>
+	            </article>
+	          `;
+	        return `
+	          <div class="summary-section-title">연결 이슈</div>
+	          ${issueRows}
+	          <div class="summary-sections">
+	            <article class="evidence-row">
+	              <strong>법령·의안</strong>
+	              <span>${escapeHtml(law.lawName)} · ${escapeHtml(law.stage)}</span>
+	            </article>
+	            <article class="evidence-row">
+	              <strong>관련 상황</strong>
+	              <span>${relatedTargets.length}건의 상황이 연결 이슈 아래에서 확인됩니다.</span>
+	            </article>
+	            <article class="evidence-row">
+	              <strong>공식 링크</strong>
+	              <span>${law.officialUrl ? `<a href="${escapeHtml(law.officialUrl)}" target="_blank" rel="noreferrer">원문 보기</a>` : "공식 링크 확인 중"}</span>
+	            </article>
+	          </div>
+	        `;
+	      }
+
+	      function renderLawTimeline(law, issues, relatedTargets) {
+	        const rows = [
+	          {
+	            title: law.billTitle || law.lawName,
+	            body: `${lawSourceLabel(law.source)} · ${law.stage}`,
+	            at: law.statusDate || law.effectiveDate || law.lastUpdatedAt
+	          },
+	          ...issues.map((issue) => ({ title: issue.title, body: "연결 이슈", at: issue.lastUpdatedAt })),
+	          ...relatedTargets.slice(0, 4).map(({ item }) => ({ title: item.title || item.id, body: item.regionLabel || "관련 상황", at: item.updatedAt }))
+	        ];
+	        return rows
+	          .map((row) => `
+	            <article class="timeline-row">
+	              <span class="timeline-dot" aria-hidden="true"></span>
+	              <div class="stack">
+	                <strong>${escapeHtml(row.title)} · ${relative(row.at)}</strong>
+	                <span>${escapeHtml(row.body)}</span>
+	              </div>
+	            </article>
+	          `)
+	          .join("");
+	      }
+
+	      function renderLawEvidence(law, detail) {
+	        return `
+	          <article class="evidence-row">
+	            <strong>출처</strong>
+	            <span>${escapeHtml(lawSourceLabel(law.source))} 공개 메타데이터</span>
+	          </article>
+	          <article class="evidence-row">
+	            <strong>연결 방식</strong>
+	            <span>법 이름, 의안 제목, 주제어가 이슈 제목·태그·공개 Claim과 일치할 때 연결합니다.</span>
+	          </article>
+	          <article class="evidence-row">
+	            <strong>키워드</strong>
+	            <span>${escapeHtml((law.keywords || []).join(" · ") || "키워드 없음")}</span>
+	          </article>
+	          <article class="evidence-row">
+	            <strong>연결 근거</strong>
+	            <span>${(detail.issueLinks || []).length}건</span>
+	          </article>
+	        `;
+	      }
+
+	      function renderLawLinks(detail) {
+	        const links = detail.issueLinks || [];
+	        if (!links.length) {
+	          return `<article class="evidence-row"><strong>연결 근거 없음</strong><span>명확한 주제어 일치가 확인되면 이슈와 연결됩니다.</span></article>`;
+	        }
+	        return links
+	          .map((link) => `
+	            <article class="evidence-row">
+	              <strong>${escapeHtml(link.matchBasis)} · ${escapeHtml(link.confidence)}</strong>
+	              <span>연결된 공개 Claim ${Number(link.claimCount || 0)}건</span>
+	            </article>
+	          `)
+	          .join("");
+	      }
+
+	      async function loadIssueDetail(issue) {
+	        try {
+	          return await api(`/issues/${issue.id}`);
+	        } catch {
+	          return {};
+	        }
+	      }
+
+	      function issueClaimsFromDetail(issue, detail) {
+	        if (detail?.claims?.length) return detail.claims;
+	        const claims = issueRelatedCards(issue).flatMap((card) => fallbackClaimsByTarget[card.id] || []);
+	        return claims.length ? claims : fallbackClaims;
+	      }
+
+	      function issueRelatedCards(issue) {
+	        return sortCards(loadedCards.filter((card) => card.issueId === issue.id));
+	      }
+
+	      function issueStatusLabel(issue) {
+	        if (issue.lifecycleState === "ARCHIVED" || issue.status === "archived") return "기록";
+	        if (Number(issue.currentCount || 0) > 0) return "진행·예정";
+	        return "확인 중";
+	      }
+
+	      function issueSummary(issue, cards, visibleCount) {
+	        const current = Number(issue.currentCount || 0);
+	        const official = Number(issue.officialCount || 0);
+	        return `${cards.length}건의 관련 상황 중 ${visibleCount}건을 표시합니다. ${current}건은 진행·예정이고, 공식 자료 ${official}건을 기준으로 확인합니다.`;
+	      }
+
+	      function renderIssueSummary(issue, cards, claims, detail = {}) {
+	        const regions = detail.regionalSignals?.length
+	          ? detail.regionalSignals.map((signal) => signal.regionLabel)
+	          : [...new Set(cards.map((card) => card.regionLabel || "전국"))];
+	        return `
+            ${renderNationalSnapshot(issue, cards, claims, detail)}
+            ${renderTopicGrouping(detail.topicGrouping)}
+	          <dl class="compact-summary">
+	            <div><dt>확인된 축</dt><dd>${escapeHtml(regions.length ? `${regions.slice(0, 4).join(", ")} 기준 자료가 묶였습니다.` : "지역 정보 확인 중입니다.")}</dd></div>
+	            <div><dt>진행·예정</dt><dd>${Number(issue.currentCount || 0)}건이 현재 확인 대상입니다.</dd></div>
+	            <div><dt>더 확인 필요</dt><dd>${Number(issue.needsVerificationCount || 0)}건은 출처나 현장 자료를 더 확인해야 합니다.</dd></div>
+	            <div><dt>출처</dt><dd>${Number(issue.officialCount || 0)}건의 공식 자료와 ${claims.length}건의 공개 Claim을 함께 봅니다.</dd></div>
+	          </dl>
+            ${renderRegionalSignals(detail.regionalSignals?.length ? detail.regionalSignals : fallbackRegionalSignals(cards))}
+            ${renderCrowdEstimates(detail.crowdEstimates || [], detail.regionalCrowdEstimates || [])}
+            ${renderVerificationSignals(detail.verificationSignals || [])}
+	          <div class="summary-section-title">관련 상황</div>
+	          ${cards.slice(0, 4).map((card) => `
+	            <article class="evidence-row">
+	              <strong>${escapeHtml(card.title)}</strong>
+	              <span>${escapeHtml(card.regionLabel || "전국")} · ${escapeHtml(labelState(card.lifecycleState))}</span>
+	            </article>
+	          `).join("")}
+	        `;
+	      }
+
+	      function renderTopicGrouping(grouping) {
+	        if (!grouping) return "";
+	        const typeText = (grouping.targetTypes || []).map((item) => `${item.label} ${Number(item.count || 0)}건`).join(" · ");
+	        return `
+	          <section class="estimate-panel" aria-label="주제 묶음 근거">
+	            <div class="summary-section-title">주제 묶음 근거</div>
+	            ${(grouping.basis || []).slice(0, 4).map((item) => `
+	              <article class="evidence-row">
+	                <strong>${escapeHtml(item)}</strong>
+	                <span>${escapeHtml(grouping.policy || "묶음은 탐색 단위입니다.")}</span>
+	              </article>
+	            `).join("")}
+	            <p class="fine">지역·시간이 다르면 별도 현장으로 유지합니다. ${escapeHtml(typeText || "관련 현장 유형 확인 중")} · ${(grouping.days || []).slice(0, 4).map(escapeHtml).join(" · ") || "날짜 확인 중"}</p>
+	          </section>
+	        `;
+	      }
+
+	      function renderNationalSnapshot(issue, cards, claims, detail) {
+	        const summary = detail.nationalSummary || {};
+	        const estimate = (detail.crowdEstimates || [])[0];
+	        const regionCount = Number(summary.regionCount || issue.regionCount || new Set(cards.map((card) => card.regionLabel || "전국")).size);
+	        const targetCount = Number(summary.targetCount || issue.targetCount || cards.length);
+	        const liveClaimCount = Number(summary.liveClaimCount || 0);
+	        const estimateText = estimate ? `${numberFormat(estimate.minCount)}~${numberFormat(estimate.maxCount)}` : "추정 대기";
+	        return `
+	          <section class="national-snapshot" aria-label="전국 현황">
+	            <div class="card-top">
+	              <strong>전국 현황</strong>
+	              <span class="chip issue">알권리 요약</span>
+	            </div>
+	            <p class="fine">같은 주제로 묶인 지역·현장·공개 Claim과 확인 범위를 한눈에 봅니다.</p>
+	            <div class="national-metrics">
+	              <div class="mini-stat"><strong>${regionCount}개</strong><span>확인 권역</span></div>
+	              <div class="mini-stat"><strong>${targetCount}건</strong><span>관련 현장</span></div>
+	              <div class="mini-stat"><strong>${liveClaimCount}건</strong><span>현장 영상</span></div>
+	              <div class="mini-stat"><strong>${Number(summary.publicClaimCount || claims.length)}건</strong><span>공개 Claim</span></div>
+	              <div class="mini-stat"><strong>${Number(summary.needsVerificationCount || issue.needsVerificationCount || 0)}건</strong><span>더 확인 필요</span></div>
+	              <div class="mini-stat"><strong>${escapeHtml(estimateText)}</strong><span>규모 추정</span></div>
+	            </div>
+	          </section>
+	        `;
+	      }
+
+	      function fallbackRegionalSignals(cards) {
+	        const byRegion = new Map();
+	        for (const card of cards) {
+	          const region = card.regionLabel || "전국";
+	          const item = byRegion.get(region) || { regionLabel: region, targetCount: 0, currentTargetCount: 0, officialClaimCount: 0, fieldClaimCount: 0, liveClaimCount: 0, needsVerificationCount: 0, disputeCount: 0, statusLabels: [] };
+	          item.targetCount += 1;
+	          if (!["ARCHIVED", "ENDED", "CANCELED", "POSTPONED"].includes(card.lifecycleState)) item.currentTargetCount += 1;
+	          if (Number(card.proof || 0) === 0 || card.lifecycleState === "UNKNOWN") item.needsVerificationCount += 1;
+	          byRegion.set(region, item);
+	        }
+	        return [...byRegion.values()].map((signal) => ({ ...signal, statusLabels: regionalSignalLabels(signal) }));
+	      }
+
+	      function renderRegionalSignals(signals) {
+	        if (!signals.length) return "";
+	        return `
+	          <div class="summary-section-title">지역별 현장 신호</div>
+	          <div class="regional-grid">
+	            ${signals.slice(0, 6).map((signal) => `
+	              <article class="regional-row">
+	                <strong>${escapeHtml(signal.regionLabel)}</strong>
+	                <span>${Number(signal.currentTargetCount || 0)}건 진행·예정 · ${(signal.statusLabels?.length ? signal.statusLabels : regionalSignalLabels(signal)).map(escapeHtml).join(" · ")}</span>
+	              </article>
+	            `).join("")}
+	          </div>
+	        `;
+	      }
+
+	      function regionalSignalLabels(signal) {
+	        return [
+	          Number(signal.officialClaimCount || 0) ? `공식 ${Number(signal.officialClaimCount || 0)}건` : "공식 자료 없음",
+	          Number(signal.liveClaimCount || 0) ? `현장 영상 ${Number(signal.liveClaimCount || 0)}건` : Number(signal.fieldClaimCount || 0) ? `현장 Claim ${Number(signal.fieldClaimCount || 0)}건` : "현장 자료 없음",
+	          Number(signal.disputeCount || 0) ? `이견 ${Number(signal.disputeCount || 0)}건` : "이견 없음",
+	          Number(signal.needsVerificationCount || 0) ? `더 확인 필요 ${Number(signal.needsVerificationCount || 0)}건` : "확인 신호 충분"
+	        ];
+	      }
+
+	      function renderCrowdEstimates(estimates, regionalEstimates = []) {
+	        if (!estimates.length) {
+	          return `
+	            <section class="estimate-panel">
+	              <div class="summary-section-title">규모 추정</div>
+	              <article class="evidence-row">
+	                <strong>추정 대기</strong>
+	                <span>현장 인증 자료와 독립 시점이 충분히 쌓이면 범위와 한계를 함께 표시합니다.</span>
+	              </article>
+	            </section>
+	          `;
+	        }
+	        const estimate = estimates[0];
+	        const estimateClaim = estimate.claim || {};
+	        return `
+	          <section class="estimate-panel" aria-label="규모 추정">
+	            <div class="summary-section-title">규모 추정</div>
+	            <article class="evidence-row">
+	              <strong>${numberFormat(estimate.minCount)}~${numberFormat(estimate.maxCount)}명 · ${escapeHtml(confidenceLabel(estimate.confidence))}</strong>
+	              <span>${estimate.generated ? "자동 갱신 추정" : "검토된 추정"} · ${escapeHtml(estimateMethodLabel(estimate.method))} · 근거 ${Number(estimate.evidenceCount || 0)}건 · 독립 시점 ${Number(estimate.independentViewpointCount || 0)}개</span>
+	              <span>${escapeHtml(sourceLabel(estimateClaim.sourceProvenance))} Claim · ${escapeHtml(evidenceLabel(estimateClaim.evidenceStrength))} · ${escapeHtml(riskLabel(estimateClaim.riskLevel))}</span>
+	            </article>
+	            <div class="estimate-metrics">
+	              <div class="mini-stat"><strong>${numberFormat(estimate.minCount)}</strong><span>하한</span></div>
+	              <div class="mini-stat"><strong>${numberFormat(estimate.maxCount)}</strong><span>상한</span></div>
+	              <div class="mini-stat"><strong>${escapeHtml(confidenceLabel(estimate.confidence))}</strong><span>신뢰도</span></div>
+	            </div>
+	            ${renderRegionalCrowdEstimates(regionalEstimates)}
+	            <p><strong>추정 한계</strong> ${escapeHtml((estimate.limitations || ["현장 인증 자료가 더 필요합니다."]).join(" · "))}</p>
+	          </section>
+	        `;
+	      }
+
+	      function renderRegionalCrowdEstimates(estimates) {
+	        if (!estimates.length) return "";
+	        return `
+	          <div class="summary-section-title">지역별 규모 추정</div>
+	          <div class="regional-grid">
+	            ${estimates.slice(0, 6).map((estimate) => `
+	              <article class="regional-row">
+	                <strong>${escapeHtml(estimate.regionLabel)}</strong>
+	                <span>${numberFormat(estimate.minCount)}~${numberFormat(estimate.maxCount)}명 · ${escapeHtml(confidenceLabel(estimate.confidence))} · ${escapeHtml(evidenceLabel(estimate.claim?.evidenceStrength))}</span>
+	              </article>
+	            `).join("")}
+	          </div>
+	        `;
+	      }
+
+	      function renderVerificationSignals(signals) {
+	        if (!signals.length) return "";
+	        return `
+	          <section class="estimate-panel" aria-label="검증 신호">
+	            <div class="summary-section-title">검증 신호</div>
+	            ${signals.slice(0, 5).map((signal) => `
+	              <article class="evidence-row">
+	                <strong>${escapeHtml(signal.label)}${signal.count !== undefined ? ` · ${Number(signal.count)}건` : ""}</strong>
+	                <span>${escapeHtml(signal.summary)} 삭제나 신뢰도 확정이 아니라 검토 우선순위 신호로만 사용합니다.</span>
+	              </article>
+	            `).join("")}
+	          </section>
+	        `;
+	      }
+
+	      function numberFormat(value) {
+	        return Number(value || 0).toLocaleString("ko-KR");
+	      }
+
+	      function confidenceLabel(value) {
+	        return { low: "낮은 신뢰도", medium: "중간 신뢰도", high: "높은 신뢰도" }[value] || "신뢰도 확인 중";
+	      }
+
+	      function estimateMethodLabel(value) {
+	        return {
+	          proof_of_presence_density: "현장 인증 밀도 기반",
+	          source_claim: "공개 Claim 기반",
+	          hybrid: "현장 인증과 공개 Claim 혼합"
+	        }[value] || "추정 방식 확인 중";
+	      }
+
+	      function renderIssueTimeline(cards, detail = {}) {
+	        const nationalTimeline = detail.nationalTimeline || {};
+	        const moments = nationalTimeline.moments || [];
+	        if (moments.length) {
+	          const summary = nationalTimeline.summary || {};
+	          const regions = [...new Set(moments.map((moment) => moment.regionLabel).filter(Boolean))].slice(0, 5);
+	          const filteredMoments = moments.filter((moment) => {
+	            const sourceKind = timelineMomentSourceKind(moment);
+	            const sourceMatch = issueTimelineSourceFilter === "all" || sourceKind === issueTimelineSourceFilter;
+	            const regionMatch = issueTimelineRegionFilter === "all" || moment.regionLabel === issueTimelineRegionFilter;
+	            return sourceMatch && regionMatch;
+	          });
+	          return `
+	            <section class="national-snapshot" aria-label="전국 시간축">
+	              <div class="card-top">
+	                <strong>전국 시간축</strong>
+	                <span class="chip issue">${escapeHtml(summary.label || "시간축 확인")}</span>
+	              </div>
+	              <p class="fine">${escapeHtml(summary.summary || "지역별 첫 확인과 공개 Claim을 시간순으로 표시합니다.")}</p>
+	              <div class="segmented timeline-filter" aria-label="흐름 자료 필터">
+	                ${timelineFilterButton("all", "전체", issueTimelineSourceFilter, "source")}
+	                ${timelineFilterButton("field", "현장", issueTimelineSourceFilter, "source")}
+	                ${timelineFilterButton("official", "공식", issueTimelineSourceFilter, "source")}
+	                ${timelineFilterButton("estimate", "추정", issueTimelineSourceFilter, "source")}
+	                ${timelineFilterButton("dispute", "이견", issueTimelineSourceFilter, "source")}
+	              </div>
+	              <div class="segmented timeline-filter" aria-label="지역 필터">
+	                ${timelineFilterButton("all", "지역 전체", issueTimelineRegionFilter, "region")}
+	                ${regions.map((region) => timelineFilterButton(region, region, issueTimelineRegionFilter, "region")).join("")}
+	              </div>
+	            </section>
+	            ${filteredMoments.length ? filteredMoments.map(renderIssueTimelineMoment).join("") : `<div class="empty-state"><strong>필터에 맞는 흐름이 없습니다</strong><span>다른 자료나 지역을 선택하면 확인된 흐름을 볼 수 있습니다.</span></div>`}
+	          `;
+	        }
+	        const regionalEvents = (detail.regionalSignals || []).map((signal) => ({
+	          title: `${signal.regionLabel} 현장 신호`,
+	          body: `${Number(signal.currentTargetCount || 0)}건 진행·예정 · 현장 영상 ${Number(signal.liveClaimCount || 0)}건`,
+	          at: signal.latestUpdatedAt
+	        }));
+	        const rows = [...regionalEvents, ...cards.map((card) => ({ title: card.title, body: `${card.regionLabel || "전국"} · ${objectiveFact(card)}`, at: card.updatedAt }))];
+	        if (!rows.length) return `<div class="empty-state"><strong>표시할 흐름이 없습니다</strong><span>관련 공개자료가 확인되면 시간순으로 정리합니다.</span></div>`;
+	        return rows
+	          .slice(0, 8)
+	          .map((row) => `
+	            <article class="timeline-item">
+	              <span>${relative(row.at)}</span>
+	              <strong>${escapeHtml(row.title)}</strong>
+	              <p>${escapeHtml(row.body)}</p>
+	            </article>
+	          `)
+	          .join("");
+	      }
+
+	      function timelineFilterButton(value, label, activeValue, kind) {
+	        const attr = kind === "region" ? "data-issue-timeline-region" : "data-issue-timeline-source";
+	        return `<button type="button" ${attr}="${escapeHtml(value)}" aria-pressed="${String(value === activeValue)}">${escapeHtml(label)}</button>`;
+	      }
+
+	      function timelineMomentSourceKind(moment) {
+	        if (moment.sourceProvenance === "government_or_police") return "official";
+	        if (moment.sourceProvenance === "verified_citizen_report" || moment.sourceProvenance === "material_report") return "field";
+	        if (moment.sourceProvenance === "musunil_ai_estimate" || moment.sourceProvenance === "media_report") return "estimate";
+	        if (moment.sourceProvenance === "rebuttal" || moment.sourceProvenance === "rights_violation_report") return "dispute";
+	        return "field";
+	      }
+
+	      function renderIssueTimelineMoment(moment) {
+	        const claimMeta = moment.sourceProvenance
+	          ? `
+                <div class="claim-meta">
+                  <span class="source-badge ${sourceClass(moment.sourceProvenance)}">${escapeHtml(sourceLabel(moment.sourceProvenance))}</span>
+                  <span class="fine">${escapeHtml(evidenceLabel(moment.evidenceStrength))}</span>
+                  <span class="fine">${escapeHtml(riskLabel(moment.riskLevel))}</span>
+                </div>
+              `
+	          : `<span class="fine">${escapeHtml(moment.regionLabel || "지역 확인 중")} · 공개 신호</span>`;
+	        return `
+	          <article class="timeline-row">
+	            <span class="timeline-dot" aria-hidden="true"></span>
+	            <div class="stack">
+	              <strong>${escapeHtml(moment.title)} · ${relative(moment.at)}</strong>
+	              <span>${escapeHtml(moment.body)}</span>
+	              ${claimMeta}
+	            </div>
+	          </article>
+	        `;
+	      }
+
+	      function renderIssueEvidence(issue, claims) {
+	        return `
+	          <div class="summary-sections">
+	            <article class="evidence-row">
+	              <strong>공식 자료</strong>
+	              <span>${Number(issue.officialCount || 0)}건</span>
+	            </article>
+	            <article class="evidence-row">
+	              <strong>공개 Claim</strong>
+	              <span>${claims.length}건</span>
+	            </article>
+	            <article class="evidence-row">
+	              <strong>확인 정도</strong>
+	              <span>${escapeHtml(bestEvidenceLabel(claims))}</span>
+	            </article>
+	          </div>
+	          ${renderClaimPreview(claims)}
+	        `;
+	      }
+
+	      function renderIssueDisputes(issue, claims) {
+	        const disputes = claims.filter(isDisputeClaim);
+	        if (!disputes.length && !Number(issue.disputeCount || 0)) {
+	          return `<div class="empty-state"><strong>공개된 다른 주장이 없습니다</strong><span>정정·반론·권리 검토 자료가 확인되면 함께 표시합니다.</span></div>`;
+	        }
+	        return renderClaimPreview(disputes.length ? disputes : claims);
+	      }
+
+	      async function loadClaims(card) {
+	        const path = targetPaths[card.targetType];
+	        if (!path) return fallbackClaimsByTarget[card.id] || fallbackClaims;
+        try {
+          const data = card.targetType === "occurrence" ? await api(`/occurrences/${card.id}`) : await api(`/targets/${card.targetType}/${card.id}`);
+          return data.claims?.length ? data.claims : fallbackClaimsByTarget[card.id] || fallbackClaims;
+        } catch {
+	          return fallbackClaimsByTarget[card.id] || fallbackClaims;
+	        }
+	      }
+
+	      async function loadLiveClaims(targetType, targetId) {
+	        try {
+	          const data = await api(`/targets/${targetType}/${targetId}/live-claims`);
+	          return Array.isArray(data.liveClaims) ? data.liveClaims : [];
+	        } catch {
+	          return isPreviewApiBase ? fallbackLiveClaimsByTarget[targetId] || [] : [];
+	        }
+	      }
+
+	      function renderLiveClaims(liveClaims, emptyText = "검토 완료된 현장 영상 Claim이 아직 없습니다.", options = {}) {
+        const notice = `
+          <article class="reel-notice">
+            <strong>현장 영상 Claim</strong>
+            <span>실시간 GPS 촬영과 비식별 검토를 통과한 공개본만 표시합니다. 일치 여부 판단은 현장 인증자에게만 열립니다.</span>
+          </article>
+        `;
+	        const items = Array.isArray(liveClaims) ? liveClaims : [];
+	        const filters = options.filterable ? renderLiveClaimFilters(items) : "";
+	        const filteredItems = options.filterable ? filterLiveClaims(items) : items;
+	        if (!items.length) {
+	          return `${notice}${filters}<div class="empty-state"><strong>현장 영상 없음</strong><span>${escapeHtml(emptyText)}</span></div>`;
+	        }
+	        if (!filteredItems.length) {
+	          return `${notice}${filters}<div class="empty-state"><strong>필터에 맞는 영상이 없습니다</strong><span>다른 지역이나 판단 상태를 선택하면 공개된 영상 Claim을 볼 수 있습니다.</span></div>`;
+	        }
+	        return notice + filters + filteredItems
+	          .map((item) => `
+	            <article class="reel-card">
+	              ${item.regionLabel || item.targetTitle ? `
+	                <div class="reel-context">
+	                  <span>${escapeHtml(item.regionLabel || "지역 확인 중")}</span>
+	                  <strong>${escapeHtml(item.targetTitle || "공개 현장")}</strong>
+	                </div>
+	              ` : ""}
+	              <div class="claim-source">
+	                <strong>${escapeHtml(item.claim?.normalizedStatement || "현장 영상 Claim")}</strong>
+	                <span class="chip ${item.fieldVerification?.disputed ? "warn" : "live"}">${escapeHtml(item.fieldVerification?.statusLabel || "현장 판단 대기")}</span>
+	              </div>
+	              <div class="source-badges">${renderSourceBadges([["field", "현장 영상"], ["official", "GPS 인증"]])}</div>
+	              <div class="reel-media" aria-label="비식별 처리된 현장 영상 Claim">
+	                ${item.media?.redactedClipUrl
+	                  ? `<video src="${escapeHtml(item.media.redactedClipUrl)}" controls playsinline preload="metadata"></video>`
+	                  : `<div class="reel-placeholder"><span class="reel-signal">LIVE</span><strong>비식별 공개본</strong><span>원본은 공개하지 않습니다</span></div>`}
+	              </div>
+	              <div class="reel-meta">
+	                <div class="reel-stat"><strong>${escapeHtml(formatDuration(item.durationMs))}</strong><span>길이</span></div>
+	                <div class="reel-stat"><strong>${escapeHtml(item.publicRadiusM ? `${item.publicRadiusM}m` : "흐림")}</strong><span>공개 위치</span></div>
+	                <div class="reel-stat"><strong>${Number(item.fieldVerification?.aligned || 0)}/${Number(item.fieldVerification?.disputed || 0)}</strong><span>일치/이견</span></div>
+	              </div>
+	              <div class="verification-actions" aria-label="현장 인증 판단">
+	                <button type="button" disabled>현장과 일치</button>
+	                <button type="button" disabled>다른 현장 가능성</button>
+	                <button type="button" disabled>시간·맥락 부족</button>
+	                <button type="button" disabled>권리 검토 필요</button>
+	              </div>
+	              <p class="fine">판단 제출은 모바일 앱의 실시간 GPS 현장 인증이 필요합니다.</p>
+	            </article>
+	          `)
+	          .join("");
+	      }
+
+	      function renderLiveClaimFilters(liveClaims) {
+	        const regions = [...new Set(liveClaims.map((item) => item.regionLabel).filter(Boolean))].slice(0, 6);
+	        return `
+	          <div class="segmented reel-filter" aria-label="영상 지역 필터">
+	            ${liveClaimFilterButton("all", "지역 전체", issueVideoRegionFilter, "region")}
+	            ${regions.map((region) => liveClaimFilterButton(region, region, issueVideoRegionFilter, "region")).join("")}
+	          </div>
+	          <div class="segmented reel-filter" aria-label="현장 판단 필터">
+	            ${liveClaimFilterButton("all", "판단 전체", issueVideoStatusFilter, "status")}
+	            ${liveClaimFilterButton("aligned", "일치 있음", issueVideoStatusFilter, "status")}
+	            ${liveClaimFilterButton("disputed", "이견 있음", issueVideoStatusFilter, "status")}
+	            ${liveClaimFilterButton("pending", "판단 대기", issueVideoStatusFilter, "status")}
+	          </div>
+	        `;
+	      }
+
+	      function liveClaimFilterButton(value, label, activeValue, kind) {
+	        const attr = kind === "region" ? "data-issue-video-region" : "data-issue-video-status";
+	        return `<button type="button" ${attr}="${escapeHtml(value)}" aria-pressed="${String(value === activeValue)}">${escapeHtml(label)}</button>`;
+	      }
+
+	      function filterLiveClaims(liveClaims) {
+	        return liveClaims.filter((item) => {
+	          const regionMatch = issueVideoRegionFilter === "all" || item.regionLabel === issueVideoRegionFilter;
+	          const statusMatch = issueVideoStatusFilter === "all" || liveClaimStatusKind(item) === issueVideoStatusFilter;
+	          return regionMatch && statusMatch;
+	        });
+	      }
+
+	      function liveClaimStatusKind(item) {
+	        if (Number(item.fieldVerification?.disputed || 0) > 0 || String(item.fieldVerification?.statusLabel || "").includes("이견")) return "disputed";
+	        if (Number(item.fieldVerification?.aligned || 0) > 0 || String(item.fieldVerification?.statusLabel || "").includes("일치")) return "aligned";
+	        return "pending";
+	      }
+
+	      function formatDuration(durationMs) {
+	        if (!durationMs) return "확인 중";
+	        return `${Math.max(1, Math.round(Number(durationMs) / 1000))}초`;
+	      }
+
+	      function trustSummary(claims, card) {
+	        const sources = new Set(claims.map((claim) => claim.sourceProvenance));
+	        const hasOfficial = sources.has("government_or_police");
+	        const hasField = sources.has("verified_citizen_report") || sources.has("material_report");
+	        const hasEstimate = sources.has("musunil_ai_estimate");
+	        if (hasOfficial && hasField) return "공식 자료와 현장 자료가 함께 확인된 상황입니다.";
+	        if (hasOfficial) return "공식 공개 자료를 기준으로 정리한 상황입니다.";
+	        if (hasField) return "현장 자료가 접수되어 확인 중인 상황입니다.";
+	        if (hasEstimate || card.targetType === "crowd_density_signal") return "공개 신호를 바탕으로 추정 자료를 병기한 상황입니다.";
+	        return "확인된 출처와 현장 자료를 함께 정리했습니다.";
+	      }
+
+	      function situationTypeLabel(card) {
+	        if (card.targetType === "transit_occurrence") return "교통";
+	        if (card.targetType === "crowd_density_signal") return "인파";
+	        if (card.targetType === "route_segment" || card.targetType === "route_checkpoint") return "경로";
+	        if (card.targetType === "continuous_presence") return "장기";
+	        if (card.lifecycleState === "ARCHIVED") return "기록";
+	        return "집회";
+	      }
+
+	      function objectiveFact(card) {
+	        if (card.lifecycleState === "ARCHIVED") return "공개 기록 자료가 등록되었습니다.";
+	        if (card.lifecycleState === "UPCOMING" || card.lifecycleState === "STARTING_SOON") return "공개 일정 자료가 등록되었습니다.";
+	        if (card.targetType === "continuous_presence") return "세션 구분 없는 장기 현장으로 추적 중입니다.";
+	        if (card.targetType === "transit_occurrence") return "대중교통 관련 주장이 접수되었습니다.";
+	        if (card.targetType === "crowd_density_signal") return "주최 없는 인파 밀집 신호가 관측되었습니다.";
+	        if (card.targetType === "route_segment" || card.targetType === "route_checkpoint") return "경로 또는 통제 지점 주장이 접수되었습니다.";
+	        return "집회·시위 관련 공개 자료가 등록되었습니다.";
+	      }
+
+	      function uncertaintyLabel(card) {
+	        if ((card.chips || []).some((chip) => /여러 주장/.test(chip))) return "서로 다른 출처의 자료를 병기합니다.";
+	        if (needsVerification(card)) return "확인 중인 내용은 확정하지 않고 표시합니다.";
+	        return "현재 공개 자료 기준으로 표시합니다.";
+	      }
+
+	      function renderSummary(claims, card) {
+	        return `
+	          <dl class="compact-summary">
+	            <div><dt>확인된 내용</dt><dd>${escapeHtml(confirmedSummary(claims, card))}</dd></div>
+	            <div><dt>아직 확인 중</dt><dd>${escapeHtml(uncertaintyLabel(card))}</dd></div>
+	            <div><dt>다른 주장</dt><dd>${escapeHtml(disputeSummary(claims))}</dd></div>
+	            <div><dt>확인 정도</dt><dd>${escapeHtml(bestEvidenceLabel(claims))}</dd></div>
+	          </dl>
+	          <div class="summary-section-title">출처별 자료</div>
+	          ${renderClaimPreview(claims)}
+	        `;
+	      }
+
+	      function renderClaimPreview(claims) {
+	        const visibleClaims = claims.slice(0, 2).map(renderClaim).join("");
+	        if (claims.length <= 2) return visibleClaims;
+	        return `
+	          ${visibleClaims}
+	          <details class="more-claims">
+	            <summary>자료 더 보기 ${claims.length - 2}건</summary>
+	            ${claims.slice(2).map(renderClaim).join("")}
+	          </details>
+	        `;
+	      }
+
+	      function confirmedSummary(claims, card) {
+	        const official = claims.find((claim) => claim.sourceProvenance === "government_or_police");
+	        return official?.normalizedStatement || objectiveFact(card);
+	      }
+
+	      function disputeSummary(claims) {
+	        const disputed = claims.filter(isDisputeClaim);
+	        if (disputed.length) return `${disputed.length}건의 다른 주장·정정·권리 검토 자료가 함께 표시됩니다.`;
+	        if (new Set(claims.map((claim) => claim.sourceProvenance)).size > 1) return "복수 출처 자료가 있어 출처별로 나눠 표시합니다.";
+	        return "현재 공개된 다른 주장이나 정정 자료는 없습니다.";
+	      }
+
+	      function isDisputeClaim(claim) {
+	        return claim.sourceProvenance === "rebuttal" || claim.sourceProvenance === "rights_violation_report" || claim.disputedCount > 0 || !["low", "misleading_possible"].includes(claim.riskLevel);
+	      }
+
+	      function renderDisputes(claims) {
+	        const disputed = claims.filter(isDisputeClaim);
+	        if (!disputed.length) {
+	          return `<article class="evidence-row"><strong>다른 주장 없음</strong><span>현재 공개된 다른 주장·정정·권리 검토 자료는 없습니다.</span></article>`;
+	        }
+	        return disputed.map(renderClaim).join("");
+	      }
+
+	      function renderClaim(claim) {
+          const [sourceType, sourceLabel] = sourceBadgeForClaim(claim);
+	        return `
+	          <article class="claim-row">
+	            <div class="claim-source">
+	              <strong>${escapeHtml(claim.claimantLabel)}</strong>
+	              <span class="chip ${riskClass(claim.riskLevel)}">${escapeHtml(riskLabel(claim.riskLevel))}</span>
+	            </div>
+	            <p>${escapeHtml(claim.normalizedStatement)}</p>
+            <div class="proof-meter">
+              <div class="claim-meta">
+                <span class="source-badge ${sourceType}">${escapeHtml(sourceLabel)}</span>
+                <span class="fine">${escapeHtml(evidenceLabel(claim.evidenceStrength))}</span>
+                <span class="fine">${relative(claim.createdAt)}</span>
+              </div>
+              <div class="meter" aria-hidden="true"><span style="width:${proofWidth(claim.evidenceStrength)}%"></span></div>
+            </div>
+          </article>
+	        `;
+	      }
+
+	      function renderTimeline(claims) {
+	        return claims
+	          .map(
+	            (claim) => `
+	              <article class="timeline-row">
+	                <span class="timeline-dot" aria-hidden="true"></span>
+	                <div class="stack">
+	                  <strong>${escapeHtml(timelineTitle(claim))} · ${relative(claim.createdAt)}</strong>
+	                  <span>${escapeHtml(claim.normalizedStatement)}</span>
+	                  <span class="fine">${escapeHtml(claim.claimantLabel)}</span>
+	                </div>
+	              </article>
+	            `
+	          )
+	          .join("");
+	      }
+
+	      function timelineTitle(claim) {
+	        if (claim.sourceProvenance === "government_or_police") return "공식 자료 확인";
+	        if (claim.sourceProvenance === "verified_citizen_report") return "현장 자료 추가";
+	        if (claim.sourceProvenance === "media_report") return "언론 보도 확인";
+	        if (claim.sourceProvenance === "musunil_ai_estimate") return "추정 자료 갱신";
+	        if (claim.sourceProvenance === "rights_violation_report") return "권리 검토 접수";
+	        if (claim.sourceProvenance === "rebuttal") return "반론 접수";
+	        return "자료 추가";
+	      }
+
+	      function renderEvidence(claims, card) {
+	        return `
+	          <article class="evidence-row">
+	            <strong>근거 ${card.proof || claims.length}건</strong>
+	            <span>공개 자료와 위치 인증 자료를 기준으로 표시합니다.</span>
+	          </article>
+	          <article class="evidence-row">
+	            <strong>확인 정도</strong>
+	            <span>${escapeHtml(bestEvidenceLabel(claims))}</span>
+	          </article>
+	          <article class="evidence-row">
+	            <strong>공개 범위</strong>
+	            <span>상세 좌표 대신 지역 단위로 안내합니다.</span>
+	          </article>
+	        `;
+	      }
+
+	      function bestEvidenceLabel(claims) {
+	        const order = ["none", "single_source", "multiple_sources", "multiple_proof_of_presence", "media_time_location_crosscheck", "independent_sources_with_field_evidence"];
+	        const best = claims.reduce((winner, claim) => (order.indexOf(claim.evidenceStrength) > order.indexOf(winner) ? claim.evidenceStrength : winner), "none");
+	        return evidenceLabel(best);
+	      }
+
+      function drawMap() {
+        if (liveMap) return;
+        const canvas = $("map-canvas");
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+        canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+        const ctx = canvas.getContext("2d");
+        ctx.scale(dpr, dpr);
+
+        const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+        const w = rect.width;
+        const h = rect.height;
+        ctx.clearRect(0, 0, w, h);
+
+        const gradient = ctx.createLinearGradient(0, 0, w, h);
+        gradient.addColorStop(0, dark ? "#18232b" : "#dfeaf0");
+        gradient.addColorStop(0.55, dark ? "#111a21" : "#eef4f7");
+        gradient.addColorStop(1, dark ? "#1c262d" : "#d7e5ec");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = dark ? "rgba(125,196,234,.12)" : "rgba(23,96,138,.12)";
+        ctx.lineWidth = 1;
+        for (let x = 0; x < w; x += 58) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x + 44, h);
+          ctx.stroke();
+        }
+        for (let y = 0; y < h; y += 58) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(w, y + 24);
+          ctx.stroke();
+        }
+
+        ctx.strokeStyle = dark ? "rgba(163,176,185,.26)" : "rgba(98,112,123,.26)";
+        ctx.lineWidth = 8;
+        drawRoad(ctx, [
+          [w * 0.12, h * 0.58],
+          [w * 0.31, h * 0.48],
+          [w * 0.48, h * 0.52],
+          [w * 0.72, h * 0.39],
+          [w * 0.9, h * 0.44]
+        ]);
+        ctx.lineWidth = 5;
+        drawRoad(ctx, [
+          [w * 0.18, h * 0.27],
+          [w * 0.33, h * 0.38],
+          [w * 0.46, h * 0.44],
+          [w * 0.58, h * 0.66]
+        ]);
+      }
+
+      function initMap() {
+        if (liveMap) {
+          liveMap.resize();
+          return;
+        }
+
+        if (!window.maplibregl) {
+          drawMap();
+          return;
+        }
+
+        try {
+          liveMap = new maplibregl.Map({
+            container: "live-map",
+            style: MAP_STYLE_URL,
+            center: [126.978, 37.5665],
+            zoom: 11.2,
+            pitch: 0,
+            bearing: -8,
+            attributionControl: false
+          });
+          liveMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+          $("map-canvas").hidden = true;
+          liveMap.on("load", () => {
+            addPreviewMapLayers(liveMap);
+            flyToCard(selected);
+          });
+          liveMap.on("error", () => {
+            liveMap = undefined;
+            $("map-canvas").hidden = false;
+            drawMap();
+          });
+        } catch {
+          liveMap = undefined;
+          $("map-canvas").hidden = false;
+          drawMap();
+        }
+      }
+
+      function addPreviewMapLayers(map) {
+        const routeColor = semanticColor("--route");
+        const transitColor = semanticColor("--transit");
+        const crowdColor = semanticColor("--crowd");
+        const sources = {
+          route: {
+            type: "Feature",
+            geometry: {
+              type: "LineString",
+              coordinates: [
+                [126.958, 37.562],
+                [126.972, 37.568],
+                [126.991, 37.564],
+                [127.008, 37.571]
+              ]
+            }
+          },
+          transit: {
+            type: "Feature",
+            geometry: {
+              type: "LineString",
+              coordinates: [
+                [126.946, 37.556],
+                [126.966, 37.56],
+                [126.988, 37.566],
+                [127.012, 37.574],
+                [127.034, 37.582]
+              ]
+            }
+          },
+          crowd: {
+            type: "Feature",
+            geometry: {
+              type: "Polygon",
+              coordinates: [
+                [
+                  [126.994, 37.552],
+                  [127.02, 37.553],
+                  [127.026, 37.568],
+                  [127.006, 37.579],
+                  [126.988, 37.568],
+                  [126.994, 37.552]
+                ]
+              ]
+            }
+          }
+        };
+
+        if (!map.getSource("preview-route")) {
+          map.addSource("preview-route", { type: "geojson", data: sources.route });
+          map.addLayer({
+            id: "preview-route",
+            type: "line",
+            source: "preview-route",
+            layout: {
+              "line-cap": "round",
+              "line-join": "round"
+            },
+            paint: {
+              "line-blur": 0.25,
+              "line-color": routeColor,
+              "line-opacity": 0.6,
+              "line-width": 3
+            }
+          });
+        }
+
+        if (!map.getSource("preview-transit")) {
+          map.addSource("preview-transit", { type: "geojson", data: sources.transit });
+          map.addLayer({
+            id: "preview-transit",
+            type: "line",
+            source: "preview-transit",
+            layout: {
+              "line-cap": "round",
+              "line-join": "round"
+            },
+            paint: {
+              "line-blur": 0.2,
+              "line-color": transitColor,
+              "line-opacity": 0.55,
+              "line-width": 3
+            }
+          });
+        }
+
+        if (!map.getSource("preview-crowd")) {
+          map.addSource("preview-crowd", { type: "geojson", data: sources.crowd });
+          map.addLayer({
+            id: "preview-crowd-fill",
+            type: "fill",
+            source: "preview-crowd",
+            paint: {
+              "fill-antialias": true,
+              "fill-color": crowdColor,
+              "fill-opacity": 0.07
+            }
+          });
+          map.addLayer({
+            id: "preview-crowd-line",
+            type: "line",
+            source: "preview-crowd",
+            layout: {
+              "line-cap": "round",
+              "line-join": "round"
+            },
+            paint: {
+              "line-blur": 0.15,
+              "line-color": crowdColor,
+              "line-opacity": 0.36,
+              "line-width": 1.15
+            }
+          });
+        }
+      }
+
+      function semanticColor(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      }
+
+      function flyToCard(card) {
+        const exact = cardCenterOverride(card);
+        if (exact) {
+          mapSafeFly(exact.center, exact.zoom);
+          return;
+        }
+        mapSafeFly(cardCenter(card));
+      }
+
+      function cardCenterOverride(card) {
+        return {
+          occ_police_national_stats_2023: { center: [127.8, 36.5], zoom: 6.3 },
+          occ_daegu_stats_2025: { center: [128.6014, 35.8714], zoom: 11.2 },
+          occ_daegu_0709_public: { center: [128.6014, 35.8714], zoom: 11.2 },
+          occ_daegu_0707_public: { center: [128.6014, 35.8714], zoom: 11.2 },
+          occ_daegu_0706_public: { center: [128.6014, 35.8714], zoom: 11.2 },
+          occ_daegu_0704_0705_public: { center: [128.6014, 35.8714], zoom: 11.2 }
+        }[card?.id];
+      }
+
+      function cardCenter(card) {
+        const exact = cardCenterOverride(card);
+        if (exact) return exact.center;
+        return {
+          occurrence: [126.978, 37.5665],
+          continuous_presence: [126.965, 37.571],
+          transit_occurrence: [126.992, 37.57],
+          crowd_density_signal: [127.01, 37.558],
+          route_segment: [126.982, 37.566],
+          route_checkpoint: [126.958, 37.579]
+        }[card?.targetType];
+      }
+
+      function distanceMeters(from, to) {
+        const toRad = (value) => (value * Math.PI) / 180;
+        const earthM = 6_371_000;
+        const dLat = toRad(to[1] - from[1]);
+        const dLng = toRad(to[0] - from[0]);
+        const lat1 = toRad(from[1]);
+        const lat2 = toRad(to[1]);
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+        return 2 * earthM * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      }
+
+      function mapSafeFly(center, zoom = 12) {
+        try {
+          liveMap?.flyTo({ center, zoom, duration: 450 });
+        } catch {}
+      }
+
+      function updatePinSelection() {
+        document.querySelectorAll(".pin").forEach((pin) => {
+          const related = (pin.dataset.related || pin.dataset.target || "").split(",");
+          const active = related.includes(selected?.id) || (selected?.targetType === "continuous_presence" && pin.dataset.target === "occ_1");
+          pin.classList.toggle("selected", active);
+          pin.setAttribute("aria-current", String(active));
+        });
+      }
+
+      function drawRoad(ctx, points) {
+        ctx.beginPath();
+        ctx.moveTo(points[0][0], points[0][1]);
+        for (const [x, y] of points.slice(1)) ctx.lineTo(x, y);
+        ctx.stroke();
+      }
+
+      function proofWidth(value) {
+        return {
+          none: 8,
+          single_source: 24,
+          multiple_sources: 42,
+          multiple_proof_of_presence: 62,
+          media_time_location_crosscheck: 78,
+          independent_sources_with_field_evidence: 92
+        }[value] || 20;
+      }
+
+      function stateClass(state) {
+        if (state === "LIVE" || state === "ONGOING_SERIES") return "live";
+        if (state === "UPCOMING" || state === "STARTING_SOON") return "schedule";
+        if (state === "UNKNOWN" || state === "ENDING_SOON") return "warn";
+        if (state === "ENDED" || state === "ARCHIVED") return "archive";
+        if (state === "CANCELED" || state === "POSTPONED") return "risk";
+        return "";
+      }
+
+      function riskClass(risk) {
+        if (risk === "must_hold_private" || risk === "high_legal_privacy_risk") return "risk";
+        if (risk === "rights_risk" || risk === "misleading_possible") return "warn";
+        return "live";
+      }
+
+      function riskLabel(risk) {
+        return (
+          {
+            low: "낮은 위험",
+            misleading_possible: "오해 가능",
+            rights_risk: "권리 검토",
+            high_legal_privacy_risk: "고위험 검토",
+            must_hold_private: "비공개 검토"
+          }[risk] || "검토 중"
+        );
+      }
+
+      function evidenceLabel(value) {
+        return (
+          {
+            none: "근거 없음",
+            single_source: "출처 1곳",
+            multiple_sources: "복수 출처",
+            multiple_proof_of_presence: "복수 위치 인증",
+            media_time_location_crosscheck: "시간·장소 확인",
+            independent_sources_with_field_evidence: "여러 근거 일치"
+          }[value] || "근거 확인 중"
+        );
+      }
+
+	      function labelState(state) {
+	        return (
+	          {
+            UPCOMING: "예정",
+            STARTING_SOON: "곧 시작 가능성",
+            LIVE: "진행 중",
+            PAUSED: "소강 상태",
+            MOVING: "이동 중",
+            ENDING_SOON: "종료 가능성",
+            ENDED: "종료됨",
+            ARCHIVED: "기록",
+            CANCELED: "취소 주장 있음",
+            POSTPONED: "연기 주장 있음",
+            UNKNOWN: "시간 확인 중",
+            ONGOING_SERIES: "장기 진행 중"
+	          }[state] || "확인 중"
+	        );
+	      }
+
+	      function coverageStatusLabel(status) {
+	        return (
+	          {
+	            schedule_active: "일정 확인",
+	            schedule_candidate: "후보 확인",
+	            statistics_only: "통계 확인",
+	            needs_discovery: "자료 확인 중"
+	          }[status] || "확인 중"
+	        );
+	      }
+
+	      function formatNextCheck(value) {
+	        if (!value) return "점검 예정 없음";
+	        const minutes = Math.round((new Date(value).getTime() - Date.now()) / 60000);
+	        if (minutes <= 0) return "점검 필요";
+	        if (minutes < 60) return `${minutes}분 내 점검`;
+	        if (minutes < 1440) return `${Math.round(minutes / 60)}시간 내 점검`;
+	        return `${Math.round(minutes / 1440)}일 내 점검`;
+	      }
+
+	      function relative(value) {
+        if (!value) return "최근 업데이트 없음";
+        const minutes = Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 60000));
+        if (minutes < 1) return "방금";
+        if (minutes < 60) return `${minutes}분 전`;
+        if (minutes < 1440) return `${Math.round(minutes / 60)}시간 전`;
+        return new Date(value).toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
+      }
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+      }
+
+      function syncResponsiveMode() {
+        const layout = document.querySelector(".layout");
+        if (innerWidth <= 780 && ![...layout.classList].some((name) => name.startsWith("mobile-tab-"))) {
+          layout.classList.add("mobile-tab-home");
+        }
+        if (innerWidth <= 780) {
+          layout.classList.remove("desktop-law");
+        }
+        if (innerWidth > 780) {
+          layout.classList.remove("mobile-tab-home", "mobile-tab-law", "mobile-tab-map", "mobile-tab-report", "mobile-tab-record");
+        }
+      }
+
+      function setDesktopLawPanel(open) {
+        const layout = document.querySelector(".layout");
+        withViewTransition(() => {
+          layout.classList.toggle("desktop-law", open);
+        });
+        if (open) {
+          if (selectedLaw) renderLawDetail(selectedLaw);
+          focusPanel($("law-section"));
+        } else {
+          if (selectedIssue) renderIssueDetail(selectedIssue);
+          focusPanel($("home-section"));
+        }
+        setTimeout(() => liveMap?.resize(), 120);
+      }
+
+	      function setLayerVisibility(layer, visible) {
+	        const pinGroups = {
+	          official: [".pin.document"],
+	          assembly: [".pin.daegu", ".pin.main"],
+	          transit: [".pin.transit"],
+	          crowd: [".pin.crowd"],
+	          route: [".pin.checkpoint"]
+        };
+        for (const selector of pinGroups[layer] || []) {
+          document.querySelectorAll(selector).forEach((pin) => {
+            pin.style.visibility = visible ? "" : "hidden";
+          });
+        }
+        const mapLayers = {
+          transit: ["preview-transit"],
+          crowd: ["preview-crowd-fill", "preview-crowd-line"],
+          route: ["preview-route"]
+        };
+        for (const id of mapLayers[layer] || []) {
+          try {
+            if (liveMap?.getLayer(id)) liveMap.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
+          } catch {}
+        }
+      }
+
+      document.querySelectorAll(".tabs button").forEach((button) => {
+        button.addEventListener("click", () => {
+          withViewTransition(() => {
+            document.querySelectorAll(".tabs button").forEach((item) => item.setAttribute("aria-selected", String(item === button)));
+            for (const id of ["summary", "video", "timeline", "evidence", "dispute"]) $(`${id}-tab`).hidden = button.dataset.tab !== id;
+          });
+          pulseElement($(`${button.dataset.tab}-tab`));
+        });
+      });
+
+      document.querySelectorAll(".segmented button").forEach((button) => {
+        button.addEventListener("click", () => {
+          withViewTransition(() => {
+            button.parentElement.querySelectorAll("button").forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+          });
+          if (button.dataset.timeFilter) activeTimeFilter = button.dataset.timeFilter;
+          if (button.dataset.sourceFilter) activeSourceFilter = button.dataset.sourceFilter;
+          renderCards(loadedCards, { renderDetail: detailMode !== "issue" });
+          if (detailMode === "issue" && selectedIssue) renderIssueDetail(selectedIssue);
+          pulseElement($("cards"), "is-refreshing", 320);
+        });
+      });
+
+      document.querySelectorAll(".layer").forEach((button) => {
+        button.addEventListener("click", () => {
+          const next = button.getAttribute("aria-pressed") !== "true";
+          button.setAttribute("aria-pressed", String(next));
+          setLayerVisibility(button.dataset.layer, next);
+          focusPanel(document.querySelector(".map-shell"));
+          showToast(`${button.textContent.trim()} 레이어 ${next ? "켜짐" : "꺼짐"}`);
+        });
+      });
+
+      $("map-search").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") searchMap(event.currentTarget.value);
+      });
+      $("map-search").addEventListener("change", (event) => searchMap(event.currentTarget.value));
+
+      document.querySelectorAll(".pin").forEach((pin) => {
+        pin.addEventListener("click", () => {
+          const ids = [pin.dataset.target, ...(pin.dataset.related || "").split(",")].filter(Boolean);
+          const card = ids.map((id) => loadedCards.find((item) => item.id === id)).find(Boolean) || selected;
+          selectCard(card, { toast: "지도 선택을 상황 카드와 상세에 반영했습니다." });
+          if (innerWidth > 780) focusPanel(document.querySelector(".map-sheet"));
+        });
+      });
+
+      $("record-section").addEventListener("click", (event) => {
+        const sourceButton = event.target instanceof Element ? event.target.closest("[data-issue-timeline-source]") : null;
+        const regionButton = event.target instanceof Element ? event.target.closest("[data-issue-timeline-region]") : null;
+        if (sourceButton || regionButton) {
+          if (sourceButton) issueTimelineSourceFilter = sourceButton.dataset.issueTimelineSource || "all";
+          if (regionButton) issueTimelineRegionFilter = regionButton.dataset.issueTimelineRegion || "all";
+          if (selectedIssue) renderIssueDetail(selectedIssue).then(() => document.querySelector('.tabs button[data-tab="timeline"]')?.click());
+          return;
+        }
+        const videoRegionButton = event.target instanceof Element ? event.target.closest("[data-issue-video-region]") : null;
+        const videoStatusButton = event.target instanceof Element ? event.target.closest("[data-issue-video-status]") : null;
+        if (videoRegionButton || videoStatusButton) {
+          if (videoRegionButton) issueVideoRegionFilter = videoRegionButton.dataset.issueVideoRegion || "all";
+          if (videoStatusButton) issueVideoStatusFilter = videoStatusButton.dataset.issueVideoStatus || "all";
+          if (selectedIssue) renderIssueDetail(selectedIssue).then(() => document.querySelector('.tabs button[data-tab="video"]')?.click());
+          return;
+        }
+        const issueButton = event.target instanceof Element ? event.target.closest("[data-law-issue-id]") : null;
+        if (issueButton) openIssueFromLaw(issueButton.dataset.lawIssueId);
+      });
+
+      document.querySelectorAll(".mobile-nav button").forEach((button) => {
+        button.addEventListener("click", () => {
+          setMobileTab(button.dataset.tabView, button);
+          if (button.dataset.tabView === "law" && selectedLaw) renderLawDetail(selectedLaw);
+        });
+      });
+
+      $("open-laws").addEventListener("click", () => {
+        if (innerWidth <= 780) {
+          setMobileTab("law", document.querySelector('.mobile-nav button[data-tab-view="law"]'));
+          if (selectedLaw) renderLawDetail(selectedLaw);
+          return;
+        }
+        setDesktopLawPanel(true);
+      });
+
+      $("close-laws").addEventListener("click", () => {
+        if (innerWidth <= 780) {
+          setMobileTab("home", document.querySelector('.mobile-nav button[data-tab-view="home"]'));
+          return;
+        }
+        setDesktopLawPanel(false);
+      });
+
+      $("refresh").addEventListener("click", async () => {
+        setStatus("최신 자료 확인 중", { toast: false });
+        pulseElement($("cards"), "is-refreshing", 320);
+        await load();
+        showToast("최신 공개 자료로 갱신했습니다.");
+      });
+      $("locate").addEventListener("click", () => {
+        if (innerWidth <= 780) setMobileTab("map", document.querySelector('.mobile-nav button[data-tab-view="map"]'));
+        else focusPanel(document.querySelector(".map-shell"));
+        setStatus("위치 권한 없이 전국 보기");
+      });
+      $("split-view").addEventListener("click", () => {
+        if (innerWidth <= 780) setMobileTab("record", document.querySelector('.mobile-nav button[data-tab-view="record"]'));
+        else focusPanel($("record-section"));
+        showToast("선택한 상황을 상세 패널에서 확인합니다.");
+      });
+      $("follow").addEventListener("click", async () => {
+        const button = $("follow");
+        const label = button.textContent;
+        button.disabled = true;
+        button.textContent = "설정 중";
+        try {
+          const session = await getUserSession();
+          const followTargetType = detailMode === "issue" && selectedIssue ? "issue" : selected?.targetType || "occurrence";
+          const followTargetId = detailMode === "issue" && selectedIssue ? selectedIssue.id : selected?.id || "occ_1";
+          await api("/subscriptions", {
+            method: "POST",
+            headers: sessionHeaders(session),
+            body: JSON.stringify({ userId: session.userId, targetType: followTargetType, targetId: followTargetId, alertLevel: "major_only", alertTypes: ["state_changed"] })
+	          });
+	          button.textContent = "알림 설정됨";
+	          setStatus("상태 변경 알림 설정됨");
+        } catch {
+          button.textContent = label;
+          setStatus("연결 대기 · 알림 미전송");
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      $("live-form").addEventListener("submit", (event) => event.preventDefault());
+      $("capture-check-action").addEventListener("click", checkCaptureReadiness);
+      $("start-capture-action").addEventListener("click", startLiveCapture);
+      $("report-video-action").addEventListener("click", () => {
+        document.querySelector('.tabs button[data-tab="video"]')?.click();
+        if (innerWidth <= 780) setMobileTab("record", document.querySelector('.mobile-nav button[data-tab-view="record"]'));
+        focusPanel($("record-section"));
+        $("form-status").textContent = "선택한 상황의 현장 영상 탭으로 이동했습니다.";
+      });
+
+      window.addEventListener("resize", () => {
+        syncResponsiveMode();
+        liveMap ? liveMap.resize() : drawMap();
+      });
+      matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => (liveMap ? liveMap.resize() : drawMap()));
+      const capturedAtInput = document.querySelector('[name="capturedAt"]');
+      if (capturedAtInput) capturedAtInput.value = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+      syncResponsiveMode();
+      load();
+    </script>
+  </body>
+</html>

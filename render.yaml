@@ -1,0 +1,200 @@
+services:
+  - type: keyvalue
+    name: musunil-redis
+    region: singapore
+    plan: starter
+    ipAllowList: []
+    maxmemoryPolicy: noeviction
+    persistenceMode: journal-snapshot
+
+  - type: web
+    name: musunil-api
+    runtime: node
+    region: singapore
+    plan: starter
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm check && pnpm build:web-config && pnpm launch:check
+    preDeployCommand: pnpm db:migrate
+    startCommand: pnpm start:api
+    healthCheckPath: /ready
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: MUSUNIL_RUNTIME_ENV
+        value: production
+      - key: MUSUNIL_INTERNAL_API_KEY
+        generateValue: true
+      - key: MUSUNIL_USER_TOKEN_SECRET
+        generateValue: true
+      - key: MUSUNIL_ENCRYPTION_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: musunil-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: musunil-redis
+          property: connectionString
+      - key: MUSUNIL_USER_INPUTS_B64
+        sync: false
+
+  - type: web
+    name: musunil-web
+    runtime: static
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build:web-config && pnpm launch:check
+    staticPublishPath: apps/web
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-store
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; connect-src 'self' https:; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob:"
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=()
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: MUSUNIL_RUNTIME_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: musunil-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: musunil-redis
+          property: connectionString
+      - key: MUSUNIL_USER_INPUTS_B64
+        fromService:
+          type: web
+          name: musunil-api
+          envVarKey: MUSUNIL_USER_INPUTS_B64
+      - key: MUSUNIL_USER_TOKEN_SECRET
+        fromService:
+          type: web
+          name: musunil-api
+          envVarKey: MUSUNIL_USER_TOKEN_SECRET
+      - key: MUSUNIL_ENCRYPTION_KEY
+        fromService:
+          type: web
+          name: musunil-api
+          envVarKey: MUSUNIL_ENCRYPTION_KEY
+
+  - type: cron
+    name: musunil-public-source-ingest
+    runtime: node
+    region: singapore
+    schedule: "7 * * * *"
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm check
+    startCommand: pnpm --filter @musunil/public-source-ingest dev -- --post
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: MUSUNIL_RUNTIME_ENV
+        value: production
+      - key: MUSUNIL_API_HOSTPORT
+        fromService:
+          type: web
+          name: musunil-api
+          property: hostport
+      - key: MUSUNIL_INTERNAL_API_KEY
+        fromService:
+          type: web
+          name: musunil-api
+          envVarKey: MUSUNIL_INTERNAL_API_KEY
+
+  - type: cron
+    name: musunil-law-source-ingest
+    runtime: node
+    region: singapore
+    schedule: "17 0,12 * * *"
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm check
+    startCommand: pnpm --filter @musunil/public-source-ingest dev -- --laws --post
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: MUSUNIL_RUNTIME_ENV
+        value: production
+      - key: MUSUNIL_API_HOSTPORT
+        fromService:
+          type: web
+          name: musunil-api
+          property: hostport
+      - key: MUSUNIL_INTERNAL_API_KEY
+        fromService:
+          type: web
+          name: musunil-api
+          envVarKey: MUSUNIL_INTERNAL_API_KEY
+      - key: MUSUNIL_USER_INPUTS_B64
+        fromService:
+          type: web
+          name: musunil-api
+          envVarKey: MUSUNIL_USER_INPUTS_B64
+
+  - type: cron
+    name: musunil-notification-dispatch
+    runtime: node
+    region: singapore
+    schedule: "*/5 * * * *"
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm check
+    startCommand: pnpm dispatch:notifications
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: MUSUNIL_RUNTIME_ENV
+        value: production
+      - key: MUSUNIL_API_HOSTPORT
+        fromService:
+          type: web
+          name: musunil-api
+          property: hostport
+      - key: MUSUNIL_INTERNAL_API_KEY
+        fromService:
+          type: web
+          name: musunil-api
+          envVarKey: MUSUNIL_INTERNAL_API_KEY
+
+  - type: cron
+    name: musunil-privacy-purge
+    runtime: node
+    region: singapore
+    schedule: "23 18 * * *"
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm check
+    startCommand: pnpm privacy:purge
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: MUSUNIL_RUNTIME_ENV
+        value: production
+      - key: MUSUNIL_API_HOSTPORT
+        fromService:
+          type: web
+          name: musunil-api
+          property: hostport
+      - key: MUSUNIL_INTERNAL_API_KEY
+        fromService:
+          type: web
+          name: musunil-api
+          envVarKey: MUSUNIL_INTERNAL_API_KEY
+
+databases:
+  - name: musunil-postgres
+    databaseName: musunil
+    user: musunil
+    region: singapore
+    plan: basic-256mb
+    ipAllowList: []
