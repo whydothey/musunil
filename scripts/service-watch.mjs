@@ -147,7 +147,7 @@ async function runChecks() {
       maxBuffer: 20 * 1024 * 1024
     });
     if (result.status !== 0) {
-      throw new Error(tail([result.stderr, result.stdout].filter(Boolean).join("\n"), 1200));
+      throw new Error(tail([result.stderr, result.stdout].filter(Boolean).join("\n"), 2400));
     }
     const parsed = JSON.parse(result.stdout);
     const serviceStates = Array.isArray(parsed.serviceStates)

@@ -124,15 +124,21 @@ async function runViewport(client, viewport, url) {
   });
   await client.send("Emulation.setTouchEmulationEnabled", { enabled: viewport.mobile });
   await navigate(client, url);
-  await waitForExpression(
-    client,
-    "document.querySelectorAll('.issue-card').length >= 3 && document.querySelectorAll('.story-ring').length >= 3",
-    20_000
-  );
+  let homeReady = true;
+  try {
+    await waitForExpression(
+      client,
+      "document.querySelectorAll('.issue-card').length >= 3 && document.querySelectorAll('.story-ring').length >= 3",
+      20_000
+    );
+  } catch {
+    homeReady = false;
+  }
   await sleep(260);
 
   const home = await evaluate(client, visualMetrics("home"));
   scenario(`${viewport.id}_home`, [
+    () => assert(homeReady, `home issue feed not ready: issues=${home.issueCount}, stories=${home.storyCount}, state=${home.serviceSyncState}, banner=${home.serviceBannerTitle || "none"}, first=${home.firstIssueTitle || "none"}`),
     () => assert(home.scrollWidth <= viewport.width, `home overflows horizontally: ${home.scrollWidth} > ${viewport.width}`),
     () => assert(home.forbidden.length === 0, `forbidden public UI copy: ${home.forbidden.join(", ")}`),
     () => assert(home.dashboardVisible.length === 0, `dashboard-like visible elements: ${home.dashboardVisible.join(", ")}`),
@@ -147,6 +153,7 @@ async function runViewport(client, viewport, url) {
     () => assert(home.placePeekCount === 0 || home.placePeekAreaCount === home.placePeekCount, `issue place previews must show public area context: ${home.placePeekAreaCount}/${home.placePeekCount}`),
     () => assert(!/KPI|진행\/예정/.test(home.visibleText), "top-level dashboard metric copy is visible")
   ], serviceDetail(home));
+  if (!homeReady) return;
 
   await click(client, ".issue-card");
   await waitForExpression(client, viewport.mobile
