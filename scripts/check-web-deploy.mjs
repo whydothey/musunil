@@ -75,11 +75,11 @@ await check("web_static_manifest", async () => {
   const response = await raw(`${webBaseUrl}/static-manifest.json`);
   assert(response.status === 200, `/static-manifest.json returned ${response.status}`);
   const localManifest = JSON.parse(readFileSync(resolve(cwd, "apps/web/static-manifest.json"), "utf8"));
+  assert(response.body?.schemaVersion === localManifest.schemaVersion, "deployed static manifest schemaVersion does not match local manifest");
   assert(JSON.stringify(response.body?.files) === JSON.stringify(localManifest.files), "deployed static manifest does not match local manifest");
-  await assertLiveFileHash("/", "index.html", response.body);
-  await assertLiveFileHash("/config.js", "config.js", response.body);
-  await assertLiveFileHash("/media/redacted/preview-occ-live-1.webm", "media/redacted/preview-occ-live-1.webm", response.body);
+  const detail = await assertAllLiveManifestFiles(response.body);
   staticManifestVerified = true;
+  return detail;
 });
 
 await check("web_build_info", async () => {
@@ -159,6 +159,37 @@ async function assertLiveFileHash(urlPath, manifestPath, manifest) {
   const bytes = Buffer.from(await response.arrayBuffer());
   assert(bytes.byteLength === expected.bytes, `${urlPath} byte length mismatch`);
   assert(createHash("sha256").update(bytes).digest("hex") === expected.sha256, `${urlPath} hash mismatch`);
+  return bytes;
+}
+
+async function assertAllLiveManifestFiles(manifest) {
+  const entries = Object.entries(manifest.files ?? {});
+  assert(entries.length > 0, "manifest has no files");
+  let bytes = 0;
+  let headersFileVerified = false;
+  for (const [manifestPath, expected] of entries) {
+    assert(typeof expected?.bytes === "number", `manifest missing byte size for ${manifestPath}`);
+    const body = await assertLiveFileHash(staticUrlPath(manifestPath), manifestPath, manifest);
+    bytes += expected.bytes;
+    if (manifestPath === "_headers") {
+      assertStaticHeadersFile(body);
+      headersFileVerified = true;
+    }
+  }
+  assert(headersFileVerified, "manifest must include and verify _headers");
+  return { files: entries.length, bytes, headersFile: "verified" };
+}
+
+function assertStaticHeadersFile(bytes) {
+  const source = bytes.toString("utf8");
+  for (const token of ["Cache-Control", "Content-Security-Policy", "Permissions-Policy", "Referrer-Policy", "X-Content-Type-Options", "X-Frame-Options"]) {
+    assert(source.includes(token), `_headers missing ${token}`);
+  }
+}
+
+function staticUrlPath(manifestPath) {
+  if (manifestPath === "index.html") return "/";
+  return `/${manifestPath.split("/").map((part) => encodeURIComponent(part)).join("/")}`;
 }
 
 async function text(url) {

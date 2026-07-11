@@ -1,6 +1,7 @@
 import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { lookup } from "node:dns/promises";
+import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 import { publicPayloadRoutes } from "./public-api-routes.mjs";
 
@@ -81,11 +82,15 @@ async function runChecks() {
     const manifest = await getJson(`${webBaseUrl}/static-manifest.json`);
     if (!manifest.files?.["index.html"]?.sha256 || !manifest.files?.["config.js"]?.sha256) throw new Error("static manifest missing core files");
     const localManifest = localStaticManifest();
+    if (localManifest && manifest.schemaVersion !== localManifest.schemaVersion) {
+      throw new Error("live static manifest schemaVersion does not match local manifest");
+    }
     if (localManifest && JSON.stringify(manifest.files) !== JSON.stringify(localManifest.files)) {
       throw new Error("live static manifest does not match local manifest");
     }
+    const liveFiles = await verifyLiveManifestFiles(manifest);
     webStaticManifestVerified = true;
-    return { files: Object.keys(manifest.files).length, mode: localManifest ? "matches_local" : "live_shape_only" };
+    return { ...liveFiles, mode: localManifest ? "matches_local_and_live_hashes" : "live_hashes_only" };
   });
   await check(checks, "web_runtime_config", async () => {
     const source = await getText(`${webBaseUrl}/config.js`);
@@ -260,6 +265,49 @@ function localStaticManifest() {
   } catch {
     return null;
   }
+}
+
+async function verifyLiveManifestFiles(manifest) {
+  const entries = Object.entries(manifest.files ?? {});
+  if (entries.length === 0) throw new Error("static manifest has no files");
+  let bytes = 0;
+  let headersFileVerified = false;
+  for (const [manifestPath, expected] of entries) {
+    if (!expected?.sha256 || typeof expected.bytes !== "number") throw new Error(`static manifest missing hash metadata for ${manifestPath}`);
+    const body = await getBytes(`${webBaseUrl}${staticUrlPath(manifestPath)}`);
+    bytes += expected.bytes;
+    if (body.byteLength !== expected.bytes) throw new Error(`${manifestPath} byte length mismatch`);
+    const actualHash = createHash("sha256").update(body).digest("hex");
+    if (actualHash !== expected.sha256) throw new Error(`${manifestPath} hash mismatch`);
+    if (manifestPath === "_headers") {
+      assertStaticHeadersFile(body);
+      headersFileVerified = true;
+    }
+  }
+  if (!headersFileVerified) throw new Error("static manifest must include and verify _headers");
+  return { files: entries.length, bytes, headersFile: "verified" };
+}
+
+async function getBytes(url) {
+  const response = await fetch(withCacheBuster(url), {
+    headers: noCacheHeaders(),
+    redirect: "manual",
+    signal: AbortSignal.timeout(12_000)
+  });
+  if (!response.ok) throw new Error(`${url} returned ${response.status}`);
+  return Buffer.from(await response.arrayBuffer());
+}
+
+function assertStaticHeadersFile(bytes) {
+  const source = bytes.toString("utf8");
+  for (const token of ["Cache-Control", "Content-Security-Policy", "Permissions-Policy", "Referrer-Policy", "X-Content-Type-Options", "X-Frame-Options"]) {
+    if (!source.includes(token)) throw new Error(`_headers missing ${token}`);
+  }
+}
+
+function staticUrlPath(manifestPath) {
+  if (manifestPath === "index.html") return "/";
+  return `/${manifestPath.split("/").map((part) => encodeURIComponent(part)).join("/")}`;
 }
 
 async function check(checks, id, action) {

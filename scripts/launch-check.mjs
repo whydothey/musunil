@@ -585,8 +585,14 @@ if (
 ) {
   failures.push("web deploy check must verify static manifest freshness, deployed apiBaseUrl, and live security headers before tolerating tracked build-info placeholders");
 }
-if (!/static-manifest\.json/.test(webDeployCheck) || !/assertLiveFileHash/.test(webDeployCheck) || !/createHash\("sha256"\)/.test(webStaticManifestScript)) {
-  failures.push("web deploy check must verify static manifest content hashes");
+if (
+  !/static-manifest\.json/.test(webDeployCheck) ||
+  !/assertAllLiveManifestFiles/.test(webDeployCheck) ||
+  !/assertLiveFileHash/.test(webDeployCheck) ||
+  !/_headers/.test(webDeployCheck) ||
+  !/createHash\("sha256"\)/.test(webStaticManifestScript)
+) {
+  failures.push("web deploy check must verify every static manifest file hash, including _headers");
 }
 if (!/일정 확인/.test(web) || !/public-sources\/coverage/.test(web)) failures.push("web public source coverage status is missing");
 if (/const API = "http:\/\/localhost:4000"/.test(web)) failures.push("web API base is hardcoded to localhost");

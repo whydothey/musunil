@@ -119,7 +119,7 @@
 - `/static-manifest.json` 또는 live 파일 해시가 현재 repo 산출물과 다르면 구버전 배포로 보고 실패한다. Render 수동 Static Site의 Branch, Root Directory, Build Command, Publish Directory, headers를 `README.md`와 `render.yaml` 기준으로 고친 뒤 `Clear build cache & deploy`를 실행한다.
 - `apps/web/build-info.js`와 `apps/web/build-info.json`은 placeholder로 repo에 추적하고, Render build command가 실제 Git SHA로 덮어써야 한다.
 - 로컬 `check:release`와 smoke 명령은 tracked build-info placeholder를 변경하지 않아야 한다. 실제 build metadata 작성은 Render 또는 `MUSUNIL_WRITE_BUILD_INFO=1`에서만 허용한다.
-- `apps/web/static-manifest.json`은 `index.html`, `config.js`, 공개 poster/clip의 SHA-256과 byte size를 담는다. 배포 후 `pnpm check:web-deploy`는 live 파일 해시가 manifest와 같은지 확인한다.
+- `apps/web/static-manifest.json`은 `index.html`, `config.js`, `_headers`, 공개 poster/clip의 SHA-256과 byte size를 담는다. 배포 후 `pnpm check:web-deploy`와 `pnpm service:watch -- --once`는 manifest의 모든 live 파일을 다시 받아 hash/byte size가 현재 repo 산출물과 같은지 확인한다.
 - 배포 후 `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm launch:post-deploy-smoke -- --require-laws`가 live Web config 정합성과 API smoke를 함께 통과해야 한다. build-info placeholder fallback과 static hash 검증은 이어지는 `check:web-deploy`에서 처리하며, static hash 불일치는 실패다.
 - 헤더까지 strict하게 닫으려면 `MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy`가 통과해야 한다. 이때 live `config.js`의 `apiBaseUrl`도 `https://api.musunil.com`과 일치해야 한다.
 - 공개 홈 카드에는 `WEAKLY_OBSERVED`, `traffic_control` 같은 내부 enum 원문이 보이지 않는다.
