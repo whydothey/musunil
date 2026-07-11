@@ -581,6 +581,44 @@
           padding: 0 12px;
         }
 
+        .layout.desktop-detail-open:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) .map-sheet {
+          right: auto;
+          bottom: 16px;
+          left: 16px;
+          width: min(520px, calc(100% - 32px));
+          align-items: center;
+          gap: 10px;
+          padding: 10px 12px;
+          border-radius: 14px;
+        }
+
+        .layout.desktop-detail-open:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) .map-sheet .row,
+        .layout.desktop-detail-open:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) .map-context,
+        .layout.desktop-detail-open:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) .map-sheet-summary {
+          display: none;
+        }
+
+        .layout.desktop-detail-open:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) .map-sheet h3 {
+          margin: 0;
+          font-size: 16px;
+          line-height: 1.25;
+          -webkit-line-clamp: 1;
+        }
+
+        .layout.desktop-detail-open:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) .map-sheet #map-summary {
+          margin-top: 3px;
+          font-size: 12px;
+          font-weight: 650;
+          line-height: 1.38;
+          -webkit-line-clamp: 1;
+        }
+
+        .layout.desktop-detail-open:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) .map-sheet .button {
+          min-width: 70px;
+          min-height: 36px;
+          padding: 0 12px;
+        }
+
         .layout:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) .explore-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2289,17 +2327,18 @@
         font-size: 12px;
         font-weight: 780;
         cursor: pointer;
+        box-shadow: none;
         transition:
           border-color var(--motion-fast) var(--ease-out),
           background-color var(--motion-fast) var(--ease-out),
+          color var(--motion-fast) var(--ease-out),
           transform var(--motion-fast) var(--ease-out);
       }
 
       .detail-action-row button:first-child {
-        border-color: color-mix(in srgb, var(--brand) 70%, var(--line));
-        background: var(--brand);
-        color: #fff;
-        box-shadow: 0 10px 24px color-mix(in srgb, var(--brand) 18%, transparent);
+        border-color: color-mix(in srgb, var(--brand) 34%, var(--line));
+        background: color-mix(in srgb, var(--brand) 7%, var(--surface));
+        color: var(--brand);
       }
 
       .detail-action-row button:hover {
@@ -2309,13 +2348,12 @@
       }
 
       .detail-action-row button:first-child:hover {
-        background: color-mix(in srgb, var(--brand) 92%, #000);
-        color: #fff;
+        background: color-mix(in srgb, var(--brand) 8%, var(--surface));
+        color: var(--brand);
       }
 
       .detail-action-row .button-symbol {
-        width: 15px;
-        height: 15px;
+        display: none;
       }
 
       .detail-action-row button:active {
@@ -2332,6 +2370,37 @@
       .detail-overview {
         display: grid;
         gap: 0;
+      }
+
+      .detail-answer-list {
+        display: grid;
+        gap: 0;
+      }
+
+      .detail-answer-row {
+        display: grid;
+        grid-template-columns: 74px minmax(0, 1fr);
+        gap: 10px;
+        padding: 11px 0;
+        border-bottom: 1px solid color-mix(in srgb, var(--line) 54%, transparent);
+      }
+
+      .detail-answer-row:last-child {
+        border-bottom: 0;
+      }
+
+      .detail-answer-row b {
+        color: color-mix(in srgb, var(--muted) 86%, var(--ink));
+        font-size: 12px;
+        font-weight: 820;
+        line-height: 1.45;
+      }
+
+      .detail-answer-row span {
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 650;
+        line-height: 1.45;
       }
 
       .detail-overview-card {
@@ -8994,48 +9063,58 @@
         const summary = detail.nationalSummary || {};
         const regionCount = Number(summary.regionCount || issue.regionCount || new Set(cards.map((card) => card.regionLabel || "전국")).size);
         const targetCount = Number(summary.targetCount || issue.targetCount || cards.length);
-        const liveClaimCount = Number(summary.liveClaimCount || 0);
+        const liveClaimCount = Number(summary.liveClaimCount || issueVideoCount(issue) || 0);
         const publicClaimCount = Number(summary.publicClaimCount || claims.length);
         const needsCount = Number(summary.needsVerificationCount || issue.needsVerificationCount || 0);
+        const locationCount = Number(summary.locationCount || issue.regionCount || regions.length || 0);
+        const disputeCount = Number(issue.disputeCount || claims.filter(isDisputeClaim).length || 0);
+        const placeText = regions.length ? regions.slice(0, 3).join(", ") : "지역 확인 중";
+        const scaleText = issueScaleStatusText(issue)
+          .replace("규모 추정 검토 중", "인원 추정 검토")
+          .replace("인원 규모 확인 중", "인원 미확인");
+        const relatedRows = cards.slice(0, 4).map((card) => `
+          <article class="evidence-row">
+            <strong>${escapeHtml(cardDisplayTitle(card))}</strong>
+            <span>${escapeHtml(card.regionLabel || "전국")} · ${escapeHtml(labelState(card.lifecycleState))}</span>
+          </article>
+        `).join("");
 	        return `
-            <section class="detail-overview" aria-label="이슈 개요">
-              <article class="detail-overview-card">
-                <strong>${escapeHtml(regions.length ? `${regions.slice(0, 3).join(", ")}에서 확인 중` : "지역 확인 중")}</strong>
-                <span>${targetCount ? `같은 주제의 관련 현장 ${targetCount}건을 지역·시간별로 분리해 봅니다.` : "같은 주제의 관련 현장이 확인되면 지역·시간별로 분리해 봅니다."}</span>
-              </article>
-              <article class="detail-overview-card">
-                <strong>무엇으로 확인하나</strong>
-                <span>${publicClaimCountText(publicClaimCount)} · ${videoEvidenceStatusText(liveClaimCount)} · 출처별 근거를 따로 봅니다.</span>
-              </article>
-              <article class="detail-overview-card">
-                <strong>${needsCount ? `아직 확인할 내용 ${needsCount}건` : "현재 공개 자료 기준"}</strong>
-                <span>${needsCount ? "출처나 현장 자료가 더 확인되기 전까지 확정하지 않습니다." : "공개 자료와 현장 인증 자료를 분리해서 봅니다."}</span>
-              </article>
+            <section class="detail-answer-list" aria-label="이슈 핵심">
+              <div class="detail-answer-row">
+                <b>어디서</b>
+                <span>${escapeHtml(`${placeText}에서 관련 현장 ${targetCount || "확인 중"}건을 지역·시간별로 분리해 봅니다.`)}</span>
+              </div>
+              <div class="detail-answer-row">
+                <b>얼마나</b>
+                <span>${escapeHtml(`${locationCount ? `위치 ${locationCount}곳` : "위치 확인 중"} · ${videoEvidenceStatusText(liveClaimCount)} · ${scaleText}`)}</span>
+              </div>
+              <div class="detail-answer-row">
+                <b>근거</b>
+                <span>${escapeHtml(`${publicClaimCountText(publicClaimCount)} · 출처별 주장과 현장 자료를 분리해 표시합니다.`)}</span>
+              </div>
+              <div class="detail-answer-row">
+                <b>다른 주장</b>
+                <span>${escapeHtml(disputeCount ? `${disputeCount}건을 별도 탭에서 함께 봅니다.` : "현재 공개된 반론·정정은 없습니다.")}</span>
+              </div>
+              <div class="detail-answer-row">
+                <b>아직 모르는 점</b>
+                <span>${escapeHtml(needsCount ? `${needsCount}건은 출처나 현장 자료가 더 확인되기 전까지 확정하지 않습니다.` : "공개 자료 기준으로 확인된 범위만 표시합니다.")}</span>
+              </div>
             </section>
             <details class="detail-disclosure">
-              <summary>전국 현황 자세히</summary>
+              <summary>지역·현장 흐름</summary>
               <div class="detail-disclosure-body">
                 ${renderNationalSnapshot(issue, cards, claims, detail)}
                 ${renderRegionalSignals(detail.regionalSignals?.length ? detail.regionalSignals : fallbackRegionalSignals(cards))}
+                ${relatedRows}
               </div>
             </details>
             <details class="detail-disclosure">
-              <summary>묶음·규모·검증 보기</summary>
+              <summary>근거 한계·검증</summary>
               <div class="detail-disclosure-body">
                 ${renderTopicGrouping(detail.topicGrouping)}
                 ${renderCrowdEstimates(detail.crowdEstimates || [], detail.regionalCrowdEstimates || [])}
                 ${renderVerificationSignals(detail.verificationSignals || [])}
-              </div>
-            </details>
-            <details class="detail-disclosure">
-              <summary>관련 현장 보기</summary>
-              <div class="detail-disclosure-body">
-                ${cards.slice(0, 4).map((card) => `
-                  <article class="evidence-row">
-                    <strong>${escapeHtml(cardDisplayTitle(card))}</strong>
-                    <span>${escapeHtml(card.regionLabel || "전국")} · ${escapeHtml(labelState(card.lifecycleState))}</span>
-                  </article>
-                `).join("")}
               </div>
             </details>
 	        `;
