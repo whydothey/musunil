@@ -121,6 +121,10 @@ async function checkWeb(port) {
   assert(index.includes("issue-card-actions"), "issue card action hub missing");
   assert(!index.includes("issue-card-secondary-actions"), "legacy issue card secondary action row present");
   assert(index.includes("issue-place-peek"), "issue card place preview missing");
+  assert(index.includes("issue-place-map"), "issue card place preview mini-map missing");
+  assert(index.includes("issue-map-lane"), "issue card place preview road surface missing");
+  assert(index.includes("issue-place-area"), "issue card place preview public area missing");
+  assert(!index.includes("radial-gradient(circle at 72% 42%"), "issue card place preview still uses target-like radial art");
   assert(index.includes("primary-action"), "issue card primary action styling missing");
   assert(index.includes("issue-confirm-summary"), "issue card confirmed summary row missing");
   assert(index.includes("issueConfirmedSummaryLine"), "shared issue confirmed summary helper missing");

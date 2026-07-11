@@ -140,6 +140,8 @@ async function runViewport(client, viewport, url) {
     () => assert(home.issueCount >= 3, `expected at least 3 issue cards, got ${home.issueCount}`),
     () => assert(home.firstIssueTitle.length >= 6, "first issue title is missing"),
     () => assert(/상세 보기/.test(home.firstIssueActions.join(" ")), `first issue primary path missing: ${home.firstIssueActions.join(", ")}`),
+    () => assert(home.placePeekCount === 0 || home.placePeekMapCount === home.placePeekCount, `issue place previews must use mini-map surfaces: ${home.placePeekMapCount}/${home.placePeekCount}`),
+    () => assert(home.placePeekCount === 0 || home.placePeekAreaCount === home.placePeekCount, `issue place previews must show public area context: ${home.placePeekAreaCount}/${home.placePeekCount}`),
     () => assert(!/KPI|진행\/예정/.test(home.visibleText), "top-level dashboard metric copy is visible")
   ], serviceDetail(home));
 
@@ -179,7 +181,8 @@ async function runViewport(client, viewport, url) {
     () => assert(map.scrollWidth <= viewport.width, `map overflows horizontally: ${map.scrollWidth} > ${viewport.width}`),
     () => assert(map.forbidden.length === 0, `forbidden map copy: ${map.forbidden.join(", ")}`),
     () => assert(map.mapRect.height >= (viewport.mobile ? 300 : 360), `map is too short: ${map.mapRect.height}`),
-    () => assert(map.mapKeyLabels.join("/") === "자료 위치/현장 인증 범위", `map key changed: ${map.mapKeyLabels.join("/")}`),
+    () => assert(map.mapKeyLabels.join("/") === "자료 위치/인증 범위", `map key changed: ${map.mapKeyLabels.join("/")}`),
+    () => assert(map.mapKeyHiddenCount === 0, `map key labels are not readable: hidden=${map.mapKeyHiddenCount}`),
     () => assert(map.mapSheetHeight <= (viewport.mobile ? 260 : 220), `map sheet too tall: ${map.mapSheetHeight}`),
     () => assert(!viewport.mobile || !map.navOverlap, "mobile map sheet overlaps bottom navigation")
   ], serviceDetail(map));
@@ -247,6 +250,11 @@ function visualMetrics(label) {
       navOverlap,
       storyCount: [...document.querySelectorAll(".story-ring")].filter(visible).length,
       issueCount: [...document.querySelectorAll(".issue-card")].filter(visible).length,
+      placePeekCount: [...document.querySelectorAll(".issue-place-peek")].filter(visible).length,
+      placePeekMapCount: [...document.querySelectorAll(".issue-place-peek .issue-place-map")]
+        .filter((node) => visible(node.closest(".issue-place-peek"))).length,
+      placePeekAreaCount: [...document.querySelectorAll(".issue-place-peek .issue-place-area")]
+        .filter((node) => visible(node.closest(".issue-place-peek"))).length,
       firstIssueTitle: firstIssue?.querySelector(".issue-feed-title .title")?.textContent?.trim() || "",
       firstIssueActions: [...(firstIssue?.querySelectorAll(".issue-card-action-label") || [])].filter((node) => visible(node)).map((node) => node.textContent.trim()),
       detailTitle: document.querySelector("#detail-title")?.textContent?.trim() || "",
@@ -257,6 +265,12 @@ function visualMetrics(label) {
       mapRect: rect(".map-shell"),
       mapSheetHeight: rect(".map-sheet").height,
       mapKeyLabels: [...document.querySelectorAll(".map-key span")].filter(visible).map((node) => node.textContent.trim()),
+      mapKeyHiddenCount: [...document.querySelectorAll(".map-key span")]
+        .filter(visible)
+        .filter((node) => {
+          const style = getComputedStyle(node);
+          return parseFloat(style.fontSize || "0") < 9 || style.color === "rgba(0, 0, 0, 0)" || style.color === "transparent";
+        }).length,
       reportStage: document.querySelector("#report-section")?.dataset.reportStage || "",
       reportPrimaryAction: document.querySelector("#start-capture-action")?.textContent?.trim() || "",
       visibleReportPanels: [".nearby-targets", ".report-target-panel", ".capture-preview", ".report-receipt"]
