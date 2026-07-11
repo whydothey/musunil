@@ -2,7 +2,7 @@
 
 외부 연결이 필요 없는 범위에서 완료한 항목이다.
 
-Last updated: 2026-07-10 04:58 KST
+Last updated: 2026-07-12 00:33 KST
 
 ## 완료
 
@@ -68,6 +68,7 @@ Last updated: 2026-07-10 04:58 KST
   - 대구경찰청 2020~2025 집회 신고·개최 현황
   - 서울, 부산, 대구, 인천, 광주, 대전, 울산, 세종, 경기남부, 경기북부, 강원, 충북, 충남, 전북, 전남, 경북, 경남, 제주 18개 권역 공식 일정 parser
   - `pnpm sources:coverage`
+  - `pnpm sources:diagnose`
   - `pnpm sources:laws`
   - 법 원천 credential 존재 시 0건 dry-run 실패 가드
   - production `/laws` preview 데이터 비노출 가드
@@ -78,6 +79,7 @@ Last updated: 2026-07-10 04:58 KST
   - `pnpm launch:inputs`
   - `pnpm launch:verify-inputs`
   - `pnpm check:launch-sample`
+  - `pnpm check:source-diagnostics`
   - `pnpm check:render-runtime-config`
   - `pnpm check:runtime-smoke`
   - `pnpm check:web-smoke`
@@ -109,7 +111,9 @@ Last updated: 2026-07-10 04:58 KST
   - 공개 자료 worker fetch 실패/0건 파싱 non-zero 종료
   - 전국 18개 시도경찰청 권역 공개 자료 coverage registry
   - `pnpm sources:coverage`
+  - `pnpm sources:diagnose`
   - `GET /public-sources/coverage`
+  - 공개 원천 active schedule 18개 parser/URL/POST body/refresh cadence metadata-only 운영 진단
   - Web 상단 `일정 확인 active/total` 표시
   - 공개 자료 부재를 집회 부재로 해석하지 않는 coverage policy
   - 알림 dispatch worker local completion: due outbox를 `sent`로 마감

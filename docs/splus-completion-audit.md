@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-11 14:24 KST
+Last updated: 2026-07-12 00:33 KST
 
 Status: 완료 아님.
 
@@ -23,7 +23,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 | 요구사항 | 현재 판정 | 증거 | 남은 조건 |
 |---|---|---|---|
 | 주제 기반 전국 묶기 | S+ Guard | `topicGrouping`, Issue detail self-check, web smoke | 새 원천 유입 시 회귀 방지 |
-| 뉴스 비의존성 | S+ Guard | 18개 권역 공개 일정 parser, `/public-sources/coverage`, runtime smoke | 운영 cron 실패 감지와 실운영 수집 확인 |
+| 뉴스 비의존성 | S+ Guard | 18개 권역 공개 일정 parser, `/public-sources/coverage`, `pnpm check:source-diagnostics`, runtime smoke | 운영 cron 실패 감지와 실운영 수집 확인 |
 | 실시간 현장 인증 | A+ Active | 앱 내 촬영, 최소 5초, 서버 시각, held_private, redaction proof, trusted device integrity gate, 공개 poster 필수, API redacted poster route smoke | 실제 storage, redaction, Play Integrity/App Attest dry-run |
 | 전국 동시다발 인지 | S+ Guard | `nationalTimeline`, 자료/지역 필터, 모바일/데스크톱 캡처 | 새 데이터 유입 시 회귀 방지 |
 | 규모 실시간 추정 | A+ Active | AI 추정 Claim 메타, 공개 근거 없는 추정 차단, 독립 시점 과대 산정 차단 | 실제 운영 영상/현장 인증 결과를 추정 confidence에 연결 |
@@ -39,6 +39,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 
 - `pnpm check:release`
 - `pnpm check:splus`
+- `pnpm check:source-diagnostics`
 - `pnpm launch:ready -- --list`로 actual input 단계와 sample gate 단계를 구분
 - `pnpm launch:external-smoke -- --list`
 - API/runtime/web smoke 경계 검증
@@ -110,6 +111,7 @@ GET /ready -> 200
 - 2026-07-11 23:59 상세 개요를 리포트형 카드에서 시민 질문형 답변 구조로 바꿨다. 390px/1440px에서 overview card 0, answer row 5, disclosure 2, 데스크톱 상세 상태 지도 시트 62px, forbidden 0, `overflowX=false`를 확인했지만 실제 운영 공개 영상/GPS와 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-12 00:14 `pnpm launch:cutover-plan`과 [launch-cutover-runbook.md](/Users/mk/Documents/Musunil/docs/launch-cutover-runbook.md)를 추가해 API DNS, Cloudflare DNS, Render Static headers, build metadata, 검증 순서를 한 화면에 고정했다. `pnpm launch:cutover-plan -- --json`, `pnpm check:launch-sample`, `pnpm check:render-runtime-config`, `pnpm check:web-smoke`는 통과했지만 실제 Render/Cloudflare 반영과 `service:watch` 통과 전 운영 배포 준비는 완료가 아니다.
 - 2026-07-12 00:28 `pnpm check:web-flow`를 release gate에 추가했다. 홈 이슈 카드, 상세 빠른 행동, 인증 영상 액션, 공통 이슈 맥락, 지도 선택/검색, 법안→이슈, 제보 대상 확정→촬영→접수, 본인확인 경계 등 11개 사용자 흐름 계약을 검사하며 현재 모두 통과한다. 다만 이 검사는 코드 계약 회귀 방지이며 실제 운영 API, 실제 영상/GPS, 사용자 수락을 대체하지 않는다.
+- 2026-07-12 00:33 `pnpm check:source-diagnostics`를 release gate에 추가했다. 외부 fetch 없이 18개 active schedule 원천의 URL, parser, POST body, refresh cadence 구조를 진단하며, `blockedSourceIds`, `parserMissingSourceIds`, `urlMissingSourceIds`, `postBodyMissingSourceIds`가 생기면 릴리즈가 실패한다. 실제 운영 cron fetch 성공을 대체하지는 않는다.
 - 2026-07-12 00:38 `/ready`와 `runtime_not_ready` 응답에 safe `summary.failedIds`, `summary.blockingGroups`, `requiredActions`를 추가했다. API self-check, `pnpm check:render-runtime-config`, `pnpm check:runtime-smoke`가 통과했으며, Render DB/Redis 미연결 같은 운영 차단 원인을 그룹 단위로 식별한다. 실제 운영 `/ready=true` 증거 전에는 운영 준비 완료가 아니다.
 
 ## Next Active Goal Order

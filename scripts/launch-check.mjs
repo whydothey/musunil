@@ -31,6 +31,7 @@ const launchCutoverPlan = readFileSync(resolve(cwd, "scripts/launch-cutover-plan
 const launchCutoverRunbook = readFileSync(resolve(cwd, "docs/launch-cutover-runbook.md"), "utf8");
 const webFlowSmoke = readFileSync(resolve(cwd, "scripts/ci-web-flow-smoke.mjs"), "utf8");
 const webStaticManifestScript = readFileSync(resolve(cwd, "scripts/write-web-static-manifest.mjs"), "utf8");
+const rootPackageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
 const gitignore = readFileSync(resolve(cwd, ".gitignore"), "utf8");
 const renderYaml = readFileSync(resolve(cwd, "render.yaml"), "utf8");
 const renderApi = renderServiceBlock(renderYaml, "musunil-api");
@@ -349,12 +350,18 @@ if (!/law_source_parse_empty/.test(publicIngestWorker) || publicIngestWorker.ind
 }
 if (!/AbortController/.test(publicIngestWorker)) failures.push("public source ingest worker fetch timeout is missing");
 if (!/\/internal\/ingest\/public-occurrence/.test(publicIngestWorker)) failures.push("public source ingest worker must post public occurrences to the occurrence ingest route");
-if (!/policeRegions/.test(publicSourceRegistry) || !/sourceCoverageReport/.test(publicSourceRegistry)) failures.push("public source nationwide coverage registry is missing");
+if (!/policeRegions/.test(publicSourceRegistry) || !/sourceCoverageReport/.test(publicSourceRegistry) || !/sourceOperationalDiagnostics/.test(publicSourceRegistry)) failures.push("public source nationwide coverage registry is missing");
 if (!/absence_of_public_source_is_not_absence_of_assembly/.test(publicSourceRegistry)) {
   failures.push("public source coverage must not treat source absence as no assembly");
 }
 if (!/seoul_assembly_control/.test(publicSourceRegistry) || !/sejong_today_assembly/.test(publicSourceRegistry) || !/daegu_today_assembly/.test(publicSourceRegistry) || !/daejeon_today_assembly/.test(publicSourceRegistry) || !/gangwon_today_assembly/.test(publicSourceRegistry) || !/busan_today_assembly/.test(publicSourceRegistry) || !/gyeonggi_south_today_assembly/.test(publicSourceRegistry) || !/gyeonggi_north_today_assembly/.test(publicSourceRegistry) || !/gwangju_today_assembly/.test(publicSourceRegistry) || !/incheon_today_assembly/.test(publicSourceRegistry) || !/gyeongbuk_today_assembly/.test(publicSourceRegistry) || !/gyeongnam_today_assembly/.test(publicSourceRegistry) || !/jeju_today_assembly/.test(publicSourceRegistry) || !/chungbuk_today_assembly/.test(publicSourceRegistry) || !/chungnam_today_assembly/.test(publicSourceRegistry) || !/jeonbuk_today_assembly/.test(publicSourceRegistry) || !/jeonnam_today_assembly/.test(publicSourceRegistry) || !/ulsan_today_assembly/.test(publicSourceRegistry) || !/needs_discovery/.test(publicSourceRegistry)) {
   failures.push("public source registry must separate active sources from unresolved regions");
+}
+if (!/--diagnose/.test(publicIngestWorker) || !/--require-operational-readiness/.test(publicIngestWorker)) {
+  failures.push("public source ingest worker must expose metadata-only operational diagnostics");
+}
+if (!/"sources:diagnose"/.test(rootPackageJson) || !/"check:source-diagnostics"/.test(rootPackageJson) || !/check:source-diagnostics/.test(JSON.parse(rootPackageJson).scripts["check:release"] ?? "")) {
+  failures.push("release check must include public source operational diagnostics");
 }
 if (!/MUSUNIL_WEB_CONFIG/.test(web)) failures.push("web runtime config hook is missing");
 if (!/build-info\.js/.test(web)) failures.push("web build-info hook is missing");

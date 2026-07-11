@@ -12,6 +12,7 @@
 - `pnpm launch:verify-inputs` 통과.
 - `pnpm config:encode`가 launch 검증 통과 후에만 `MUSUNIL_USER_INPUTS_B64`를 출력한다.
 - `pnpm check:launch-sample` 통과.
+- `pnpm check:source-diagnostics` 통과.
 - `pnpm check:render-runtime-config` 통과.
 - `pnpm check:runtime-smoke` 통과.
 - `pnpm check:web-smoke` 통과.
@@ -55,6 +56,7 @@
 - 공개 원천 Claim/Occurrence ingest는 같은 payload 반복 실행 시 중복 Claim을 만들지 않는다.
 - `pnpm sources:coverage`에서 18개 시도경찰청 권역이 모두 표시된다.
 - `pnpm sources:coverage`에서 각 권역의 `refreshCadenceHours`, `lastCheckedAt`, `nextRefreshAt`, `gapReason`이 빠지지 않는다.
+- `pnpm sources:diagnose -- --require-operational-readiness`에서 active schedule 18개가 모두 `ingestable`이고 `blockedSourceIds`, `parserMissingSourceIds`, `urlMissingSourceIds`, `postBodyMissingSourceIds`가 비어 있다.
 - 일정 자료 확인 중 권역은 "집회 없음"이 아니라 "공개 자료 확인 중"으로 취급한다.
 - Postgres snapshot 저장은 쓰기 요청 순서대로 직렬화된다.
 - Postgres snapshot payload는 `security.encryption_key` 또는 Render `MUSUNIL_ENCRYPTION_KEY`로 AES-GCM 암호화되어 저장된다.

@@ -82,6 +82,12 @@ production seed에서는 법 탭 프리뷰 항목도 제거된다. 실제 법령
 pnpm sources:coverage
 ```
 
+운영 구조 진단:
+
+```bash
+pnpm sources:diagnose -- --require-operational-readiness
+```
+
 API 확인:
 
 ```bash
@@ -99,6 +105,8 @@ coverage report는 각 권역마다 아래 필드를 가진다.
 - `gapReason`
 - `sourceIds`, `publicScheduleUrl`, `statisticsSourceIds`, `statisticsUrls`
 
+diagnose report는 외부 사이트 fetch 없이 원천 registry만 검사한다. active schedule 원천은 모두 `readiness=ingestable`이어야 하며, `blockedSourceIds`, `parserMissingSourceIds`, `urlMissingSourceIds`, `postBodyMissingSourceIds`가 비어 있어야 한다. POST JSON/HTML 원천은 `bodyStatus=present`, EUC-KR 원천은 `encoding=euc-kr`로 명시되어야 한다.
+
 웹 상단 상태에는 `일정 <active>/<total> · 후보 <candidate>`가 표시된다. 현재는 18개 시도경찰청 권역 모두 일정 parser가 활성 상태라 `18/18`이 정상이다. 접힌 coverage 패널을 열면 권역별 공개 일정 원천, 다음 점검 시각, 갱신 상태를 확인할 수 있다.
 
 출시 전 전국 균등성 목표:
@@ -106,7 +114,8 @@ coverage report는 각 권역마다 아래 필드를 가진다.
 1. 18개 시도경찰청 권역이 모두 coverage report에 포함된다.
 2. `schedule_active`가 아닌 권역은 UI/운영 리포트에서 "자료 확인 중", "후보 확인", "통계 확인"처럼 공개 자료 상태로 표시한다.
 3. 신규 parser는 활성화 전에 dry-run, 0건 파싱 실패, 중복 ingest 방지 self-check를 통과한다.
-4. 첨부 PDF 구조화 전에는 게시물 단위 Claim만 만들고 세부 장소/행진로를 확정값처럼 노출하지 않는다.
+4. 신규 parser는 활성화 전에 `pnpm sources:diagnose -- --require-operational-readiness`에서 URL, parser, POST body, refresh cadence 누락이 없어야 한다.
+5. 첨부 PDF 구조화 전에는 게시물 단위 Claim만 만들고 세부 장소/행진로를 확정값처럼 노출하지 않는다.
 
 ## 실제 데이터 연결 순서
 
@@ -128,6 +137,7 @@ pnpm --filter @musunil/public-source-ingest dev
 - `pnpm --filter @musunil/public-source-ingest dev`
 - 활성 일정 parser: 서울, 부산, 대구, 인천, 광주, 대전, 울산, 세종, 경기남부, 경기북부, 강원, 충북, 충남, 전북, 전남, 경북, 경남, 제주
 - 결과: `fullScheduleCoverage=true`, `activeScheduleRegions=18`, `candidateScheduleRegions=0`, `statisticsOnlyRegions=0`, `needsDiscoveryRegions=0`, `count=180`
+- metadata-only 운영 진단: `readyForScheduledIngest=true`, `activeScheduleSourceCount=18`, `ingestableSourceCount=18`, `blockedSourceIds=[]`, `parserMissingSourceIds=[]`, `urlMissingSourceIds=[]`, `postBodyMissingSourceIds=[]`
 - 서울은 공식 페이지가 JS로 `/spatic/assem/getList.json` POST JSON을 읽는 구조라 worker도 같은 공식 JSON 목록을 사용한다.
 - 세종은 공식 HTML 목록이 제목·작성일·조회수를 제공하고, 기간형 제목은 `startsAt`과 `endsAt`으로 나누어 저장한다.
 - 경기북부는 공식 HTML 목록이 제목·작성일·첨부 여부를 제공하고, 기간형 제목은 `startsAt`과 `endsAt`으로 나누어 저장한다.

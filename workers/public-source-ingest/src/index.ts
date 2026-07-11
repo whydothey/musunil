@@ -17,7 +17,7 @@ import { parseSeoulAssemblyControlList, toSeoulPublicOccurrencePayload } from ".
 import { parseSejongTodayAssemblyList, toSejongPublicOccurrencePayload } from "./sejong.ts";
 import { parseGyeonggiNorthTodayAssemblyList, toGyeonggiNorthPublicOccurrencePayload } from "./gyeonggi-north.ts";
 import { fetchLawPayloads, readLawRuntime } from "./laws.ts";
-import { ingestablePublicAssemblySources, sourceCoverageReport, type PublicAssemblySource } from "./sources.ts";
+import { ingestablePublicAssemblySources, sourceCoverageReport, sourceOperationalDiagnostics, type PublicAssemblySource } from "./sources.ts";
 import { resolve } from "node:path";
 import { loadUserInputs } from "../../../packages/config/src/index.ts";
 
@@ -27,6 +27,13 @@ const coverage = sourceCoverageReport();
 if (process.argv.includes("--coverage")) {
   console.log(JSON.stringify({ mode: "coverage", coverage }, null, 2));
   if (process.argv.includes("--require-full-schedule-coverage") && !coverage.fullScheduleCoverage) process.exit(1);
+  process.exit(0);
+}
+
+if (process.argv.includes("--diagnose")) {
+  const diagnostics = sourceOperationalDiagnostics();
+  console.log(JSON.stringify({ mode: "diagnose", diagnostics }, null, 2));
+  if (process.argv.includes("--require-operational-readiness") && !diagnostics.readyForScheduledIngest) process.exit(1);
   process.exit(0);
 }
 

@@ -23,6 +23,27 @@ export type PublicAssemblySource = {
   notes: string;
 };
 
+export type PublicAssemblySourceDiagnostic = {
+  id: string;
+  regionCode: string;
+  regionLabel: string;
+  kind: PublicAssemblySource["kind"];
+  status: PublicAssemblySource["status"];
+  readiness: "ingestable" | "metadata_only" | "blocked";
+  parserStatus: "connected" | "not_required" | "missing";
+  urlStatus: "present" | "missing";
+  method: "GET" | "POST";
+  bodyStatus: "present" | "not_required" | "missing";
+  encoding: PublicAssemblySource["encoding"] | "utf-8";
+  refreshCadenceHours: number;
+  lastCheckedAt: string;
+  nextRefreshAt: string;
+  publicUrl?: string;
+  gapReason: string;
+  checks: string[];
+  requiredAction?: string;
+};
+
 const registryLastCheckedAt = "2026-07-10T02:22:00.000+09:00";
 const discoveryRefreshCadenceHours = 168;
 
@@ -375,6 +396,89 @@ export function sourceCoverageReport() {
     totalPoliceRegions: policeRegions.length,
     regions,
     sources: publicAssemblySources
+  };
+}
+
+export function sourceOperationalDiagnostics() {
+  const coverage = sourceCoverageReport();
+  const diagnostics = publicAssemblySources.map((source) => sourceDiagnostic(source));
+  const scheduleDiagnostics = diagnostics.filter((diagnostic) => diagnostic.kind === "schedule");
+  const activeScheduleDiagnostics = scheduleDiagnostics.filter((diagnostic) => diagnostic.status === "active");
+  const blockedSourceIds = diagnostics.filter((diagnostic) => diagnostic.readiness === "blocked").map((diagnostic) => diagnostic.id);
+  const parserMissingSourceIds = diagnostics.filter((diagnostic) => diagnostic.parserStatus === "missing").map((diagnostic) => diagnostic.id);
+  const urlMissingSourceIds = diagnostics.filter((diagnostic) => diagnostic.urlStatus === "missing").map((diagnostic) => diagnostic.id);
+  const postBodyMissingSourceIds = diagnostics.filter((diagnostic) => diagnostic.bodyStatus === "missing").map((diagnostic) => diagnostic.id);
+  const overdueSourceIds = diagnostics.filter((diagnostic) => new Date(diagnostic.nextRefreshAt).getTime() < Date.now()).map((diagnostic) => diagnostic.id);
+  const allActiveSchedulesIngestable = activeScheduleDiagnostics.length === policeRegions.length && activeScheduleDiagnostics.every((diagnostic) => diagnostic.readiness === "ingestable");
+  return {
+    generatedAt: coverage.generatedAt,
+    mode: "metadata_only",
+    policy: coverage.policy,
+    readyForScheduledIngest: coverage.fullScheduleCoverage && allActiveSchedulesIngestable && blockedSourceIds.length === 0,
+    summary: {
+      totalPoliceRegions: coverage.totalPoliceRegions,
+      activeScheduleRegions: coverage.activeScheduleRegions,
+      fullScheduleCoverage: coverage.fullScheduleCoverage,
+      registeredSourceCount: diagnostics.length,
+      activeScheduleSourceCount: activeScheduleDiagnostics.length,
+      ingestableSourceCount: diagnostics.filter((diagnostic) => diagnostic.readiness === "ingestable").length,
+      parserReadySourceCount: diagnostics.filter((diagnostic) => diagnostic.parserStatus === "connected").length,
+      postSourceCount: diagnostics.filter((diagnostic) => diagnostic.method === "POST").length,
+      eucKrSourceCount: diagnostics.filter((diagnostic) => diagnostic.encoding === "euc-kr").length,
+      blockedSourceIds,
+      parserMissingSourceIds,
+      urlMissingSourceIds,
+      postBodyMissingSourceIds,
+      overdueSourceIds
+    },
+    regions: coverage.regions.map((region) => ({
+      code: region.code,
+      label: region.label,
+      status: region.status,
+      activeScheduleSourceId: region.activeScheduleSourceId,
+      publicScheduleUrl: region.publicScheduleUrl,
+      refreshCadenceHours: region.refreshCadenceHours,
+      lastCheckedAt: region.lastCheckedAt,
+      nextRefreshAt: region.nextRefreshAt,
+      gapReason: region.gapReason
+    })),
+    sources: diagnostics
+  };
+}
+
+function sourceDiagnostic(source: PublicAssemblySource): PublicAssemblySourceDiagnostic {
+  const isSchedule = source.kind === "schedule";
+  const parserStatus = isSchedule ? (source.parser ? "connected" : "missing") : "not_required";
+  const urlStatus = source.url ? "present" : "missing";
+  const method = source.method ?? "GET";
+  const bodyStatus = method === "POST" ? (source.body ? "present" : "missing") : "not_required";
+  const nextRefreshAt = addHours(source.lastCheckedAt, source.refreshCadenceHours);
+  const checks = [
+    urlStatus === "present" ? "official_url_present" : "official_url_missing",
+    parserStatus === "connected" ? "parser_connected" : parserStatus === "not_required" ? "parser_not_required" : "parser_missing",
+    bodyStatus === "present" ? "post_body_present" : bodyStatus === "not_required" ? "post_body_not_required" : "post_body_missing",
+    source.refreshCadenceHours > 0 ? "refresh_cadence_present" : "refresh_cadence_missing"
+  ];
+  const blocked = source.status === "active" && (urlStatus === "missing" || parserStatus === "missing" || bodyStatus === "missing" || source.refreshCadenceHours <= 0);
+  return {
+    id: source.id,
+    regionCode: source.regionCode,
+    regionLabel: source.regionLabel,
+    kind: source.kind,
+    status: source.status,
+    readiness: blocked ? "blocked" : isSchedule && source.status === "active" ? "ingestable" : "metadata_only",
+    parserStatus,
+    urlStatus,
+    method,
+    bodyStatus,
+    encoding: source.encoding ?? "utf-8",
+    refreshCadenceHours: source.refreshCadenceHours,
+    lastCheckedAt: source.lastCheckedAt,
+    nextRefreshAt,
+    publicUrl: source.pageUrl ?? source.url,
+    gapReason: source.failureReason ?? coverageGapReason(isSchedule && source.status === "active" ? "schedule_active" : source.status === "candidate" ? "schedule_candidate" : source.kind === "statistics" ? "statistics_only" : "needs_discovery"),
+    checks,
+    requiredAction: blocked ? "공식 URL, parser, POST body, 갱신 주기 중 빠진 값을 보완해야 ingest 대상이 된다." : undefined
   };
 }
 

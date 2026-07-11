@@ -17,7 +17,7 @@ import { parseUlsanTodayAssemblyList, toUlsanPublicOccurrencePayload } from "./u
 import { parseSeoulAssemblyControlList, toSeoulPublicOccurrencePayload } from "./seoul.ts";
 import { parseSejongTodayAssemblyList, toSejongPublicOccurrencePayload } from "./sejong.ts";
 import { parseGyeonggiNorthTodayAssemblyList, toGyeonggiNorthPublicOccurrencePayload } from "./gyeonggi-north.ts";
-import { ingestablePublicAssemblySources, policeRegions, publicAssemblySources, sourceCoverageReport } from "./sources.ts";
+import { ingestablePublicAssemblySources, policeRegions, publicAssemblySources, sourceCoverageReport, sourceOperationalDiagnostics } from "./sources.ts";
 import { fetchLawPayloads, readLawRuntime } from "./laws.ts";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -459,6 +459,7 @@ assert.equal(gyeonggiNorthRangePayload.startsAt, "2026-07-04T00:00:00.000+09:00"
 assert.equal(gyeonggiNorthRangePayload.endsAt, "2026-07-06T23:59:59.000+09:00");
 
 const coverage = sourceCoverageReport();
+const diagnostics = sourceOperationalDiagnostics();
 assert.equal(policeRegions.length, 18);
 assert.equal(new Set(policeRegions.map((region) => region.code)).size, policeRegions.length);
 assert.equal(ingestablePublicAssemblySources().map((source) => source.id).join(","), "seoul_assembly_control,sejong_today_assembly,daegu_today_assembly,daejeon_today_assembly,gyeonggi_north_today_assembly,gangwon_today_assembly,busan_today_assembly,gyeonggi_south_today_assembly,gwangju_today_assembly,incheon_today_assembly,gyeongbuk_today_assembly,gyeongnam_today_assembly,jeju_today_assembly,chungbuk_today_assembly,chungnam_today_assembly,jeonbuk_today_assembly,jeonnam_today_assembly,ulsan_today_assembly");
@@ -511,6 +512,17 @@ assert.equal(coverage.regions.find((region) => region.code === "seoul")?.coverag
 assert.equal(coverage.regions.find((region) => region.code === "sejong")?.publicScheduleUrl?.includes("sjpolice.go.kr"), true);
 assert.equal(coverage.regions.find((region) => region.code === "sejong")?.coverageLevel, "daily_schedule");
 assert.equal(publicAssemblySources.some((source) => source.kind === "statistics" && source.regionCode === "national"), true);
+assert.equal(diagnostics.readyForScheduledIngest, true);
+assert.equal(diagnostics.summary.totalPoliceRegions, 18);
+assert.equal(diagnostics.summary.activeScheduleSourceCount, 18);
+assert.equal(diagnostics.summary.ingestableSourceCount, 18);
+assert.equal(diagnostics.summary.parserReadySourceCount, 18);
+assert.deepEqual(diagnostics.summary.blockedSourceIds, []);
+assert.deepEqual(diagnostics.summary.parserMissingSourceIds, []);
+assert.deepEqual(diagnostics.summary.urlMissingSourceIds, []);
+assert.deepEqual(diagnostics.summary.postBodyMissingSourceIds, []);
+assert.equal(diagnostics.sources.filter((source) => source.method === "POST").every((source) => source.bodyStatus === "present"), true);
+assert.equal(diagnostics.sources.filter((source) => source.kind === "schedule").every((source) => source.publicUrl && source.checks.includes("official_url_present")), true);
 
 const workerSource = readFileSync(resolve(import.meta.dirname, "index.ts"), "utf8");
 assert.equal(workerSource.includes("process.exit(1)"), true);
@@ -518,6 +530,8 @@ assert.equal(workerSource.includes("response.ok"), true);
 assert.equal(workerSource.includes("public_source_parse_empty"), true);
 assert.equal(workerSource.includes("AbortController"), true);
 assert.equal(workerSource.includes("MUSUNIL_API_HOSTPORT"), true);
+assert.equal(workerSource.includes("--diagnose"), true);
+assert.equal(workerSource.includes("sourceOperationalDiagnostics"), true);
 assert.equal(workerSource.includes("--coverage"), true);
 assert.equal(workerSource.includes("--laws"), true);
 assert.equal(workerSource.includes("/internal/ingest/laws"), true);
