@@ -295,6 +295,9 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 11:58 mobile home feed card | `docs/commercial-splus-surface37-home-mobile-390-2026-07-11.png` |
 | 11:58 desktop home feed card | `docs/commercial-splus-surface37-home-desktop-1440-2026-07-11.png` |
 | 11:58 home card metrics | 모바일 390px 첫 화면 이슈 카드 2개 이상, 첫 카드 211px, 카드 액션 `지도/근거/영상/반론`, 위치 미리보기 `112x113`, `scrollWidth=390`, 내부 `시민 5초 요약` 노출 0. 데스크톱 1440px 첫 카드 3개, 각 카드 222px, `detailVisible=false`, `mapVisible=true`, `overflowX=false`. 다만 실제 운영 영상/GPS와 사용자 수락 전 S+는 아니다. |
+| 12:10 mobile report single flow | `docs/commercial-splus-surface38-report-mobile-390-2026-07-11.png` |
+| 12:10 desktop report single flow | `docs/commercial-splus-surface38-report-desktop-1440-2026-07-11.png` |
+| 12:10 report metrics | 모바일 390px `현장촬영` 첫 화면은 `empty-state=false`, 단계표 hidden, CTA `근처 현장 찾기`, 보호 pill `정밀 위치 비공개/제출 전 현장 확인`, `navOverlap=false`, `scrollWidth=390`. 데스크톱 1440px locate 단계는 오른쪽 맥락 패널 hidden, 중앙 단일 흐름 680px, CTA와 headline gap 12px. 실제 본인확인/위치권한/운영 GPS 리허설 전 S+는 아니다. |
 
 ## Non-Negotiable Gates
 
