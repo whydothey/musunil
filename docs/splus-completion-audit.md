@@ -102,6 +102,7 @@ GET /ready -> 200
 - 2026-07-11 14:14 surface51에서 공개 poster 없는 LIVE 영상을 홈 카드 썸네일처럼 표시하지 않게 했다. 390px/1440px 캡처에서 `reviewOnlyCards=0`, first visual `issue-place-peek`, forbidden 0을 확인했지만 실제 운영 공개 영상/GPS, 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-11 14:24 surface53에서 주요 이슈 레일을 필터칩형 pill이 아니라 원형 이슈 story ring으로 바꿨다. 390px/1440px 캡처에서 `storyCount=3`, `storyOrbCount=3`, `storyLabels=정보통신망법 개정 반대/대통령 탄핵 요구 행진/전국 집회 공개 일정`, `overflowX=false`, forbidden 0, rejected 0을 확인했지만 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-11 21:26 deploy checker와 service watch를 static hash 우선 판정으로 수정했다. `/static-manifest.json`과 live HTML/config/media SHA-256이 현재 repo 산출물과 같으면 최신 UI 배포는 통과하고, `/build-info.json` placeholder와 no-store header 미적용은 경고로 남긴다. static hash가 다르면 계속 실패한다.
+- 2026-07-11 23:23 API 미연결 상태를 공개 화면에서 숨기지 않도록 `실시간 동기화 지연` 서비스 배너를 추가했다. 390px/1440px 캡처에서 저장된 공개자료 기준 안내, `다시 확인`, forbidden 0, `overflowX=false`를 확인했지만 실제 API 도메인 연결 전 운영 배포 준비는 완료가 아니다.
 
 ## Next Active Goal Order
 

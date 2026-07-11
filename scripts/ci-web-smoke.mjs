@@ -358,6 +358,11 @@ async function checkWeb(port) {
   assert(index.includes("현장 영상 공개 준비 중"), "review-state video copy missing");
   assert(index.includes('<p class="subtitle">공개 위치·근거 확인</p>'), "consumer-facing brand subtitle missing");
   assert(index.includes("<h2>확인된 집회·시위</h2>"), "consumer-facing home headline missing");
+  assert(index.includes('id="service-banner"'), "public service sync banner missing");
+  assert(index.includes("실시간 동기화 지연"), "service sync delay copy missing");
+  assert(index.includes("저장된 공개자료 기준"), "stored public material fallback copy missing");
+  assert(index.includes('id="service-retry"'), "service sync retry action missing");
+  assert(index.includes("setServiceSyncState(\"live\")"), "service sync success state missing");
   assert(!index.includes("<h2>집회·시위 공개자료</h2>"), "old home headline is still visible");
   assert(index.includes("compactIssueTitle"), "compact issue story labels missing");
   assert(index.includes("publicRedactedMediaUrl"), "strict public redacted media resolver missing");
