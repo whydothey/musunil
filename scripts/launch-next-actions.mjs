@@ -73,7 +73,7 @@ function parseReport(source) {
     checked: "launch_next_actions",
     lastChecked,
     status,
-    releaseBlocked: status !== "S+ Guard" || failed.length > 0 || actions.length > 0,
+    releaseBlocked: status !== "S+ Guard" || failed.length > 0 || skipped.length > 0 || actions.length > 0,
     passCount: ok.length,
     failCount: failed.length,
     skipCount: skipped.length,

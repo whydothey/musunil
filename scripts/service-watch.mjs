@@ -252,7 +252,7 @@ async function runChecks() {
     checkedAt: new Date().toISOString(),
     webBaseUrl,
     apiBaseUrl,
-    ok: checks.every((item) => item.ok || item.skipped),
+    ok: checks.every((item) => item.ok),
     checks
   };
   result.requiredActions = requiredActions(result);
@@ -583,6 +583,15 @@ function requiredActions(result) {
     });
   }
   const visualSurface = byId.get("web_visual_surface");
+  if (visualSurface?.skipped) {
+    actions.push({
+      id: "run_live_visual_surface_check",
+      owner: "lead",
+      action: "이번 service watch 실행은 live 화면 캡처 검증을 생략했다. 출시 판단에는 모바일/데스크톱 live visual surface 증거가 필요하므로 `service:watch:visual`로 다시 실행한다.",
+      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm service:watch:visual",
+      reference: "docs/commercial-splus-redesign.md"
+    });
+  }
   if (visualSurface && !visualSurface.ok && !visualSurface.skipped) {
     const visualMessage = visualSurface.message || "";
     const nonLiveDataState =

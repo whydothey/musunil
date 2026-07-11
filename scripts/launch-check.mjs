@@ -382,6 +382,8 @@ if (
   !/sourceBundleFirst/.test(serviceWatch) ||
   !/non-live data state/.test(serviceWatch) ||
   !/withVisualSurface/.test(serviceWatch) ||
+  !/checks\.every\(\(item\) => item\.ok\)/.test(serviceWatch) ||
+  !/run_live_visual_surface_check/.test(serviceWatch) ||
   !/stop_live_visual_surface_regression/.test(serviceWatch) ||
   !/restore_issue_first_live_data/.test(serviceWatch) ||
   !/restore_issue_first_api_payload/.test(serviceWatch) ||
@@ -401,6 +403,9 @@ if (
   !/skipped:\s*true/.test(serviceWatch)
 ) {
   failures.push("service-watch must separate API endpoint preflight failure from downstream skipped API checks, optionally run live visual surface, and produce actionable launch required actions");
+}
+if (!/skipped\.length > 0/.test(launchNextActions)) {
+  failures.push("launch blockers helper must treat skipped service-watch checks as release blockers");
 }
 if (!/"service:watch:visual"/.test(packageJson) || !/--with-visual/.test(packageJson)) {
   failures.push("service-watch visual command must be exposed for post-deploy live render verification");

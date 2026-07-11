@@ -113,6 +113,7 @@
 - Render Static Site는 repo root에서 `pnpm build:web-static`과 `pnpm check:web-smoke`를 실행하고 `apps/web`만 publish한다.
 - Render 배포 뒤에는 `pnpm check:visual-surface:live`로 실제 `musunil.com` 화면의 이슈 스토리, 이슈 카드, 상세, 인증영상 대기/영상, 지도, 제보 첫 행동이 390px, 430px, 768px, 1440px에서 모두 유지되는지 확인한다.
 - 운영 감시 문서까지 갱신하려면 `pnpm service:watch:visual`을 실행한다.
+- `service:watch` 결과에서 `skip`은 검증 생략이지 통과가 아니다. 출시 판단은 모든 check가 `ok`이고 Required Actions가 비어 있을 때만 `S+ Guard`로 본다.
 - Render Static Site와 Cloudflare 경로는 `/`, `/config.js`, `/build-info.json`에 `Cache-Control: no-store`, CSP, `Permissions-Policy`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`를 보내야 하며, 공개 영상 확인을 위해 CSP에 `media-src 'self' https: blob:`가 있어야 한다.
 - `/build-info.json` 또는 `/build-info.js`가 404면 Static Site build command가 실행되지 않았거나, repo root/Publish Directory/Blueprint 연결이 잘못됐거나, build-info 산출물이 ignore/미추적 처리된 상태로 본다.
 - `/static-manifest.json`과 live 파일 해시가 현재 repo 산출물과 일치하지만 `/build-info.json`이 `generated-at-build`이면 Static Site가 커밋된 `apps/web` 파일을 publish하고 build metadata만 반영하지 않는 상태다. 이 경우 최신 UI 배포 여부는 통과로 보되, `check:web-deploy`와 `service:watch`는 `web_build_info_placeholder` 경고를 남긴다.
