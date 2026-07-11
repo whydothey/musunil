@@ -93,6 +93,7 @@ function parseReport(source) {
     helperCommands: [
       "pnpm launch:blockers -- --refresh",
       "pnpm launch:blockers:strict",
+      "pnpm launch:blockers:refresh-strict",
       "pnpm render:api-settings",
       "pnpm render:web-settings",
       "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",

@@ -242,10 +242,12 @@ if (!/"render:api-settings"/.test(packageJson) || !/render-api-settings\.mjs/.te
 if (
   !/"launch:blockers"/.test(packageJson) ||
   !/"launch:blockers:strict"/.test(packageJson) ||
+  !/"launch:blockers:refresh-strict"/.test(packageJson) ||
   !/launch-next-actions\.mjs/.test(packageJson) ||
   !/docs\/splus-service-watch\.md/.test(launchNextActions) ||
   !/Required Actions/.test(launchNextActions) ||
   !/--refresh/.test(launchNextActions) ||
+  !/"launch:blockers:refresh-strict":\s*"node scripts\/launch-next-actions\.mjs -- --refresh --fail-on-blockers"/.test(packageJson) ||
   !/--fail-on-blockers/.test(packageJson) ||
   !/Report freshness/.test(launchNextActions) ||
   !/MUSUNIL_LAUNCH_BLOCKERS_STALE_AFTER_MINUTES/.test(launchNextActions) ||
