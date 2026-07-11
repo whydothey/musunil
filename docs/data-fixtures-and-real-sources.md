@@ -158,6 +158,12 @@ pnpm --filter @musunil/public-source-ingest dev -- --post
 pnpm sources:laws
 ```
 
+법령·의안 원천 metadata 진단:
+
+```bash
+pnpm sources:laws-diagnose -- --require-law-metadata
+```
+
 운영 전 통합 외부 smoke:
 
 ```bash
@@ -174,6 +180,7 @@ pnpm launch:external-smoke
 - production launch validation이 `national_assembly_bill_api_key` 또는 `law_go_kr_oc` 중 하나 없이는 법 관련 탭 운영 설정을 차단한다.
 - production runtime config smoke가 실제 ingest 전 `/laws`에 preview 법령이 나오지 않음을 검증한다.
 - law source dry-run은 credential이 있을 때 0건 파싱을 성공으로 취급하지 않는다.
+- law source metadata 진단은 국회 의안 API와 법제처 국가법령 API endpoint가 공식 URL인지, 관심 키워드가 비어 있지 않은지, credential 원문이 출력되지 않는지 검증한다.
 
 S+ 판정에 남은 것:
 

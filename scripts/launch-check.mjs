@@ -363,6 +363,12 @@ if (!/--diagnose/.test(publicIngestWorker) || !/--require-operational-readiness/
 if (!/"sources:diagnose"/.test(rootPackageJson) || !/"check:source-diagnostics"/.test(rootPackageJson) || !/check:source-diagnostics/.test(JSON.parse(rootPackageJson).scripts["check:release"] ?? "")) {
   failures.push("release check must include public source operational diagnostics");
 }
+if (!/--laws-diagnose/.test(publicIngestWorker) || !/--require-law-metadata/.test(publicIngestWorker) || !/lawOperationalDiagnostics/.test(publicIngestWorker)) {
+  failures.push("law source ingest worker must expose metadata-only law diagnostics");
+}
+if (!/"sources:laws-diagnose"/.test(rootPackageJson) || !/"check:law-diagnostics"/.test(rootPackageJson) || !/check:law-diagnostics/.test(JSON.parse(rootPackageJson).scripts["check:release"] ?? "")) {
+  failures.push("release check must include law source metadata diagnostics");
+}
 if (!/MUSUNIL_WEB_CONFIG/.test(web)) failures.push("web runtime config hook is missing");
 if (!/build-info\.js/.test(web)) failures.push("web build-info hook is missing");
 if (!/generated-at-build/.test(webDeployCheck) || !/staticManifestVerified/.test(webDeployCheck) || !/web_build_info_placeholder/.test(webDeployCheck)) {

@@ -13,6 +13,7 @@
 - `pnpm config:encode`가 launch 검증 통과 후에만 `MUSUNIL_USER_INPUTS_B64`를 출력한다.
 - `pnpm check:launch-sample` 통과.
 - `pnpm check:source-diagnostics` 통과.
+- `pnpm check:law-diagnostics` 통과.
 - `pnpm check:render-runtime-config` 통과.
 - `pnpm check:runtime-smoke` 통과.
 - `pnpm check:web-smoke` 통과.
@@ -81,6 +82,7 @@
 - 배포 후 post-deploy smoke에서 `/comments`, `/votes`, `/likes`, `/reactions`, `/donations`, `/sponsorships` GET/POST가 404인지 확인한다.
 - production seed와 `/home` 응답에 프리뷰/mock 집회가 섞이지 않는다.
 - 실제 법령·의안 ingest 전 production `/laws`는 preview 법령을 노출하지 않고 빈 목록을 반환한다.
+- `pnpm sources:laws-diagnose -- --require-law-metadata`는 국회 의안 API와 법제처 국가법령 API endpoint가 공식 URL이고 관심 키워드가 1개 이상인지 확인하며, API key/OC 원문을 출력하지 않는다.
 - production에서 포트원 본인확인 `identity.portone_store_id`, `identity.portone_identity_channel_key`, `identity.portone_api_secret`이 없으면 launch validation이 실패한다.
 - 로그인 없이 공개 읽기 API는 접근 가능하지만, 제보·현장 판단·반론·권리침해 신고·알림 설정·`/me/*`는 본인확인 완료 세션 없이는 `identity_required`로 실패한다.
 - `pnpm service:watch -- --once`가 Web static hash/build metadata, Web header contract, API DNS/HTTPS endpoint preflight, API readiness, 공개 payload 안전성, 법안/coverage, 인증 write boundary를 검증하고 `docs/splus-service-watch.md`를 갱신한다. API endpoint preflight가 실패하면 하위 API checks는 `skip`이어야 하며, 실패 원인은 `api_endpoint_preflight`에 남아야 한다. 실패 시 `Required Actions` 섹션이 다음 운영 조치와 검증 명령을 표시해야 한다.

@@ -23,6 +23,30 @@ export type LawRuntime = {
   keywords: string[];
 };
 
+export type LawOperationalDiagnostics = {
+  mode: "metadata_only";
+  readyForMetadataCheck: boolean;
+  readyForOperationalIngest: boolean;
+  summary: {
+    keywordCount: number;
+    credentialConfigured: boolean;
+    assemblyBillCredentialConfigured: boolean;
+    lawGoKrCredentialConfigured: boolean;
+    officialEndpointCount: number;
+    requiredActions: string[];
+  };
+  providers: Array<{
+    id: "assembly_bill" | "law_effective";
+    label: string;
+    officialUrl: string;
+    endpointHost: string;
+    credentialStatus: "configured" | "missing";
+    endpointStatus: "official" | "custom_or_unverified" | "invalid";
+    queryMode: string;
+  }>;
+  keywords: string[];
+};
+
 const defaultAssemblyBillApiUrl = "https://open.assembly.go.kr/portal/openapi/ALLBILLINFO";
 const defaultLawApiBaseUrl = "https://www.law.go.kr/DRF/lawSearch.do";
 const defaultKeywords = [
@@ -44,6 +68,54 @@ export function readLawRuntime(config: Record<string, unknown>, env: NodeJS.Proc
     lawApiOc: env.MUSUNIL_LAW_GO_KR_OC ?? readConfigString(config, "public_data_sources.law_go_kr_oc"),
     lawApiBaseUrl: env.MUSUNIL_LAW_GO_KR_BASE_URL ?? readConfigString(config, "public_data_sources.law_go_kr_base_url") ?? defaultLawApiBaseUrl,
     keywords: readConfigStringArray(config, "public_data_sources.law_interest_keywords", defaultKeywords)
+  };
+}
+
+export function lawOperationalDiagnostics(runtime: LawRuntime): LawOperationalDiagnostics {
+  const assemblyEndpoint = endpointStatus(runtime.assemblyBillApiUrl, "open.assembly.go.kr", "/portal/openapi/ALLBILLINFO");
+  const lawEndpoint = endpointStatus(runtime.lawApiBaseUrl, "www.law.go.kr", "/DRF/lawSearch.do");
+  const providers: LawOperationalDiagnostics["providers"] = [
+    {
+      id: "assembly_bill",
+      label: "국회 의안정보 통합 API",
+      officialUrl: runtime.assemblyBillApiUrl,
+      endpointHost: assemblyEndpoint.host,
+      credentialStatus: runtime.assemblyBillApiKey ? "configured" : "missing",
+      endpointStatus: assemblyEndpoint.status,
+      queryMode: "ALLBILLINFO json pIndex=1 pSize=100"
+    },
+    {
+      id: "law_effective",
+      label: "법제처 국가법령정보 API",
+      officialUrl: runtime.lawApiBaseUrl,
+      endpointHost: lawEndpoint.host,
+      credentialStatus: runtime.lawApiOc ? "configured" : "missing",
+      endpointStatus: lawEndpoint.status,
+      queryMode: "lawSearch.do target=law type=JSON keyword loop"
+    }
+  ];
+  const requiredActions = [];
+  if (runtime.keywords.length === 0) requiredActions.push("public_data_sources.law_interest_keywords를 1개 이상 설정한다.");
+  if (!runtime.assemblyBillApiKey && !runtime.lawApiOc) requiredActions.push("국회 의안 API key 또는 법제처 OC 중 하나를 입력한다.");
+  for (const provider of providers) {
+    if (provider.endpointStatus !== "official") requiredActions.push(`${provider.label} endpoint가 공식 URL인지 확인한다.`);
+  }
+  const officialEndpointCount = providers.filter((provider) => provider.endpointStatus === "official").length;
+  const credentialConfigured = Boolean(runtime.assemblyBillApiKey || runtime.lawApiOc);
+  return {
+    mode: "metadata_only",
+    readyForMetadataCheck: runtime.keywords.length > 0 && officialEndpointCount === providers.length,
+    readyForOperationalIngest: runtime.keywords.length > 0 && credentialConfigured && officialEndpointCount === providers.length,
+    summary: {
+      keywordCount: runtime.keywords.length,
+      credentialConfigured,
+      assemblyBillCredentialConfigured: Boolean(runtime.assemblyBillApiKey),
+      lawGoKrCredentialConfigured: Boolean(runtime.lawApiOc),
+      officialEndpointCount,
+      requiredActions
+    },
+    providers,
+    keywords: runtime.keywords
   };
 }
 
@@ -83,6 +155,18 @@ async function fetchEffectiveLaws(runtime: LawRuntime): Promise<LawPayload[]> {
     }
   }
   return results;
+}
+
+function endpointStatus(value: string, host: string, pathname: string): { host: string; status: "official" | "custom_or_unverified" | "invalid" } {
+  try {
+    const url = new URL(value);
+    return {
+      host: url.host,
+      status: url.host === host && url.pathname === pathname ? "official" : "custom_or_unverified"
+    };
+  } catch {
+    return { host: "invalid", status: "invalid" };
+  }
 }
 
 function assemblyBillPayload(row: Record<string, unknown>, keywords: string[]): LawPayload | undefined {

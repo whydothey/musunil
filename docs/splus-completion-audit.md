@@ -40,6 +40,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - `pnpm check:release`
 - `pnpm check:splus`
 - `pnpm check:source-diagnostics`
+- `pnpm check:law-diagnostics`
 - `pnpm launch:ready -- --list`로 actual input 단계와 sample gate 단계를 구분
 - `pnpm launch:external-smoke -- --list`
 - API/runtime/web smoke 경계 검증
@@ -112,6 +113,7 @@ GET /ready -> 200
 - 2026-07-12 00:14 `pnpm launch:cutover-plan`과 [launch-cutover-runbook.md](/Users/mk/Documents/Musunil/docs/launch-cutover-runbook.md)를 추가해 API DNS, Cloudflare DNS, Render Static headers, build metadata, 검증 순서를 한 화면에 고정했다. `pnpm launch:cutover-plan -- --json`, `pnpm check:launch-sample`, `pnpm check:render-runtime-config`, `pnpm check:web-smoke`는 통과했지만 실제 Render/Cloudflare 반영과 `service:watch` 통과 전 운영 배포 준비는 완료가 아니다.
 - 2026-07-12 00:28 `pnpm check:web-flow`를 release gate에 추가했다. 홈 이슈 카드, 상세 빠른 행동, 인증 영상 액션, 공통 이슈 맥락, 지도 선택/검색, 법안→이슈, 제보 대상 확정→촬영→접수, 본인확인 경계 등 11개 사용자 흐름 계약을 검사하며 현재 모두 통과한다. 다만 이 검사는 코드 계약 회귀 방지이며 실제 운영 API, 실제 영상/GPS, 사용자 수락을 대체하지 않는다.
 - 2026-07-12 00:33 `pnpm check:source-diagnostics`를 release gate에 추가했다. 외부 fetch 없이 18개 active schedule 원천의 URL, parser, POST body, refresh cadence 구조를 진단하며, `blockedSourceIds`, `parserMissingSourceIds`, `urlMissingSourceIds`, `postBodyMissingSourceIds`가 생기면 릴리즈가 실패한다. 실제 운영 cron fetch 성공을 대체하지는 않는다.
+- 2026-07-12 00:37 `pnpm check:law-diagnostics`를 release gate에 추가했다. 외부 fetch 없이 국회 의안 API와 법제처 국가법령 API endpoint, 관심 키워드, credential 구성 여부를 진단하고 API key/OC 원문이 출력되지 않게 했다. 실제 법 원천 1건 이상 dry-run/post 증거는 여전히 필요하다.
 - 2026-07-12 00:38 `/ready`와 `runtime_not_ready` 응답에 safe `summary.failedIds`, `summary.blockingGroups`, `requiredActions`를 추가했다. API self-check, `pnpm check:render-runtime-config`, `pnpm check:runtime-smoke`가 통과했으며, Render DB/Redis 미연결 같은 운영 차단 원인을 그룹 단위로 식별한다. 실제 운영 `/ready=true` 증거 전에는 운영 준비 완료가 아니다.
 
 ## Next Active Goal Order

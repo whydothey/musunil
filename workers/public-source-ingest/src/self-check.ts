@@ -18,7 +18,7 @@ import { parseSeoulAssemblyControlList, toSeoulPublicOccurrencePayload } from ".
 import { parseSejongTodayAssemblyList, toSejongPublicOccurrencePayload } from "./sejong.ts";
 import { parseGyeonggiNorthTodayAssemblyList, toGyeonggiNorthPublicOccurrencePayload } from "./gyeonggi-north.ts";
 import { ingestablePublicAssemblySources, policeRegions, publicAssemblySources, sourceCoverageReport, sourceOperationalDiagnostics } from "./sources.ts";
-import { fetchLawPayloads, readLawRuntime } from "./laws.ts";
+import { fetchLawPayloads, lawOperationalDiagnostics, readLawRuntime } from "./laws.ts";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -534,6 +534,8 @@ assert.equal(workerSource.includes("--diagnose"), true);
 assert.equal(workerSource.includes("sourceOperationalDiagnostics"), true);
 assert.equal(workerSource.includes("--coverage"), true);
 assert.equal(workerSource.includes("--laws"), true);
+assert.equal(workerSource.includes("--laws-diagnose"), true);
+assert.equal(workerSource.includes("lawOperationalDiagnostics"), true);
 assert.equal(workerSource.includes("/internal/ingest/laws"), true);
 assert.equal(workerSource.includes("laws_disabled"), true);
 assert.equal(workerSource.indexOf("law_source_parse_empty") < workerSource.indexOf("laws_dry_run"), true);
@@ -552,6 +554,22 @@ const lawRuntime = readLawRuntime(
 assert.equal(lawRuntime.assemblyBillApiKey, "assembly-key");
 assert.equal(lawRuntime.lawApiOc, "law-oc");
 assert.deepEqual(lawRuntime.keywords, ["정보통신망법"]);
+const lawDiagnostics = lawOperationalDiagnostics(lawRuntime);
+assert.equal(lawDiagnostics.readyForMetadataCheck, true);
+assert.equal(lawDiagnostics.readyForOperationalIngest, true);
+assert.equal(lawDiagnostics.summary.keywordCount, 1);
+assert.equal(lawDiagnostics.summary.credentialConfigured, true);
+assert.equal(lawDiagnostics.summary.assemblyBillCredentialConfigured, true);
+assert.equal(lawDiagnostics.summary.lawGoKrCredentialConfigured, true);
+assert.equal(lawDiagnostics.summary.officialEndpointCount, 2);
+assert.equal(lawDiagnostics.providers.every((provider) => provider.endpointStatus === "official"), true);
+assert.equal(JSON.stringify(lawDiagnostics).includes("assembly-key"), false);
+assert.equal(JSON.stringify(lawDiagnostics).includes("law-oc"), false);
+const disabledLawDiagnostics = lawOperationalDiagnostics(readLawRuntime({}, {}));
+assert.equal(disabledLawDiagnostics.readyForMetadataCheck, true);
+assert.equal(disabledLawDiagnostics.readyForOperationalIngest, false);
+assert.equal(disabledLawDiagnostics.summary.credentialConfigured, false);
+assert.equal(disabledLawDiagnostics.summary.requiredActions.some((action) => action.includes("국회 의안 API key")), true);
 
 const originalFetch = globalThis.fetch;
 globalThis.fetch = (async (input: RequestInfo | URL) => {

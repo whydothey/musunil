@@ -2,7 +2,7 @@
 
 외부 연결이 필요 없는 범위에서 완료한 항목이다.
 
-Last updated: 2026-07-12 00:33 KST
+Last updated: 2026-07-12 00:37 KST
 
 ## 완료
 
@@ -70,8 +70,10 @@ Last updated: 2026-07-12 00:33 KST
   - `pnpm sources:coverage`
   - `pnpm sources:diagnose`
   - `pnpm sources:laws`
+  - `pnpm sources:laws-diagnose`
   - 법 원천 credential 존재 시 0건 dry-run 실패 가드
   - production `/laws` preview 데이터 비노출 가드
+  - 법 원천 endpoint/keyword/secret 비노출 metadata 진단
 - 운영 준비 골격
   - `/ready`
   - `pnpm check:release`
@@ -80,6 +82,7 @@ Last updated: 2026-07-12 00:33 KST
   - `pnpm launch:verify-inputs`
   - `pnpm check:launch-sample`
   - `pnpm check:source-diagnostics`
+  - `pnpm check:law-diagnostics`
   - `pnpm check:render-runtime-config`
   - `pnpm check:runtime-smoke`
   - `pnpm check:web-smoke`
