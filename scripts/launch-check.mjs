@@ -27,6 +27,8 @@ const webConfigJs = readFileSync(resolve(cwd, "apps/web/config.js"), "utf8");
 const webServer = readFileSync(resolve(cwd, "scripts/serve-web.mjs"), "utf8");
 const webDeployCheck = readFileSync(resolve(cwd, "scripts/check-web-deploy.mjs"), "utf8");
 const renderWebSettings = readFileSync(resolve(cwd, "scripts/render-web-settings.mjs"), "utf8");
+const launchCutoverPlan = readFileSync(resolve(cwd, "scripts/launch-cutover-plan.mjs"), "utf8");
+const launchCutoverRunbook = readFileSync(resolve(cwd, "docs/launch-cutover-runbook.md"), "utf8");
 const webStaticManifestScript = readFileSync(resolve(cwd, "scripts/write-web-static-manifest.mjs"), "utf8");
 const gitignore = readFileSync(resolve(cwd, ".gitignore"), "utf8");
 const renderYaml = readFileSync(resolve(cwd, "render.yaml"), "utf8");
@@ -156,6 +158,27 @@ if (!/"render:web-settings"/.test(packageJson) || !/render-web-settings\.mjs/.te
 }
 if (!/MUSUNIL_STRICT_WEB_HEADERS=1/.test(renderWebSettings) || !/Clear build cache & deploy/.test(renderWebSettings)) {
   failures.push("Render Web settings helper must print strict header verification and clear-cache redeploy instructions");
+}
+if (!/"launch:cutover-plan"/.test(packageJson) || !/launch-cutover-plan\.mjs/.test(packageJson)) {
+  failures.push("launch cutover plan helper command is missing");
+}
+if (
+  !/api\.musunil\.com/.test(launchCutoverPlan) ||
+  !/Cloudflare DNS/.test(launchCutoverPlan) ||
+  !/render:web-settings/.test(launchCutoverPlan) ||
+  !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(launchCutoverPlan) ||
+  !/service:watch/.test(launchCutoverPlan)
+) {
+  failures.push("launch cutover plan must cover API DNS, Cloudflare DNS, Render headers, and verification commands");
+}
+if (
+  !/Launch Cutover Runbook/.test(launchCutoverRunbook) ||
+  !/pnpm launch:cutover-plan/.test(launchCutoverRunbook) ||
+  !/api\.musunil\.com/.test(launchCutoverRunbook) ||
+  !/Cloudflare/.test(launchCutoverRunbook) ||
+  !/identity_required/.test(launchCutoverRunbook)
+) {
+  failures.push("launch cutover runbook must explain the final service cutover and identity boundary");
 }
 if (
   !/api_endpoint_preflight/.test(serviceWatch) ||

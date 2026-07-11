@@ -33,6 +33,7 @@
     "service:watch": "node scripts/service-watch.mjs",
     "check:web-deploy": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/check-web-deploy.mjs",
     "render:web-settings": "node scripts/render-web-settings.mjs",
+    "launch:cutover-plan": "node scripts/launch-cutover-plan.mjs",
     "launch:inputs": "node scripts/create-launch-inputs.mjs",
     "launch:verify-inputs": "node scripts/check-launch-inputs.mjs",
     "sources:coverage": "pnpm --filter @musunil/public-source-ingest dev -- --coverage",

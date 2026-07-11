@@ -108,11 +108,13 @@ GET /ready -> 200
 - 2026-07-11 23:43 `service:watch`가 Web static header contract와 Required Actions를 문서에 남기게 했다. 현재 Required Actions는 API DNS 연결, Render Static headers 적용, build metadata publish 확인이지만, 이 조치들이 실제로 적용되어 `service:watch`와 strict web deploy check가 통과하기 전 운영 배포 준비는 완료가 아니다.
 - 2026-07-11 23:58 독립 Visual Critique와 IA Red-Team의 P0/P1 지적을 반영해 홈 카드 요약을 `지역 · 현장 · 위치 · 영상 · 인원` 고정 문장으로 바꾸고, 반론 있는 이슈/영상에 `다른 주장/반론` 진입을 추가했다. API 미연결 배너도 장애성 표현에서 `저장된 공개자료 기준`으로 낮췄다. 390px/1440px 캡처에서 forbidden 0, `overflowX=false`를 확인했지만 상세/지도 대시보드화, 실제 운영 공개 영상/GPS, 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-11 23:59 상세 개요를 리포트형 카드에서 시민 질문형 답변 구조로 바꿨다. 390px/1440px에서 overview card 0, answer row 5, disclosure 2, 데스크톱 상세 상태 지도 시트 62px, forbidden 0, `overflowX=false`를 확인했지만 실제 운영 공개 영상/GPS와 사용자 수락 전에는 S+로 승급하지 않는다.
+- 2026-07-12 00:14 `pnpm launch:cutover-plan`과 [launch-cutover-runbook.md](/Users/mk/Documents/Musunil/docs/launch-cutover-runbook.md)를 추가해 API DNS, Cloudflare DNS, Render Static headers, build metadata, 검증 순서를 한 화면에 고정했다. `pnpm launch:cutover-plan -- --json`, `pnpm check:launch-sample`, `pnpm check:render-runtime-config`, `pnpm check:web-smoke`는 통과했지만 실제 Render/Cloudflare 반영과 `service:watch` 통과 전 운영 배포 준비는 완료가 아니다.
 
 ## Next Active Goal Order
 
-1. 실제 운영 입력 YAML을 채운다.
-2. `pnpm launch:ready -- <yaml>`를 통과시킨다.
-3. `pnpm launch:ready -- <yaml> --post-laws`를 staging 또는 운영 전 리허설에서 통과시킨다.
-4. Render 배포 후 `pnpm launch:post-deploy-smoke -- --require-laws`를 실제 URL 기준으로 통과시킨다.
-5. Element Execution Board의 Active row를 증거 기반으로 Guard 또는 S+로 승급한다.
+1. `pnpm launch:cutover-plan`으로 Render/Cloudflare/API 컷오버 입력값을 확인한다.
+2. 실제 운영 입력 YAML을 채운다.
+3. `pnpm launch:ready -- <yaml>`를 통과시킨다.
+4. `pnpm launch:ready -- <yaml> --post-laws`를 staging 또는 운영 전 리허설에서 통과시킨다.
+5. Render 배포 후 `pnpm launch:post-deploy-smoke -- --require-laws`를 실제 URL 기준으로 통과시킨다.
+6. Element Execution Board의 Active row를 증거 기반으로 Guard 또는 S+로 승급한다.

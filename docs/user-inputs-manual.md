@@ -380,10 +380,11 @@ MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --
 Render Static Site 수동 설정값 확인:
 
 ```bash
+pnpm launch:cutover-plan
 pnpm render:web-settings
 ```
 
-이 출력값의 Branch, Root Directory, Build Command, Publish Directory, Headers를 Render Dashboard에 그대로 맞춘 뒤 `Clear build cache & deploy`를 실행한다. 이후 Web 정적 배포와 헤더를 strict하게 확인한다.
+`pnpm launch:cutover-plan`은 API DNS, Cloudflare, Render Static headers, 검증 순서를 한 번에 보여준다. `pnpm render:web-settings` 출력값의 Branch, Root Directory, Build Command, Publish Directory, Headers를 Render Dashboard에 그대로 맞춘 뒤 `Clear build cache & deploy`를 실행한다. 이후 Web 정적 배포와 헤더를 strict하게 확인한다.
 
 ```bash
 MUSUNIL_STRICT_WEB_HEADERS=1 \
