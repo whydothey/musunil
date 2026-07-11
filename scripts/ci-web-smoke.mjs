@@ -118,6 +118,8 @@ async function checkWeb(port) {
   assert(index.includes("primary-action"), "issue card primary action styling missing");
   assert(index.includes("issue-confirm-summary"), "issue card confirmed summary row missing");
   assert(index.includes("issueConfirmedSummaryLine"), "shared issue confirmed summary helper missing");
+  assert(index.includes("issueCardPlaceLine"), "issue card place/time summary helper missing");
+  assert(index.includes("issueCardEvidenceLine"), "issue card evidence summary helper missing");
   assert(index.includes("issueAssemblyTimeText"), "issue assembly time summary helper missing");
   assert(index.includes("issueSourceBasisText"), "issue source basis summary helper missing");
   assert(index.includes("isMetaPublicSourceIssue"), "meta public-source issue sort guard missing");

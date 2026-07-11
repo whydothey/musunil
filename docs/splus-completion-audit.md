@@ -97,6 +97,7 @@ GET /ready -> 200
 - 2026-07-11 13:31 `e8b098c` 푸시 후 GitHub Actions는 통과했고 live static manifest는 최신 커밋과 일치했지만 `/build-info.json` placeholder는 유지됐다. deploy checker와 문서를 보강했으며, Render Dashboard 설정과 headers가 실제로 고쳐지기 전 운영 배포 준비를 S+로 승급하지 않는다.
 - 2026-07-11 13:40 surface47에서 브랜드 subtitle, 홈 제목, fallback 상태, 스토리 레일을 시민용 앱 언어로 낮췄다. 390px/1440px 캡처에서 첫 구체 이슈, forbidden 0, `scrollWidth=390/1440`을 확인했지만 카드 CTA, 데스크톱 지도 비중, 실제 운영 공개 영상/GPS, 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-11 13:50 surface48에서 반복되는 큰 청록 CTA를 제거하고 카드 하단을 가벼운 경로 footer로 낮췄다. 390px/1440px 캡처에서 action background transparent, forbidden 0, `scrollWidth=390/1440`을 확인했지만 카드 요약 중복, 데스크톱 지도 비중, 실제 운영 공개 영상/GPS, 사용자 수락 전에는 S+로 승급하지 않는다.
+- 2026-07-11 13:56 surface49에서 홈 카드 요약을 장소·일시·위치와 공식·영상·반론 두 줄로 분리했다. 390px/1440px 캡처에서 첫 카드 정보 흐름과 overflow는 안정적이지만 데스크톱 지도 비중, 썸네일 완성도, 실제 운영 공개 영상/GPS, 사용자 수락 전에는 S+로 승급하지 않는다.
 
 ## Next Active Goal Order
 
