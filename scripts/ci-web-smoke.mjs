@@ -171,7 +171,10 @@ async function checkWeb(port) {
   assert(index.includes('data-reel-empty-action="map"'), "reels empty map recovery action missing");
   assert(index.includes('data-reel-empty-action="evidence"'), "reels empty evidence recovery action missing");
   assert(index.includes('data-reel-empty-action="report"'), "reels empty report recovery action missing");
-  assert(index.includes("reel-poster-image"), "full-screen reel poster image missing");
+  assert(index.includes("publicLiveVideoDisplaySrc"), "full-screen reel display-safe video resolver missing");
+  assert(index.includes('<video class="reel-video"'), "full-screen reel should render actual public video when available");
+  assert(index.includes('controlslist="nodownload noplaybackrate"'), "public reel video controls should avoid download/rate affordances");
+  assert(!index.includes('<img class="reel-poster-image" src="${escapeHtml(poster)}"'), "full-screen public reels must not stay poster-only");
   assert(index.includes("reel-play-badge is-ready"), "full-screen reel public copy badge missing");
   assert(!index.includes('<span class="reel-play-badge">${poster ? "비식별 공개본" : "검토 대기"}</span>'), "pending videos must not use play-badge affordance");
   assert(index.includes("<svg class=\"button-symbol\" aria-hidden=\"true\"><use href=\"#icon-stats\"></use></svg><span>근거</span>"), "reel evidence icon action missing");

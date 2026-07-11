@@ -2950,6 +2950,20 @@
         filter: brightness(1.26) contrast(1.06) saturate(1.08);
       }
 
+      .reel-video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        background: #061014;
+        filter: brightness(1.06) contrast(1.04) saturate(1.02);
+      }
+
+      .reel-card.reel-full .reel-media.has-video {
+        background: #061014;
+      }
+
       .reel-play-badge {
         position: absolute;
         top: 16px;
@@ -7144,6 +7158,12 @@
         return src && !isSampleRedactedPreviewUrl(src) ? src : "";
       }
 
+      function publicLiveVideoDisplaySrc(item) {
+        const poster = publicLivePosterDisplaySrc(item);
+        if (!poster) return "";
+        return publicLiveMediaSrc(item);
+      }
+
       function isSampleRedactedPreviewUrl(url) {
         const value = String(url || "");
         return /\/media\/redacted\/preview-(occ-live-1|presence-1|daejeon-live|busan-live)-poster\.(png|webp|jpe?g)$/i.test(value);
@@ -8802,11 +8822,12 @@
         return items
           .map((item) => {
             const poster = publicLivePosterDisplaySrc(item);
-            if (!poster) return renderReelsPendingReview(item);
+            const video = publicLiveVideoDisplaySrc(item);
+            if (!poster || !video) return renderReelsPendingReview(item);
             return `
             <article class="reel-card reel-full" data-reel-id="${escapeHtml(item.id || "")}">
-              <div class="reel-media ${poster ? "has-poster" : "is-review-slot"}" aria-label="비식별 처리된 현장 인증 영상">
-                <img class="reel-poster-image" src="${escapeHtml(poster)}" alt="" aria-hidden="true" loading="eager" />
+              <div class="reel-media has-video" aria-label="비식별 처리된 현장 인증 영상">
+                <video class="reel-video" src="${escapeHtml(video)}" poster="${escapeHtml(poster)}" controls playsinline preload="metadata" controlslist="nodownload noplaybackrate" disablepictureinpicture></video>
                 <span class="reel-play-badge is-ready">비식별 공개본</span>
               </div>
               <div class="reel-overlay">
