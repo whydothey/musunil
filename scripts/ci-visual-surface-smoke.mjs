@@ -207,7 +207,10 @@ function serviceDetail(metrics) {
   return {
     serviceSyncState: metrics.serviceSyncState,
     serviceBannerVisible: metrics.serviceBannerVisible,
-    serviceBannerTitle: metrics.serviceBannerTitle
+    serviceBannerTitle: metrics.serviceBannerTitle,
+    firstIssueTitle: metrics.firstIssueTitle,
+    sourceBundleFirst: metrics.sourceBundleFirst,
+    issueCount: metrics.issueCount
   };
 }
 
@@ -259,6 +262,7 @@ function visualMetrics(label) {
       placePeekAreaCount: [...document.querySelectorAll(".issue-place-peek .issue-place-area")]
         .filter((node) => visible(node.closest(".issue-place-peek"))).length,
       firstIssueTitle: firstIssue?.querySelector(".issue-feed-title .title")?.textContent?.trim() || "",
+      sourceBundleFirst: /공개\\s*(일정|자료)|신고[·\\s-]*개최|신고\\s*통계|집회\\s*신고\\s*통계/.test(firstIssue?.querySelector(".issue-feed-title .title")?.textContent?.trim() || ""),
       firstIssueActions: [...(firstIssue?.querySelectorAll(".issue-card-action-label") || [])].filter((node) => visible(node)).map((node) => node.textContent.trim()),
       detailTitle: document.querySelector("#detail-title")?.textContent?.trim() || "",
       detailTabs: [...document.querySelectorAll("#record-section .tabs button")].filter(visible).map((node) => node.textContent.trim()),

@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-12 01:29 KST
+Last updated: 2026-07-12 03:37 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -19,6 +19,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 2026-07-12 01:29 패치로 숨겨져 있던 상단 숫자판 DOM과 갱신 로직까지 제거했다. `pnpm check:visual-surface`는 Chrome/CDP로 390px, 430px, 768px, 1440px에서 홈·상세·영상·탐색·제보 20개 상태를 실제 렌더링으로 검사하고, 가로 넘침·하단 내비 겹침·대시보드 숫자판 회귀·지도 시트 과밀·제보 첫 행동 회귀를 막는다. 그래도 실제 운영 GPS evidence, 실제 공개 영상 품질, 독립 재검증, 사용자 수락 전 S+는 아니다.
 - 2026-07-12 01:52 패치로 같은 시각 검사를 `https://musunil.com`에 직접 실행하는 `pnpm check:visual-surface:live`를 추가했다. 또한 API 미연결 운영 fallback이 공개자료 1개 이슈로 축소되던 문제를 막기 위해 경찰청·대구청 공개자료를 `지역별 집회 공개 일정`, `대구 집회 신고·개최 현황`, `전국 집회 신고·개최 통계` 세 이슈 파일로 분리했다. 새 Render 배포 후 live 명령은 통과했지만 실제 운영 공개 영상/GPS, 독립 재검증, 사용자 수락 전에는 운영 화면 S+로 보지 않는다.
 - 2026-07-12 02:09 패치로 visual smoke가 Web `serviceSyncState`와 서비스 배너 상태를 결과 JSON에 포함한다. `pnpm check:visual-surface:live`는 화면 구조 확인이고, `pnpm service:watch:visual`은 운영 도메인이 `delayed` fallback 상태이면 실패한다.
+- 2026-07-12 03:37 live 캡처 기준 `musunil.com`은 모바일/데스크톱 모두 overflow와 금지 문구 없이 렌더링되지만 `serviceSyncState=delayed`이고 첫 카드가 구체 이슈가 아니라 `지역별 집회 공개 일정`이다. 이는 운영 API DNS/데이터 연결 전에는 사용자가 "무슨 주제인지"를 5초 안에 파악하기 어렵다는 증거이므로 S+ 미달로 유지한다. visual smoke와 service-watch는 이제 첫 이슈 제목과 source-bundle first 여부를 함께 기록한다.
 - 03:07 패치로 홈 카드 우측 비주얼을 추상 타깃형 장식에서 자료 위치 미니맵으로 바꿨다. 공개 자료 핀과 현장 인증 범위가 같은 작은 지도 표면 위에서 보이고, `pnpm check:visual-surface`가 모든 viewport 홈에서 `.issue-place-map`/`.issue-place-area` 존재를 확인한다. 모바일 지도 범례도 `자료 위치/인증 범위`가 실제 10px 이상 글자로 보이는지 검사한다. 독립 비평이 지적한 `AI 대시보드처럼 보이는 시각 언어`와 `숨겨진 범례를 smoke가 놓침` 중 일부를 줄였지만, 사용자 수락 전 S+는 아니다.
 - 03:14 패치로 홈 카드의 반복 요약을 줄였다. 첫 카드 흐름은 `제목 → 서울 · 현장 2건 · 위치 1곳 → 영상 1건 · 인원 추정 검토 → 공식 확인 중 · 다른 주장 1건`처럼 줄마다 역할이 나뉘며, 기존 `서울에서 같은 주제로 확인된 현장 2건을 묶어 봅니다` 문장과 같은 수치 반복을 제거했다. 390px/1440px 모두 `scrollWidth=viewport`, 첫 카드 높이 206/216px이다. 아직 데스크톱 홈 지도와 이슈 목록 경쟁, 실제 운영 데이터 품질, 사용자 수락 전 S+는 아니다.
 - 04:43 독립 비평 기준 현재 화면은 S+가 아니다. Visual critique는 A- 공공서비스 프로토타입, IA red-team은 B-로 평가했다. 이번 패치는 `영상/지도/제보`가 선택 이슈 맥락으로 읽히게 하는 1차 보정이며, 상업용 S+ 승급 근거가 아니다.
@@ -221,6 +222,9 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 03:21 surface65 mobile home context | `docs/commercial-splus-surface65-home-context-mobile-390-2026-07-12.png` |
 | 03:21 surface65 desktop home context | `docs/commercial-splus-surface65-home-context-desktop-1440-2026-07-12.png` |
 | 03:21 surface65 metrics | 데스크톱 홈 지도 과점을 낮춰 이슈 피드 698px, 지도 380x288px로 재배치. 홈 지도 검색은 숨기고 탐색 탭 큰 지도에만 유지. 모바일 390px은 `mapVisible=false`, `scrollWidth=390`; 데스크톱 `scrollWidth=1440`, forbidden 0. `pnpm check:visual-surface` 통과 |
+| 03:37 surface66 live mobile home | `docs/commercial-splus-surface66-live-home-mobile-390-2026-07-12.png` |
+| 03:37 surface66 live desktop home | `docs/commercial-splus-surface66-live-home-desktop-1440-2026-07-12.png` |
+| 03:37 surface66 live metrics | 실제 `musunil.com` 390px/1440px 캡처. `serviceSyncState=delayed`, 배너 `저장된 공개자료 기준`, 첫 카드 `지역별 집회 공개 일정`, story 3개, issue card 3개, forbidden 0, overflow 없음. 구조는 안정적이나 구체 이슈 우선 UX와 live 데이터 동기화는 미달 |
 | 06:00 desktop home region map | `docs/commercial-splus-surface24-home-map-desktop-1440-2026-07-11.png` |
 | 06:00 mobile home 390 | `docs/commercial-splus-surface24-home-map-mobile-390-2026-07-11.png` |
 | 06:00 mobile home 430 | `docs/commercial-splus-surface24-home-map-mobile-430-2026-07-11.png` |

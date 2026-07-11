@@ -155,7 +155,13 @@ async function runChecks() {
       : [...new Set((parsed.scenarios || []).map((item) => item.detail?.serviceSyncState).filter(Boolean))];
     const nonLiveStates = serviceStates.filter((state) => state !== "live");
     if (nonLiveStates.length > 0) {
-      throw new Error(`live visual surface is rendering non-live data state: ${nonLiveStates.join(", ")}`);
+      const homeScenarios = (parsed.scenarios || []).filter((item) => /_home$/.test(item.id));
+      const firstIssues = [...new Set(homeScenarios.map((item) => item.detail?.firstIssueTitle).filter(Boolean))];
+      const sourceBundleFirstCount = homeScenarios.filter((item) => item.detail?.sourceBundleFirst).length;
+      const firstIssueDetail = firstIssues.length
+        ? `; firstIssues=${firstIssues.join(" / ")}; sourceBundleFirst=${sourceBundleFirstCount}/${homeScenarios.length}`
+        : "";
+      throw new Error(`live visual surface is rendering non-live data state: ${nonLiveStates.join(", ")}${firstIssueDetail}`);
     }
     return {
       mode: parsed.mode,

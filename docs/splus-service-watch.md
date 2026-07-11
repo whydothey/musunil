@@ -1,6 +1,6 @@
 # S+ Service Watch
 
-Last checked: 2026-07-11T18:26:06.601Z
+Last checked: 2026-07-11T18:40:34.951Z
 
 Status: Active
 
@@ -11,7 +11,7 @@ Status: Active
 | web_build_info | ok | {"commitSha":"generated-at-build","builtAt":"1970-01-01T00:00:00.000Z","mode":"static_manifest_verified_fallback"} |
 | web_header_contract | fail | invalid Web headers: / Cache-Control expected no-store, got public, max-age=0, s-maxage=300; / Content-Security-Policy expected CSP with self, https API/map, public media, PortOne, and blob worker/media allowances, got missing; / Permissions-Policy expected camera=(self), microphone=(), geolocation=(self), got missing; / Referrer-Policy expected no-referrer, got missing; / X-Frame-Options expected DENY, got missing; /config.js Cache-Control expected no-store, got public, max-age=14400, s-maxage=300; /config.js Content-Security-Policy expected CSP with self, https API/map, public media, PortOne, and blob worker/media allowances, got missing; /config.js Permissions-Policy expected camera=(self), microphone=(), geolocation=(self), got missing; /config.js Referrer-Policy expected no-referrer, got missing; /config.js X-Frame-Options expected DENY, got missing; /build-info.json Cache-Control expected no-store, got public, max-age=0, s-maxage=300; /build-info.json Content-Security-Policy expected CSP with self, https API/map, public media, PortOne, and blob worker/media allowances, got missing; /build-info.json Permissions-Policy expected camera=(self), microphone=(), geolocation=(self), got missing; /build-info.json Referrer-Policy expected no-referrer, got missing; /build-info.json X-Frame-Options expected DENY, got missing |
 | web_forbidden_ui_absent | ok | {"bytes":382563} |
-| web_visual_surface | fail | live visual surface is rendering non-live data state: delayed |
+| web_visual_surface | fail | live visual surface is rendering non-live data state: delayed; firstIssues=지역별 집회 공개 일정; sourceBundleFirst=4/4 |
 | api_endpoint_preflight | fail | getaddrinfo ENOTFOUND api.musunil.com |
 | api_health_ready | skip | skipped: API endpoint preflight failed |
 | public_redacted_media | skip | skipped: API endpoint preflight failed |
