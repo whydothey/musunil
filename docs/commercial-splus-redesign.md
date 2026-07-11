@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 13:56 KST
+Last updated: 2026-07-11 14:05 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -52,6 +52,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 13:40 surface47 패치로 브랜드 subtitle을 `공개 위치·근거 확인`, 홈 제목을 `확인된 집회·시위`, fallback 상태 문구를 `위치와 근거 기준`으로 바꾸고, 스토리 레일은 짧은 이슈명 pill로 정리했다. 390px/1440px 캡처에서 첫 이슈는 `정보통신망법 개정 반대 집회`, story labels는 `정보통신망법 개정 반대/대통령 탄핵 요구 행진/전국 집회 공개 일정`, forbidden 0, `scrollWidth=390/1440`이다. 카드 CTA와 데스크톱 지도 비중은 다음 개선 대상으로 남긴다.
 - 13:50 surface48 패치로 반복되는 큰 청록 CTA를 제거했다. 홈 카드는 전체 탭 가능한 피드 카드로 유지하고, 하단은 `근거·영상·지도 / 자세히`의 가벼운 경로 footer로 낮췄다. 390px/1440px 캡처에서 action background는 transparent, action height는 30/32px, forbidden 0, `scrollWidth=390/1440`이다. 아직 카드 요약 줄과 하단 경로의 중복, 데스크톱 지도 비중은 다음 개선 대상으로 남긴다.
 - 13:56 surface49 패치로 홈 카드 요약을 `장소·일시·위치` 1차 정보와 `공식·영상·반론` 근거 상태로 분리했다. 390px/1440px 첫 카드 place line은 `서울 · 일시 확인 중 · 위치 1곳`, evidence line은 `공식 확인 중 · 영상 1건 · 반론 1건`, footer는 `근거·영상·지도 자세히`, forbidden 0, `scrollWidth=390/1440`이다. 다음 개선은 데스크톱 지도 비중과 카드 썸네일의 시각 완성도다.
+- 14:05 surface50 패치로 데스크톱 홈 기본 레이아웃에서 이슈 피드를 520px로 키우고 지도 맥락을 648x403px로 낮췄다. 1440px 홈은 지도보다 이슈 목록이 먼저 읽히고, 390px 홈은 지도 미노출·이슈 피드 중심을 유지한다. `overflowX=false`, forbidden 0, rejected 0을 확인했지만 실제 운영 공개 영상/GPS와 사용자 수락 전 S+는 아니다.
 
 ## Agent Feedback Summary
 
@@ -358,6 +359,9 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 13:56 mobile home surface49 | `docs/commercial-splus-surface49-card-summary-split-mobile-390-2026-07-11.png` |
 | 13:56 desktop home surface49 | `docs/commercial-splus-surface49-card-summary-split-desktop-1440-2026-07-11.png` |
 | 13:56 surface49 metrics | 390px/1440px place line `서울 · 일시 확인 중 · 위치 1곳`, evidence line `공식 확인 중 · 영상 1건 · 반론 1건`, footer `근거·영상·지도 자세히`, action background transparent, forbidden 0, `scrollWidth=390/1440`. 사용자 수락 전 S+는 아니다. |
+| 14:05 mobile home surface50 | `docs/commercial-splus-surface50-compact-map-home-mobile-390-2026-07-11.png` |
+| 14:05 desktop home surface50 | `docs/commercial-splus-surface50-compact-map-home-desktop-1440-2026-07-11.png` |
+| 14:05 surface50 metrics | 1440px home width 520px, map shell 648x403px, first issue `정보통신망법 개정 반대 집회`, summary `서울 · 일시 확인 중 · 위치 1곳 / 공식 확인 중 · 영상 1건 · 반론 1건`, forbidden 0, rejected 0, `scrollWidth=1440`. 390px mobile keeps map hidden, home width 370px, forbidden 0, `scrollWidth=390`. 사용자 수락 전 S+는 아니다. |
 
 ## Non-Negotiable Gates
 

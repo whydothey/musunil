@@ -430,8 +430,8 @@
 
       @media (min-width: 781px) {
         .layout:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) {
-          grid-template-columns: 76px minmax(360px, 430px) minmax(640px, 860px);
-          max-width: 1390px;
+          grid-template-columns: 76px minmax(420px, 520px) minmax(520px, 680px);
+          max-width: 1300px;
           margin: 0 auto;
         }
 
@@ -462,24 +462,26 @@
         }
 
         .layout:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) #map-section > .section-title h2 {
-          font-size: 22px;
+          font-size: 18px;
         }
 
         .layout:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) #map-section > .section-title .fine {
-          max-width: 420px;
+          max-width: 360px;
+          font-size: 12px;
         }
 
         .layout:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) #map-issue-anchor {
-          padding: 8px 0;
+          padding: 6px 0;
         }
 
         .layout:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) .map-shell {
-          min-height: 420px;
-          height: min(54vh, 520px);
-          max-height: 520px;
+          min-height: 330px;
+          height: min(42vh, 410px);
+          max-height: 410px;
+          border-radius: 14px;
           box-shadow:
             0 0 0 1px rgb(255 255 255 / 68%) inset,
-            0 14px 30px rgb(23 35 45 / 10%);
+            0 10px 24px rgb(23 35 45 / 8%);
         }
 
         .layout:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report):not(.desktop-detail-open) .map-sheet {
@@ -526,11 +528,12 @@
         .layout:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) .explore-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 8px;
+          gap: 7px;
         }
 
         .layout:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) .explore-tile {
-          min-height: 70px;
+          min-height: 58px;
+          padding: 10px 12px;
         }
 
         .layout:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) .issue-context-actions {
