@@ -19,8 +19,8 @@ const plan = {
     {
       id: "api_dns",
       owner: "operator",
-      action: "Attach api.musunil.com as a custom domain on the Render musunil-api service, then create the matching Cloudflare DNS record.",
-      verify: "MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once"
+      action: "Run pnpm render:api-settings, attach api.musunil.com as a custom domain on the Render musunil-api service, then create the matching Cloudflare DNS record.",
+      verify: "pnpm render:api-settings && MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once"
     },
     {
       id: "static_headers",
@@ -90,6 +90,7 @@ const plan = {
     "pnpm launch:verify-inputs config/musunil.user-inputs.local.yaml",
     "pnpm config:encode -- --check config/musunil.user-inputs.local.yaml",
     "pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws",
+    "pnpm render:api-settings",
     "pnpm render:web-settings",
     "Apply Render custom domains, Cloudflare DNS, and Render Static headers.",
     "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",

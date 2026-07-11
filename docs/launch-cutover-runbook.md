@@ -4,6 +4,8 @@
 
 ```bash
 pnpm launch:cutover-plan
+pnpm render:api-settings
+pnpm render:web-settings
 ```
 
 ## 1. 현재 차단 항목
@@ -12,7 +14,7 @@ pnpm launch:cutover-plan
 
 | 항목 | 해야 할 일 | 검증 |
 |---|---|---|
-| API DNS | Render `musunil-api`에 `api.musunil.com` custom domain을 붙이고 Cloudflare DNS를 연결한다. | `MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once` |
+| API DNS | `pnpm render:api-settings` 출력대로 Render `musunil-api` 설정과 env source를 확인하고, `api.musunil.com` custom domain과 Cloudflare DNS를 연결한다. | `pnpm render:api-settings && MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once` |
 | Static headers | `pnpm render:web-settings` 출력의 모든 Header를 Render Static Site에 입력하고 `Clear build cache & deploy`를 실행한다. | `MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com pnpm check:web-deploy` |
 | Build metadata | 최신 UI는 static manifest hash로 확인하되, build-info가 실제 Git SHA로 덮이는지 계속 확인한다. | `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy` |
 
@@ -41,6 +43,10 @@ pnpm render:web-settings
 ## 3. Render API
 
 `musunil-api`는 Blueprint 기준으로 만든다. 수동 생성 시에도 아래 계약을 지킨다.
+
+```bash
+pnpm render:api-settings
+```
 
 - Health Check Path: `/ready`
 - Build Command: `pnpm check`, `pnpm build:web-config`, `pnpm launch:check` 포함
@@ -84,6 +90,7 @@ pnpm ops:diagnose
 pnpm launch:verify-inputs config/musunil.user-inputs.local.yaml
 pnpm config:encode -- --check config/musunil.user-inputs.local.yaml
 pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws
+pnpm render:api-settings
 pnpm render:web-settings
 ```
 

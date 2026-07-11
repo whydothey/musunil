@@ -295,9 +295,9 @@ function requiredActions(result) {
       id: "connect_api_endpoint",
       owner: "operator",
       action: apiPreflight.message?.includes("ENOTFOUND")
-        ? "Render musunil-api의 Custom Domains에 api.musunil.com을 추가하고, Render가 표시한 target을 Cloudflare DNS의 api 레코드에 DNS only로 연결한다. API 서비스에 MUSUNIL_USER_INPUTS_B64와 generated secrets가 있는지도 확인한다."
+        ? "pnpm render:api-settings 출력대로 Render musunil-api 설정과 환경변수를 확인한다. Custom Domains에 api.musunil.com을 추가하고, Render가 표시한 target을 Cloudflare DNS의 api 레코드에 DNS only로 연결한다."
         : "api.musunil.com의 TLS 인증서, Render musunil-api 서비스 상태, /health 응답을 확인한다.",
-      verify: "pnpm launch:cutover-plan && MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once",
+      verify: "pnpm render:api-settings && MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once",
       reference: "docs/launch-cutover-runbook.md#3-render-api"
     });
   }

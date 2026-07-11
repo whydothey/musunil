@@ -94,6 +94,7 @@ const operationalDiagnostics = readFileSync(resolve(cwd, "scripts/operational-re
 const postDeploySmoke = readFileSync(resolve(cwd, "scripts/post-deploy-smoke.mjs"), "utf8");
 const serviceWatch = readFileSync(resolve(cwd, "scripts/service-watch.mjs"), "utf8");
 const adminReview = readFileSync(resolve(cwd, "scripts/admin-review.mjs"), "utf8");
+const renderApiSettings = readFileSync(resolve(cwd, "scripts/render-api-settings.mjs"), "utf8");
 const postgresStore = readFileSync(resolve(cwd, "services/api/src/postgres-store.ts"), "utf8");
 const packageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
 if (!/pingPostgres/.test(apiServer)) failures.push("/ready postgres ping is missing");
@@ -193,6 +194,20 @@ if (
 if (!/"render:web-settings"/.test(packageJson) || !/render-web-settings\.mjs/.test(packageJson)) {
   failures.push("Render Web settings helper command is missing");
 }
+if (!/"render:api-settings"/.test(packageJson) || !/render-api-settings\.mjs/.test(packageJson)) {
+  failures.push("Render API settings helper command is missing");
+}
+if (
+  !/api\.musunil\.com/.test(renderApiSettings) ||
+  !/Health Check Path/.test(renderApiSettings) ||
+  !/MUSUNIL_USER_INPUTS_B64/.test(renderApiSettings) ||
+  !/Render generated/.test(renderApiSettings) ||
+  !/Cloudflare DNS/.test(renderApiSettings) ||
+  !/launch:post-deploy-smoke/.test(renderApiSettings) ||
+  !/service:watch/.test(renderApiSettings)
+) {
+  failures.push("Render API settings helper must print API custom domain, env source, and verification commands");
+}
 if (!/"check:web-flow"/.test(packageJson) || !/ci-web-flow-smoke\.mjs/.test(packageJson) || !/pnpm check:web-flow/.test(packageJson)) {
   failures.push("Web user-flow smoke must be wired into release checks");
 }
@@ -227,6 +242,7 @@ if (!/"launch:cutover-plan"/.test(packageJson) || !/launch-cutover-plan\.mjs/.te
 if (
   !/api\.musunil\.com/.test(launchCutoverPlan) ||
   !/Cloudflare DNS/.test(launchCutoverPlan) ||
+  !/render:api-settings/.test(launchCutoverPlan) ||
   !/render:web-settings/.test(launchCutoverPlan) ||
   !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(launchCutoverPlan) ||
   !/service:watch/.test(launchCutoverPlan)
@@ -247,6 +263,7 @@ if (
   !/web_header_contract/.test(serviceWatch) ||
   !/requiredActions/.test(serviceWatch) ||
   !/connect_api_endpoint/.test(serviceWatch) ||
+  !/render:api-settings/.test(serviceWatch) ||
   !/apply_static_headers/.test(serviceWatch) ||
   !/deploy_latest_static/.test(serviceWatch) ||
   !/publish_build_metadata/.test(serviceWatch) ||
