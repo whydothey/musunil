@@ -332,6 +332,7 @@ if (
   !/requiredActions/.test(serviceWatch) ||
   !/connect_api_endpoint/.test(serviceWatch) ||
   !/fix_web_runtime_config/.test(serviceWatch) ||
+  !/MUSUNIL_WEB_BASE_URL=https:\/\/musunil\.com MUSUNIL_API_BASE_URL=https:\/\/api\.musunil\.com pnpm launch:post-deploy-smoke/.test(serviceWatch) ||
   !/render:api-settings/.test(serviceWatch) ||
   !/apply_static_headers/.test(serviceWatch) ||
   !/deploy_latest_static/.test(serviceWatch) ||

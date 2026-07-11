@@ -458,7 +458,7 @@ function requiredActions(result) {
       id: "fix_api_readiness",
       owner: "operator",
       action: "/ready가 ready=true가 아니다. 응답의 summary.blockingGroups와 requiredActions를 보고 DB, Redis, storage, identity, public source, mobile integrity 설정을 채운 뒤 API를 재배포한다.",
-      verify: "MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws",
+      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws",
       reference: "docs/user-inputs-manual.md#15-운영-전-최종-확인"
     });
   }
@@ -468,7 +468,7 @@ function requiredActions(result) {
       id: "stop_public_payload_regression",
       owner: "lead",
       action: "공개 payload 안전성 회귀다. 사용자 원문, 정밀 GPS, storage key, identity hash, private media field 노출 여부를 먼저 막고 배포를 중단한다.",
-      verify: "MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws",
+      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws",
       reference: "AGENTS.md"
     });
   }

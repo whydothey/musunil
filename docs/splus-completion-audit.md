@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-12 01:29 KST
+Last updated: 2026-07-12 02:50 KST
 
 Status: 완료 아님.
 
@@ -13,7 +13,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - 모든 항목이 S+ 또는 운영에서 동등하게 검증된 Guard 상태다.
 - Active row가 0개다.
 - `pnpm launch:ready -- <운영 user-inputs.yaml>`가 실제 운영 입력값으로 통과한다.
-- `pnpm launch:post-deploy-smoke -- --require-laws`가 실제 배포 API URL로 통과한다.
+- `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws`가 실제 배포 Web/API URL로 통과한다.
 - `pnpm service:watch -- --once`가 실제 Web/API URL 기준으로 통과한다.
 - `pnpm check:visual-surface:live`가 실제 `https://musunil.com` 기준으로 통과한다.
 - `pnpm service:watch:visual`의 `web_visual_surface`가 ok이고 `serviceSyncState=live`이며 남은 failure가 없다.
@@ -62,8 +62,8 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 ```bash
 pnpm launch:ready -- config/musunil.user-inputs.local.yaml
 pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws
-MUSUNIL_API_BASE_URL=https://api.example.com pnpm launch:post-deploy-smoke -- --require-laws
-MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.example.com pnpm service:watch -- --once
+MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws
+MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once
 pnpm check:visual-surface:live
 pnpm service:watch:visual
 ```
@@ -145,5 +145,5 @@ GET /ready -> 200
 2. 실제 운영 입력 YAML을 채운다.
 3. `pnpm launch:ready -- <yaml>`를 통과시킨다.
 4. `pnpm launch:ready -- <yaml> --post-laws`를 staging 또는 운영 전 리허설에서 통과시킨다.
-5. Render 배포 후 `pnpm launch:post-deploy-smoke -- --require-laws`를 실제 URL 기준으로 통과시킨다.
+5. Render 배포 후 `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws`를 실제 URL 기준으로 통과시킨다.
 6. Element Execution Board의 Active row를 증거 기반으로 Guard 또는 S+로 승급한다.

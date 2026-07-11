@@ -377,10 +377,12 @@ GET /ready -> 200
 배포 URL 기준 비파괴 smoke:
 
 ```bash
-MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws
+MUSUNIL_WEB_BASE_URL=https://musunil.com \
+MUSUNIL_API_BASE_URL=https://api.musunil.com \
+pnpm launch:post-deploy-smoke -- --require-laws
 ```
 
-`MUSUNIL_API_BASE_URL`은 실제 HTTPS API URL이어야 한다. localhost, 127.0.0.1, `.local`, HTTP URL은 최종 운영 smoke로 인정하지 않는다.
+`MUSUNIL_WEB_BASE_URL`과 `MUSUNIL_API_BASE_URL`은 실제 HTTPS 배포 URL이어야 한다. localhost, 127.0.0.1, `.local`, HTTP URL은 최종 운영 smoke로 인정하지 않는다.
 
 Render Static Site 수동 설정값 확인:
 
