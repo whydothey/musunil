@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 11:16 KST
+Last updated: 2026-07-11 11:21 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -35,6 +35,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 11:04 패치로 `인증영상` 탭이 영상 근거가 있는 이슈를 기본으로 고르고, 공개 poster가 없는 LIVE Claim은 재생 가능한 영상처럼 보이지 않게 `검토 대기` 카드로 렌더한다. 390px에서 panel bottom 715px, 하단 내비 top 772px, `navOverlap=false`, `reviewSlots=0`, `posterImages=0`, 금지 문구 0을 확인했다. 실제 운영 제보 영상 품질과 사용자 수락 전 S+는 아니다.
 - 11:10 패치로 실제 공개 `redactedClipUrl`과 공개 poster가 모두 있는 LIVE Claim은 풀스크린 인증영상 탭에서 poster-only 이미지가 아니라 native video player로 열린다. sample poster는 계속 숨겨 검토 카드로 보이며, `check:web-smoke`가 `publicLiveVideoDisplaySrc`, `<video class="reel-video">`, controlslist, poster-only 회귀 금지를 검증한다. 실제 공개 영상 파일이 붙은 운영 캡처와 사용자 수락 전 S+는 아니다.
 - 11:16 패치로 seed/API가 참조하는 `/media/redacted/preview-*.webm` 공개 clip 파일을 추가하고, 정적 서버가 `.webm/.mp4`를 영상 MIME으로 서빙하며 `media-src` CSP를 허용하게 했다. `check:web-smoke`가 preview clip 200, `video/webm`, 5KB 이상, media CSP를 검증한다. sample media는 UI에서 실제 제보처럼 노출하지 않는다.
+- 11:21 패치로 배포 후 smoke, runtime smoke, service watch도 poster뿐 아니라 `/media/redacted/preview-occ-live-1.webm` clip의 200 `video/webm`, `nosniff`, payload 크기를 같이 확인하게 했다. 정적 웹만 통과하고 운영 API 영상 route가 깨지는 회귀를 S+ 게이트에서 차단한다.
 
 ## Agent Feedback Summary
 
@@ -132,6 +133,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 38 | 인증영상 검토 상태 상업용화 | 1차 완료 | 390px 인증영상 `anchorTitle=정보통신망법 개정 반대 집회`, `reviewPanel=true`, `reviewSlots=0`, `posterImages=0`, `navOverlap=false`, `overflowX=false`, 액션 `근거/위치/이슈`. 1440px도 같은 검토 카드와 우측 맥락 패널 유지 |
 | 39 | 실제 공개 영상 player 계약 | 1차 완료 | `renderFullScreenReels`가 display-safe 공개 clip+poster를 `<video class="reel-video">`로 렌더하고 sample poster는 검토 카드로 유지. `check:web-smoke`가 `controlslist`, `publicLiveVideoDisplaySrc`, poster-only 회귀 금지를 검증 |
 | 40 | 공개 영상 media route 계약 | 1차 완료 | seed/API가 참조하는 preview webm 파일 존재, 정적 서버 `.webm/.mp4` MIME, `media-src` CSP, `/media/redacted/preview-occ-live-1.webm` 200 `video/webm`을 `check:web-smoke`가 검증 |
+| 41 | 공개 영상 배포 감시 계약 | 1차 완료 | `post-deploy-smoke`, `runtime-smoke`, `service-watch`, `launch-check`가 poster와 clip을 함께 확인. 운영 API `/media/redacted/preview-occ-live-1.webm` 200 `video/webm`, `nosniff`, payload > 5KB가 깨지면 실패 |
 
 ## Current Evidence
 
@@ -175,6 +177,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 11:04 reels metrics | 390px `panel=370x500`, `panel.bottom=715`, `navTop=772`, `navOverlap=false`, `reviewPanel=true`, `reviewSlots=0`, `posterImages=0`, actions `근거/위치/이슈`, 금지 문구 0. 1440px `panel=760x620`, `overflowX=false`, 금지 문구 0 |
 | 11:10 public video contract | `pnpm check:web-smoke` 통과. 풀스크린 공개 영상 branch가 `<video class="reel-video">`와 `controlslist="nodownload noplaybackrate"`를 포함하고, 기존 poster-only `<img class="reel-poster-image" src="${escapeHtml(poster)}">` 회귀를 차단 |
 | 11:16 public clip route | `pnpm check:web-smoke` 통과. `/media/redacted/preview-occ-live-1.webm` 200, `content-type: video/webm`, payload > 5KB, CSP `media-src 'self' ... https:` 포함 |
+| 11:21 public clip deploy gate | 배포 후 smoke/runtime/service-watch까지 `/media/redacted/preview-occ-live-1.webm` 200 `video/webm`, `nosniff`, payload > 5KB를 검사하도록 승격 |
 | 390px mobile capture | `docs/commercial-splus-mobile-390-2026-07-11.png` |
 | 430px mobile capture | `docs/commercial-splus-mobile-430-2026-07-11.png` |
 | 768px tablet capture | `docs/commercial-splus-tablet-768-2026-07-11.png` |

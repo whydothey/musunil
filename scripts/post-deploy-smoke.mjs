@@ -29,6 +29,15 @@ await check("public_redacted_media", async () => {
   assert(poster.headers.get("x-content-type-options") === "nosniff", "public redacted poster nosniff header missing");
   assert((await poster.arrayBuffer()).byteLength > 10_000, "public redacted poster payload too small");
 
+  const clip = await fetch(`${apiBaseUrl}/media/redacted/preview-occ-live-1.webm`, {
+    redirect: "manual",
+    signal: AbortSignal.timeout(requestTimeoutMs)
+  });
+  assert(clip.status === 200, `public redacted clip returned ${clip.status}`);
+  assert(clip.headers.get("content-type")?.startsWith("video/webm"), "public redacted clip content-type mismatch");
+  assert(clip.headers.get("x-content-type-options") === "nosniff", "public redacted clip nosniff header missing");
+  assert((await clip.arrayBuffer()).byteLength > 5_000, "public redacted clip payload too small");
+
   const traversal = await fetch(`${apiBaseUrl}/media/redacted/%2e%2e/private/live.png`, {
     redirect: "manual",
     signal: AbortSignal.timeout(requestTimeoutMs)

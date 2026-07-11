@@ -38,14 +38,27 @@ async function runChecks() {
     return { ready: ready.ready, checks: ready.checks?.map((item) => item.id) ?? [] };
   });
   await check(checks, "public_redacted_media", async () => {
-    const response = await fetch(`${apiBaseUrl}/media/redacted/preview-occ-live-1-poster.png`, {
+    const poster = await fetch(`${apiBaseUrl}/media/redacted/preview-occ-live-1-poster.png`, {
       redirect: "manual",
       signal: AbortSignal.timeout(12_000)
     });
-    if (response.status !== 200) throw new Error(`poster returned ${response.status}`);
-    if (!response.headers.get("content-type")?.startsWith("image/png")) throw new Error("poster content-type mismatch");
-    if (response.headers.get("x-content-type-options") !== "nosniff") throw new Error("poster nosniff missing");
-    return { bytes: (await response.arrayBuffer()).byteLength };
+    if (poster.status !== 200) throw new Error(`poster returned ${poster.status}`);
+    if (!poster.headers.get("content-type")?.startsWith("image/png")) throw new Error("poster content-type mismatch");
+    if (poster.headers.get("x-content-type-options") !== "nosniff") throw new Error("poster nosniff missing");
+    const posterBytes = (await poster.arrayBuffer()).byteLength;
+    if (posterBytes <= 10_000) throw new Error("poster payload too small");
+
+    const clip = await fetch(`${apiBaseUrl}/media/redacted/preview-occ-live-1.webm`, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(12_000)
+    });
+    if (clip.status !== 200) throw new Error(`clip returned ${clip.status}`);
+    if (!clip.headers.get("content-type")?.startsWith("video/webm")) throw new Error("clip content-type mismatch");
+    if (clip.headers.get("x-content-type-options") !== "nosniff") throw new Error("clip nosniff missing");
+    const clipBytes = (await clip.arrayBuffer()).byteLength;
+    if (clipBytes <= 5_000) throw new Error("clip payload too small");
+
+    return { posterBytes, clipBytes };
   });
   for (const path of ["/home", "/issues", "/map", "/laws", "/public-sources/coverage"]) {
     await check(checks, `public_payload_${path.slice(1).replaceAll("/", "_")}`, async () => {

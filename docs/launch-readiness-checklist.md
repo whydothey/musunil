@@ -29,7 +29,7 @@
 - `/health` 200.
 - `/ready` 200, `config_source`, `postgres`, `redis` check가 모두 ok.
 - 배포 후 `MUSUNIL_API_BASE_URL=https://... pnpm launch:post-deploy-smoke -- --require-laws` 통과. 이 값은 localhost나 HTTP가 아닌 실제 배포 HTTPS API URL이어야 하며, 요청 timeout과 redirect 수동 처리, API 보안 헤더, CORS 경계, `/home`, `/issues`, 첫 이슈 상세, 첫 이슈 live-claims, `/area-clusters`, `/map`, `/public-sources/coverage`, `/laws`, 첫 법안 상세 공개 응답 안전성을 함께 확인한다.
-- 배포 후 `pnpm launch:post-deploy-smoke`는 API `/media/redacted/preview-occ-live-1-poster.png`가 200 `image/png`로 열리고 encoded traversal가 차단되는지 확인한다.
+- 배포 후 `pnpm launch:post-deploy-smoke`는 API `/media/redacted/preview-occ-live-1-poster.png`가 200 `image/png`, `/media/redacted/preview-occ-live-1.webm`이 200 `video/webm`으로 열리고 encoded traversal가 차단되는지 확인한다.
 - Render API health check path가 `/ready`다.
 - Render API build에서 `pnpm check`, `pnpm build:web-config`, `pnpm launch:check`가 실행된다.
 - Render API pre-deploy에서 `pnpm db:migrate`가 실행된다.
@@ -58,7 +58,7 @@
 - Postgres snapshot payload는 `security.encryption_key` 또는 Render `MUSUNIL_ENCRYPTION_KEY`로 AES-GCM 암호화되어 저장된다.
 - 공개 응답에 사용자 원문, 정밀 위치, 원본 미디어 key가 나오지 않는다.
 - Runtime smoke는 공개 live-claims 응답의 `publicRadiusM`과 private key/raw GPS/media field 부재를 검증한다.
-- Runtime smoke는 공개 redacted poster가 API `/media/redacted/*`에서 열리고 private/traversal 경로가 차단되는지 검증한다.
+- Runtime smoke는 공개 redacted poster와 clip이 API `/media/redacted/*`에서 열리고 private/traversal 경로가 차단되는지 검증한다.
 - 공개 응답에 내부 `claimIds/evidenceIds/*ClaimIds/targetRefs` 참조 배열이 나오지 않는다.
 - 규모 추정 공개 응답은 `musunil_ai_estimate` Claim 메타, evidence strength, risk level을 함께 노출한다.
 - 규모 추정의 독립 시점 수는 지역 수가 아니라 공개 가능한 현장 영상 근거 기준으로만 증가한다.

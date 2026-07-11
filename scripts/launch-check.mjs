@@ -129,6 +129,8 @@ if (
   !/"redis"/.test(postDeploySmoke) ||
   !/\/public-sources\/coverage/.test(postDeploySmoke) ||
   !/\/media\/redacted\/preview-occ-live-1-poster\.png/.test(postDeploySmoke) ||
+  !/\/media\/redacted\/preview-occ-live-1\.webm/.test(postDeploySmoke) ||
+  !/video\/webm/.test(postDeploySmoke) ||
   !/--require-laws/.test(postDeploySmoke) ||
   !/admin\/review-queue/.test(postDeploySmoke) ||
   !/forbidden_engagement_surface_absent/.test(postDeploySmoke) ||
