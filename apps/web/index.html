@@ -2968,13 +2968,21 @@
         backdrop-filter: blur(12px);
       }
 
-      .reel-play-badge::before {
+      .reel-play-badge.is-ready::before {
         content: "";
         width: 0;
         height: 0;
         border-top: 5px solid transparent;
         border-bottom: 5px solid transparent;
         border-left: 8px solid currentColor;
+      }
+
+      .reel-play-badge.is-pending::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: currentColor;
       }
 
       .reel-overlay {
@@ -3059,6 +3067,97 @@
         color: var(--muted);
         font-size: 12px;
         line-height: 1.45;
+      }
+
+      .reels-empty-panel {
+        display: grid;
+        gap: 14px;
+        min-height: min(620px, calc(100vh - 160px));
+        padding: 18px;
+        border: 1px solid color-mix(in srgb, var(--brand) 20%, var(--line));
+        border-radius: var(--radius);
+        background:
+          linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), color-mix(in srgb, var(--surface-2) 82%, var(--surface))),
+          var(--surface);
+        box-shadow: var(--shadow-soft);
+      }
+
+      .reels-review-panel {
+        scroll-snap-align: start;
+      }
+
+      .reels-empty-hero {
+        display: grid;
+        align-content: end;
+        gap: 10px;
+        min-height: 210px;
+        padding: 18px;
+        border-radius: 8px;
+        background:
+          radial-gradient(circle at 78% 18%, color-mix(in srgb, var(--brand) 18%, transparent), transparent 32%),
+          linear-gradient(145deg, color-mix(in srgb, var(--brand) 10%, var(--surface)), var(--surface-3));
+      }
+
+      .reels-empty-hero h3 {
+        max-width: 18em;
+        margin: 0;
+        color: var(--ink);
+        font-size: 23px;
+        line-height: 1.22;
+      }
+
+      .reels-empty-hero p {
+        max-width: 42em;
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .reels-empty-status {
+        display: grid;
+        gap: 8px;
+      }
+
+      .reels-empty-status span {
+        display: grid;
+        grid-template-columns: 58px minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+        padding: 10px 0;
+        border-bottom: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+      }
+
+      .reels-empty-status span:last-child {
+        border-bottom: 0;
+      }
+
+      .reels-empty-status b {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .reels-empty-status em {
+        color: var(--ink);
+        font-size: 13px;
+        font-style: normal;
+        line-height: 1.45;
+      }
+
+      .reels-empty-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: auto;
+      }
+
+      .reels-empty-actions .button {
+        flex: 1 1 104px;
+        min-height: 42px;
+      }
+
+      .reels-review-panel .reels-empty-actions .button {
+        flex: 1 1 0;
       }
 
       .reel-filter {
@@ -4491,11 +4590,13 @@
         }
 
         #reels-section .reel-card.reel-full {
-          min-height: min(620px, calc(100vh - 230px));
+          height: min(560px, calc(100vh - 318px));
+          min-height: min(560px, calc(100vh - 318px));
         }
 
         #reels-section .reel-card.reel-full .reel-media {
-          min-height: min(620px, calc(100vh - 230px));
+          height: 100%;
+          min-height: 100%;
         }
 
         #reels-section .reel-overlay {
@@ -4515,6 +4616,39 @@
           flex: 1 1 0;
           min-height: 40px;
           padding: 0 7px;
+        }
+
+        #reels-section .reels-empty-panel {
+          gap: 10px;
+          min-height: min(500px, calc(100vh - 330px));
+          padding: 12px;
+        }
+
+        #reels-section .reels-empty-hero {
+          gap: 7px;
+          min-height: 136px;
+          padding: 12px;
+        }
+
+        #reels-section .reels-empty-hero h3 {
+          font-size: 19px;
+        }
+
+        #reels-section .reels-empty-hero p {
+          font-size: 12px;
+          line-height: 1.42;
+        }
+
+        #reels-section .reels-empty-status {
+          gap: 7px;
+        }
+
+        #reels-section .reels-empty-status span {
+          padding: 8px 0;
+        }
+
+        #reels-section .reels-empty-actions .button {
+          min-height: 38px;
         }
 
         .map-shell {
@@ -7312,6 +7446,22 @@
         return "영상 확인 중";
       }
 
+      let requestedReelsIssueId;
+
+      function issueHasVideoSurface(issue) {
+        return Boolean(issue && issueVideoCount(issue) > 0);
+      }
+
+      function reelsDefaultIssue() {
+        const requested = requestedReelsIssueId
+          ? loadedIssueCards.find((issue) => issue.id === requestedReelsIssueId)
+          : undefined;
+        if (requested) return requested;
+        const current = selectedIssue || loadedIssueCards[0];
+        if (issueHasVideoSurface(current)) return current;
+        return loadedIssueCards.find(issueHasVideoSurface) || current;
+      }
+
       function videoEvidenceStatusText(count, fallback = "영상 확인 중") {
         const value = Number(count || 0);
         return value > 0 ? `현장 영상 ${value}건` : fallback;
@@ -7434,6 +7584,7 @@
       function openIssueCardAction(issue, action) {
         if (!issue) return;
         if (action === "video") {
+          requestedReelsIssueId = issue.id;
           selectIssue(issue, { openDetail: false, scrollToCards: false });
           setPrimaryView("reels");
           return;
@@ -8524,6 +8675,7 @@
         return label
           .replace(/현장 판단/g, "현장 확인")
           .replace(/GPS 인증/g, "촬영 위치 확인")
+          .replace(/현장 이견 일부/g, "확인 엇갈림")
           .replace(/일치 있음/g, "현장 확인 있음")
           .replace(/이견 있음/g, "다른 현장 가능성 있음")
           .replace(/판단 대기/g, "확인 대기");
@@ -8534,6 +8686,59 @@
         const disputed = Number(item?.fieldVerification?.disputed || 0);
         if (aligned || disputed) return `${aligned}/${disputed}`;
         return "확인 대기";
+      }
+
+      function renderReelsEmptyState(issue, emptyText) {
+        const title = issue?.title || "공개 현장 영상";
+        const facts = issue ? issueContextFacts(issue) : "공개 가능한 현장 영상 확인 중";
+        const current = issueHasVideoSurface(issue) ? "비식별 검토 중인 영상이 있습니다" : "공개 가능한 영상 없음";
+        const evidence = issue ? issueEvidenceLineText(issue) : "근거 확인 중";
+        const location = issue ? issuePublicLocationText(issue) : "위치 확인 중";
+        return `
+          <article class="reels-empty-panel" aria-label="인증 영상 상태">
+            <div class="reels-empty-hero">
+              <span class="chip pending">공개 영상 대기</span>
+              <h3>${escapeHtml(publicDisplayTitle(title))}</h3>
+              <p>${escapeHtml(facts)}</p>
+            </div>
+            <div class="reels-empty-status">
+              <span><b>현재</b><em>${escapeHtml(current)}</em></span>
+              <span><b>근거</b><em>${escapeHtml(evidence || emptyText)}</em></span>
+              <span><b>위치</b><em>${escapeHtml(location)}</em></span>
+            </div>
+            <div class="reels-empty-actions" aria-label="영상 대기 상태에서 확인할 항목">
+              <button class="button primary" type="button" data-reel-empty-action="map"><svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg><span>지도</span></button>
+              <button class="button ghost" type="button" data-reel-empty-action="evidence"><svg class="button-symbol" aria-hidden="true"><use href="#icon-stats"></use></svg><span>근거</span></button>
+              <button class="button ghost" type="button" data-reel-empty-action="report"><svg class="button-symbol" aria-hidden="true"><use href="#icon-report"></use></svg><span>현장촬영</span></button>
+            </div>
+          </article>
+        `;
+      }
+
+      function renderReelsPendingReview(item) {
+        const title = publicDisplayTitle(item.targetTitle || selectedIssue?.title || "공개 현장");
+        const statement = publicDisplayTitle(item.claim?.normalizedStatement || "현장 인증 영상");
+        const status = publicFieldStatusLabel(item.fieldVerification?.statusLabel);
+        const location = `${item.regionLabel || "지역 확인 중"} · ${item.publicRadiusM ? `공개 위치 반경 ${item.publicRadiusM}m` : "공개 위치 흐림"}`;
+        return `
+          <article class="reels-empty-panel reels-review-panel" data-reel-id="${escapeHtml(item.id || "")}" aria-label="검토 대기 현장 영상">
+            <div class="reels-empty-hero">
+              <span class="chip pending">검토 대기</span>
+              <h3>${escapeHtml(title)}</h3>
+              <p>${escapeHtml(statement)}</p>
+            </div>
+            <div class="reels-empty-status">
+              <span><b>현재</b><em>비식별 공개본 준비 중</em></span>
+              <span><b>위치</b><em>${escapeHtml(location)}</em></span>
+              <span><b>확인</b><em>${escapeHtml(`${formatDuration(item.durationMs)} · ${status}`)}</em></span>
+            </div>
+            <div class="reels-empty-actions" aria-label="영상 검토 상태에서 확인할 항목">
+              <button class="button primary" type="button" data-reel-action="evidence"><svg class="button-symbol" aria-hidden="true"><use href="#icon-stats"></use></svg><span>근거</span></button>
+              <button class="button ghost" type="button" data-reel-action="region"><svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg><span>위치</span></button>
+              <button class="button ghost" type="button" data-reel-action="issue"><svg class="button-symbol" aria-hidden="true"><use href="#icon-home"></use></svg><span>이슈</span></button>
+            </div>
+          </article>
+        `;
       }
 
 	      function renderLiveClaims(liveClaims, emptyText = "검토 완료된 현장 인증 영상이 아직 없습니다.", options = {}) {
@@ -8547,9 +8752,11 @@
 	        const filters = options.filterable ? renderLiveClaimFilters(items) : "";
 	        const filteredItems = options.filterable ? filterLiveClaims(items) : items;
 	        if (!items.length) {
+            if (options.fullScreen) return renderReelsEmptyState(options.issue, emptyText);
 	          return `${notice}${filters}<div class="empty-state"><strong>공개 가능한 영상 확인 중</strong><span>${escapeHtml(emptyText)}</span></div>`;
 	        }
 	        if (!filteredItems.length) {
+            if (options.fullScreen) return renderReelsEmptyState(options.issue, "필터에 맞는 공개 영상이 없습니다.");
 	          return `${notice}${filters}<div class="empty-state"><strong>필터에 맞는 영상이 없습니다</strong><span>다른 지역이나 판단 상태를 선택하면 공개된 현장 영상을 볼 수 있습니다.</span></div>`;
 	        }
         if (options.fullScreen) {
@@ -8595,13 +8802,12 @@
         return items
           .map((item) => {
             const poster = publicLivePosterDisplaySrc(item);
+            if (!poster) return renderReelsPendingReview(item);
             return `
             <article class="reel-card reel-full" data-reel-id="${escapeHtml(item.id || "")}">
               <div class="reel-media ${poster ? "has-poster" : "is-review-slot"}" aria-label="비식별 처리된 현장 인증 영상">
-                ${poster
-                  ? `<img class="reel-poster-image" src="${escapeHtml(poster)}" alt="" aria-hidden="true" loading="eager" />`
-                  : renderPublicVideoReviewSlot("reel")}
-                <span class="reel-play-badge">${poster ? "비식별 공개본" : "검토 대기"}</span>
+                <img class="reel-poster-image" src="${escapeHtml(poster)}" alt="" aria-hidden="true" loading="eager" />
+                <span class="reel-play-badge is-ready">비식별 공개본</span>
               </div>
               <div class="reel-overlay">
                 <div class="source-badges">${renderSourceBadges([["field", "현장 영상"], ["official", "촬영 위치 확인"]])}</div>
@@ -8663,7 +8869,12 @@
       async function renderReelsView() {
         const root = $("reels-feed");
         if (!root) return;
-        const issue = selectedIssue || loadedIssueCards[0];
+        const issue = reelsDefaultIssue();
+        if (issue && issue.id !== selectedIssue?.id) {
+          selectedIssue = issue;
+          const nextSelected = visibleCards(loadedCards).find((card) => card.issueId === issue.id) || selected;
+          if (nextSelected) selected = nextSelected;
+        }
         updateIssueContextStrips();
         $("reels-context").textContent = issue ? `${issue.title} · 현장 인증 영상` : "공개 현장 영상을 봅니다.";
         root.innerHTML = `
@@ -8676,7 +8887,8 @@
           return;
         }
         const liveClaims = await loadLiveClaims("issue", issue.id);
-        root.innerHTML = renderLiveClaims(liveClaims, "이 이슈에 연결된 공개 현장 인증 영상이 아직 없습니다.", { fullScreen: true });
+        root.innerHTML = renderLiveClaims(liveClaims, "이 이슈에 연결된 공개 현장 인증 영상이 아직 없습니다.", { fullScreen: true, issue });
+        requestedReelsIssueId = undefined;
       }
 
 	      function trustSummary(claims, card) {
@@ -9546,6 +9758,19 @@
       });
 
       $("reels-section").addEventListener("click", (event) => {
+        const emptyAction = event.target instanceof Element ? event.target.closest("[data-reel-empty-action]") : null;
+        if (emptyAction) {
+          if (emptyAction.dataset.reelEmptyAction === "map") {
+            setPrimaryView("explore");
+            return;
+          }
+          if (emptyAction.dataset.reelEmptyAction === "report") {
+            setPrimaryView("report");
+            return;
+          }
+          openSelectedIssueEvidence();
+          return;
+        }
         const action = event.target instanceof Element ? event.target.closest("[data-reel-action]") : null;
         if (!action) return;
         if (action.dataset.reelAction === "region") {

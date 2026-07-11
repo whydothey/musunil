@@ -164,8 +164,16 @@ async function checkWeb(port) {
   assert(index.includes("data-reel-action=\"region\""), "reel region action missing");
   assert(index.includes("data-reel-action=\"issue\""), "reel issue action missing");
   assert(!index.includes("data-reel-action=\"dispute\""), "reel dispute action should stay in detail context");
+  assert(index.includes("reelsDefaultIssue"), "reels should choose a video-bearing issue by default");
+  assert(index.includes("renderReelsEmptyState"), "professional reels empty state missing");
+  assert(index.includes("renderReelsPendingReview"), "posterless live claims should render as review cards");
+  assert(index.includes("reels-review-panel"), "posterless review panel styling missing");
+  assert(index.includes('data-reel-empty-action="map"'), "reels empty map recovery action missing");
+  assert(index.includes('data-reel-empty-action="evidence"'), "reels empty evidence recovery action missing");
+  assert(index.includes('data-reel-empty-action="report"'), "reels empty report recovery action missing");
   assert(index.includes("reel-poster-image"), "full-screen reel poster image missing");
-  assert(index.includes("reel-play-badge"), "full-screen reel public copy badge missing");
+  assert(index.includes("reel-play-badge is-ready"), "full-screen reel public copy badge missing");
+  assert(!index.includes('<span class="reel-play-badge">${poster ? "비식별 공개본" : "검토 대기"}</span>'), "pending videos must not use play-badge affordance");
   assert(index.includes("<svg class=\"button-symbol\" aria-hidden=\"true\"><use href=\"#icon-stats\"></use></svg><span>근거</span>"), "reel evidence icon action missing");
   assert(!index.includes('data-tab-view="record"'), "stale detail mobile tab present");
   assert(!index.includes('data-tab-view="map"'), "stale map mobile tab present");
