@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": "scripts/write-web-static-manifest.mjs",
+  "files": {
+    "index.html": {
+      "sha256": "e5feadfffa2451c55f87111b433e0a70865b33de225fc3dafc2f2f4446e59077",
+      "bytes": 373226
+    },
+    "config.js": {
+      "sha256": "fe63a156079b5fe8754a476faaacef808bbd4aa41a2b0f19d85b9a3095876f3d",
+      "bytes": 141
+    },
+    "media/redacted/preview-occ-live-1-poster.png": {
+      "sha256": "272feaa3df7470c6af44b5c0f67c61bf2707c462ad33419190e889a5cf2bb1cd",
+      "bytes": 487794
+    },
+    "media/redacted/preview-occ-live-1.webm": {
+      "sha256": "aa90ad51b2f25e757b2ad1d1ea23df67084815e50fd51c7000eafbb870f6a70a",
+      "bytes": 11712
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 11:38 KST
+Last updated: 2026-07-11 11:45 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -40,6 +40,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 11:29 패치로 `.gitignore`에서 `apps/web/build-info.js/json` 제외를 제거했다. build command가 생성한 공개 배포 확인 산출물이 Render Static publish에서 누락되는 문제를 재발 방지하기 위해 `launch-check`도 build-info ignore 회귀를 실패 처리한다.
 - 11:34 패치로 `apps/web/build-info.js/json` placeholder를 repo에 추적시킨다. Render Static이 untracked build output을 publish하지 않는 경우에도 파일 경로가 존재하고, build command가 실행되면 실제 Git SHA로 덮어쓴다. `launch-check`는 build-info 파일이 Git 추적 대상이 아니면 실패한다.
 - 11:38 라이브 점검에서 build-info 파일은 200으로 바뀌었지만 값이 `generated-at-build` placeholder 그대로였다. 즉 Render가 build command 산출물을 publish하지 않는 상태다. `check-web-deploy`와 `service-watch`가 placeholder build-info를 배포 실패로 처리하도록 강화했다.
+- 11:45 패치로 `static-manifest.json`을 추가했다. manifest는 `index.html`, `config.js`, 공개 poster/clip의 SHA-256과 byte size를 담고, `check-web-deploy`가 live 파일 해시를 비교한다. Render build output이 placeholder인 상태에서도 실제 UI 정적 파일이 현재 산출물인지 별도 증거를 확보한다.
 
 ## Agent Feedback Summary
 
@@ -142,6 +143,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 43 | build-info publish 누락 방지 | 1차 완료 | `.gitignore`에서 `apps/web/build-info.js/json` 제외를 제거하고 `launch-check`가 build-info ignore 회귀를 실패 처리. Render Static build 산출물이 public deploy version check에 포함될 수 있게 함 |
 | 44 | build-info tracked placeholder | 1차 완료 | `apps/web/build-info.js/json` placeholder를 repo에 추적. build command가 실제 SHA로 덮어쓰며, tracked file이 아니면 `launch-check` 실패 |
 | 45 | placeholder 배포 실패 처리 | 1차 완료 | live build-info 200이더라도 `generated-at-build` 또는 `source: placeholder`면 `check-web-deploy`와 `service-watch` 실패. Render build output 미반영을 정상 배포로 인정하지 않음 |
+| 46 | static manifest content hash | 1차 완료 | `apps/web/static-manifest.json` tracked. `build:web-static`과 `check:web-smoke`가 manifest를 생성/검증하고, `check:web-deploy`가 live HTML/config/media 해시를 비교 |
 
 ## Current Evidence
 
@@ -190,6 +192,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 11:29 build-info ignore fix | `.gitignore` no longer ignores `apps/web/build-info.js/json`; `launch-check` fails if those generated public artifacts are ignored again |
 | 11:34 tracked build-info placeholders | `apps/web/build-info.js/json` placeholder files added so Render Static has publishable paths before build overwrite |
 | 11:38 live placeholder diagnosis | live `/build-info.json` 200 but body `commitSha=generated-at-build`, `source=placeholder`; live `/` still `Cache-Control: public, max-age=0, s-maxage=300` |
+| 11:45 static manifest | `apps/web/static-manifest.json` added. Local manifest records SHA-256/bytes for index/config/public media; deploy check verifies live file hashes |
 | 390px mobile capture | `docs/commercial-splus-mobile-390-2026-07-11.png` |
 | 430px mobile capture | `docs/commercial-splus-mobile-430-2026-07-11.png` |
 | 768px tablet capture | `docs/commercial-splus-tablet-768-2026-07-11.png` |

@@ -1,6 +1,10 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { loadUserInputs } from "../packages/config/src/index.ts";
 
+const cwd = resolve(import.meta.dirname, "..");
 const config = safeConfig();
 const webBaseUrl = deployedUrl(process.env.MUSUNIL_WEB_BASE_URL ?? positionalArg() ?? readString(config, "app.public_base_url"));
 const expectedCommitSha = process.env.MUSUNIL_EXPECTED_COMMIT_SHA || process.env.RENDER_GIT_COMMIT || gitHead();
@@ -10,6 +14,16 @@ if (!webBaseUrl) {
   console.error("Set MUSUNIL_WEB_BASE_URL or app.public_base_url to the deployed HTTPS web URL.");
   process.exit(1);
 }
+
+await check("web_static_manifest", async () => {
+  const response = await raw(`${webBaseUrl}/static-manifest.json`);
+  assert(response.status === 200, `/static-manifest.json returned ${response.status}`);
+  const localManifest = JSON.parse(readFileSync(resolve(cwd, "apps/web/static-manifest.json"), "utf8"));
+  assert(JSON.stringify(response.body?.files) === JSON.stringify(localManifest.files), "deployed static manifest does not match local manifest");
+  await assertLiveFileHash("/", "index.html", response.body);
+  await assertLiveFileHash("/config.js", "config.js", response.body);
+  await assertLiveFileHash("/media/redacted/preview-occ-live-1.webm", "media/redacted/preview-occ-live-1.webm", response.body);
+});
 
 await check("web_build_info", async () => {
   const response = await raw(`${webBaseUrl}/build-info.json`);
@@ -56,6 +70,20 @@ async function raw(url) {
   });
   const body = await response.json().catch(async () => ({ raw: await response.text().catch(() => "") }));
   return { status: response.status, headers: Object.fromEntries(response.headers.entries()), body };
+}
+
+async function assertLiveFileHash(urlPath, manifestPath, manifest) {
+  const response = await fetch(withCacheBuster(`${webBaseUrl}${urlPath}`), {
+    headers: noCacheHeaders(),
+    redirect: "manual",
+    signal: AbortSignal.timeout(10_000)
+  });
+  assert(response.status === 200, `${urlPath} returned ${response.status}`);
+  const expected = manifest.files?.[manifestPath];
+  assert(expected?.sha256, `manifest missing ${manifestPath}`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  assert(bytes.byteLength === expected.bytes, `${urlPath} byte length mismatch`);
+  assert(createHash("sha256").update(bytes).digest("hex") === expected.sha256, `${urlPath} hash mismatch`);
 }
 
 async function text(url) {

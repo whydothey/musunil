@@ -33,6 +33,11 @@ async function runChecks() {
     assertAbsent(html, ["좋아요", "댓글", "찬반", "추천", "비추천", "팔로우", "localhost:4000", "traffic_control", "WEAKLY_OBSERVED"]);
     return { bytes: html.length };
   });
+  await check(checks, "web_static_manifest", async () => {
+    const manifest = await getJson(`${webBaseUrl}/static-manifest.json`);
+    if (!manifest.files?.["index.html"]?.sha256 || !manifest.files?.["config.js"]?.sha256) throw new Error("static manifest missing core files");
+    return { files: Object.keys(manifest.files).length };
+  });
   await check(checks, "api_health_ready", async () => {
     const health = await getJson(`${apiBaseUrl}/health`);
     const ready = await getJson(`${apiBaseUrl}/ready`, { allowNotOk: true });

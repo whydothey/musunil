@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-11 11:38 KST
+Last updated: 2026-07-11 11:45 KST
 
 Status: 완료 아님.
 
@@ -83,6 +83,7 @@ GET /ready -> 200
 - 2026-07-11 11:29 build-info 산출물이 `.gitignore`에 막혀 publish에서 빠지는 회귀를 제거했다. 다음 Render 배포에서 `/build-info.json` 200과 현재 Git SHA 일치가 확인되기 전에는 운영 배포 준비를 S+로 승급하지 않는다.
 - 2026-07-11 11:34 build-info placeholder를 repo에 추적시켜 Render Static publish 경로를 고정했다. build command가 실제 Git SHA로 덮어쓰는지 live에서 확인되기 전에는 운영 배포 준비를 S+로 승급하지 않는다.
 - 2026-07-11 11:38 live build-info가 200이어도 placeholder 값이면 배포 실패로 처리하도록 `check-web-deploy`와 `service-watch`를 강화했다. Render build output이 실제 Git SHA를 반영하기 전에는 운영 배포 준비를 S+로 승급하지 않는다.
+- 2026-07-11 11:45 static manifest와 live file hash 검증을 추가했다. live manifest 배포, build-info SHA 일치, static headers가 모두 확인되기 전에는 운영 배포 준비를 S+로 승급하지 않는다.
 
 ## Next Active Goal Order
 

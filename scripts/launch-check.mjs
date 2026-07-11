@@ -26,6 +26,7 @@ const userFacingDocs = [
 const webConfigJs = readFileSync(resolve(cwd, "apps/web/config.js"), "utf8");
 const webServer = readFileSync(resolve(cwd, "scripts/serve-web.mjs"), "utf8");
 const webDeployCheck = readFileSync(resolve(cwd, "scripts/check-web-deploy.mjs"), "utf8");
+const webStaticManifestScript = readFileSync(resolve(cwd, "scripts/write-web-static-manifest.mjs"), "utf8");
 const gitignore = readFileSync(resolve(cwd, ".gitignore"), "utf8");
 const renderYaml = readFileSync(resolve(cwd, "render.yaml"), "utf8");
 const renderApi = renderServiceBlock(renderYaml, "musunil-api");
@@ -293,6 +294,9 @@ if (!/MUSUNIL_WEB_CONFIG/.test(web)) failures.push("web runtime config hook is m
 if (!/build-info\.js/.test(web)) failures.push("web build-info hook is missing");
 if (!/generated-at-build/.test(webDeployCheck) || !/placeholder was deployed/.test(webDeployCheck)) {
   failures.push("web deploy check must reject tracked build-info placeholders");
+}
+if (!/static-manifest\.json/.test(webDeployCheck) || !/assertLiveFileHash/.test(webDeployCheck) || !/createHash\("sha256"\)/.test(webStaticManifestScript)) {
+  failures.push("web deploy check must verify static manifest content hashes");
 }
 if (!/일정 확인/.test(web) || !/public-sources\/coverage/.test(web)) failures.push("web public source coverage status is missing");
 if (/const API = "http:\/\/localhost:4000"/.test(web)) failures.push("web API base is hardcoded to localhost");

@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { resolve } from "node:path";
@@ -12,6 +13,12 @@ const configBuild = spawnSync(process.execPath, ["--disable-warning=Experimental
   stdio: "inherit"
 });
 if (configBuild.status !== 0) process.exit(configBuild.status ?? 1);
+const manifestBuild = spawnSync(process.execPath, ["scripts/write-web-static-manifest.mjs"], {
+  cwd,
+  env,
+  stdio: "inherit"
+});
+if (manifestBuild.status !== 0) process.exit(manifestBuild.status ?? 1);
 const server = spawn(process.execPath, ["scripts/serve-web.mjs"], {
   cwd,
   env,
@@ -344,11 +351,18 @@ async function checkWeb(port) {
   assert(typeof buildInfo.builtAt === "string" && buildInfo.builtAt.includes("T"), "build-info timestamp missing");
   const buildInfoJs = await (await fetch(`${base}/build-info.js`)).text();
   assert(buildInfoJs.includes("MUSUNIL_BUILD_INFO"), "web build-info JS hook missing");
+  const manifestResponse = await fetch(`${base}/static-manifest.json`);
+  assert(manifestResponse.status === 200, `static-manifest.json returned ${manifestResponse.status}`);
+  const manifest = await manifestResponse.json();
+  assert(manifest.files?.["index.html"]?.sha256 === sha256(index), "static manifest index hash mismatch");
+  assert(manifest.files?.["config.js"]?.sha256 === sha256(config), "static manifest config hash mismatch");
 
   const packageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
   const webConfigWriter = readFileSync(resolve(cwd, "scripts/write-web-config.mjs"), "utf8");
   const webServer = readFileSync(resolve(cwd, "scripts/serve-web.mjs"), "utf8");
   assert(packageJson.includes('"build:web-static"'), "static web build script missing");
+  assert(packageJson.includes('"build:web-manifest"'), "static web manifest build script missing");
+  assert(packageJson.includes('"check:web-manifest"'), "static web manifest check script missing");
   assert(packageJson.includes('"check:web-deploy"'), "web deploy version smoke script missing");
   assert(webConfigWriter.includes("MUSUNIL_WEB_API_BASE_URL"), "static web API env override missing");
   assert(webConfigWriter.includes("MUSUNIL_WEB_MAP_STYLE_URL"), "static web map env override missing");
@@ -392,4 +406,8 @@ function waitForExit(child) {
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function sha256(value) {
+  return createHash("sha256").update(value).digest("hex");
 }
