@@ -187,6 +187,11 @@ async function checkWeb(port) {
   assert(!index.includes(".pin.preview-only"), "fixed preview DOM pin CSS present");
   assert(index.includes("occurrence-pins"), "MapLibre occurrence pin source missing");
   assert(index.includes("presence-areas"), "MapLibre presence area source missing");
+  assert(index.includes("fallbackPinFeatures"), "map fallback data pin renderer missing");
+  assert(index.includes("drawFallbackPresence"), "map fallback presence area renderer missing");
+  assert(index.includes("refreshMapSurface"), "map refresh fallback helper missing");
+  assert(index.includes('liveMap.on("styledata", () => syncOccurrenceMapLayers());'), "MapLibre styledata layer sync missing");
+  assert(index.includes('liveMap.on("idle", () => syncOccurrenceMapLayers());'), "MapLibre idle layer sync missing");
   assert(index.includes("자료 위치"), "map source pin key missing");
   assert(index.includes("현장 인증 범위"), "map presence area key missing");
   assert(index.includes("const target = selected || visibleCards(loadedCards)[0] || loadedCards[0];"), "map detail should resolve selected occurrence target");

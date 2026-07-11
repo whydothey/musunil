@@ -2312,12 +2312,14 @@
         height: calc(100vh - 152px);
         max-height: 680px;
         overflow: hidden;
-        border: 1px solid color-mix(in srgb, var(--brand) 18%, var(--line));
+        border: 1px solid color-mix(in srgb, var(--brand) 20%, var(--line));
         border-radius: var(--radius);
-        background: #dbe7ee;
+        background:
+          radial-gradient(circle at 34% 28%, rgb(255 255 255 / 72%), transparent 22%),
+          linear-gradient(140deg, #dbe9ee 0%, #edf5f2 45%, #d7e5ee 100%);
         box-shadow:
           0 0 0 1px rgb(255 255 255 / 70%) inset,
-          0 22px 48px rgb(23 35 45 / 16%);
+          0 24px 52px rgb(23 35 45 / 15%);
         isolation: isolate;
       }
 
@@ -2325,16 +2327,18 @@
         content: "";
         position: absolute;
         inset: 0;
-        z-index: 1;
+        z-index: 2;
         pointer-events: none;
         background:
-          linear-gradient(180deg, rgb(255 255 255 / 26%), transparent 22%),
-          radial-gradient(circle at 48% 54%, transparent 0 44%, rgb(23 35 45 / 10%) 100%);
+          linear-gradient(180deg, rgb(255 255 255 / 34%), transparent 20%),
+          linear-gradient(0deg, rgb(255 255 255 / 18%), transparent 34%),
+          radial-gradient(circle at 50% 54%, transparent 0 48%, rgb(23 35 45 / 9%) 100%);
       }
 
       #map-canvas {
         position: absolute;
         inset: 0;
+        z-index: 0;
         width: 100%;
         height: 100%;
       }
@@ -2342,7 +2346,7 @@
       #live-map {
         position: absolute;
         inset: 0;
-        z-index: 0;
+        z-index: 1;
       }
 
       .maplibregl-ctrl-bottom-left,
@@ -5001,13 +5005,13 @@
                 </div>
                 <div>
                   <h3 id="map-title">공개 위치 확인</h3>
-	                  <p class="muted" id="map-summary">자료 위치와 현장 인증 범위를 함께 확인합니다.</p>
-                    <p class="map-context" id="map-context">지도는 위치 맥락만 보조합니다.</p>
-	                  <div class="map-sheet-summary" aria-label="지도 선택 요약">
-	                    <span><b>장소</b><em id="map-impact">공개 자료 위치를 불러오고 있습니다.</em></span>
-	                    <span><b>근거</b><em id="map-proof">출처별 근거가 확인되면 상세에서 분리해 봅니다.</em></span>
-	                    <span><b>최근 확인</b><em id="map-update">정밀 제보 위치는 공개하지 않습니다.</em></span>
-	                    <span><b>확인 정도</b><em id="map-risk">공개 근거가 있는 범위만 표시합니다.</em></span>
+                  <p class="muted" id="map-summary">자료 위치와 현장 인증 범위를 함께 확인합니다.</p>
+                  <p class="map-context" id="map-context">지도는 위치 맥락만 보조합니다.</p>
+                  <div class="map-sheet-summary" aria-label="지도 선택 요약">
+                    <span><b>장소</b><em id="map-impact">공개 자료 위치를 불러오고 있습니다.</em></span>
+                    <span><b>근거</b><em id="map-proof">출처별 근거가 확인되면 상세에서 분리해 봅니다.</em></span>
+                    <span><b>최근 확인</b><em id="map-update">정밀 제보 위치는 공개하지 않습니다.</em></span>
+                    <span><b>확인 정도</b><em id="map-risk">공개 근거가 있는 범위만 표시합니다.</em></span>
                   </div>
                 </div>
               </div>
@@ -5963,7 +5967,7 @@
         if (view === "explore") {
           if (selected) renderDetail(selected);
           renderMapSelectionContext(selected);
-          setTimeout(() => liveMap?.resize(), 120);
+          refreshMapSurface();
         }
         if (view === "reels") renderReelsView();
         if (view === "laws") focusPanel($("law-section"));
@@ -8799,9 +8803,205 @@
 	        return evidenceLabel(best);
 	      }
 
+      function fallbackCoordinatePairs(geometry) {
+        const pairs = [];
+        const visit = (value) => {
+          if (!Array.isArray(value)) return;
+          if (typeof value[0] === "number" && typeof value[1] === "number") {
+            pairs.push(value);
+            return;
+          }
+          value.forEach(visit);
+        };
+        visit(geometry?.coordinates);
+        return pairs;
+      }
+
+      function fallbackPinFeatures() {
+        const pins = latestMapData?.geojson?.pins?.features || [];
+        const validPins = pins.filter((feature) => feature?.geometry?.type === "Point" && Array.isArray(feature.geometry.coordinates));
+        if (validPins.length) return validPins;
+        return reportableCards().map((card, index) => ({
+          type: "Feature",
+          geometry: { type: "Point", coordinates: cardCenter(card) },
+          properties: {
+            targetId: card.id,
+            title: cardDisplayTitle(card),
+            sequence: index + 1
+          }
+        })).filter((feature) => Array.isArray(feature.geometry.coordinates));
+      }
+
+      function fallbackMapBounds(pinFeatures, areaFeatures) {
+        const coordinates = [
+          ...pinFeatures.map((feature) => feature.geometry.coordinates),
+          ...areaFeatures.flatMap((feature) => fallbackCoordinatePairs(feature.geometry))
+        ].filter((coordinate) => Array.isArray(coordinate) && Number.isFinite(coordinate[0]) && Number.isFinite(coordinate[1]));
+        if (!coordinates.length) {
+          const center = cardCenter(selected) || [126.978, 37.5665];
+          coordinates.push(center);
+        }
+        let minLng = Math.min(...coordinates.map((item) => item[0]));
+        let maxLng = Math.max(...coordinates.map((item) => item[0]));
+        let minLat = Math.min(...coordinates.map((item) => item[1]));
+        let maxLat = Math.max(...coordinates.map((item) => item[1]));
+        const lngPad = Math.max((maxLng - minLng) * 0.35, 0.035);
+        const latPad = Math.max((maxLat - minLat) * 0.35, 0.028);
+        minLng -= lngPad;
+        maxLng += lngPad;
+        minLat -= latPad;
+        maxLat += latPad;
+        return { minLng, maxLng, minLat, maxLat };
+      }
+
+      function fallbackProjector(bounds, width, height) {
+        const padX = Math.min(88, Math.max(38, width * 0.13));
+        const padTop = Math.min(96, Math.max(58, height * 0.15));
+        const padBottom = Math.min(170, Math.max(92, height * 0.23));
+        const usableWidth = Math.max(1, width - padX * 2);
+        const usableHeight = Math.max(1, height - padTop - padBottom);
+        return ([lng, lat]) => {
+          const x = padX + ((lng - bounds.minLng) / Math.max(0.0001, bounds.maxLng - bounds.minLng)) * usableWidth;
+          const y = padTop + (1 - ((lat - bounds.minLat) / Math.max(0.0001, bounds.maxLat - bounds.minLat))) * usableHeight;
+          return [x, y];
+        };
+      }
+
+      function drawFallbackBaseMap(ctx, width, height, dark) {
+        const gradient = ctx.createLinearGradient(0, 0, width, height);
+        gradient.addColorStop(0, dark ? "#152129" : "#dfeaf0");
+        gradient.addColorStop(0.48, dark ? "#101922" : "#edf4ef");
+        gradient.addColorStop(1, dark ? "#1b252d" : "#d6e5ec");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.save();
+        ctx.globalAlpha = dark ? 0.18 : 0.2;
+        ctx.fillStyle = dark ? "#254044" : "#bcd8d7";
+        for (let i = 0; i < 9; i += 1) {
+          const x = (i % 3) * width * 0.34 + width * 0.04;
+          const y = Math.floor(i / 3) * height * 0.24 + height * 0.1;
+          roundRectPath(ctx, x, y, width * 0.22, height * 0.12, 18);
+          ctx.fill();
+        }
+        ctx.restore();
+
+        ctx.save();
+        ctx.strokeLinecap = "round";
+        ctx.strokeLinejoin = "round";
+        ctx.strokeStyle = dark ? "rgba(102, 165, 184, .24)" : "rgba(79, 146, 166, .2)";
+        ctx.lineWidth = Math.max(18, width * 0.024);
+        ctx.beginPath();
+        ctx.moveTo(width * -0.05, height * 0.54);
+        ctx.bezierCurveTo(width * 0.22, height * 0.44, width * 0.42, height * 0.6, width * 0.66, height * 0.48);
+        ctx.bezierCurveTo(width * 0.82, height * 0.4, width * 0.98, height * 0.47, width * 1.08, height * 0.4);
+        ctx.stroke();
+        ctx.strokeStyle = dark ? "rgba(198, 210, 216, .22)" : "rgba(116, 133, 143, .2)";
+        ctx.lineWidth = 2;
+        for (let x = -width * 0.15; x < width * 1.12; x += 64) {
+          ctx.beginPath();
+          ctx.moveTo(x, height * 0.08);
+          ctx.lineTo(x + width * 0.28, height * 0.92);
+          ctx.stroke();
+        }
+        for (let y = height * 0.12; y < height * 0.94; y += 62) {
+          ctx.beginPath();
+          ctx.moveTo(width * 0.04, y);
+          ctx.lineTo(width * 0.96, y + height * 0.05);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        ctx.save();
+        ctx.fillStyle = dark ? "rgba(214, 226, 232, .42)" : "rgba(63, 81, 92, .42)";
+        ctx.font = "700 11px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillText(selected?.regionLabel || "공개 위치", 20, Math.max(34, height * 0.08));
+        ctx.restore();
+      }
+
+      function roundRectPath(ctx, x, y, width, height, radius) {
+        const r = Math.min(radius, width / 2, height / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + width, y, x + width, y + height, r);
+        ctx.arcTo(x + width, y + height, x, y + height, r);
+        ctx.arcTo(x, y + height, x, y, r);
+        ctx.arcTo(x, y, x + width, y, r);
+        ctx.closePath();
+      }
+
+      function drawFallbackPresence(ctx, project, pinFeatures, areaFeatures, dark) {
+        const brand = semanticColor("--brand") || "#0f7886";
+        const selectedId = selected?.id || "";
+        let drewArea = false;
+        areaFeatures.forEach((feature) => {
+          const coordinates = fallbackCoordinatePairs(feature.geometry);
+          if (coordinates.length < 3) return;
+          const isSelected = feature.properties?.targetId === selectedId || feature.properties?.occurrenceUnitId === selectedId;
+          ctx.save();
+          ctx.beginPath();
+          coordinates.forEach((coordinate, index) => {
+            const [x, y] = project(coordinate);
+            if (index === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          });
+          ctx.closePath();
+          ctx.fillStyle = isSelected ? "rgba(15, 120, 134, .3)" : "rgba(15, 120, 134, .17)";
+          ctx.strokeStyle = isSelected ? brand : "rgba(15, 120, 134, .66)";
+          ctx.lineWidth = isSelected ? 3 : 1.8;
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+          drewArea = true;
+        });
+        if (drewArea) return;
+        pinFeatures.forEach((feature) => {
+          const isSelected = feature.properties?.targetId === selectedId;
+          const [x, y] = project(feature.geometry.coordinates);
+          ctx.save();
+          ctx.beginPath();
+          ctx.ellipse(x, y, isSelected ? 74 : 58, isSelected ? 46 : 36, -0.18, 0, Math.PI * 2);
+          ctx.fillStyle = isSelected ? "rgba(15, 120, 134, .24)" : "rgba(15, 120, 134, .13)";
+          ctx.strokeStyle = isSelected ? brand : "rgba(15, 120, 134, .5)";
+          ctx.lineWidth = isSelected ? 2.4 : 1.4;
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        });
+      }
+
+      function drawFallbackPin(ctx, x, y, label, selectedPin) {
+        const brand = semanticColor("--brand") || "#0f7886";
+        ctx.save();
+        ctx.shadowColor = "rgba(17, 24, 39, .2)";
+        ctx.shadowBlur = selectedPin ? 22 : 14;
+        ctx.shadowOffsetY = 8;
+        ctx.beginPath();
+        ctx.arc(x, y, selectedPin ? 22 : 18, 0, Math.PI * 2);
+        ctx.fillStyle = "#fff";
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, y, selectedPin ? 17 : 14, 0, Math.PI * 2);
+        ctx.fillStyle = brand;
+        ctx.fill();
+        ctx.lineWidth = selectedPin ? 4 : 2.5;
+        ctx.strokeStyle = "rgba(255,255,255,.95)";
+        ctx.stroke();
+        ctx.fillStyle = "#fff";
+        ctx.font = `${selectedPin ? 800 : 760} ${selectedPin ? 12 : 11}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(label || "1").slice(0, 2), x, y + 0.5);
+        ctx.restore();
+      }
+
       function drawMap() {
-        if (liveMap) return;
+        if (liveMap?.isStyleLoaded?.()) return;
         const canvas = $("map-canvas");
+        canvas.hidden = false;
         const rect = canvas.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;
         canvas.width = Math.max(1, Math.floor(rect.width * dpr));
@@ -8813,45 +9013,29 @@
         const w = rect.width;
         const h = rect.height;
         ctx.clearRect(0, 0, w, h);
+        drawFallbackBaseMap(ctx, w, h, dark);
 
-        const gradient = ctx.createLinearGradient(0, 0, w, h);
-        gradient.addColorStop(0, dark ? "#18232b" : "#dfeaf0");
-        gradient.addColorStop(0.55, dark ? "#111a21" : "#eef4f7");
-        gradient.addColorStop(1, dark ? "#1c262d" : "#d7e5ec");
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, w, h);
+        const pinFeatures = fallbackPinFeatures();
+        const areaFeatures = latestMapData?.geojson?.presenceAreas?.features || [];
+        const bounds = fallbackMapBounds(pinFeatures, areaFeatures);
+        const project = fallbackProjector(bounds, w, h);
+        drawFallbackPresence(ctx, project, pinFeatures, areaFeatures, dark);
+        pinFeatures.forEach((feature, index) => {
+          const [x, y] = project(feature.geometry.coordinates);
+          drawFallbackPin(ctx, x, y, feature.properties?.sequence || index + 1, feature.properties?.targetId === selected?.id);
+        });
+      }
 
-        ctx.strokeStyle = dark ? "rgba(125,196,234,.12)" : "rgba(23,96,138,.12)";
-        ctx.lineWidth = 1;
-        for (let x = 0; x < w; x += 58) {
-          ctx.beginPath();
-          ctx.moveTo(x, 0);
-          ctx.lineTo(x + 44, h);
-          ctx.stroke();
-        }
-        for (let y = 0; y < h; y += 58) {
-          ctx.beginPath();
-          ctx.moveTo(0, y);
-          ctx.lineTo(w, y + 24);
-          ctx.stroke();
-        }
-
-        ctx.strokeStyle = dark ? "rgba(163,176,185,.26)" : "rgba(98,112,123,.26)";
-        ctx.lineWidth = 8;
-        drawRoad(ctx, [
-          [w * 0.12, h * 0.58],
-          [w * 0.31, h * 0.48],
-          [w * 0.48, h * 0.52],
-          [w * 0.72, h * 0.39],
-          [w * 0.9, h * 0.44]
-        ]);
-        ctx.lineWidth = 5;
-        drawRoad(ctx, [
-          [w * 0.18, h * 0.27],
-          [w * 0.33, h * 0.38],
-          [w * 0.46, h * 0.44],
-          [w * 0.58, h * 0.66]
-        ]);
+      function refreshMapSurface(delay = 120) {
+        setTimeout(() => {
+          if (liveMap) {
+            liveMap.resize();
+            if (liveMap.isStyleLoaded?.()) syncOccurrenceMapLayers();
+            else drawMap();
+            return;
+          }
+          drawMap();
+        }, delay);
       }
 
       function initMap() {
@@ -8861,8 +9045,8 @@
           return;
         }
 
+        drawMap();
         if (!window.maplibregl) {
-          drawMap();
           return;
         }
 
@@ -8877,11 +9061,12 @@
             attributionControl: false
           });
           liveMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-          $("map-canvas").hidden = true;
           liveMap.on("load", () => {
             syncOccurrenceMapLayers();
             flyToCard(selected);
           });
+          liveMap.on("styledata", () => syncOccurrenceMapLayers());
+          liveMap.on("idle", () => syncOccurrenceMapLayers());
           liveMap.on("error", () => {
             liveMap = undefined;
             $("map-canvas").hidden = false;
@@ -8895,76 +9080,81 @@
       }
 
       function syncOccurrenceMapLayers() {
-        if (!liveMap || !liveMap.isStyleLoaded?.()) return;
-        const pinData = latestMapData?.geojson?.pins || { type: "FeatureCollection", features: [] };
-        const areaData = latestMapData?.geojson?.presenceAreas || { type: "FeatureCollection", features: [] };
-        ensureGeoJsonSource("presence-areas", areaData);
-        ensureGeoJsonSource("occurrence-pins", pinData);
-        if (!liveMap.getLayer("presence-areas-fill")) {
-          liveMap.addLayer({
-            id: "presence-areas-fill",
-            type: "fill",
-            source: "presence-areas",
-            paint: {
-              "fill-color": semanticColor("--brand"),
-              "fill-opacity": ["case", ["boolean", ["feature-state", "selected"], false], 0.28, 0.14]
-            }
-          });
+        if (!liveMap) return;
+        try {
+          if (!liveMap.getStyle?.()) return;
+          const pinData = latestMapData?.geojson?.pins || { type: "FeatureCollection", features: [] };
+          const areaData = latestMapData?.geojson?.presenceAreas || { type: "FeatureCollection", features: [] };
+          ensureGeoJsonSource("presence-areas", areaData);
+          ensureGeoJsonSource("occurrence-pins", pinData);
+          if (!liveMap.getLayer("presence-areas-fill")) {
+            liveMap.addLayer({
+              id: "presence-areas-fill",
+              type: "fill",
+              source: "presence-areas",
+              paint: {
+                "fill-color": semanticColor("--brand"),
+                "fill-opacity": ["case", ["boolean", ["feature-state", "selected"], false], 0.34, 0.18]
+              }
+            });
+          }
+          if (!liveMap.getLayer("presence-areas-line")) {
+            liveMap.addLayer({
+              id: "presence-areas-line",
+              type: "line",
+              source: "presence-areas",
+              paint: {
+                "line-color": semanticColor("--brand"),
+                "line-opacity": 0.76,
+                "line-width": ["case", ["boolean", ["feature-state", "selected"], false], 3.2, 1.8]
+              }
+            });
+          }
+          if (!liveMap.getLayer("occurrence-pin-halo")) {
+            liveMap.addLayer({
+              id: "occurrence-pin-halo",
+              type: "circle",
+              source: "occurrence-pins",
+              paint: {
+                "circle-radius": ["interpolate", ["linear"], ["zoom"], 7, 12, 13, 18],
+                "circle-color": "#fff",
+                "circle-opacity": 0.96,
+                "circle-stroke-width": ["case", ["boolean", ["feature-state", "selected"], false], 4, 2],
+                "circle-stroke-color": semanticColor("--brand")
+              }
+            });
+          }
+          if (!liveMap.getLayer("occurrence-pin-core")) {
+            liveMap.addLayer({
+              id: "occurrence-pin-core",
+              type: "circle",
+              source: "occurrence-pins",
+              paint: {
+                "circle-radius": ["interpolate", ["linear"], ["zoom"], 7, 6, 13, 9],
+                "circle-color": semanticColor("--brand"),
+                "circle-opacity": 0.98
+              }
+            });
+          }
+          if (!liveMap.getLayer("occurrence-pin-label")) {
+            liveMap.addLayer({
+              id: "occurrence-pin-label",
+              type: "symbol",
+              source: "occurrence-pins",
+              layout: {
+                "text-field": ["to-string", ["get", "sequence"]],
+                "text-size": ["interpolate", ["linear"], ["zoom"], 7, 10, 13, 12],
+                "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+                "text-allow-overlap": true
+              },
+              paint: { "text-color": "#fff" }
+            });
+          }
+          bindMapLayerInteractions();
+          updatePinSelection();
+        } catch {
+          drawMap();
         }
-        if (!liveMap.getLayer("presence-areas-line")) {
-          liveMap.addLayer({
-            id: "presence-areas-line",
-            type: "line",
-            source: "presence-areas",
-            paint: {
-              "line-color": semanticColor("--brand"),
-              "line-opacity": 0.62,
-              "line-width": ["case", ["boolean", ["feature-state", "selected"], false], 2.8, 1.4]
-            }
-          });
-        }
-        if (!liveMap.getLayer("occurrence-pin-halo")) {
-          liveMap.addLayer({
-            id: "occurrence-pin-halo",
-            type: "circle",
-            source: "occurrence-pins",
-            paint: {
-              "circle-radius": ["interpolate", ["linear"], ["zoom"], 7, 12, 13, 18],
-              "circle-color": "#fff",
-              "circle-opacity": 0.96,
-              "circle-stroke-width": ["case", ["boolean", ["feature-state", "selected"], false], 4, 2],
-              "circle-stroke-color": semanticColor("--brand")
-            }
-          });
-        }
-        if (!liveMap.getLayer("occurrence-pin-core")) {
-          liveMap.addLayer({
-            id: "occurrence-pin-core",
-            type: "circle",
-            source: "occurrence-pins",
-            paint: {
-              "circle-radius": ["interpolate", ["linear"], ["zoom"], 7, 6, 13, 9],
-              "circle-color": semanticColor("--brand"),
-              "circle-opacity": 0.98
-            }
-          });
-        }
-        if (!liveMap.getLayer("occurrence-pin-label")) {
-          liveMap.addLayer({
-            id: "occurrence-pin-label",
-            type: "symbol",
-            source: "occurrence-pins",
-            layout: {
-              "text-field": ["to-string", ["get", "sequence"]],
-              "text-size": ["interpolate", ["linear"], ["zoom"], 7, 10, 13, 12],
-              "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
-              "text-allow-overlap": true
-            },
-            paint: { "text-color": "#fff" }
-          });
-        }
-        bindMapLayerInteractions();
-        updatePinSelection();
       }
 
       function ensureGeoJsonSource(id, data) {
@@ -9044,17 +9234,20 @@
       }
 
       function updatePinSelection() {
-        if (!liveMap?.isStyleLoaded?.()) return;
+        if (!liveMap) {
+          drawMap();
+          return;
+        }
         const selectedId = selected?.id || "";
         try {
           if (liveMap.getLayer("occurrence-pin-halo")) {
             liveMap.setPaintProperty("occurrence-pin-halo", "circle-stroke-width", ["case", ["==", ["get", "targetId"], selectedId], 4, 2]);
           }
           if (liveMap.getLayer("presence-areas-fill")) {
-            liveMap.setPaintProperty("presence-areas-fill", "fill-opacity", ["case", ["==", ["get", "targetId"], selectedId], 0.28, 0.14]);
+            liveMap.setPaintProperty("presence-areas-fill", "fill-opacity", ["case", ["==", ["get", "targetId"], selectedId], 0.34, 0.18]);
           }
           if (liveMap.getLayer("presence-areas-line")) {
-            liveMap.setPaintProperty("presence-areas-line", "line-width", ["case", ["==", ["get", "targetId"], selectedId], 2.8, 1.4]);
+            liveMap.setPaintProperty("presence-areas-line", "line-width", ["case", ["==", ["get", "targetId"], selectedId], 3.2, 1.8]);
           }
         } catch {}
       }
@@ -9065,13 +9258,6 @@
         if (!card) return;
         selectCard(card, { toast: "지도 선택을 현장 카드와 상세에 반영했습니다." });
         if (innerWidth > 780) focusPanel(document.querySelector(".map-sheet"));
-      }
-
-      function drawRoad(ctx, points) {
-        ctx.beginPath();
-        ctx.moveTo(points[0][0], points[0][1]);
-        for (const [x, y] of points.slice(1)) ctx.lineTo(x, y);
-        ctx.stroke();
       }
 
       function proofWidth(value) {
@@ -9218,7 +9404,7 @@
           if (selected) renderDetail(selected);
           renderMapSelectionContext(selected);
           pulseElement(document.querySelector(".map-shell"), "is-focused", 900);
-          setTimeout(() => liveMap?.resize(), 120);
+          refreshMapSurface();
         }
         if (view === "report") {
           focusPanel($("report-section"));
@@ -9226,7 +9412,7 @@
         }
         if (view === "home") {
           focusPanel($("home-section"));
-          setTimeout(() => liveMap?.resize(), 120);
+          refreshMapSurface();
         }
       }
 
@@ -9244,7 +9430,7 @@
           if (selectedIssue) renderIssueDetail(selectedIssue);
           focusPanel($("home-section"));
         }
-        setTimeout(() => liveMap?.resize(), 120);
+        refreshMapSurface();
       }
 
       document.querySelectorAll(".tabs button").forEach((button) => {
@@ -9315,7 +9501,7 @@
           if (issue) {
             selectIssue(issue, { scrollToCards: false, toast: "지도에서 이슈 위치를 봅니다." });
             focusPanel(document.querySelector(".map-shell"));
-            setTimeout(() => liveMap?.resize(), 120);
+            refreshMapSurface();
           }
           return;
         }
@@ -9323,7 +9509,7 @@
         if (card) {
           selectCard(card, { openDetail: false, toast: "지도에서 지역 현장을 봅니다." });
           focusPanel(document.querySelector(".map-shell"));
-          setTimeout(() => liveMap?.resize(), 120);
+          refreshMapSurface();
         }
       });
 
@@ -9387,7 +9573,7 @@
       $("reels-issue-action").addEventListener("click", () => setPrimaryView("home"));
       $("explore-map-action").addEventListener("click", () => {
         focusPanel(document.querySelector(".map-shell"));
-        setTimeout(() => liveMap?.resize(), 120);
+        refreshMapSurface();
       });
 
       $("refresh").addEventListener("click", async () => {
