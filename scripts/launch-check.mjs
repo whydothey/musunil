@@ -159,11 +159,15 @@ if (!/MUSUNIL_STRICT_WEB_HEADERS=1/.test(renderWebSettings) || !/Clear build cac
 }
 if (
   !/api_endpoint_preflight/.test(serviceWatch) ||
+  !/web_header_contract/.test(serviceWatch) ||
+  !/requiredActions/.test(serviceWatch) ||
+  !/connect_api_endpoint/.test(serviceWatch) ||
+  !/apply_static_headers/.test(serviceWatch) ||
   !/deployedHttpsUrl/.test(serviceWatch) ||
   !/skipIfApiUnreachable/.test(serviceWatch) ||
   !/skipped:\s*true/.test(serviceWatch)
 ) {
-  failures.push("service-watch must separate API endpoint preflight failure from downstream skipped API checks");
+  failures.push("service-watch must separate API endpoint preflight failure from downstream skipped API checks and produce required actions");
 }
 if (
   !/redaction_engine_smoke/.test(redactionSmoke) ||

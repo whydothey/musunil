@@ -46,6 +46,22 @@ async function runChecks() {
     if (expectedCommitSha && build.commitSha !== expectedCommitSha) throw new Error(`commit ${build.commitSha} != ${expectedCommitSha}`);
     return { commitSha: build.commitSha, builtAt: build.builtAt };
   });
+  await check(checks, "web_header_contract", async () => {
+    const checked = [];
+    for (const path of ["/", "/config.js", "/build-info.json"]) {
+      const response = await fetch(withCacheBuster(`${webBaseUrl}${path}`), {
+        headers: noCacheHeaders(),
+        redirect: "manual",
+        signal: AbortSignal.timeout(12_000)
+      });
+      checked.push({ path, cacheControl: response.headers.get("cache-control") || "" });
+    }
+    const missingNoStore = checked.filter((item) => !item.cacheControl.toLowerCase().includes("no-store"));
+    if (missingNoStore.length > 0) {
+      throw new Error(`no-store missing: ${missingNoStore.map((item) => `${item.path}=${item.cacheControl || "missing"}`).join(", ")}`);
+    }
+    return { checked };
+  });
   await check(checks, "web_forbidden_ui_absent", async () => {
     const html = await getText(`${webBaseUrl}/`);
     assertAbsent(html, ["좋아요", "댓글", "찬반", "추천", "비추천", "팔로우", "localhost:4000", "traffic_control", "WEAKLY_OBSERVED"]);
@@ -118,13 +134,15 @@ async function runChecks() {
     if (response.status !== 401 || body.error !== "identity_required") throw new Error(`write boundary returned ${response.status}:${body.error}`);
     return { read: "public", write: "identity_required" };
   });
-  return {
+  const result = {
     checkedAt: new Date().toISOString(),
     webBaseUrl,
     apiBaseUrl,
     ok: checks.every((item) => item.ok || item.skipped),
     checks
   };
+  result.requiredActions = requiredActions(result);
+  return result;
 }
 
 function localStaticManifest() {
@@ -175,6 +193,19 @@ async function getText(url) {
   const response = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(12_000) });
   if (!response.ok) throw new Error(`${url} returned ${response.status}`);
   return response.text();
+}
+
+function withCacheBuster(url) {
+  const parsed = new URL(url);
+  parsed.searchParams.set("_musunil_service_watch", `${Date.now()}`);
+  return parsed.toString();
+}
+
+function noCacheHeaders() {
+  return {
+    "cache-control": "no-cache",
+    pragma: "no-cache"
+  };
 }
 
 function assertAbsent(text, tokens) {
@@ -231,13 +262,52 @@ function summaryFor(path, body) {
 function recordResult(result) {
   mkdirSync(resolve(process.cwd(), "docs"), { recursive: true });
   const status = result.ok ? "S+ Guard" : "Active";
-  const rows = result.checks.map((item) => `| ${item.id} | ${item.ok ? "ok" : item.skipped ? "skip" : "fail"} | ${item.message ?? JSON.stringify(item.detail ?? {})} |`).join("\n");
+  const rows = result.checks.map((item) => `| ${cell(item.id)} | ${item.ok ? "ok" : item.skipped ? "skip" : "fail"} | ${cell(item.message ?? JSON.stringify(item.detail ?? {}))} |`).join("\n");
+  const actionRows = result.requiredActions.length
+    ? result.requiredActions.map((item) => `| ${cell(item.id)} | ${cell(item.action)} | ${cell(item.verify)} |`).join("\n")
+    : "| - | - | - |";
   writeFileSync(
     reportPath,
-    `# S+ Service Watch\n\nLast checked: ${result.checkedAt}\n\nStatus: ${status}\n\n| Check | Result | Detail |\n|---|---|---|\n${rows}\n\n## History\n`
+    `# S+ Service Watch\n\nLast checked: ${result.checkedAt}\n\nStatus: ${status}\n\n| Check | Result | Detail |\n|---|---|---|\n${rows}\n\n## Required Actions\n\n| ID | Action | Verify |\n|---|---|---|\n${actionRows}\n\n## History\n`
   );
   const historyPath = resolve(process.cwd(), "docs/splus-service-watch.history.md");
   if (!existsSync(historyPath)) writeFileSync(historyPath, "# S+ Service Watch History\n\n| Checked At | Status | Failed Checks |\n|---|---|---|\n");
   const failed = result.checks.filter((item) => !item.ok && !item.skipped).map((item) => item.id).join(", ") || "-";
   appendFileSync(historyPath, `| ${result.checkedAt} | ${status} | ${failed} |\n`);
+}
+
+function requiredActions(result) {
+  const actions = [];
+  const byId = new Map(result.checks.map((item) => [item.id, item]));
+  const apiPreflight = byId.get("api_endpoint_preflight");
+  if (apiPreflight && !apiPreflight.ok) {
+    actions.push({
+      id: "connect_api_endpoint",
+      action: apiPreflight.message?.includes("ENOTFOUND")
+        ? "Create or fix the DNS record for api.musunil.com so it points to the Render API service, then redeploy the API."
+        : "Verify the deployed API URL, TLS certificate, and Render API service health.",
+      verify: "MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once"
+    });
+  }
+  const webHeaders = byId.get("web_header_contract");
+  if (webHeaders && !webHeaders.ok) {
+    actions.push({
+      id: "apply_static_headers",
+      action: "Run pnpm render:web-settings, copy the Headers into the Render Static Site Dashboard, then Clear build cache & deploy.",
+      verify: "MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com pnpm check:web-deploy"
+    });
+  }
+  const buildInfo = byId.get("web_build_info");
+  if (buildInfo?.detail?.mode === "static_manifest_verified_fallback") {
+    actions.push({
+      id: "publish_build_metadata",
+      action: "Ensure Render publishes build command output instead of only committed apps/web files, or keep accepting static-manifest verification as a fallback warning.",
+      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy"
+    });
+  }
+  return actions;
+}
+
+function cell(value) {
+  return String(value).replaceAll("|", "\\|").replaceAll("\n", " ");
 }
