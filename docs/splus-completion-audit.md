@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-11 06:32 KST
+Last updated: 2026-07-11 09:37 KST
 
 Status: 완료 아님.
 
@@ -29,8 +29,8 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 | 규모 실시간 추정 | A+ Active | AI 추정 Claim 메타, 공개 근거 없는 추정 차단, 독립 시점 과대 산정 차단 | 실제 운영 영상/현장 인증 결과를 추정 confidence에 연결 |
 | 조작 방어 | S+ Guard | 반복 해시, GPS 품질, 사용자/기기 bucket, 지역 편중, risk dashboard | 운영 실측 임계값 튜닝 |
 | 개인정보/권리 보호 | A+ Active | private key/raw GPS 비노출, 공개 반경, poster 없는 clip 공개 차단, purge 전 외부 delete gate | 실제 storage 권한, redaction smoke, purge 검증 |
-| 알권리 중심 UX | A 후보 Active | 상업용 UI/UX 재설계 문서, 이슈 First 27차 구현, 표형 row 제거, 데스크톱 홈 도구 동시노출 제거 캡처, 우측 맥락 패널 1차 재정렬, 제보 첫 행동 단순화, 지도 숫자판 제거, 상세 `시간 흐름` 탭 정정, 홈/지도 `오늘` 날짜 혼선 제거, `현장 파일/현장 판단/GPS 인증` 운영자 언어 제거, 릴스 액션 축소와 하단 근거 도구막대, 샘플 poster 검토 대기 슬롯 전환, 홈 compact review row 전환, stale config 빈 화면 회귀 방어, 홈 scanline clipped false, 데스크톱 홈 `지역 현황` 지도 연결, 데스크톱 기본 홈 `detailVisible=false` 2축 구조, 행동 후 `desktop-detail-open` 상세 패널, 지도 선택 시트 경량화, 모바일/태블릿 홈 이슈 피드 유지 캡처, 영상 0건 직접 노출 제거, 홈 `근거/영상/지역/반론` 액션 허브, 법안·탐색·상세·영상 0-count 공개 문구 완화, 모바일 액션 플로우 `근거→상세 근거`, `영상→영상 탭`, `지역→지도`, `반론→반론·정정`, 영상/지도/제보 선택 이슈 문맥 라인, `공개된 주장`→`출처별 자료`, `다른 주장`→`반론·정정`, `영상제보` 라벨, 금지 문구 web smoke | 06:11 독립 재검토는 Visual C+~A- 후보, 국평오 5초 PASS-/10초 PARTIAL/20초 PARTIAL로 S+ 미달. 27차로 데스크톱 패널 경쟁과 지도 시트 과밀은 1차 완화됐지만 탐색 타일/지도 도구 밀도, 실제 제보 영상 품질, 사용자 수락 필요 |
-| 지도·지역 UX | A+ 후보 Active | 공개 지도는 자료 위치 핀과 현장 인증 범위만 유지, 지도 탭 숫자 타일 0개, 중복 지도 버튼 hidden, 지도-first 재배치, 데스크톱 홈 `지역 현황` 지도 visible, 모바일 홈 지도 미노출, 모바일 map top 215px/height 460px, 데스크톱 map top 211px/height 700px, 데스크톱 map width 1200px/viewport share 83%, 홈 지도 시트 62px, 모바일 지도 시트 114px, `sheetMapRatio=0.13/0.25`, summary hidden, 하단 내비 겹침 없음, 지도·상세 제목 동기화, `visibleRejected=[]` | 사용자 수락, 독립 비평 재검증, 검색/범례/탐색 타일 밀도 완화, 지도 선택-상세 동기화 최종 검증 |
+| 알권리 중심 UX | A 후보 Active | 상업용 UI/UX 재설계 문서, 이슈 First 28차 구현, 표형 row 제거, 데스크톱 홈 도구 동시노출 제거 캡처, 우측 맥락 패널 1차 재정렬, 제보 첫 행동 단순화, 지도 숫자판 제거, 상세 `시간 흐름` 탭 정정, 홈/지도 `오늘` 날짜 혼선 제거, `현장 파일/현장 판단/GPS 인증` 운영자 언어 제거, 릴스 액션 축소와 하단 근거 도구막대, 샘플 poster 검토 대기 슬롯 전환, 홈 compact review row 전환, stale config 빈 화면 회귀 방어, 홈 scanline clipped false, 데스크톱 홈 `지역 현황` 지도 연결, 데스크톱 기본 홈 `detailVisible=false` 2축 구조, 행동 후 `desktop-detail-open` 상세 패널, 지도 선택 시트 경량화, 지도 검색/범례/탐색 타일 경량화, 모바일/태블릿 홈 이슈 피드 유지 캡처, 영상 0건 직접 노출 제거, 홈 `근거/영상/지역/반론` 액션 허브, 법안·탐색·상세·영상 0-count 공개 문구 완화, 모바일 액션 플로우 `근거→상세 근거`, `영상→영상 탭`, `지역→지도`, `반론→반론·정정`, 영상/지도/제보 선택 이슈 문맥 라인, `공개된 주장`→`출처별 자료`, `다른 주장`→`반론·정정`, `영상제보` 라벨, 금지 문구 web smoke | 06:11 독립 재검토는 Visual C+~A- 후보, 국평오 5초 PASS-/10초 PARTIAL/20초 PARTIAL로 S+ 미달. 28차로 데스크톱 패널 경쟁, 지도 시트 과밀, 지도 도구 밀도는 1차 완화됐지만 실제 제보 영상 품질, 독립 재검증, 사용자 수락 필요 |
+| 지도·지역 UX | A+ 후보 Active | 공개 지도는 자료 위치 핀과 현장 인증 범위만 유지, 지도 탭 숫자 타일 0개, 중복 지도 버튼 hidden, 지도-first 재배치, 데스크톱 홈 `지역 현황` 지도 visible, 모바일 홈 지도 미노출, 모바일 map top 215px/height 460px, 데스크톱 map top 211px/height 700px, 데스크톱 map width 1200px/viewport share 83%, 홈/전용 지도 시트 62px, 모바일 지도 시트 114px, `sheetMapRatio=0.09~0.25`, toolbar 52~54px, 탐색 tile 52px, summary hidden, 하단 내비 겹침 없음, 지도·상세 제목 동기화, `visibleRejected=[]` | 사용자 수락, 독립 비평 재검증, 지도 선택-상세 동기화 최종 검증 |
 | 법안·개정안 연결 | A+ Active | parser mock self-check, `/laws`, production preview 비노출, 0건 dry-run 실패 가드 | 실제 법 API 키로 dry-run 1건 이상과 post 검증 |
 | 본인확인 기반 쓰기 경계 | A+ Active | 포트원 provider 설정, identity start/complete, write endpoint `identity_required` 경계 | 실제 포트원 채널 키와 운영 SDK 결제 전 인증 리허설 |
 | 운영 배포 준비 | A- Active | Render blueprint, `/ready`, not-ready write fail-closed, `launch:ready` | 실제 운영 YAML/Secret, DB/Redis, Render 배포 health 통과 |
@@ -70,7 +70,7 @@ GET /ready -> 200
 - 실제 포트원 본인확인 채널로 인증 완료 리허설 결과가 아직 없다.
 - 운영 DB/Redis/Render `/ready` 결과가 아직 없다.
 - `check:render-runtime-config`는 Render generated secret fallback의 sample gate이며, 실제 배포 `/ready` 증거를 대체하지 않는다.
-- 2026-07-11 06:11 독립 평가 기준 UI/UX는 S+가 아니다. 27차 패치로 지도-first, 10초 상황 줄, `영상제보` 라벨, 지도 시트 과밀, 영상 소셜 레일, 샘플 poster의 AI 데모감, 홈 대형 검토 썸네일, dev stale config 회귀, 데스크톱 지도 인스펙터 경쟁, scanline 혼선, 데스크톱 홈 빈 공간과 패널 경쟁은 개선됐지만, 탐색 타일/지도 도구 밀도, 독립 비평 재검증, 실제 제보 영상 품질, 사용자 수락이 남아 있다.
+- 2026-07-11 06:11 독립 평가 기준 UI/UX는 S+가 아니다. 28차 패치로 지도-first, 10초 상황 줄, `영상제보` 라벨, 지도 시트 과밀, 지도 도구 밀도, 영상 소셜 레일, 샘플 poster의 AI 데모감, 홈 대형 검토 썸네일, dev stale config 회귀, 데스크톱 지도 인스펙터 경쟁, scanline 혼선, 데스크톱 홈 빈 공간과 패널 경쟁은 개선됐지만, 독립 비평 재검증, 실제 제보 영상 품질, 사용자 수락이 남아 있다.
 
 ## Next Active Goal Order
 

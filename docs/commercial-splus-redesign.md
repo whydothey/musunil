@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 06:32 KST
+Last updated: 2026-07-11 09:37 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -27,6 +27,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 06:11 독립 재검토에서 Visual Critique는 최신 홈을 C+~A- 후보로 보고, IA/국평오는 5초 PASS-/10초 PARTIAL/20초 PARTIAL로 평가했다. 25차 패치는 이슈 카드에 `근거/영상/지역/반론` 액션 허브를 추가하고, 운영 화면의 0건류 빈 상태를 `확인 중/연결 대기` 언어로 낮췄다. 여전히 캡처 재검증과 사용자 수락 전 S+는 아니다.
 - 06:23 패치로 데스크톱 기본 홈은 우측 상세 패널을 닫고 `이슈 목록 + 지역 현황 지도` 2축으로 시작한다. `근거/반론/카드 상세` 행동을 할 때만 `desktop-detail-open` 패널이 열리며, 1440px 기본 홈에서 `detailVisible=false`, 지도 폭 828px, 액션 후 상세에서 `selectedTab=근거`를 확인했다. 그래도 실제 제보 영상 품질과 사용자 수락 전 S+는 아니다.
 - 06:32 패치로 지도 위 선택 시트를 홈에서는 62px 선택 요약, 모바일 지도에서는 114px 요약으로 낮췄다. `상세 보기`는 `상세`로 줄이고, `상세 패널에 반영` 같은 내부 표현을 운영 화면에서 제거했다. 1440px 홈 `sheetMapRatio=0.13`, 390px 지도 `sheetMapRatio=0.25`, `navOverlap=false`, `rejected=[]`를 확인했다. 그래도 사용자 수락 전 S+는 아니다.
+- 09:37 패치로 지도 검색·범례를 하나의 얇은 지도 도구막대로 합치고, 탐색 타일을 52px 선택 pill로 낮췄다. 데스크톱 지도 시트도 62px로 낮아졌고, 1440px 지도 `toolbarMapRatio=0.08`, `sheetMapRatio=0.09`, 390px 지도 `toolbarMapRatio=0.11`, `firstTile.height=52`, `navOverlap=false`, `rejected=[]`를 확인했다. 사용자 수락 전 S+는 아니다.
 
 ## Agent Feedback Summary
 
@@ -70,6 +71,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | QA Agent 10 | 06:11 기준 운영 화면 코드에 `0건`/`0개`가 사용자 빈 상태로 노출될 여지가 많다. | 법안, 탐색, 상세, 영상 카드의 0-count 문구를 `확인 중/연결 대기/공개 근거 확인 중`으로 전환하고 web smoke 가드 추가 |
 | PM Local Patch 13 | 06:23 데스크톱 홈의 우측 상세가 첫 화면에서 지도와 경쟁했다. | 기본 홈은 상세 패널을 닫고, 사용자가 `근거/반론/카드 상세`를 누를 때만 상세 패널을 여는 `desktop-detail-open` 상태로 전환 |
 | Visual Design Critique 11 | 06:32 지도는 홈에서 맥락 도구로 보이기 시작했지만, 지도 시트와 검색/범례/탐색 타일이 아직 패널 스택처럼 보일 수 있다. | 지도 시트 h3/summary line clamp, 홈 지도 시트 62px compact, 모바일 지도 시트 114px compact, 내부 토스트/맥락 문구 제거 |
+| PM Local Patch 14 | 09:37 검색창·범례·탐색 타일이 각각 카드처럼 떠 있어 지도 화면이 패널 묶음으로 읽혔다. | 검색/범례를 54px 이하 도구막대로 합치고, 탐색 타일을 52px pill/화살표 액션으로 낮춤. 데스크톱 지도 선택 시트도 62px compact로 정리 |
 
 ## Active Goal Board
 
@@ -109,6 +111,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 30 | 이슈 카드 행동 허브와 0-count 차단 | 1차 구현 | 홈 카드 `근거/영상/지역/반론` 액션, 반론 경로 노출, 법안/탐색/상세/영상 0-count 문구 완화, `pnpm check:web-smoke` 통과. 캡처 재검증 필요 |
 | 31 | 데스크톱 첫 화면 패널 경쟁 완화 | 1차 완료 | 1440px 기본 홈 `detailVisible=false`, `mapVisible=true`, map width 828px. `근거` 클릭 후 `desktop-detail-open`, `detailVisible=true`, selected tab `근거` |
 | 32 | 지도 선택 시트 경량화 | 1차 완료 | 1440px 홈 지도 sheet 62px, `sheetMapRatio=0.13`, chips/context/summary hidden. 390px 지도 sheet 114px, `sheetMapRatio=0.25`, `navOverlap=false`, `rejected=[]` |
+| 33 | 지도 도구·탐색 타일 밀도 완화 | 1차 완료 | 1440px 지도 toolbar 54px, `toolbarMapRatio=0.08`, sheet 62px, `sheetMapRatio=0.09`. 390px 지도 toolbar 52px, first tile 52px, `navOverlap=false`, `overflowX=false`, `rejected=[]` |
 
 ## Current Evidence
 
@@ -131,6 +134,9 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 06:32 desktop compact map sheet | `docs/commercial-splus-surface27-map-sheet-desktop-home-v2-1440-2026-07-11.png` |
 | 06:32 mobile compact map sheet | `docs/commercial-splus-surface27-map-sheet-mobile-explore-v2-390-2026-07-11.png` |
 | 06:32 map sheet metrics | 1440px 홈 `detailVisible=false`, sheet 62px, `sheetMapRatio=0.13`, chips/context/summary hidden, `rejected=[]`, `overflowX=false`. 390px 지도 sheet 114px, `sheetMapRatio=0.25`, summary hidden, `navOverlap=false`, `rejected=[]`, `overflowX=false` |
+| 09:37 desktop map tools | `docs/commercial-splus-surface28-map-tools-desktop-v2-1440-2026-07-11.png` |
+| 09:37 mobile map tools | `docs/commercial-splus-surface28-map-tools-mobile-v2-390-2026-07-11.png` |
+| 09:37 map tools metrics | 1440px 지도 toolbar 54px, `toolbarMapRatio=0.08`, sheet 62px, `sheetMapRatio=0.09`, tile 52px, repeated `보기` removed. 390px 지도 toolbar 52px, tile 52px, `navOverlap=false`, `overflowX=false`, `rejected=[]` |
 | 390px mobile capture | `docs/commercial-splus-mobile-390-2026-07-11.png` |
 | 430px mobile capture | `docs/commercial-splus-mobile-430-2026-07-11.png` |
 | 768px tablet capture | `docs/commercial-splus-tablet-768-2026-07-11.png` |
