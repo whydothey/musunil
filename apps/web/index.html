@@ -1284,6 +1284,40 @@
         font-size: 14px;
       }
 
+      .issue-sync-empty {
+        gap: 12px;
+        padding: 18px;
+        border-style: solid;
+        border-color: color-mix(in srgb, var(--brand) 18%, var(--line));
+        border-radius: 18px;
+        background:
+          linear-gradient(135deg, color-mix(in srgb, var(--brand) 6%, transparent), transparent 48%),
+          var(--surface);
+      }
+
+      .issue-sync-empty strong {
+        font-size: 17px;
+        line-height: 1.35;
+      }
+
+      .issue-sync-empty span {
+        max-width: 38rem;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .issue-empty-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 2px;
+      }
+
+      .issue-empty-actions .button {
+        min-height: 34px;
+        padding: 0 12px;
+      }
+
       .feed.is-refreshing .situation-card,
       .issue-list.is-refreshing .issue-card,
       .law-list.is-refreshing .law-card {
@@ -8428,9 +8462,13 @@
 	        root.innerHTML = "";
 	        if (!issues.length) {
 	          root.innerHTML = `
-	            <article class="empty-state">
-	              <strong>표시할 이슈가 없습니다</strong>
-	              <span>공개자료가 확인되면 이슈 단위로 묶어 표시합니다.</span>
+	            <article class="empty-state issue-sync-empty" data-issue-empty-state="sync-waiting">
+	              <strong>이슈를 불러오지 못했습니다</strong>
+	              <span>새 자료가 연결되는 동안 공개 가능한 이슈 피드를 확인하지 못했습니다. 잠시 후 다시 확인하거나 지역별 현장 맥락을 먼저 볼 수 있습니다.</span>
+                <div class="issue-empty-actions" aria-label="이슈 피드 회복 경로">
+                  <button class="button primary" type="button" data-issue-empty-action="refresh">다시 확인</button>
+                  <button class="button ghost" type="button" data-issue-empty-action="explore">탐색 보기</button>
+                </div>
 	            </article>
 	          `;
 	          setTimeout(() => root.classList.remove("is-refreshing"), 320);
@@ -10679,6 +10717,15 @@
         showToast(latestServiceSyncState === "live" ? "최신 공개 자료로 갱신했습니다." : "저장된 공개자료 기준으로 표시합니다.");
       });
       $("service-retry").addEventListener("click", () => $("refresh").click());
+      $("issues").addEventListener("click", (event) => {
+        const action = event.target instanceof Element ? event.target.closest("[data-issue-empty-action]") : null;
+        if (!action) return;
+        if (action.dataset.issueEmptyAction === "explore") {
+          setPrimaryView("explore");
+          return;
+        }
+        $("refresh").click();
+      });
       $("locate").addEventListener("click", () => {
         if (innerWidth <= 780) setMobileTab("explore", document.querySelector('.mobile-nav button[data-tab-view="explore"]'));
         else focusPanel(document.querySelector(".map-shell"));

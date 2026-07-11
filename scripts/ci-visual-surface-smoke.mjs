@@ -138,7 +138,12 @@ async function runViewport(client, viewport, url) {
 
   const home = await evaluate(client, visualMetrics("home"));
   scenario(`${viewport.id}_home`, [
-    () => assert(homeReady, `home issue feed not ready: issues=${home.issueCount}, stories=${home.storyCount}, state=${home.serviceSyncState}, banner=${home.serviceBannerTitle || "none"}, first=${home.firstIssueTitle || "none"}`),
+    () => assert(
+      homeReady,
+      `home issue feed not ready: issues=${home.issueCount}, stories=${home.storyCount}, state=${home.serviceSyncState}, banner=${home.serviceBannerTitle || "none"}, first=${home.firstIssueTitle || "none"}, empty=${home.issueEmptyStateVisible ? "controlled" : "missing"}, emptyActions=${home.issueEmptyActions.join("/") || "none"}`
+    ),
+    () => assert(homeReady || home.issueEmptyStateVisible, "home issue feed has no cards and no controlled empty state"),
+    () => assert(homeReady || home.issueEmptyActions.join("/") === "다시 확인/탐색 보기", `home issue empty recovery actions changed: ${home.issueEmptyActions.join("/")}`),
     () => assert(home.scrollWidth <= viewport.width, `home overflows horizontally: ${home.scrollWidth} > ${viewport.width}`),
     () => assert(home.forbidden.length === 0, `forbidden public UI copy: ${home.forbidden.join(", ")}`),
     () => assert(home.dashboardVisible.length === 0, `dashboard-like visible elements: ${home.dashboardVisible.join(", ")}`),
@@ -263,6 +268,8 @@ function visualMetrics(label) {
       navOverlap,
       storyCount: [...document.querySelectorAll(".story-ring")].filter(visible).length,
       issueCount: [...document.querySelectorAll(".issue-card")].filter(visible).length,
+      issueEmptyStateVisible: visible(document.querySelector("[data-issue-empty-state='sync-waiting']")),
+      issueEmptyActions: [...document.querySelectorAll("[data-issue-empty-action]")].filter(visible).map((node) => node.textContent.trim()),
       homeRect: rect("#home-section"),
       placePeekCount: [...document.querySelectorAll(".issue-place-peek")].filter(visible).length,
       placePeekMapCount: [...document.querySelectorAll(".issue-place-peek .issue-place-map")]
