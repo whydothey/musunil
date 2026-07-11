@@ -47,11 +47,11 @@
 - Render API build에서 `pnpm check`, `pnpm build:web-config`, `pnpm launch:check`가 실행된다.
 - Render API pre-deploy에서 `pnpm db:migrate`가 실행된다.
 - Render Blueprint가 `musunil-postgres`와 `musunil-redis`를 생성하고 private-network-only로 둔다.
-- Render API/Web은 `DATABASE_URL`, `REDIS_URL`을 관리형 Postgres/Key Value에서 자동 주입받는다.
+- Render API는 `DATABASE_URL`, `REDIS_URL`을 관리형 Postgres/Key Value에서 자동 주입받는다.
 - Render 서비스는 `MUSUNIL_RUNTIME_ENV=production`을 설정해 설정 로드 실패 fallback에서도 mock 데이터와 LIVE 자동 공개를 끈다.
-- Render API만 `MUSUNIL_USER_INPUTS_B64`를 prompt 받고, Web은 API 서비스의 같은 env var를 참조한다.
+- Render API만 `MUSUNIL_USER_INPUTS_B64`를 prompt 받는다. Static Web에는 사용자 입력 YAML, DB/Redis URL, user token secret, encryption key, internal API key를 주입하지 않는다.
 - Render API는 `MUSUNIL_INTERNAL_API_KEY`, `MUSUNIL_USER_TOKEN_SECRET`, `MUSUNIL_ENCRYPTION_KEY`를 생성한다.
-- Render Web은 API 서비스의 `MUSUNIL_USER_TOKEN_SECRET`, `MUSUNIL_ENCRYPTION_KEY`를 launch validation용으로 참조한다.
+- Render Web은 공개 정적 빌드에 필요한 `NODE_VERSION`, `MUSUNIL_RUNTIME_ENV`, `MUSUNIL_WEB_API_BASE_URL` build command 값만 사용한다.
 - Render cron worker는 API 서비스의 `MUSUNIL_INTERNAL_API_KEY`를 참조한다.
 - Render cron worker는 `MUSUNIL_USER_INPUTS_B64`를 요구하지 않는다.
 - Render Web Static Site headers가 `render.yaml`에 선언되어 있다.

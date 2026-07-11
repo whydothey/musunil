@@ -7,6 +7,7 @@ const webBlock = renderServiceBlock(renderYaml, "musunil-web");
 const buildCommand = readScalar(webBlock, "buildCommand");
 const publishDirectory = readScalar(webBlock, "staticPublishPath");
 const headers = readHeaders(webBlock);
+const envVars = readEnvVars(webBlock);
 const requiredHeaders = [
   "Cache-Control",
   "Content-Security-Policy",
@@ -15,10 +16,25 @@ const requiredHeaders = [
   "X-Content-Type-Options",
   "X-Frame-Options"
 ];
+const forbiddenEnvKeys = [
+  "DATABASE_URL",
+  "REDIS_URL",
+  "MUSUNIL_USER_INPUTS_B64",
+  "MUSUNIL_USER_TOKEN_SECRET",
+  "MUSUNIL_ENCRYPTION_KEY",
+  "MUSUNIL_INTERNAL_API_KEY"
+];
 
 const failures = [];
 if (!buildCommand) failures.push("musunil-web buildCommand is missing");
 if (!publishDirectory) failures.push("musunil-web staticPublishPath is missing");
+if (!envVars.some((envVar) => envVar.key === "NODE_VERSION" && envVar.value === "24")) failures.push("musunil-web NODE_VERSION=24 env var is missing");
+if (!envVars.some((envVar) => envVar.key === "MUSUNIL_RUNTIME_ENV" && envVar.value === "production")) {
+  failures.push("musunil-web MUSUNIL_RUNTIME_ENV=production env var is missing");
+}
+for (const key of forbiddenEnvKeys) {
+  if (envVars.some((envVar) => envVar.key === key)) failures.push(`musunil-web must not receive backend secret/runtime env var: ${key}`);
+}
 for (const name of requiredHeaders) {
   if (!headers.some((header) => header.name === name)) failures.push(`musunil-web header is missing: ${name}`);
 }
@@ -35,6 +51,7 @@ const settings = {
   rootDirectory: "",
   buildCommand,
   publishDirectory,
+  envVars,
   headers,
   afterSave: [
     "Clear build cache & deploy",
@@ -54,6 +71,11 @@ if (process.argv.includes("--json")) {
   console.log("Root Directory: (blank)");
   console.log(`Build Command: ${settings.buildCommand}`);
   console.log(`Publish Directory: ${settings.publishDirectory}`);
+  console.log("");
+  console.log("Environment Variables:");
+  for (const envVar of settings.envVars) {
+    console.log(`- ${envVar.key}: ${envVar.value}`);
+  }
   console.log("");
   console.log("Headers:");
   for (const header of settings.headers) {
@@ -117,6 +139,32 @@ function readHeaders(block) {
     if (value && current) current.value = stripQuotes(value[1].trim());
   }
   return rules.filter((rule) => rule.path && rule.name && rule.value);
+}
+
+function readEnvVars(block) {
+  const lines = block.split("\n");
+  const envIndex = lines.findIndex((line) => /^\s*envVars:\s*$/.test(line));
+  if (envIndex < 0) return [];
+  const envIndent = lines[envIndex].match(/^(\s*)/)?.[1].length || 0;
+  const sectionLines = [];
+  for (let index = envIndex + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (line.trim() && (line.match(/^(\s*)/)?.[1].length || 0) <= envIndent) break;
+    sectionLines.push(line);
+  }
+  const envVars = [];
+  let current;
+  for (const line of sectionLines) {
+    const key = line.match(/^\s*-\s+key:\s*(.+)$/);
+    if (key) {
+      current = { key: stripQuotes(key[1].trim()), value: "" };
+      envVars.push(current);
+      continue;
+    }
+    const value = line.match(/^\s+value:\s*(.+)$/);
+    if (value && current) current.value = stripQuotes(value[1].trim());
+  }
+  return envVars.filter((envVar) => envVar.key && envVar.value);
 }
 
 function stripQuotes(value) {

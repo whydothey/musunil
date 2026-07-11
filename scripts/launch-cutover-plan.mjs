@@ -47,6 +47,7 @@ const plan = {
     rootDirectory: "",
     buildCommand: readScalar(webBlock, "buildCommand"),
     publishDirectory: readScalar(webBlock, "staticPublishPath"),
+    envVars: readEnvVars(webBlock),
     headers: readHeaders(webBlock)
   },
   renderApiService: {
@@ -148,6 +149,7 @@ function printMarkdown(value) {
   console.log("- Root Directory: (blank)");
   console.log(`- Build Command: ${value.renderStaticSite.buildCommand}`);
   console.log(`- Publish Directory: ${value.renderStaticSite.publishDirectory}`);
+  console.log(`- Env Vars: ${value.renderStaticSite.envVars.map((envVar) => `${envVar.key}=${envVar.value}`).join(", ")}`);
   console.log("");
   console.log("Headers:");
   for (const header of value.renderStaticSite.headers) {
@@ -207,6 +209,32 @@ function readScalar(block, key) {
 
 function readEnvKeys(block) {
   return [...block.matchAll(/^\s+-\s+key:\s*([A-Z0-9_]+)\s*$/gm)].map((match) => match[1]);
+}
+
+function readEnvVars(block) {
+  const lines = block.split("\n");
+  const envIndex = lines.findIndex((line) => /^\s*envVars:\s*$/.test(line));
+  if (envIndex < 0) return [];
+  const envIndent = lines[envIndex].match(/^(\s*)/)?.[1].length || 0;
+  const sectionLines = [];
+  for (let index = envIndex + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (line.trim() && (line.match(/^(\s*)/)?.[1].length || 0) <= envIndent) break;
+    sectionLines.push(line);
+  }
+  const envVars = [];
+  let current;
+  for (const line of sectionLines) {
+    const key = line.match(/^\s*-\s+key:\s*(.+)$/);
+    if (key) {
+      current = { key: stripQuotes(key[1].trim()), value: "" };
+      envVars.push(current);
+      continue;
+    }
+    const value = line.match(/^\s+value:\s*(.+)$/);
+    if (value && current) current.value = stripQuotes(value[1].trim());
+  }
+  return envVars.filter((envVar) => envVar.key && envVar.value);
 }
 
 function readHeaders(block) {

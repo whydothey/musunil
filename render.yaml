@@ -69,30 +69,6 @@ services:
         value: 24
       - key: MUSUNIL_RUNTIME_ENV
         value: production
-      - key: DATABASE_URL
-        fromDatabase:
-          name: musunil-postgres
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: musunil-redis
-          property: connectionString
-      - key: MUSUNIL_USER_INPUTS_B64
-        fromService:
-          type: web
-          name: musunil-api
-          envVarKey: MUSUNIL_USER_INPUTS_B64
-      - key: MUSUNIL_USER_TOKEN_SECRET
-        fromService:
-          type: web
-          name: musunil-api
-          envVarKey: MUSUNIL_USER_TOKEN_SECRET
-      - key: MUSUNIL_ENCRYPTION_KEY
-        fromService:
-          type: web
-          name: musunil-api
-          envVarKey: MUSUNIL_ENCRYPTION_KEY
 
   - type: cron
     name: musunil-public-source-ingest

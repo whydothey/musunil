@@ -52,6 +52,11 @@ const forbiddenPatterns = [
   /자유 댓글|추천\/비추천|찬반투표/u,
   /hazard_area|service_disruption/u
 ];
+for (const key of ["DATABASE_URL", "REDIS_URL", "MUSUNIL_USER_INPUTS_B64", "MUSUNIL_USER_TOKEN_SECRET", "MUSUNIL_ENCRYPTION_KEY", "MUSUNIL_INTERNAL_API_KEY"]) {
+  if (new RegExp(`key:\\s*${key}\\b`).test(renderWeb)) {
+    failures.push(`Render Static Web must not receive backend secret/runtime env var: ${key}`);
+  }
+}
 for (const pattern of forbiddenPatterns) {
   if (pattern.test(web)) failures.push(`forbidden UI pattern found: ${pattern}`);
 }
@@ -604,18 +609,8 @@ if (!hasRenderGeneratedEnv(renderApi, "MUSUNIL_USER_TOKEN_SECRET")) {
 if (!hasRenderGeneratedEnv(renderApi, "MUSUNIL_ENCRYPTION_KEY")) {
   failures.push("Render API must generate MUSUNIL_ENCRYPTION_KEY for encrypted snapshots");
 }
-if (!hasRenderPostgresEnv(renderWeb, "DATABASE_URL") || !hasRenderKeyValueEnv(renderWeb, "REDIS_URL")) {
-  failures.push("Render Web launch check must receive DATABASE_URL and REDIS_URL from managed resources");
-}
-if (!hasRenderEnvFromApiEnv(renderWeb, "MUSUNIL_USER_INPUTS_B64")) {
-  failures.push("Render Web must reuse MUSUNIL_USER_INPUTS_B64 from musunil-api");
-}
-if (/key:\s*MUSUNIL_USER_INPUTS_B64\s*\n\s*sync:\s*false/.test(renderWeb)) {
-  failures.push("Render Web must not prompt separately for full user-input YAML");
-}
-for (const key of ["MUSUNIL_USER_TOKEN_SECRET", "MUSUNIL_ENCRYPTION_KEY"]) {
-  if (!hasRenderEnvFromApiEnv(renderWeb, key)) failures.push(`Render Web must receive ${key} from musunil-api for launch validation`);
-}
+if (!/key:\s*NODE_VERSION[\s\S]*?value:\s*24/.test(renderWeb)) failures.push("Render Web must set NODE_VERSION=24");
+if (!/key:\s*MUSUNIL_RUNTIME_ENV[\s\S]*?value:\s*production/.test(renderWeb)) failures.push("Render Web must set MUSUNIL_RUNTIME_ENV=production");
 for (const [serviceName, block] of [
   ["musunil-public-source-ingest", renderPublicSourceIngest],
   ["musunil-law-source-ingest", renderLawSourceIngest],

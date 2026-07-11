@@ -34,6 +34,7 @@ pnpm render:web-settings
 - Root Directory: 비움
 - Build Command: `render.yaml`의 `musunil-web.buildCommand`
 - Publish Directory: `apps/web`
+- Environment Variables: `NODE_VERSION=24`, `MUSUNIL_RUNTIME_ENV=production`만 둔다. Static Web에는 DB/Redis URL, 사용자 입력 YAML, token secret, encryption key, internal API key를 넣지 않는다.
 - Headers: `Cache-Control`, `Content-Security-Policy`, `Permissions-Policy`, `Referrer-Policy`, `X-Content-Type-Options`, `X-Frame-Options`
 
 주의:
