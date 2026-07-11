@@ -45,7 +45,13 @@ pnpm dev:web
 운영 정적 빌드는 `pnpm build:web-config`로 단일 YAML의 `api.public_base_url`, `map.map_style_url`만 [apps/web/config.js](/Users/mk/Documents/Musunil/apps/web/config.js)에 공개 주입한다.
 Render Static Site는 `pnpm build:web-static`을 사용한다. 이 빌드는 [apps/web/build-info.json](/Users/mk/Documents/Musunil/apps/web/build-info.json)에 커밋 SHA를 생성하므로, 배포 화면이 최신 커밋인지 확인할 수 있다.
 
-Render Static Site 수동 생성값:
+Render Static Site 수동 생성값은 아래 명령으로 `render.yaml`에서 추출한다.
+
+```bash
+pnpm render:web-settings
+```
+
+핵심 값:
 
 ```text
 Branch: main
@@ -55,10 +61,13 @@ Publish Directory: apps/web
 Required headers: render.yaml의 musunil-web headers 블록과 동일하게 적용
 ```
 
+Render 공식 문서 기준, Static Site 응답 헤더는 서버 코드가 아니라 [Render Dashboard의 Static Site Headers 설정](https://render.com/docs/static-site-headers) 또는 [Blueprint의 `headers` 설정](https://render.com/docs/blueprint-spec)으로 적용된다. 수동 Static Site를 쓰는 경우 `pnpm render:web-settings`가 출력하는 Headers 항목을 Dashboard에 그대로 입력한다.
+
 `/build-info.json` 또는 `/build-info.js`가 404면 Render가 build command를 실행하지 않았거나, Static Site가 repo root/Publish Directory/Blueprint 설정을 잘못 보고 있는 상태다.
 두 파일은 build command가 실제 커밋 SHA로 덮어쓰는 공개 배포 확인 산출물이다. placeholder 파일을 repo에 추적시키고, `.gitignore`에 넣지 않는다.
 `/static-manifest.json`은 HTML/config/media 파일 해시를 검증하는 추적 산출물이다. Render가 build output을 반영하지 않아도 live 정적 파일이 repo 산출물과 같은지 `pnpm check:web-deploy`가 해시로 확인한다.
 `/static-manifest.json`은 최신인데 `/build-info.json`만 `generated-at-build`면 Render가 저장소의 `apps/web`을 그대로 publish하고 빌드 중 덮어쓴 산출물을 publish하지 않는 상태다. Render Dashboard에서 Static Site의 Branch, Root Directory, Build Command, Publish Directory, Headers를 위 값과 맞춘 뒤 `Clear build cache & deploy`로 다시 배포한다. 이 상태는 최신 UI가 보여도 운영 배포 성공으로 보지 않는다.
+헤더까지 강제 확인하려면 `MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy`를 실행한다.
 
 배포 후에는 아래 명령으로 API와 Web이 같은 최신 커밋을 보고 있는지 확인한다.
 

@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 23:23 KST
+Last updated: 2026-07-11 23:33 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -57,6 +57,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 14:24 surface53 패치로 주요 이슈 레일을 필터칩형 pill에서 원형 이슈 story ring으로 전환했다. 사람 계정처럼 보이지 않고 이슈 단위 대표 비주얼과 2줄 주제 라벨만 보여주며, 390px/1440px 모두 `storyCount=3`, `storyOrbCount=3`, `overflowX=false`, forbidden 0, rejected 0이다. 사용자 수락 전 S+는 아니다.
 - 21:26 배포 검증 정책을 static hash 우선으로 고쳤다. Render가 build metadata를 publish하지 않아 `/build-info.json`이 placeholder여도 `/static-manifest.json`과 live HTML/config/media SHA-256이 현재 repo 산출물과 같으면 최신 UI 배포는 통과시키고, placeholder/no-store는 경고로 남긴다. static hash가 다르면 계속 실패한다.
 - 23:23 surface54 패치로 운영 API 미연결 상태를 조용한 fallback이 아니라 얇은 서비스 동기화 배너로 표시한다. 모바일은 한 줄 `실시간 동기화 지연`과 `다시 확인`만 보이고, 데스크톱은 저장된 공개자료 기준 안내를 함께 표시한다. 390px/1440px 모두 `overflowX=false`, forbidden 0이다.
+- 23:33 Render 수동 Static Site 설정값을 `render.yaml`에서 추출하는 `pnpm render:web-settings` helper를 추가했다. Branch, Root Directory, Build Command, Publish Directory, Headers, strict header 검증 명령을 한 번에 출력해 build-info placeholder/no-store 경고를 사람이 바로 수정할 수 있게 했다.
 
 ## Agent Feedback Summary
 
@@ -174,6 +175,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 53 | 주요 이슈 레일 앱형 전환 | 1차 완료 | pill/filter chip처럼 보이던 레일을 원형 이슈 story ring으로 바꿈. 390px/1440px `storyCount=3`, `storyLabels=정보통신망법 개정 반대/대통령 탄핵 요구 행진/전국 집회 공개 일정`, `overflowX=false`, forbidden 0, rejected 0 |
 | 54 | Render static deploy freshness 판정 | 1차 완료 | `check:web-deploy`와 `service:watch`가 live static manifest/hash를 1차 증거로 검증. build-info placeholder는 static hash 일치 시 경고, static hash 불일치 시 실패 |
 | 55 | API 미연결 UX 상태 표시 | 1차 완료 | API fetch 실패 시 상단 `실시간 동기화 지연` 배너와 `다시 확인` 액션을 표시. 정상 동기화 시 숨김. 모바일/데스크톱 캡처에서 가로 넘침과 금지 문구 0 |
+| 56 | Render Dashboard 설정 helper | 1차 완료 | `pnpm render:web-settings`가 `render.yaml`의 `musunil-web` 설정과 Headers를 복사 가능한 형태로 출력. `launch-check`가 helper와 strict header 검증 안내를 감시 |
 
 ## Current Evidence
 
@@ -186,6 +188,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 23:23 surface54 mobile API sync banner | `docs/commercial-splus-surface54-api-sync-banner-mobile-390-2026-07-11.png` |
 | 23:23 surface54 desktop API sync banner | `docs/commercial-splus-surface54-api-sync-banner-desktop-1440-2026-07-11.png` |
 | 23:23 surface54 metrics | API 미연결 fallback 상태에서 banner visible, `실시간 동기화 지연`, `다시 확인`, `overflowX=false`, forbidden 0 |
+| 23:33 render settings helper | `pnpm render:web-settings -- --json` 통과. 출력값에 `Cache-Control: no-store`, CSP `media-src 'self' https: blob:`, `MUSUNIL_STRICT_WEB_HEADERS=1` 검증 명령 포함 |
 | 06:00 desktop home region map | `docs/commercial-splus-surface24-home-map-desktop-1440-2026-07-11.png` |
 | 06:00 mobile home 390 | `docs/commercial-splus-surface24-home-map-mobile-390-2026-07-11.png` |
 | 06:00 mobile home 430 | `docs/commercial-splus-surface24-home-map-mobile-430-2026-07-11.png` |

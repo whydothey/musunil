@@ -377,6 +377,21 @@ MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --
 
 `MUSUNIL_API_BASE_URL`은 실제 HTTPS API URL이어야 한다. localhost, 127.0.0.1, `.local`, HTTP URL은 최종 운영 smoke로 인정하지 않는다.
 
+Render Static Site 수동 설정값 확인:
+
+```bash
+pnpm render:web-settings
+```
+
+이 출력값의 Branch, Root Directory, Build Command, Publish Directory, Headers를 Render Dashboard에 그대로 맞춘 뒤 `Clear build cache & deploy`를 실행한다. 이후 Web 정적 배포와 헤더를 strict하게 확인한다.
+
+```bash
+MUSUNIL_STRICT_WEB_HEADERS=1 \
+MUSUNIL_WEB_BASE_URL=https://musunil.com \
+MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) \
+pnpm check:web-deploy
+```
+
 ## 16. 운영 CLI 확인
 
 ```bash

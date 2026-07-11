@@ -26,6 +26,7 @@ const userFacingDocs = [
 const webConfigJs = readFileSync(resolve(cwd, "apps/web/config.js"), "utf8");
 const webServer = readFileSync(resolve(cwd, "scripts/serve-web.mjs"), "utf8");
 const webDeployCheck = readFileSync(resolve(cwd, "scripts/check-web-deploy.mjs"), "utf8");
+const renderWebSettings = readFileSync(resolve(cwd, "scripts/render-web-settings.mjs"), "utf8");
 const webStaticManifestScript = readFileSync(resolve(cwd, "scripts/write-web-static-manifest.mjs"), "utf8");
 const gitignore = readFileSync(resolve(cwd, ".gitignore"), "utf8");
 const renderYaml = readFileSync(resolve(cwd, "render.yaml"), "utf8");
@@ -148,6 +149,12 @@ if (
   !/service_disruption/.test(postDeploySmoke)
 ) {
   failures.push("post-deploy API smoke command must verify deployed readiness, coverage, laws, and admin auth boundary");
+}
+if (!/"render:web-settings"/.test(packageJson) || !/render-web-settings\.mjs/.test(packageJson)) {
+  failures.push("Render Web settings helper command is missing");
+}
+if (!/MUSUNIL_STRICT_WEB_HEADERS=1/.test(renderWebSettings) || !/Clear build cache & deploy/.test(renderWebSettings)) {
+  failures.push("Render Web settings helper must print strict header verification and clear-cache redeploy instructions");
 }
 if (
   !/redaction_engine_smoke/.test(redactionSmoke) ||
