@@ -88,6 +88,7 @@ const liveMediaStorage = readFileSync(resolve(cwd, "services/api/src/live-media-
 const storageSmoke = readFileSync(resolve(cwd, "scripts/storage-smoke.mjs"), "utf8");
 const redactionSmoke = readFileSync(resolve(cwd, "scripts/redaction-smoke.mjs"), "utf8");
 const mobileIntegritySmoke = readFileSync(resolve(cwd, "scripts/mobile-integrity-smoke.mjs"), "utf8");
+const operationalDiagnostics = readFileSync(resolve(cwd, "scripts/operational-readiness-diagnostics.mjs"), "utf8");
 const postDeploySmoke = readFileSync(resolve(cwd, "scripts/post-deploy-smoke.mjs"), "utf8");
 const serviceWatch = readFileSync(resolve(cwd, "scripts/service-watch.mjs"), "utf8");
 const adminReview = readFileSync(resolve(cwd, "scripts/admin-review.mjs"), "utf8");
@@ -130,6 +131,21 @@ if (!/createLiveMediaStorage/.test(storageSmoke) || !/storage_put_delete/.test(s
 }
 if (/checked:\s*"storage_put_delete"[\s\S]*storageKey/.test(storageSmoke)) {
   failures.push("storage smoke must not print private storage keys");
+}
+if (!/"ops:diagnose"/.test(packageJson) || !/"check:ops-diagnostics"/.test(packageJson) || !/check:ops-diagnostics/.test(JSON.parse(packageJson).scripts["check:release"] ?? "")) {
+  failures.push("release check must include operational readiness metadata diagnostics");
+}
+if (
+  !/operational_readiness_metadata/.test(operationalDiagnostics) ||
+  !/readyForMetadataCheck/.test(operationalDiagnostics) ||
+  !/readyForExternalSmoke/.test(operationalDiagnostics) ||
+  !/commandEchoSuppressed/.test(operationalDiagnostics) ||
+  !/smokeCommandEchoSuppressed/.test(operationalDiagnostics)
+) {
+  failures.push("operational diagnostics must expose safe metadata for storage, redaction, mobile integrity, and identity");
+}
+if (/access_key_id/.test(operationalDiagnostics) || /secret_access_key/.test(operationalDiagnostics) || /portone_api_secret/.test(operationalDiagnostics)) {
+  failures.push("operational diagnostics must not print raw secret field names that invite copying into logs");
 }
 if (
   !/"launch:post-deploy-smoke"/.test(packageJson) ||

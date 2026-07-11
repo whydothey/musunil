@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-12 00:33 KST
+Last updated: 2026-07-12 00:44 KST
 
 Status: 완료 아님.
 
@@ -41,6 +41,8 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - `pnpm check:splus`
 - `pnpm check:source-diagnostics`
 - `pnpm check:law-diagnostics`
+- `pnpm check:ops-diagnostics`
+- `pnpm ops:diagnose`
 - `pnpm launch:ready -- --list`로 actual input 단계와 sample gate 단계를 구분
 - `pnpm launch:external-smoke -- --list`
 - API/runtime/web smoke 경계 검증
@@ -71,6 +73,7 @@ GET /ready -> 200
 - 실제 법 원천 `pnpm sources:laws` 1건 이상 dry-run/post 결과가 아직 없다.
 - 실제 포트원 본인확인 채널로 인증 완료 리허설 결과가 아직 없다.
 - 운영 DB/Redis/Render `/ready` 결과가 아직 없다.
+- `pnpm ops:diagnose`는 metadata 준비와 누락 그룹을 보여주는 사전 진단이며, 실제 storage/redaction/mobile identity provider smoke를 대체하지 않는다.
 - `check:render-runtime-config`는 Render generated secret fallback의 sample gate이며, 실제 배포 `/ready` 증거를 대체하지 않는다.
 - 2026-07-11 06:11 독립 평가 기준 UI/UX는 S+가 아니다. 28차 패치로 지도-first, 10초 상황 줄, `영상제보` 라벨, 지도 시트 과밀, 지도 도구 밀도, 영상 소셜 레일, 샘플 poster의 AI 데모감, 홈 대형 검토 썸네일, dev stale config 회귀, 데스크톱 지도 인스펙터 경쟁, scanline 혼선, 데스크톱 홈 빈 공간과 패널 경쟁은 개선됐지만, 독립 비평 재검증, 실제 제보 영상 품질, 사용자 수락이 남아 있다.
 - 2026-07-11 10:04 29차 패치로 static/운영 API 빈 응답 시 공식 공개자료 fallback 이슈가 보이고, 지도 `상세`가 선택 현장 상세와 `근거` 탭으로 이어지는 것을 390px/1440px CDP 캡처로 확인했다. 다만 실제 운영 API, 실제 제보 영상 품질, 독립 비평 재검증, 사용자 수락 전에는 S+로 승급하지 않는다.
@@ -115,6 +118,7 @@ GET /ready -> 200
 - 2026-07-12 00:33 `pnpm check:source-diagnostics`를 release gate에 추가했다. 외부 fetch 없이 18개 active schedule 원천의 URL, parser, POST body, refresh cadence 구조를 진단하며, `blockedSourceIds`, `parserMissingSourceIds`, `urlMissingSourceIds`, `postBodyMissingSourceIds`가 생기면 릴리즈가 실패한다. 실제 운영 cron fetch 성공을 대체하지는 않는다.
 - 2026-07-12 00:37 `pnpm check:law-diagnostics`를 release gate에 추가했다. 외부 fetch 없이 국회 의안 API와 법제처 국가법령 API endpoint, 관심 키워드, credential 구성 여부를 진단하고 API key/OC 원문이 출력되지 않게 했다. 실제 법 원천 1건 이상 dry-run/post 증거는 여전히 필요하다.
 - 2026-07-12 00:38 `/ready`와 `runtime_not_ready` 응답에 safe `summary.failedIds`, `summary.blockingGroups`, `requiredActions`를 추가했다. API self-check, `pnpm check:render-runtime-config`, `pnpm check:runtime-smoke`가 통과했으며, Render DB/Redis 미연결 같은 운영 차단 원인을 그룹 단위로 식별한다. 실제 운영 `/ready=true` 증거 전에는 운영 준비 완료가 아니다.
+- 2026-07-12 00:44 `pnpm ops:diagnose`와 `pnpm check:ops-diagnostics`를 추가했다. 외부 연결 전에도 storage, redaction, mobile integrity, identity metadata 준비 상태와 다음 조치를 secret 원문 없이 확인하고, release gate에서 이 진단 계약을 검사한다. 실제 provider smoke와 운영 `/ready=true` 증거 전에는 운영 준비 완료가 아니다.
 
 ## Next Active Goal Order
 

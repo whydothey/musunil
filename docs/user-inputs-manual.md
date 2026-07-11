@@ -353,8 +353,11 @@ MUSUNIL_USER_INPUTS_FILE_PATH=/etc/secrets/musunil.user-inputs.yaml
 입력 완료 후 기본 검증:
 
 ```bash
+pnpm ops:diagnose
 pnpm launch:ready -- config/musunil.user-inputs.local.yaml
 ```
+
+`pnpm ops:diagnose`는 storage, redaction, mobile integrity, identity의 준비 상태를 먼저 보여준다. `readyForExternalSmoke`가 false이면 출력의 `requiredActions`를 해결한 뒤 `launch:ready`를 실행한다.
 
 법 데이터 반영까지 포함한 리허설:
 

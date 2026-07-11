@@ -80,11 +80,14 @@ Cloudflare에는 Render Dashboard가 보여주는 custom-domain target을 그대
 ## 6. 검증 순서
 
 ```bash
+pnpm ops:diagnose
 pnpm launch:verify-inputs config/musunil.user-inputs.local.yaml
 pnpm config:encode -- --check config/musunil.user-inputs.local.yaml
 pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws
 pnpm render:web-settings
 ```
+
+`pnpm ops:diagnose`의 `requiredActions`가 남아 있으면 실제 storage/redaction/mobile identity smoke를 실행하기 전에 해당 값을 먼저 채운다.
 
 Render custom domain, Cloudflare DNS, Render Static headers를 적용한 뒤:
 
@@ -117,4 +120,3 @@ pnpm service:watch -- --once
 - 공개 payload에 사용자 원문, 정밀 GPS, storage key, identity hash가 없다.
 - 쓰기 endpoint는 본인확인 세션 없이는 `identity_required`를 반환한다.
 - 법안 탭은 공식 ingest 전 빈 목록이거나 국회/법제처 공식 원천 항목만 노출한다.
-
