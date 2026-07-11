@@ -5,6 +5,7 @@ import { loadUserInputs } from "../packages/config/src/index.ts";
 
 const cwd = resolve(import.meta.dirname, "..");
 const staticMode = process.argv.includes("--static");
+const writeBuildInfo = process.argv.includes("--write-build-info") || readEnv("MUSUNIL_WRITE_BUILD_INFO") === "1" || Boolean(readEnv("RENDER_SERVICE_ID"));
 let config = {};
 try {
   config = loadUserInputs({ cwd }).config;
@@ -28,11 +29,13 @@ writeFileSync(
   resolve(cwd, "apps/web/config.js"),
   `window.MUSUNIL_WEB_CONFIG = ${JSON.stringify(webConfig, null, 2)};\n`
 );
-writeFileSync(
-  resolve(cwd, "apps/web/build-info.js"),
-  `window.MUSUNIL_BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};\n`
-);
-writeFileSync(resolve(cwd, "apps/web/build-info.json"), `${JSON.stringify(buildInfo, null, 2)}\n`);
+if (writeBuildInfo) {
+  writeFileSync(
+    resolve(cwd, "apps/web/build-info.js"),
+    `window.MUSUNIL_BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};\n`
+  );
+  writeFileSync(resolve(cwd, "apps/web/build-info.json"), `${JSON.stringify(buildInfo, null, 2)}\n`);
+}
 
 function readString(config, path) {
   const value = path.split(".").reduce((current, key) => {

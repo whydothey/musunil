@@ -2,7 +2,7 @@
 
 외부 연결이 필요 없는 범위에서 완료한 항목이다.
 
-Last updated: 2026-07-12 01:08 KST
+Last updated: 2026-07-12 01:14 KST
 
 ## 완료
 
@@ -90,6 +90,7 @@ Last updated: 2026-07-12 01:08 KST
   - `pnpm check:web-smoke`
   - `pnpm check:web-flow`
   - `pnpm check:ux-surface`
+  - `pnpm check:build-info-clean`
   - `pnpm check:splus`
   - `pnpm launch:ready`
   - `pnpm launch:post-deploy-smoke`

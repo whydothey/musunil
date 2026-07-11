@@ -21,6 +21,7 @@
 - `pnpm check:web-smoke` 통과.
 - `pnpm check:web-flow` 통과.
 - `pnpm check:ux-surface` 통과.
+- `pnpm check:build-info-clean` 통과.
 - `pnpm render:api-settings` 출력이 `render.yaml`의 `musunil-api` 설정, env source, `api.musunil.com` 검증 명령과 일치.
 - `pnpm launch:inputs`로 생성한 운영 YAML은 `CHANGE_ME_*` 값만 남기고 Render generated secret 필드는 비워 둔다.
 - 기본 템플릿은 production-safe로 preview/mock이 꺼져 있고 운영 입력값만 `CHANGE_ME_*`로 남긴다.
@@ -104,6 +105,7 @@
 - `/static-manifest.json`과 live 파일 해시가 현재 repo 산출물과 일치하지만 `/build-info.json`이 `generated-at-build`이면 Static Site가 커밋된 `apps/web` 파일을 publish하고 build metadata만 반영하지 않는 상태다. 이 경우 최신 UI 배포 여부는 통과로 보되, `check:web-deploy`와 `service:watch`는 `web_build_info_placeholder` 경고를 남긴다.
 - `/static-manifest.json` 또는 live 파일 해시가 현재 repo 산출물과 다르면 구버전 배포로 보고 실패한다. Render 수동 Static Site의 Branch, Root Directory, Build Command, Publish Directory, headers를 `README.md`와 `render.yaml` 기준으로 고친 뒤 `Clear build cache & deploy`를 실행한다.
 - `apps/web/build-info.js`와 `apps/web/build-info.json`은 placeholder로 repo에 추적하고, Render build command가 실제 Git SHA로 덮어써야 한다.
+- 로컬 `check:release`와 smoke 명령은 tracked build-info placeholder를 변경하지 않아야 한다. 실제 build metadata 작성은 Render 또는 `MUSUNIL_WRITE_BUILD_INFO=1`에서만 허용한다.
 - `apps/web/static-manifest.json`은 `index.html`, `config.js`, 공개 poster/clip의 SHA-256과 byte size를 담는다. 배포 후 `pnpm check:web-deploy`는 live 파일 해시가 manifest와 같은지 확인한다.
 - 배포 후 `MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm launch:post-deploy-smoke`가 live Web static hash와 API smoke를 함께 통과해야 한다. build-info placeholder fallback은 경고이며, static hash 불일치는 실패다.
 - 헤더까지 strict하게 닫으려면 `MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy`가 통과해야 한다.

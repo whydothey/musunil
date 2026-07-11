@@ -24,6 +24,7 @@ const userFacingDocs = [
   "docs/launch-readiness-checklist.md"
 ].map((path) => `${path}\n${readFileSync(resolve(cwd, path), "utf8")}`).join("\n");
 const webConfigJs = readFileSync(resolve(cwd, "apps/web/config.js"), "utf8");
+const webConfigWriter = readFileSync(resolve(cwd, "scripts/write-web-config.mjs"), "utf8");
 const webServer = readFileSync(resolve(cwd, "scripts/serve-web.mjs"), "utf8");
 const webDeployCheck = readFileSync(resolve(cwd, "scripts/check-web-deploy.mjs"), "utf8");
 const renderWebSettings = readFileSync(resolve(cwd, "scripts/render-web-settings.mjs"), "utf8");
@@ -431,6 +432,16 @@ if (!/"sources:laws-diagnose"/.test(rootPackageJson) || !/"check:law-diagnostics
 }
 if (!/MUSUNIL_WEB_CONFIG/.test(web)) failures.push("web runtime config hook is missing");
 if (!/build-info\.js/.test(web)) failures.push("web build-info hook is missing");
+if (
+  !/const writeBuildInfo/.test(webConfigWriter) ||
+  !/MUSUNIL_WRITE_BUILD_INFO/.test(webConfigWriter) ||
+  !/if \(writeBuildInfo\)/.test(webConfigWriter)
+) {
+  failures.push("web config writer must preserve tracked build-info placeholders unless Render or an explicit build-info flag is used");
+}
+if (!/"check:build-info-clean"/.test(packageJson) || !/ci-build-info-clean\.mjs/.test(packageJson) || !/pnpm check:build-info-clean/.test(JSON.parse(packageJson).scripts["check:release"] ?? "")) {
+  failures.push("release check must verify local commands preserve tracked build-info placeholders");
+}
 if (!/generated-at-build/.test(webDeployCheck) || !/staticManifestVerified/.test(webDeployCheck) || !/web_build_info_placeholder/.test(webDeployCheck)) {
   failures.push("web deploy check must verify static manifest freshness before tolerating tracked build-info placeholders");
 }
@@ -488,8 +499,8 @@ if (!/preDeployCommand:\s*pnpm db:migrate/.test(renderYaml)) failures.push("Rend
 if (!/name:\s*musunil-api[\s\S]*?buildCommand:[^\n]*pnpm check[^\n]*pnpm build:web-config[^\n]*pnpm launch:check/.test(renderYaml)) {
   failures.push("Render API build must run pnpm check, pnpm build:web-config, and pnpm launch:check");
 }
-if (!/name:\s*musunil-web[\s\S]*?buildCommand:[^\n]*pnpm build:web-static[^\n]*pnpm check:web-smoke/.test(renderYaml)) {
-  failures.push("Render Web build must run pnpm build:web-static and pnpm check:web-smoke");
+if (!/name:\s*musunil-web[\s\S]*?buildCommand:[^\n]*MUSUNIL_WRITE_BUILD_INFO=1[^\n]*pnpm build:web-static[^\n]*pnpm check:web-smoke/.test(renderYaml)) {
+  failures.push("Render Web build must write build-info and run pnpm build:web-static and pnpm check:web-smoke");
 }
 for (const header of ["Cache-Control", "Content-Security-Policy", "Permissions-Policy", "Referrer-Policy", "X-Content-Type-Options", "X-Frame-Options"]) {
   if (!hasRenderHeader(renderWeb, header)) failures.push(`Render Web static header is missing: ${header}`);

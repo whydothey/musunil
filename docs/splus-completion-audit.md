@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-12 01:08 KST
+Last updated: 2026-07-12 01:14 KST
 
 Status: 완료 아님.
 
@@ -41,6 +41,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - `pnpm check:splus`
 - `pnpm check:web-flow`
 - `pnpm check:ux-surface`
+- `pnpm check:build-info-clean`
 - `pnpm check:source-diagnostics`
 - `pnpm check:law-diagnostics`
 - `pnpm check:ops-diagnostics`
@@ -126,6 +127,7 @@ GET /ready -> 200
 - 2026-07-12 00:54 live `pnpm service:watch -- --once` 결과 static manifest는 local과 일치하지만 `web_header_contract`와 `api_endpoint_preflight`가 실패했다. Required Actions는 Render API custom domain + Cloudflare DNS, Render Static headers, build metadata fallback을 owner/action/verify/reference로 문서화한다. 실제 조치와 재검증 전에는 운영 준비 완료가 아니다.
 - 2026-07-12 01:01 `pnpm check:ux-surface`를 release gate에 추가했다. 홈 이슈 우선 구조, 대시보드 회귀, 5개 탭, 인증 영상 액션, 지도 맥락 도구, 제보 초보자 흐름, 본인확인 경계, 금지 소셜 UI를 9개 시나리오로 검사하며 현재 모두 통과한다. 다만 이 검사는 정적 표면 회귀 방어이며 실제 모바일/데스크톱 캡처, 실제 운영 영상/GPS, 사용자 수락을 대체하지 않는다.
 - 2026-07-12 01:08 `pnpm render:api-settings`를 추가했다. Render `musunil-api`의 build/pre-deploy/start/health/env source/custom domain/Cloudflare/검증 명령을 secret 원문 없이 출력하고, `launch-check`, `launch-cutover-plan`, `service:watch` Required Actions와 연결했다. 실제 `api.musunil.com` DNS와 운영 `/ready=true` 전에는 운영 준비 완료가 아니다.
+- 2026-07-12 01:14 `write-web-config`가 로컬 검증 중 tracked build-info placeholder를 덮어쓰지 않게 하고, Render Web build에는 `MUSUNIL_WRITE_BUILD_INFO=1`을 명시했다. `pnpm check:build-info-clean`을 release gate에 추가해 로컬 `check:release`가 build-info를 더럽히면 실패한다.
 
 ## Next Active Goal Order
 
