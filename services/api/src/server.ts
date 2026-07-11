@@ -27,6 +27,7 @@ const app = createApp(initialStore, {
   liveMediaEncryptionKey: runtime.liveMediaEncryptionKey,
   requireExternalLiveStorage: runtime.requireExternalLiveStorage,
   requireReadyForWrites: runtime.requireReadyForWrites,
+  allowAnonymousSession: runtime.allowAnonymousSession,
   retention: runtime.retention
 });
 const port = Number(process.env.PORT ?? 4000);
@@ -212,6 +213,7 @@ function loadRuntime() {
       liveMediaEncryptionKey,
       requireExternalLiveStorage: production,
       requireReadyForWrites: production,
+      allowAnonymousSession: !production,
       retention,
       autoPublishLiveReports: readBoolean(loaded.config, "moderation.auto_publish_low_risk_live_reports", false),
       includeMockData: readBoolean(loaded.config, "preview.use_mock_data", !production),
@@ -247,6 +249,7 @@ function loadRuntime() {
       liveMediaEncryptionKey: undefined,
       requireExternalLiveStorage: productionRuntime,
       requireReadyForWrites: productionRuntime,
+      allowAnonymousSession: !productionRuntime,
       autoPublishLiveReports: false,
       includeMockData: !productionRuntime,
       retention: {

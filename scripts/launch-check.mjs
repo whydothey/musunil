@@ -684,7 +684,10 @@ if (!/createCipheriv\("aes-256-gcm"/.test(postgresStore) || !/state_ciphertext/.
 }
 if (!/withUserScope/.test(apiApp) || !/verifyUserToken/.test(apiApp) || !/user_scope_required/.test(apiApp)) failures.push("user-owned route token guard is missing");
 if (!/verifiedBodyUserId/.test(apiApp) || !/requireVerifiedBodyUserId/.test(apiApp)) failures.push("public report owner token guard is missing");
-if (!/userTokenTtlMs/.test(apiApp) || !/expiresAt/.test(apiApp)) failures.push("anonymous user tokens must expire");
+if (!/allowAnonymousSession\?: boolean/.test(apiApp) || !/allowAnonymousSession:\s*!production/.test(apiServer) || !/allowAnonymousSession:\s*!productionRuntime/.test(apiServer) || !/options\.allowAnonymousSession === false/.test(apiApp)) {
+  failures.push("production anonymous session fallback must stay disabled");
+}
+if (!/userTokenTtlMs/.test(apiApp) || !/expiresAt/.test(apiApp)) failures.push("verified identity session tokens must expire");
 if (/x-musunil-user-secret/.test(apiApp)) failures.push("user token secret must not be read from request headers");
 if (!/held_private/.test(apiApp) || !/publicClaimsForTarget/.test(apiApp) || !/setClaimVisibility/.test(apiApp)) {
   failures.push("held-private Claim visibility guard is missing");
@@ -888,7 +891,7 @@ if (!hasRenderGeneratedEnv(renderApi, "MUSUNIL_INTERNAL_API_KEY")) {
   failures.push("Render API must generate MUSUNIL_INTERNAL_API_KEY for internal cron/admin calls");
 }
 if (!hasRenderGeneratedEnv(renderApi, "MUSUNIL_USER_TOKEN_SECRET")) {
-  failures.push("Render API must generate MUSUNIL_USER_TOKEN_SECRET for anonymous user tokens");
+  failures.push("Render API must generate MUSUNIL_USER_TOKEN_SECRET for verified identity sessions");
 }
 if (!hasRenderGeneratedEnv(renderApi, "MUSUNIL_ENCRYPTION_KEY")) {
   failures.push("Render API must generate MUSUNIL_ENCRYPTION_KEY for encrypted snapshots");

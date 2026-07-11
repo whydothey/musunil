@@ -108,14 +108,14 @@ await check("user_scope_required", async () => {
 });
 
 await check("user_scope_allowed", async () => {
-  const session = await anonymousSession();
+  const session = await verifiedIdentitySession();
   const response = await rawRequest("GET", `/me/reports?userId=${session.userId}`, undefined, userHeaders(session));
   assert(response.ok, `/me route with matching user scope returned ${response.status}`);
   assert(Array.isArray(response.body?.reports), "scoped reports response is missing reports array");
 });
 
 await check("subscription_user_scope_mismatch", async () => {
-  const session = await anonymousSession();
+  const session = await verifiedIdentitySession();
   const response = await rawRequest(
     "POST",
     "/subscriptions",
@@ -127,7 +127,7 @@ await check("subscription_user_scope_mismatch", async () => {
 });
 
 await check("report_user_scope_mismatch", async () => {
-  const session = await anonymousSession();
+  const session = await verifiedIdentitySession();
   const response = await rawRequest(
     "POST",
     "/reports/material",
@@ -252,7 +252,7 @@ await check("public_live_claim_safety", async () => {
 if (runWriteChecks) {
   await check("write_claim_raw_safety", async () => {
     const marker = `SMOKE_RAW_${Date.now()}`;
-    const session = await anonymousSession();
+    const session = await verifiedIdentitySession();
     const beforeDetail = await request("GET", "/occurrences/occ_1");
     const created = await rawRequest(
       "POST",
@@ -381,7 +381,7 @@ async function rawRequest(method, path, body, headers = {}) {
   return { ok: response.ok, status: response.status, headers: Object.fromEntries(response.headers.entries()), body: payload };
 }
 
-async function anonymousSession() {
+async function verifiedIdentitySession() {
   const start = await rawRequest("POST", "/auth/identity/start", JSON.stringify({ purpose: "general" }));
   assert(start.status === 201, `identity start returned ${start.status}`);
   assert(typeof start.body?.identityVerificationId === "string", "identity start missing identityVerificationId");
@@ -391,10 +391,10 @@ async function anonymousSession() {
     JSON.stringify({ identityVerificationId: start.body.identityVerificationId, testCi: `ci-${Date.now()}-${Math.random()}`, testDi: `di-${Date.now()}-${Math.random()}` })
   );
   assert(response.status === 201, `identity complete returned ${response.status}`);
-  assert(typeof response.body?.userId === "string", "anonymous session missing userId");
-  assert(typeof response.body?.token === "string", "anonymous session missing token");
+  assert(typeof response.body?.userId === "string", "verified identity session missing userId");
+  assert(typeof response.body?.token === "string", "verified identity session missing token");
   assert(response.body?.authLevel === "identity_verified", "identity session authLevel mismatch");
-  assert(Date.parse(response.body?.expiresAt) > Date.now(), "anonymous session expiresAt is missing or expired");
+  assert(Date.parse(response.body?.expiresAt) > Date.now(), "verified identity session expiresAt is missing or expired");
   return response.body;
 }
 

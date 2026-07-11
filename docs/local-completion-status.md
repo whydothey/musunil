@@ -115,8 +115,8 @@ Last updated: 2026-07-12 07:59 KST
   - 로컬 Web 정적 서버 보안 헤더 runtime smoke
   - `docs/launch-readiness-checklist.md`
   - 내부/admin 라우트 키 보호
-  - 사용자별 `/me/*`, 구독 생성/수정, 제보 소유권 기록 서버 서명 anonymous token 범위 확인
-  - LIVE 제보 anonymous token 필수화
+  - 사용자별 `/me/*`, 구독 생성/수정, 제보 소유권 기록 본인확인 세션 범위 확인
+  - LIVE 제보 본인확인 완료 세션 필수화
   - 운영 기본 LIVE 제보 `held_private` 검수 대기와 admin `--publish` 공개 전환
   - API CORS allowed origin echo와 기본 보안 헤더
   - 로컬 Web fallback 포트 `4173`, `4174` CORS 허용

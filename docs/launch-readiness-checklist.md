@@ -143,9 +143,10 @@
 - LIVE Claim 공개 전환은 내부 verifier가 device integrity `pass`와 proof hash를 기록한 뒤에만 가능하다.
 - Android Play Integrity는 base64 Google service account JSON의 `type`, `project_id`, `client_email`, `private_key`가 없으면 production launch validation이 실패한다.
 - iOS App Attest는 team id가 없으면 production launch validation이 실패한다.
-- 사용자별 `/me/*`, 구독 생성/수정, 제보 소유권 기록은 서버 서명 anonymous token과 요청 userId가 일치해야 한다.
-- Anonymous token은 만료 시간을 포함한다.
-- LIVE 제보는 anonymous token 없이는 401이며, 운영 기본값에서는 `held_private`로 검수 대기한다.
+- 사용자별 `/me/*`, 구독 생성/수정, 제보 소유권 기록은 본인확인 완료 세션과 요청 userId가 일치해야 한다.
+- 본인확인 세션 token은 만료 시간을 포함한다.
+- LIVE 제보는 본인확인 완료 세션 없이는 401이며, 운영 기본값에서는 `held_private`로 검수 대기한다.
+- 개발 fallback인 `/session/anonymous`는 production 런타임에서 404로 닫혀야 하며, 실제 쓰기성 기능의 소유권 확인에는 사용할 수 없다.
 - 자료 제보, 현장 정정, 권리침해 신고, 반론은 본인확인 완료 세션 없이는 401이며, 성공해도 `202 queued_for_review`와 `held_private` Claim으로만 저장된다.
 - 비-LIVE 사용자 제출은 Admin review에서 공개 전환되기 전까지 공개 홈/상세/우선순위/지도 집계와 evidence count에 반영되지 않는다.
 - LIVE Proof-of-Presence는 앱 내 촬영 `in_app_camera`와 최소 5초 영상만 통과하고 gallery, screen recording, external link, 너무 짧은 영상은 현장 인증 Claim으로 인정하지 않는다.

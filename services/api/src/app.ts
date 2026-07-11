@@ -124,6 +124,7 @@ export type AppOptions = {
   liveMediaEncryptionKey?: string;
   requireExternalLiveStorage?: boolean;
   requireReadyForWrites?: boolean;
+  allowAnonymousSession?: boolean;
   retention?: {
     rawClaimStatementDays?: number;
     unverifiedOriginalMediaDays?: number;
@@ -1052,6 +1053,7 @@ function withVerifiedUserScope(store: Store, request: ApiRequest, options: AppOp
 }
 
 function postAnonymousSession(options: AppOptions): ApiResponse {
+  if (options.allowAnonymousSession === false) return json(404, { error: "not_found" });
   if (!options.userTokenSecret) return json(503, { error: "user_token_secret_not_configured" });
   const userId = `anon_${randomUUID()}`;
   const expiresAt = Date.now() + userTokenTtlMs;

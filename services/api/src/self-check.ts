@@ -7,6 +7,7 @@ import { decryptSnapshot, encryptSnapshot } from "./postgres-store.ts";
 const now = new Date("2026-07-07T09:00:00.000Z");
 const store = createSeedStore();
 const internalHeaders = { "x-musunil-internal-key": "test_internal_key" };
+const testUserTokenSecret = "test_user_token_secret_32_bytes_minimum";
 const testIdentity = {
   provider: "portone" as const,
   storeId: "test_store",
@@ -17,7 +18,7 @@ const testIdentity = {
 };
 const app = createApp(store, {
   internalApiKey: "test_internal_key",
-  userTokenSecret: "test_user_token_secret_32_bytes_minimum",
+  userTokenSecret: testUserTokenSecret,
   identity: testIdentity,
   readiness: () => ({ ready: true, checks: [{ id: "test", ok: true, message: "ok" }] })
 });
@@ -58,11 +59,11 @@ const encryptedSnapshot = encryptSnapshot('{"raw":"사용자 원문"}', "test_en
 assert.equal(encryptedSnapshot.includes("사용자 원문"), false);
 assert.equal(decryptSnapshot(encryptedSnapshot, "test_encryption_key_32_bytes_minimum"), '{"raw":"사용자 원문"}');
 assert.throws(() => decryptSnapshot(encryptedSnapshot, "wrong_encryption_key_32_bytes_minimum"));
-const user1Session = await anonymousSession(app);
+const user1Session = await verifiedIdentitySession(app);
 const user1Headers = userHeaders(user1Session);
-const routeOnlySession = await anonymousSession(app);
-const mutedSession = await anonymousSession(app);
-const attackerSession = await anonymousSession(app);
+const routeOnlySession = await verifiedIdentitySession(app);
+const mutedSession = await verifiedIdentitySession(app);
+const attackerSession = await verifiedIdentitySession(app);
 
 assert.equal((await app.handle({ method: "GET", path: "/health" })).status, 200);
 const sourceCoverage = await app.handle({ method: "GET", path: "/public-sources/coverage" });
@@ -381,6 +382,12 @@ assert.equal((notReadySession.body as { error: string }).error, "runtime_not_rea
 assert.equal((notReadySession.body as { summary: { failedIds: string[]; blockingGroups: string[] } }).summary.failedIds.includes("postgres.database_url"), true);
 assert.equal((notReadySession.body as { summary: { blockingGroups: string[] } }).summary.blockingGroups.includes("database"), true);
 assert.equal((notReadySession.body as { requiredActions: Array<{ id: string }> }).requiredActions.some((item) => item.id === "database"), true);
+const productionAnonymousSession = await createApp(createSeedStore(), { allowAnonymousSession: false, userTokenSecret: testUserTokenSecret }).handle({
+  method: "POST",
+  path: "/session/anonymous"
+});
+assert.equal(productionAnonymousSession.status, 404);
+assert.equal((productionAnonymousSession.body as { error: string }).error, "not_found");
 const notReadyInternalWrite = await notReadyWriteApp.handle({
   method: "POST",
   path: "/internal/ingest/public-source",
@@ -598,7 +605,7 @@ const heldApp = createApp(heldStore, {
   identity: testIdentity,
   autoPublishLiveReports: false
 });
-const heldSession = await anonymousSession(heldApp);
+const heldSession = await verifiedIdentitySession(heldApp);
 const heldUpload = await heldApp.handle({
   method: "POST",
   path: "/uploads/live",
@@ -646,7 +653,7 @@ const missingStorageApp = createApp(createSeedStore(), {
   identity: testIdentity,
   requireExternalLiveStorage: true
 });
-const missingStorageSession = await anonymousSession(missingStorageApp);
+const missingStorageSession = await verifiedIdentitySession(missingStorageApp);
 const missingStorageUpload = await missingStorageApp.handle({
   method: "POST",
   path: "/uploads/live",
@@ -668,7 +675,7 @@ const unencryptedStorageApp = createApp(createSeedStore(), {
   requireExternalLiveStorage: true,
   liveMediaStorage: { put: async () => undefined }
 });
-const unencryptedStorageSession = await anonymousSession(unencryptedStorageApp);
+const unencryptedStorageSession = await verifiedIdentitySession(unencryptedStorageApp);
 const unencryptedStorageUpload = await unencryptedStorageApp.handle({
   method: "POST",
   path: "/uploads/live",
@@ -698,7 +705,7 @@ const externalStorageApp = createApp(externalStorageStore, {
     }
   }
 });
-const externalStorageSession = await anonymousSession(externalStorageApp);
+const externalStorageSession = await verifiedIdentitySession(externalStorageApp);
 const externalStorageUpload = await externalStorageApp.handle({
   method: "POST",
   path: "/uploads/live",
@@ -879,7 +886,7 @@ const autoPublishApp = createApp(autoPublishStore, {
   identity: testIdentity,
   autoPublishLiveReports: true
 });
-const autoSession = await anonymousSession(autoPublishApp);
+const autoSession = await verifiedIdentitySession(autoPublishApp);
 const autoUpload = await autoPublishApp.handle({
   method: "POST",
   path: "/uploads/live",
@@ -1708,7 +1715,7 @@ function assertPublicPayloadSafe(body: unknown): void {
   }
 }
 
-async function anonymousSession(app: ReturnType<typeof createApp>): Promise<{ userId: string; token: string }> {
+async function verifiedIdentitySession(app: ReturnType<typeof createApp>): Promise<{ userId: string; token: string }> {
   const start = await app.handle({ method: "POST", path: "/auth/identity/start", body: { purpose: "general" } });
   assert.equal(start.status, 201);
   const identityVerificationId = (start.body as { identityVerificationId: string }).identityVerificationId;
