@@ -456,6 +456,7 @@ if (
   !/cloudflare:check/.test(launchCutoverPlan) ||
   !/render:api-settings/.test(launchCutoverPlan) ||
   !/render:web-settings/.test(launchCutoverPlan) ||
+  !/build:web-static:render/.test(launchCutoverPlan) ||
   !/MUSUNIL_EXPECTED_API_BASE_URL/.test(launchCutoverPlan) ||
   !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(launchCutoverPlan) ||
   !/check:visual-surface:live/.test(launchCutoverPlan) ||
@@ -516,6 +517,7 @@ if (
   !/requiredActions/.test(serviceWatch) ||
   !/connect_api_endpoint/.test(serviceWatch) ||
   !/fix_web_runtime_config/.test(serviceWatch) ||
+  !/build:web-static:render/.test(serviceWatch) ||
   !/pnpm launch:final-gate/.test(serviceWatch) ||
   !/render:api-settings/.test(serviceWatch) ||
   !/apply_static_headers/.test(serviceWatch) ||

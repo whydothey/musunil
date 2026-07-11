@@ -31,8 +31,8 @@ const plan = {
     {
       id: "build_metadata",
       owner: "operator",
-      action: "Confirm Render publishes build output. Static hash match is acceptable for UI freshness, but build-info should eventually contain the deployed Git SHA.",
-      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy"
+      action: "Confirm Render musunil-web uses pnpm build:web-static:render and publishes that build output. Static hash match is acceptable for UI freshness, but build-info should eventually contain the deployed Git SHA.",
+      verify: "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy"
     },
     {
       id: "live_data_sync",

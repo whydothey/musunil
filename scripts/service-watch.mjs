@@ -152,7 +152,7 @@ async function runChecks() {
       maxBuffer: 20 * 1024 * 1024
     });
     if (result.status !== 0) {
-      throw new Error(tail([result.stderr, result.stdout].filter(Boolean).join("\n"), 2400));
+      throw new Error(clip([result.stderr, result.stdout].filter(Boolean).join("\n"), 2400));
     }
     const parsed = JSON.parse(result.stdout);
     const serviceStates = Array.isArray(parsed.serviceStates)
@@ -514,7 +514,7 @@ function requiredActions(result) {
     actions.push({
       id: "fix_web_runtime_config",
       owner: "operator",
-      action: "Render musunil-web Build Command가 pnpm render:web-settings 출력처럼 MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com으로 config.js를 생성하는지 확인한다. config.js에는 apiBaseUrl/mapStyleUrl 외 공개 필드가 있으면 안 되며, 수정 후 Clear build cache & deploy를 실행한다.",
+      action: "Render musunil-web Build Command가 pnpm render:web-settings 출력처럼 pnpm build:web-static:render를 실행하는지 확인한다. 이 단일 명령이 MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com으로 config.js를 생성해야 하며, config.js에는 apiBaseUrl/mapStyleUrl 외 공개 필드가 있으면 안 된다. 수정 후 Clear build cache & deploy를 실행한다.",
       verify: "pnpm render:web-settings && pnpm cloudflare:check && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
       reference: "docs/launch-cutover-runbook.md#2-render-static-site"
     });
@@ -548,8 +548,8 @@ function requiredActions(result) {
     actions.push({
       id: "publish_build_metadata",
       owner: "operator",
-      action: "Static manifest hash로 최신 UI는 확인됐지만 build-info가 placeholder다. Render가 build command output을 publish하는지 확인하거나, static-manifest 검증을 fallback warning으로 유지한다.",
-      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
+      action: "Static manifest hash로 최신 UI는 확인됐지만 build-info가 placeholder다. Render musunil-web Build Command가 pnpm build:web-static:render인지 확인한다. 이 단일 명령은 MUSUNIL_WRITE_BUILD_INFO=1로 실제 Git SHA를 쓰며, 수정 후 Clear build cache & deploy를 실행한다.",
+      verify: "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
       reference: "docs/launch-readiness-checklist.md"
     });
   }
@@ -629,8 +629,8 @@ function cell(value) {
   return String(value).replaceAll("|", "\\|").replaceAll("\n", " ");
 }
 
-function tail(value, maxLength) {
+function clip(value, maxLength) {
   const text = String(value || "").trim();
   if (text.length <= maxLength) return text;
-  return `...${text.slice(-maxLength)}`;
+  return `${text.slice(0, maxLength)}...`;
 }
