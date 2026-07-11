@@ -1,6 +1,6 @@
 # S+ Service Watch
 
-Last checked: 2026-07-11T16:08:50.383Z
+Last checked: 2026-07-11T16:47:51.576Z
 
 Status: Active
 
@@ -9,7 +9,7 @@ Status: Active
 | web_static_manifest | ok | {"files":4,"mode":"matches_local"} |
 | web_build_info | ok | {"commitSha":"generated-at-build","builtAt":"1970-01-01T00:00:00.000Z","mode":"static_manifest_verified_fallback"} |
 | web_header_contract | fail | no-store missing: /=public, max-age=0, s-maxage=300, /config.js=public, max-age=14400, s-maxage=300, /build-info.json=public, max-age=0, s-maxage=300 |
-| web_forbidden_ui_absent | ok | {"bytes":380979} |
+| web_forbidden_ui_absent | ok | {"bytes":380214} |
 | api_endpoint_preflight | fail | getaddrinfo ENOTFOUND api.musunil.com |
 | api_health_ready | skip | skipped: API endpoint preflight failed |
 | public_redacted_media | skip | skipped: API endpoint preflight failed |

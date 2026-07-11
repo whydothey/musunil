@@ -43,6 +43,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - `pnpm check:web-flow`
 - `pnpm check:ux-surface`
 - `pnpm check:visual-surface`
+- `pnpm check:visual-surface:live`
 - `pnpm check:build-info-clean`
 - `pnpm check:source-diagnostics`
 - `pnpm check:law-diagnostics`
@@ -132,7 +133,7 @@ GET /ready -> 200
 - 2026-07-12 01:08 `pnpm render:api-settings`를 추가했다. Render `musunil-api`의 build/pre-deploy/start/health/env source/custom domain/Cloudflare/검증 명령을 secret 원문 없이 출력하고, `launch-check`, `launch-cutover-plan`, `service:watch` Required Actions와 연결했다. 실제 `api.musunil.com` DNS와 운영 `/ready=true` 전에는 운영 준비 완료가 아니다.
 - 2026-07-12 01:14 `write-web-config`가 로컬 검증 중 tracked build-info placeholder를 덮어쓰지 않게 하고, Render Web build에는 `MUSUNIL_WRITE_BUILD_INFO=1`을 명시했다. `pnpm check:build-info-clean`을 release gate에 추가해 로컬 `check:release`가 build-info를 더럽히면 실패한다.
 - 2026-07-12 01:29 숨겨진 상단 숫자판 DOM과 갱신 로직을 제거하고 `pnpm check:visual-surface`를 release gate에 추가했다. Chrome/CDP로 390px, 430px, 768px, 1440px 홈·상세·영상·탐색·제보 20개 상태를 실제 렌더링해 overflow, nav overlap, dashboard visible, map sheet, report first action을 검사하지만, 실제 운영 공개 영상/GPS와 사용자 수락 전에는 S+로 승급하지 않는다.
-- 2026-07-12 01:52 `pnpm check:visual-surface:live`를 추가하고 운영 fallback을 실제 공개자료 기준 3개 이슈 파일로 분리했다. API가 아직 연결되지 않아도 live 홈이 단일 공개자료 카드로 축소되는 회귀를 차단한다. 다음 Render 배포 후 live 명령 통과가 필요하며, 실제 운영 공개 영상/GPS와 사용자 수락 전에는 S+로 승급하지 않는다.
+- 2026-07-12 01:52 `pnpm check:visual-surface:live`를 추가하고 운영 fallback을 실제 공개자료 기준 3개 이슈 파일로 분리했다. API가 아직 연결되지 않아도 live 홈이 단일 공개자료 카드로 축소되는 회귀를 차단한다. 새 Render 배포 후 live 명령은 통과했지만, 실제 운영 공개 영상/GPS와 사용자 수락 전에는 S+로 승급하지 않는다.
 
 ## Next Active Goal Order
 
