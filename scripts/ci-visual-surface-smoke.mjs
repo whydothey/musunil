@@ -151,6 +151,8 @@ async function runViewport(client, viewport, url) {
     () => assert(home.issueCount >= 3, `expected at least 3 issue cards, got ${home.issueCount}`),
     () => assert(home.firstIssueTitle.length >= 6, "first issue title is missing"),
     () => assert(!home.sourceBundleFirst, `first issue is a public source bundle, not a topic issue: ${home.firstIssueTitle}`),
+    () => assert(/일시/.test(home.firstIssueDeck) && /자료 기준/.test(home.firstIssueDeck), `first issue where/time/source line missing: ${home.firstIssueDeck}`),
+    () => assert(/위치/.test(home.firstIssueSummary) && /현장/.test(home.firstIssueSummary) && /공식자료/.test(home.firstIssueSummary) && /현장영상/.test(home.firstIssueSummary) && /반론\/정정/.test(home.firstIssueSummary), `first issue evidence line missing fixed summary units: ${home.firstIssueSummary}`),
     () => assert(/상세 보기/.test(home.firstIssueActions.join(" ")), `first issue primary path missing: ${home.firstIssueActions.join(", ")}`),
     () => assert(viewport.mobile || home.homeRect.width >= Math.round(home.mapRect.width * 1.35), `desktop home issue feed should dominate map context: home=${home.homeRect.width}, map=${home.mapRect.width}`),
     () => assert(viewport.mobile || home.mapRect.height <= 310, `desktop home map should be context-sized, got ${home.mapRect.height}`),
@@ -170,6 +172,7 @@ async function runViewport(client, viewport, url) {
     () => assert(detail.scrollWidth <= viewport.width, `detail overflows horizontally: ${detail.scrollWidth} > ${viewport.width}`),
     () => assert(detail.forbidden.length === 0, `forbidden detail copy: ${detail.forbidden.join(", ")}`),
     () => assert(detail.detailTitle.length >= 6, "detail title is missing"),
+    () => assert(/일시/.test(detail.detailConfirmSummary) && /자료 기준/.test(detail.detailConfirmSummary), `detail summary must separate assembly time and source basis: ${detail.detailConfirmSummary}`),
     () => assert(detail.detailTabs.join("/") === "개요/근거/영상/흐름/반론", `detail tab labels changed: ${detail.detailTabs.join("/")}`),
     () => assert(detail.detailActions.join("/") === "근거/영상/지도", `detail quick actions changed: ${detail.detailActions.join("/")}`),
     () => assert(!viewport.mobile || !detail.navOverlap, "mobile detail controls overlap bottom navigation")
@@ -197,6 +200,7 @@ async function runViewport(client, viewport, url) {
     () => assert(map.forbidden.length === 0, `forbidden map copy: ${map.forbidden.join(", ")}`),
     () => assert(map.mapRect.height >= (viewport.mobile ? 300 : 360), `map is too short: ${map.mapRect.height}`),
     () => assert(map.mapKeyLabels.join("/") === "자료 위치/인증 범위", `map key changed: ${map.mapKeyLabels.join("/")}`),
+    () => assert(/일시/.test(map.mapSummary) && /자료 기준/.test(map.mapSummary), `map summary must keep issue time/source context: ${map.mapSummary}`),
     () => assert(map.mapKeyHiddenCount === 0, `map key labels are not readable: hidden=${map.mapKeyHiddenCount}`),
     () => assert(map.mapSheetHeight <= (viewport.mobile ? 260 : 220), `map sheet too tall: ${map.mapSheetHeight}`),
     () => assert(!viewport.mobile || !map.navOverlap, "mobile map sheet overlaps bottom navigation")
@@ -277,15 +281,22 @@ function visualMetrics(label) {
       placePeekAreaCount: [...document.querySelectorAll(".issue-place-peek .issue-place-area")]
         .filter((node) => visible(node.closest(".issue-place-peek"))).length,
       firstIssueTitle: firstIssue?.querySelector(".issue-feed-title .title")?.textContent?.trim() || "",
+      firstIssueDeck: firstIssue?.querySelector(".issue-card-deck")?.textContent?.trim() || "",
+      firstIssueSummary: [
+        firstIssue?.querySelector(".issue-confirm-summary strong")?.textContent?.trim() || "",
+        firstIssue?.querySelector(".issue-confirm-summary span")?.textContent?.trim() || ""
+      ].filter(Boolean).join(" · "),
       sourceBundleFirst: /공개\\s*(일정|자료)|신고[·\\s-]*개최|신고\\s*통계|집회\\s*신고\\s*통계/.test(firstIssue?.querySelector(".issue-feed-title .title")?.textContent?.trim() || ""),
       firstIssueActions: [...(firstIssue?.querySelectorAll(".issue-card-action-label") || [])].filter((node) => visible(node)).map((node) => node.textContent.trim()),
       detailTitle: document.querySelector("#detail-title")?.textContent?.trim() || "",
+      detailConfirmSummary: document.querySelector("#detail-confirm-summary")?.textContent?.trim() || "",
       detailTabs: [...document.querySelectorAll("#record-section .tabs button")].filter(visible).map((node) => node.textContent.trim()),
       detailActions: [...document.querySelectorAll(".detail-action-row button span")].filter(visible).map((node) => node.textContent.trim()),
       reelActionLabels: [...document.querySelectorAll("[data-reel-action] span, [data-reel-empty-action] span")].filter(visible).map((node) => node.textContent.trim()),
       issueContextTitle: document.querySelector("#reels-anchor-title")?.textContent?.trim() || "",
       mapRect: rect(".map-shell"),
       mapSheetHeight: rect(".map-sheet").height,
+      mapSummary: document.querySelector("#map-summary")?.textContent?.trim() || "",
       mapKeyLabels: [...document.querySelectorAll(".map-key span")].filter(visible).map((node) => node.textContent.trim()),
       mapKeyHiddenCount: [...document.querySelectorAll(".map-key span")]
         .filter(visible)

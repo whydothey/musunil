@@ -1898,7 +1898,7 @@
 
       .issue-confirm-summary {
         display: grid;
-        gap: 2px;
+        gap: 3px;
         min-width: 0;
         padding-top: 1px;
       }
@@ -1920,12 +1920,15 @@
       .issue-confirm-summary span {
         display: block;
         overflow: hidden;
-        color: var(--faint);
+        color: var(--muted);
         font-size: 11px;
-        font-weight: 760;
+        font-weight: 740;
         line-height: 1.34;
         text-overflow: ellipsis;
-        white-space: nowrap;
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
       }
 
       .issue-place-peek {
@@ -2212,6 +2215,7 @@
         font-size: 12px;
         font-weight: 720;
         line-height: 1.45;
+        max-width: 64ch;
       }
 
       .issue-quick-line {
@@ -6687,13 +6691,15 @@
 
       function issueDateText(issue, cards = issueRelatedCards(issue)) {
         const titles = cards.map((card) => cardDisplayTitle(card)).filter(Boolean);
-        const date = titles
-          .map((title) => title.match(/(\d{1,2}월\s*\d{1,2}일(?:~\d{1,2}월\s*\d{1,2}일)?)/)?.[1])
-          .find(Boolean);
+        const date = titles.map(dateFromText).find(Boolean);
         if (date) return date.replace(/[ \t\r\n]+/g, " ");
         if (cards.some((card) => ["UPCOMING", "STARTING_SOON"].includes(card.lifecycleState))) return "예정 일정 확인 중";
         if (cards.some((card) => card.lifecycleState === "LIVE")) return "진행 일정 확인 중";
         return "일정 확인 중";
+      }
+
+      function dateFromText(value) {
+        return String(value || "").match(/(\d{1,2}월\s*\d{1,2}일(?:~\d{1,2}월\s*\d{1,2}일)?)/)?.[1] || "";
       }
 
       function issueAssemblyTimeText(issue, cards = issueRelatedCards(issue)) {
@@ -6704,7 +6710,47 @@
 
       function issueSourceBasisText(issue) {
         const basis = publicDate(issue?.updatedAt || issue?.lastUpdatedAt);
-        return basis ? `기준 ${basis}` : "기준 확인 중";
+        return basis ? `자료 기준 ${basis}` : "자료 기준 확인 중";
+      }
+
+      function issueTargetCountText(issue, cards = issueRelatedCards(issue)) {
+        const count = Number(issue?.currentCount || issue?.targetCount || cards.length || 0);
+        return count > 0 ? `현장 ${count}건` : "현장 확인 중";
+      }
+
+      function issueOfficialSummaryText(issue) {
+        const official = Number(issue?.officialCount || 0);
+        return official ? `공식자료 ${official}건` : "공식자료 확인 중";
+      }
+
+      function issueVideoSummaryText(issue) {
+        const video = issueVideoCount(issue);
+        return video ? `현장영상 ${video}건 검토 중` : "현장영상 확인 중";
+      }
+
+      function issueDisputeSummaryText(issue) {
+        const dispute = Number(issue?.disputeCount || 0);
+        return dispute ? `반론/정정 ${dispute}건` : "반론/정정 없음";
+      }
+
+      function issueConfirmedWhereWhenLine(issue) {
+        const cards = issueRelatedCards(issue);
+        const regions = issueRegions(issue, cards);
+        const place = regions.length ? regions.slice(0, 2).join(" · ") : "지역 확인 중";
+        return [place, issueAssemblyTimeText(issue, cards), issueSourceBasisText(issue)].join(" · ");
+      }
+
+      function issueConfirmedEvidenceLine(issue) {
+        const cards = issueRelatedCards(issue);
+        const regions = issueRegions(issue, cards);
+        const locationCount = Number(issue?.regionCount || regions.length || 0);
+        return [
+          locationCount ? `위치 ${locationCount}곳` : "위치 확인 중",
+          issueTargetCountText(issue, cards),
+          issueOfficialSummaryText(issue),
+          issueVideoSummaryText(issue),
+          issueDisputeSummaryText(issue)
+        ].join(" · ");
       }
 
       function issueContextFacts(issue) {
@@ -8211,54 +8257,21 @@
       }
 
       function issueConfirmedSummaryLine(issue) {
-        const cards = issueRelatedCards(issue);
-        const regions = issueRegions(issue, cards);
-        const place = regions.length ? regions.slice(0, 2).join(" · ") : "지역 확인 중";
-        const locationCount = Number(issue.regionCount || regions.length || 0);
-        const official = Number(issue.officialCount || 0);
-        const video = issueVideoCount(issue);
-        const dispute = Number(issue.disputeCount || 0);
-        return [
-          place,
-          issueAssemblyTimeText(issue, cards),
-          issueSourceBasisText(issue),
-          locationCount ? `위치 ${locationCount}곳` : "위치 확인 중",
-          official ? `공식 ${official}건` : "공식 확인 중",
-          video ? `영상 ${video}건` : "영상 확인 중",
-          dispute ? `반론 ${dispute}건` : "반론 없음"
-        ].join(" · ");
+        return `${issueConfirmedWhereWhenLine(issue)} · ${issueConfirmedEvidenceLine(issue)}`;
       }
 
       function issueCardPlaceLine(issue) {
-        const cards = issueRelatedCards(issue);
-        const regions = issueRegions(issue, cards);
-        const place = regions.length ? regions.slice(0, 2).join(" · ") : "지역 확인 중";
-        const locationCount = Number(issue.regionCount || regions.length || 0);
-        return [
-          place,
-          issueAssemblyTimeText(issue, cards),
-          locationCount ? `위치 ${locationCount}곳` : "위치 확인 중"
-        ].join(" · ");
+        return issueConfirmedWhereWhenLine(issue);
       }
 
       function issueCardMainFactLine(issue) {
-        const video = issueVideoCount(issue);
-        const scale = issueScaleStatusText(issue)
-          .replace("규모 추정 검토 중", "인원 추정 검토")
-          .replace("인원 규모 확인 중", "인원 미확인");
-        return [
-          video ? `영상 ${video}건` : "영상 확인 중",
-          scale
-        ].join(" · ");
+        return issueConfirmedEvidenceLine(issue);
       }
 
       function issueCardEvidenceLine(issue) {
-        const official = Number(issue.officialCount || 0);
-        const dispute = Number(issue.disputeCount || 0);
-        return [
-          official ? `공식 ${official}건` : "공식 확인 중",
-          dispute ? `다른 주장 ${dispute}건` : "다른 주장 없음"
-        ].join(" · ");
+        return issueScaleStatusText(issue)
+          .replace("규모 추정 검토 중", "인원 추정 검토")
+          .replace("인원 규모 확인 중", "인원 미확인");
       }
 
       function issueCardStatusText(issue) {
@@ -8270,17 +8283,12 @@
       }
 
       function issueCardDeckText(issue) {
-        const cards = issueRelatedCards(issue);
-        const regions = issueRegions(issue, cards);
-        const place = regions.length ? regions.slice(0, 2).join(" · ") : "지역 확인 중";
-        const count = Number(issue.currentCount || cards.length || 0);
-        const locationCount = Number(issue.regionCount || regions.length || 0);
-        if (issue.lifecycleState === "ARCHIVED" || issue.status === "archived") return `${place} · 기록 보관`;
-        return [
-          place,
-          count ? `현장 ${count}건` : "현장 확인 중",
-          locationCount ? `위치 ${locationCount}곳` : "위치 확인 중"
-        ].join(" · ");
+        if (issue.lifecycleState === "ARCHIVED" || issue.status === "archived") {
+          const regions = issueRegions(issue);
+          const place = regions.length ? regions.slice(0, 2).join(" · ") : "지역 확인 중";
+          return `${place} · 기록 보관`;
+        }
+        return issueConfirmedWhereWhenLine(issue);
       }
 
       function issueCardProofText(issue) {
@@ -8421,6 +8429,38 @@
       function cardEvidenceText(card) {
         const badges = sourceBadgesForCard(card).map(([, label]) => label);
         return `${badges.length ? badges.join(" · ") : "출처 확인 중"} · ${proofCountText(card.proof)}`;
+      }
+
+      function cardAssemblyTimeText(card) {
+        const date = dateFromText(cardDisplayTitle(card));
+        if (date) return `일시 ${date}`;
+        if (["UPCOMING", "STARTING_SOON"].includes(card?.lifecycleState)) return "일시 예정";
+        if (card?.lifecycleState === "LIVE") return "일시 진행 중";
+        return "일시 확인 중";
+      }
+
+      function cardSourceBasisText(card) {
+        const basis = publicDate(card?.updatedAt || card?.lastUpdatedAt);
+        return basis ? `자료 기준 ${basis}` : "자료 기준 확인 중";
+      }
+
+      function cardVideoSummaryText(card) {
+        const count = fallbackPresenceEvidenceCount(card);
+        return count ? `현장영상 ${count}건 검토 중` : "현장영상 확인 중";
+      }
+
+      function cardConfirmedSummaryLine(card, issue) {
+        const proof = Number(card?.proof || 0);
+        const dispute = Number(issue?.disputeCount || 0);
+        return [
+          card?.regionLabel || "지역 확인 중",
+          cardAssemblyTimeText(card),
+          cardSourceBasisText(card),
+          "위치 1곳",
+          proof ? `공개근거 ${proof}건` : "공개근거 확인 중",
+          cardVideoSummaryText(card),
+          dispute ? `반론/정정 ${dispute}건` : "반론/정정 없음"
+        ].join(" · ");
       }
 
       function renderIssueStories(issues) {
@@ -8842,11 +8882,11 @@
         $("map-state").textContent = labelState(card.lifecycleState);
         $("map-mode").textContent = "현장 위치";
         $("map-title").textContent = cardDisplayTitle(card);
-        $("map-summary").textContent = presenceArea
-          ? `${card.regionLabel || "전국"} · 자료 위치와 현장 인증 범위를 함께 표시합니다.`
-          : `${card.regionLabel || "전국"} · 공개 자료 위치만 확인됐습니다.`;
-        $("map-context").textContent = `${cardIssue?.title || "선택 이슈"}와 연결된 현장입니다.`;
-        $("map-impact").textContent = `${card.regionLabel || "전국"}에서 확인된 자료 위치입니다.`;
+        $("map-summary").textContent = cardConfirmedSummaryLine(card, cardIssue);
+        $("map-context").textContent = presenceArea
+          ? "표시 중: 자료 위치 + 현장 인증 범위"
+          : "표시 중: 자료 위치";
+        $("map-impact").textContent = [card.regionLabel || "전국", cardAssemblyTimeText(card), "공개 위치 1곳"].join(" · ");
         $("map-proof").textContent = presenceArea
           ? `${presenceCount}건의 현장 인증 자료로 공개 범위를 계산했습니다.`
           : Number(card.proof || 0) > 0
@@ -8865,9 +8905,10 @@
 	        renderMapSelectionContext(card);
 	        $("detail-title").textContent = cardDisplayTitle(card);
 	        $("updated-at").textContent = "최근 정리됨";
-	        $("detail-confirm-summary").textContent = `${card.regionLabel || "전국"} · ${cardPlaceTimeText(card)} · ${cardEvidenceText(card)}`;
+	        const cardIssue = loadedIssueCards.find((issue) => issue.id === card.issueId);
+	        $("detail-confirm-summary").textContent = cardConfirmedSummaryLine(card, cardIssue);
 	        $("stat-current").textContent = objectiveFact(card);
-	        $("stat-peak").textContent = cardPlaceTimeText(card);
+	        $("stat-peak").textContent = [card.regionLabel || "전국", cardAssemblyTimeText(card), cardSourceBasisText(card)].join(" · ");
 	        $("stat-proof").textContent = cardEvidenceText(card);
           $("stat-current-label").textContent = "무슨 일";
           $("stat-peak-label").textContent = "장소·시간";
@@ -8894,17 +8935,19 @@
 	        $("detail-title").textContent = issue.title;
 	        $("updated-at").textContent = "최근 정리됨";
 	        $("detail-confirm-summary").textContent = issueConfirmedSummaryLine(issue);
-	        $("stat-current").textContent = issuePlaceTimeText(issue);
-	        $("stat-peak").textContent = issueEvidenceText(issue);
+	        $("stat-current").textContent = issueConfirmedWhereWhenLine(issue);
+	        $("stat-peak").textContent = issueConfirmedEvidenceLine(issue);
 	        $("stat-proof").textContent = issueUncertaintyText(issue);
           $("stat-current-label").textContent = "장소·시간";
           $("stat-peak-label").textContent = "확인 근거";
-          $("stat-proof-label").textContent = "아직 확인";
+	        $("stat-proof-label").textContent = "아직 확인";
 	        $("map-title").textContent = "이슈 관련 지역";
-	        $("map-summary").textContent = `${issue.title}에 묶인 공개자료를 지역·시간·현장 단위로 표시합니다.`;
-          $("map-context").textContent = "지도는 위치 맥락만 보조합니다. 판단은 상세의 출처와 근거를 기준으로 봅니다.";
-	        $("map-impact").textContent = cards.length ? `${[...new Set(cards.map((card) => card.regionLabel || "전국"))].slice(0, 2).join(", ")}에서 같은 주제 자료가 묶였습니다.` : "연결된 공개 위치를 확인하는 중입니다.";
-	        $("map-proof").textContent = `${officialCountText(issue.officialCount)} 자료와 현장 인증 범위를 함께 봅니다.`;
+	        $("map-summary").textContent = issueConfirmedSummaryLine(issue);
+          $("map-context").textContent = "표시 중: 자료 위치 + 공개 가능한 인증 범위";
+	        $("map-impact").textContent = cards.length
+            ? `${issueConfirmedWhereWhenLine(issue)} · ${issueTargetCountText(issue, cards)}`
+            : "연결된 공개 위치를 확인하는 중입니다.";
+	        $("map-proof").textContent = `${issueOfficialSummaryText(issue)} · ${issueVideoSummaryText(issue)}`;
 	        $("map-update").textContent = "지역이나 시간이 다르면 별도 현장으로 유지합니다.";
 	        $("map-risk").textContent = Number(issue.needsVerificationCount || 0) ? "일부 자료는 출처나 현장 확인이 더 필요합니다." : "공개 근거가 있는 위치만 표시합니다.";
 

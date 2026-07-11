@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-12 04:05 KST
+Last updated: 2026-07-12 06:04 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -21,6 +21,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 2026-07-12 02:09 패치로 visual smoke가 Web `serviceSyncState`와 서비스 배너 상태를 결과 JSON에 포함한다. `pnpm check:visual-surface:live`는 화면 구조 확인이고, `pnpm service:watch:visual`은 운영 도메인이 `delayed` fallback 상태이면 실패한다.
 - 2026-07-12 03:37 live 캡처 기준 `musunil.com`은 모바일/데스크톱 모두 overflow와 금지 문구 없이 렌더링되지만 `serviceSyncState=delayed`이고 첫 카드가 구체 이슈가 아니라 `지역별 집회 공개 일정`이다. 이는 운영 API DNS/데이터 연결 전에는 사용자가 "무슨 주제인지"를 5초 안에 파악하기 어렵다는 증거이므로 S+ 미달로 유지한다. visual smoke와 service-watch는 이제 첫 이슈 제목과 source-bundle first 여부를 함께 기록한다.
 - 2026-07-12 04:05 live 감시 기준 운영 fallback에서 공개자료 묶음을 홈 이슈 카드로 대체하지 않게 바꿨다. 최신 `musunil.com`은 static manifest와 config가 현재 repo와 맞지만 API DNS가 미연결이라 `serviceSyncState=delayed`, `issues=0`, `stories=0`, `first=none`으로 실패한다. 이는 의도한 launch gate다. API 연결 후 `/home.issueCards`가 주제형 Issue를 반환해야 S+ 후보로 다시 평가한다.
+- 2026-07-12 06:04 패치로 카드·상세·지도 선택 요약의 순서를 `지역 · 집회 일시 · 자료 기준 · 위치 · 현장 · 공식자료 · 현장영상 · 반론/정정`으로 통일했다. `자료 기준`과 `집회 일시`를 분리해 10초 안에 “언제의 자료인지”와 “집회 일시가 확인됐는지”를 구분하게 했다. `pnpm check:web-smoke`, `pnpm check:ux-surface`, `pnpm check:visual-surface`는 통과했지만 실제 운영 API/공개 영상/GPS와 사용자 수락 전에는 S+가 아니다.
 - 03:07 패치로 홈 카드 우측 비주얼을 추상 타깃형 장식에서 자료 위치 미니맵으로 바꿨다. 공개 자료 핀과 현장 인증 범위가 같은 작은 지도 표면 위에서 보이고, `pnpm check:visual-surface`가 모든 viewport 홈에서 `.issue-place-map`/`.issue-place-area` 존재를 확인한다. 모바일 지도 범례도 `자료 위치/인증 범위`가 실제 10px 이상 글자로 보이는지 검사한다. 독립 비평이 지적한 `AI 대시보드처럼 보이는 시각 언어`와 `숨겨진 범례를 smoke가 놓침` 중 일부를 줄였지만, 사용자 수락 전 S+는 아니다.
 - 03:14 패치로 홈 카드의 반복 요약을 줄였다. 첫 카드 흐름은 `제목 → 서울 · 현장 2건 · 위치 1곳 → 영상 1건 · 인원 추정 검토 → 공식 확인 중 · 다른 주장 1건`처럼 줄마다 역할이 나뉘며, 기존 `서울에서 같은 주제로 확인된 현장 2건을 묶어 봅니다` 문장과 같은 수치 반복을 제거했다. 390px/1440px 모두 `scrollWidth=viewport`, 첫 카드 높이 206/216px이다. 아직 데스크톱 홈 지도와 이슈 목록 경쟁, 실제 운영 데이터 품질, 사용자 수락 전 S+는 아니다.
 - 04:43 독립 비평 기준 현재 화면은 S+가 아니다. Visual critique는 A- 공공서비스 프로토타입, IA red-team은 B-로 평가했다. 이번 패치는 `영상/지도/제보`가 선택 이슈 맥락으로 읽히게 하는 1차 보정이며, 상업용 S+ 승급 근거가 아니다.
