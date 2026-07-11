@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 12:34 KST
+Last updated: 2026-07-11 12:40 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -10,7 +10,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 
 - 홈은 `집회·시위 공개자료` 이슈 목록이다.
 - 지도, 영상, 법안은 별도 대시보드가 아니라 선택 이슈의 근거와 맥락으로 들어간다.
-- 첫 화면은 KPI, 내부 모델, 숫자판보다 `무슨 일`, 공개 위치 문장, 근거 문장, 불확실성 문장, `지도에서 확인` 주행동과 `근거/인증영상/반론` 보조 액션을 먼저 보여준다.
+- 첫 화면은 KPI, 내부 모델, 숫자판보다 `무슨 일`, 공개 위치 문장, 근거 문장, 불확실성 문장을 먼저 보여준다. 홈 카드의 주행동은 `근거 보기`이고, `지도/영상/반론`은 같은 이슈의 보조 확인 경로로 낮춘다.
 - `아직 확인할 점`은 홈 카드마다 큰 박스로 반복하지 않고 상세의 개요·근거에서 확인하게 한다.
 - 상세 첫 화면은 `근거`, `영상`, `지도` 빠른 버튼과 3줄 개요를 먼저 보여주고, 탭도 `개요/근거/영상/흐름/반론`처럼 짧게 유지한다. 전국 현황·주제 묶음·규모·검증 신호는 접힌 세부 정보로 낮춘다.
 - 공개 가능한 `redactedClipUrl`과 `redactedPosterUrl`이 모두 있는 이슈는 홈 카드 안에 16:9 `비식별 공개본` 프리뷰를 붙인다. 공개본이 없으면 장식 이미지나 가짜 썸네일을 만들지 않는다.
@@ -43,6 +43,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 11:45 패치로 `static-manifest.json`을 추가했다. manifest는 `index.html`, `config.js`, 공개 poster/clip의 SHA-256과 byte size를 담고, `check-web-deploy`가 live 파일 해시를 비교한다. Render build output이 placeholder인 상태에서도 실제 UI 정적 파일이 현재 산출물인지 별도 증거를 확보한다.
 - 12:24 패치로 상세 시트의 긴 `인증 영상/시간 흐름/반론·정정` 탭 라벨을 화면에서는 `영상/흐름/반론`으로 줄이고 접근성 라벨에 전체 의미를 남겼다. 모바일 상세 시트는 내부 스크롤과 탭 최소 높이를 고정해 390px에서 하단 내비 겹침 없이 `근거/영상/지도`, `개요/근거/영상/흐름/반론`이 보인다. 사용자 수락 전 S+는 아니다.
 - 12:34 독립 Visual Critique가 모바일 상세를 P0로 지적했다. `-webkit-line-clamp` 기반 숨김을 제거하고 제목·요약·핵심 문장이 자연 줄바꿈되게 바꿨다. 390px 상세에서 title/summary/row horizontal overflow false, panel fit true, `navOverlap=false`, `scrollWidth=390`을 확인했다. 사용자 수락 전 S+는 아니다.
+- 12:40 패치로 홈 카드 액션을 4개 동등 버튼에서 `근거 보기` primary와 `지도/영상/반론` secondary로 재정렬했다. 모바일 390px 첫 카드 primary action은 evidence, secondary는 map/video/dispute, visible cards 3, `scrollWidth=390`, forbidden 0을 확인했다. 사용자 수락 전 S+는 아니다.
 
 ## Agent Feedback Summary
 
@@ -94,6 +95,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | PM Local Patch 18 | 11:10 실제 공개 영상이 들어와도 풀스크린 탭이 poster 이미지만 보여주면 “영상 앱”이 아니라 증거 카드처럼 보인다. | 공개 clip+poster가 모두 있으면 `<video class="reel-video">`로 렌더하고 sample/fallback은 계속 검토 카드로 유지. web smoke가 poster-only 회귀를 차단 |
 | PM Local Patch 19 | 11:16 API seed가 공개 clip URL을 가리키지만 로컬/정적 미디어에는 poster만 있어 실제 video branch 검증이 약했다. | 참조 중인 preview webm 파일을 추가하고, 정적 서버 MIME/CSP를 보강. web smoke가 clip route와 media CSP를 검증 |
 | Visual Design Critique 13 | 12:31 현재 UI는 원칙 위반은 적지만 정보가 많은 내부 운영 도구처럼 읽힌다. P0는 모바일 상세 가독성/레이아웃 파손, P1은 첫 5초 주제 인지 약함과 동등한 근거/영상/지도/반론 버튼 위계다. | 이번 패치에서 상세 제목/요약/bullet 숨김 클램프를 제거하고 줄바꿈 안정화. 다음 패치 후보는 공통 이슈 요약 바와 액션 위계 재정렬 |
+| PM Local Patch 20 | 12:40 홈 카드의 `지도/근거/영상/반론` 4개 버튼이 같은 무게라 기능 목록처럼 보였다. | `근거 보기`를 full-width primary로 올리고 `지도/영상/반론`을 3개 secondary로 낮춤. 지도는 별도 위치 미리보기와 보조 버튼으로 유지 |
 
 ## Active Goal Board
 
@@ -149,6 +151,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 46 | static manifest content hash | 1차 완료 | `apps/web/static-manifest.json` tracked. `build:web-static`과 `check:web-smoke`가 manifest를 생성/검증하고, `check:web-deploy`가 live HTML/config/media 해시를 비교 |
 | 47 | 상세 시트 짧은 라벨·모바일 시트 보정 | 1차 완료 | 390px 상세 `actionLabels=근거/영상/지도`, `tabLabels=개요/근거/영상/흐름/반론`, `tabs.height=50`, `navOverlap=false`, `scrollWidth=390`. 1440px도 같은 라벨과 `navOverlap=false` |
 | 48 | 모바일 상세 텍스트 줄바꿈 안정화 | 1차 완료 | 독립 critique P0 반영. 390px 상세 title/summary/row horizontal overflow false, all fit panel true, `navOverlap=false`, `scrollWidth=390`. 숨김 클램프 대신 자연 줄바꿈 |
+| 49 | 홈 카드 액션 위계 재정렬 | 1차 완료 | 390px 첫 카드 `primaryAction=evidence`, `primaryLabel=근거 보기`, secondary `지도/영상/반론`, visible cards 3, `scrollWidth=390`, forbidden 0. 1440px도 같은 액션 위계 |
 
 ## Current Evidence
 
@@ -312,6 +315,9 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 12:34 mobile detail readability | `docs/commercial-splus-surface41-detail-readability-mobile-390-2026-07-11.png` |
 | 12:34 desktop detail readability | `docs/commercial-splus-surface41-detail-readability-desktop-1440-2026-07-11.png` |
 | 12:34 detail readability metrics | 독립 Visual Critique P0 반영. 모바일 390px `titleHorizontalOverflow=false`, `summaryHorizontalOverflow=false`, `rowHorizontalOverflow=false/false/false`, `titleFitsPanel=true`, `summaryFitsPanel=true`, `rowsFitPanel=true`, `navOverlap=false`, `scrollWidth=390`. 데스크톱도 같은 overflow false와 panel fit true. 사용자 수락 전 S+는 아니다. |
+| 12:40 mobile home action hierarchy | `docs/commercial-splus-surface42-home-action-hierarchy-mobile-390-2026-07-11.png` |
+| 12:40 desktop home action hierarchy | `docs/commercial-splus-surface42-home-action-hierarchy-desktop-1440-2026-07-11.png` |
+| 12:40 home action metrics | 모바일 390px 첫 카드 `primaryAction=evidence`, `primaryLabel=근거 보기`, secondary `지도/영상/반론`, `firstCard.height=257`, visible cards 3, `navOverlap=false`, `scrollWidth=390`, forbidden 0. 데스크톱 1440px도 primary evidence, secondary map/video/dispute, `scrollWidth=1440`. 사용자 수락 전 S+는 아니다. |
 
 ## Non-Negotiable Gates
 

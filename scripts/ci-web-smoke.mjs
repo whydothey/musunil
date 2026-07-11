@@ -116,6 +116,8 @@ async function checkWeb(port) {
   assert(!index.includes("issue-card-secondary-actions"), "legacy issue card secondary action row present");
   assert(index.includes("issue-place-peek"), "issue card place preview missing");
   assert(index.includes("primary-action"), "issue card primary action styling missing");
+  assert(index.includes('issueCardActionButton("evidence", "icon-stats", "근거 보기"'), "issue card evidence primary action label missing");
+  assert(!index.includes('issueCardActionButton("map", "icon-locate", "지도", `${title} 지도에서 위치 확인`, "primary")'), "map action should not be the primary card action");
   assert(index.includes('issueCardActionButton("evidence"'), "issue card evidence action missing");
   assert(index.includes('issueCardActionButton("video"'), "issue card video action missing");
   assert(index.includes('issueCardActionButton("map"'), "issue card region/map action missing");

@@ -1833,8 +1833,8 @@
       }
 
       .issue-card-actions {
-        display: flex;
-        align-items: center;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 7px;
         min-width: 0;
       }
@@ -1846,7 +1846,6 @@
         gap: 5px;
         min-width: 0;
         min-height: 36px;
-        flex: 1 1 0;
         padding: 0 9px;
         border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
         border-radius: 999px;
@@ -1874,16 +1873,16 @@
       }
 
       .issue-card-action[data-issue-card-action="evidence"] {
-        border-color: color-mix(in srgb, var(--brand) 34%, var(--line));
-        background: color-mix(in srgb, var(--brand) 9%, var(--surface));
-        color: var(--brand);
+        border-color: color-mix(in srgb, var(--brand) 38%, var(--line));
       }
 
       .issue-card-action.primary-action {
-        border-color: color-mix(in srgb, var(--brand) 34%, var(--line));
-        background: color-mix(in srgb, var(--brand) 9%, var(--surface));
-        color: var(--brand);
-        box-shadow: 0 1px 0 rgb(255 255 255 / 68%) inset;
+        grid-column: 1 / -1;
+        min-height: 40px;
+        border-color: color-mix(in srgb, var(--brand) 72%, var(--line));
+        background: var(--brand);
+        color: #fff;
+        box-shadow: 0 10px 22px color-mix(in srgb, var(--brand) 18%, transparent);
       }
 
       .issue-card-action.primary-action:hover {
@@ -7871,8 +7870,8 @@
         const title = issue?.title || "선택 이슈";
         return `
           <div class="issue-card-actions" aria-label="${escapeHtml(title)} 확인 도구">
-            ${issueCardActionButton("map", "icon-locate", "지도", `${title} 지도에서 위치 확인`, "primary")}
-            ${issueCardActionButton("evidence", "icon-stats", "근거", `${title} 근거 보기`)}
+            ${issueCardActionButton("evidence", "icon-stats", "근거 보기", `${title} 근거 보기`, "primary")}
+            ${issueCardActionButton("map", "icon-locate", "지도", `${title} 지도에서 위치 확인`)}
             ${issueCardActionButton("video", "icon-video", "영상", `${title} 인증 영상 보기`)}
             ${issueCardActionButton("dispute", "icon-assembly", "반론", `${title} 반론·정정 보기`)}
           </div>
