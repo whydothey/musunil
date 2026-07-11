@@ -36,6 +36,7 @@ const settings = {
   afterSave: [
     "Deploy musunil-api after MUSUNIL_USER_INPUTS_B64 and generated secrets are present.",
     "Attach api.musunil.com in Render Custom Domains and copy the Render target to Cloudflare DNS.",
+    "pnpm cloudflare:check",
     "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws",
     "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once",
     "pnpm launch:final-gate"
@@ -89,6 +90,7 @@ if (process.argv.includes("--json")) {
   console.log(`- Render Custom Domain: ${settings.customDomain}`);
   console.log(`- Cloudflare DNS: ${settings.cloudflareDns.name} ${settings.cloudflareDns.type} -> ${settings.cloudflareDns.target}`);
   console.log(`- Proxy: ${settings.cloudflareDns.proxy}`);
+  console.log("- DNS/edge preflight: pnpm cloudflare:check");
   console.log("");
   console.log("After saving:");
   for (const step of settings.afterSave) console.log(`- ${step}`);

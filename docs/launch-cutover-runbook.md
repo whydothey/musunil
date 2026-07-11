@@ -7,6 +7,7 @@ pnpm launch:blockers
 pnpm launch:cutover-plan
 pnpm render:api-settings
 pnpm render:web-settings
+pnpm cloudflare:check
 ```
 
 ## 1. 현재 차단 항목
@@ -17,8 +18,8 @@ pnpm render:web-settings
 
 | 우선순위 | 항목 | 현재 증거 | 해야 할 일 | 검증 |
 |---|---|---|---|---|
-| 1 | API DNS | `api_endpoint_preflight` 실패: `getaddrinfo ENOTFOUND api.musunil.com` | `pnpm render:api-settings` 출력대로 Render `musunil-api` 설정과 env source를 확인하고, `api.musunil.com` custom domain과 Cloudflare DNS를 연결한다. | `pnpm render:api-settings && pnpm launch:final-gate` |
-| 2 | Static headers | `/`, `/config.js`, `/build-info.json`에 CSP, Permissions, Referrer, nosniff, X-Frame-Options가 없고 Cache-Control이 `no-store`가 아니다. | `pnpm render:web-settings` 출력의 Header application mode를 먼저 확인한다. 수동 Static Site이면 Render Dashboard의 `musunil-web > Settings > Headers`에 모든 header를 직접 입력하고 `Clear build cache & deploy`를 실행한다. Blueprint-managed이면 `render.yaml` headers sync를 확인한다. Cloudflare proxy가 켜져 있으면 header override/cache rule도 확인한다. | `pnpm render:web-settings && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy` |
+| 1 | API DNS | `api_endpoint_preflight` 실패: `getaddrinfo ENOTFOUND api.musunil.com` | `pnpm render:api-settings` 출력대로 Render `musunil-api` 설정과 env source를 확인하고, `api.musunil.com` custom domain과 Cloudflare DNS를 연결한다. | `pnpm render:api-settings && pnpm cloudflare:check` |
+| 2 | Static headers | `/`, `/config.js`, `/build-info.json`에 CSP, Permissions, Referrer, nosniff, X-Frame-Options가 없고 Cache-Control이 `no-store`가 아니다. | `pnpm render:web-settings` 출력의 Header application mode를 먼저 확인한다. 수동 Static Site이면 Render Dashboard의 `musunil-web > Settings > Headers`에 모든 header를 직접 입력하고 `Clear build cache & deploy`를 실행한다. Blueprint-managed이면 `render.yaml` headers sync를 확인한다. Cloudflare proxy가 켜져 있으면 header override/cache rule도 확인한다. | `pnpm render:web-settings && pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy` |
 | 3 | Live issue data sync | `web_visual_surface` 실패: 390/430/768/1440px 모두 `issues=0`, `stories=0`, `serviceSyncState=delayed`, `first=none`이다. | API DNS, CORS, `/ready`, public payload가 연결되어 Web이 live 상태로 동기화되게 한다. API 연결 뒤 `/home.issueCards`는 실제 주제형 Issue를 3개 이상 포함하고 첫 항목이 공개자료 묶음이면 안 된다. | `pnpm launch:final-gate` |
 | 4 | Build metadata | `build-info.json`은 placeholder지만 static manifest hash로 최신 UI 파일은 확인됐다. | Render가 build command output을 publish하는지 확인한다. 계속 수동 Static Site를 유지하면 static manifest 검증을 fallback warning으로 인정하되, 최신성 판정은 hash로 한다. | `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy` |
 
@@ -122,6 +123,7 @@ pnpm config:encode -- --check config/musunil.user-inputs.local.yaml
 pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws
 pnpm render:api-settings
 pnpm render:web-settings
+pnpm cloudflare:check
 ```
 
 `pnpm ops:diagnose`의 `requiredActions`가 남아 있으면 실제 storage/redaction/mobile identity smoke를 실행하기 전에 해당 값을 먼저 채운다.

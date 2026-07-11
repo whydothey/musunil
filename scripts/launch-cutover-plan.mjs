@@ -20,13 +20,13 @@ const plan = {
       id: "api_dns",
       owner: "operator",
       action: "Run pnpm render:api-settings, attach api.musunil.com as a custom domain on the Render musunil-api service, then create the matching Cloudflare DNS record.",
-      verify: "pnpm render:api-settings && MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once"
+      verify: "pnpm render:api-settings && pnpm cloudflare:check"
     },
     {
       id: "static_headers",
       owner: "operator",
       action: "Check pnpm render:web-settings Header application mode. For a manual Static Site, copy every header into Render musunil-web Settings > Headers; for Blueprint-managed, sync render.yaml. Then Clear build cache & deploy.",
-      verify: "MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy"
+      verify: "pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy"
     },
     {
       id: "build_metadata",
@@ -105,6 +105,7 @@ const plan = {
     "pnpm render:api-settings",
     "pnpm render:web-settings",
     "Apply Render custom domains, Cloudflare DNS, and Render Static headers.",
+    "pnpm cloudflare:check",
     "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
     "MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
     "pnpm check:visual-surface:live",

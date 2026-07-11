@@ -46,6 +46,8 @@
     "ops:diagnose": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/operational-readiness-diagnostics.mjs",
     "render:api-settings": "node scripts/render-api-settings.mjs",
     "render:web-settings": "node scripts/render-web-settings.mjs",
+    "cloudflare:check": "node scripts/cloudflare-dns-check.mjs",
+    "cloudflare:check:strict": "node scripts/cloudflare-dns-check.mjs -- --strict",
     "launch:cutover-plan": "node scripts/launch-cutover-plan.mjs",
     "launch:blockers": "node scripts/launch-next-actions.mjs",
     "launch:blockers:strict": "node scripts/launch-next-actions.mjs -- --fail-on-blockers",

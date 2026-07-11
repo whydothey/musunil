@@ -9,6 +9,7 @@
 - `pnpm launch:ready`는 external smoke 전에 `pnpm ops:diagnose -- --require-external-smoke-ready`를 실행한다.
 - `pnpm launch:post-deploy-smoke` 통과.
 - `pnpm launch:final-gate` 통과. 이 명령은 배포 후 `pnpm launch:post-deploy-smoke -- --require-laws`와 `pnpm launch:blockers:refresh-strict`를 순서대로 실행하고, 앞 단계가 실패해도 live blocker 갱신까지 시도한 뒤 최종 실패한다.
+- Render/Cloudflare 연결 직후 `pnpm cloudflare:check`가 DNS, Web HTTPS, `config.js` API base, Web header smoke, API `/health`, `/ready`를 분리 진단한다. 최종 차단 게이트로 쓸 때는 `pnpm cloudflare:check:strict`를 실행한다.
 - `pnpm build:web-config`가 운영 YAML 기준으로 실행됨.
 - `pnpm launch:check` 통과.
 - `pnpm launch:verify-inputs` 통과.
@@ -102,6 +103,7 @@
 - `public_payload_home`은 `/home.issueCards`가 실제 주제형 Issue를 3개 이상 포함하고, 첫 항목이 지역별 공개 일정/신고 통계 같은 공개자료 묶음이 아니어야 통과한다.
 - `pnpm service:watch:visual`은 위 감시에 live visual surface와 Web `serviceSyncState` 확인까지 포함한다. 운영 도메인이 저장된 공개자료 fallback 상태인 `delayed`로 렌더링되면 실패해야 한다.
 - `pnpm service:watch:visual`은 live 홈 첫 카드가 공개자료 묶음인지도 기록한다. `sourceBundleFirst`가 1개 이상이면 구체 이슈 우선 UX가 미달이므로 출시 승급하지 않는다.
+- `pnpm cloudflare:check`는 `api.musunil.com` DNS가 없을 때 API `/health`와 `/ready`를 실패가 아니라 `skipped: API DNS failed`로 표시해 DNS 문제와 API 런타임 문제를 섞지 않는다.
 - 운영 API 미연결이나 `/home.issueCards` 공백으로 홈 이슈가 0개일 때도 빈 화면처럼 보이면 안 된다. 홈에는 `이슈를 불러오지 못했습니다`, `다시 확인`, `탐색 보기` 회복 경로가 표시되어야 하며, visual smoke는 이 controlled empty state를 실패 detail에 기록해야 한다.
 - `pnpm launch:blockers`가 `docs/splus-service-watch.md`의 실패 checks, skipped checks, Required Actions, Render/API/Web 검증 명령을 한 화면에 요약한다. 출력에는 `Report freshness`가 포함되어야 하며, 기본 15분보다 오래된 보고서는 stale로 표시하고 출시 판단에 쓰지 않는다. 최신 live 상태로 갱신하려면 `pnpm launch:blockers -- --refresh`를 사용한다.
 - 자동화나 최종 출시 gate에서는 `pnpm launch:blockers:strict`를 사용한다. 이 명령은 stale 보고서, 실패 check, skipped check, 남은 Required Actions가 하나라도 있으면 non-zero로 종료해야 한다.

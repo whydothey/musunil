@@ -30,6 +30,7 @@ const webServer = readFileSync(resolve(cwd, "scripts/serve-web.mjs"), "utf8");
 const webDeployCheck = readFileSync(resolve(cwd, "scripts/check-web-deploy.mjs"), "utf8");
 const renderWebSettings = readFileSync(resolve(cwd, "scripts/render-web-settings.mjs"), "utf8");
 const launchCutoverPlan = readFileSync(resolve(cwd, "scripts/launch-cutover-plan.mjs"), "utf8");
+const cloudflareDnsCheck = readFileSync(resolve(cwd, "scripts/cloudflare-dns-check.mjs"), "utf8");
 const launchNextActions = readFileSync(resolve(cwd, "scripts/launch-next-actions.mjs"), "utf8");
 const launchReady = readFileSync(resolve(cwd, "scripts/launch-ready.mjs"), "utf8");
 const launchFinalGate = readFileSync(resolve(cwd, "scripts/launch-final-gate.mjs"), "utf8");
@@ -291,9 +292,30 @@ if (
   !/MUSUNIL_WEB_BASE_URL=https:\/\/musunil\.com MUSUNIL_API_BASE_URL=https:\/\/api\.musunil\.com pnpm launch:post-deploy-smoke/.test(renderApiSettings) ||
   !/pnpm launch:final-gate/.test(renderApiSettings) ||
   !/launch:post-deploy-smoke/.test(renderApiSettings) ||
-  !/service:watch/.test(renderApiSettings)
+  !/service:watch/.test(renderApiSettings) ||
+  !/cloudflare:check/.test(renderApiSettings)
 ) {
   failures.push("Render API settings helper must print API custom domain, env source, and verification commands");
+}
+if (
+  !/"cloudflare:check"/.test(packageJson) ||
+  !/"cloudflare:check:strict"/.test(packageJson) ||
+  !/cloudflare-dns-check\.mjs/.test(packageJson) ||
+  !/cloudflare_dns_and_edge_preflight/.test(cloudflareDnsCheck) ||
+  !/web_dns/.test(cloudflareDnsCheck) ||
+  !/api_dns/.test(cloudflareDnsCheck) ||
+  !/web_config/.test(cloudflareDnsCheck) ||
+  !/web_header_smoke/.test(cloudflareDnsCheck) ||
+  !/api_health/.test(cloudflareDnsCheck) ||
+  !/api_ready/.test(cloudflareDnsCheck) ||
+  !/connect_api_dns/.test(cloudflareDnsCheck) ||
+  !/apply_static_headers/.test(cloudflareDnsCheck) ||
+  !/--strict/.test(cloudflareDnsCheck)
+) {
+  failures.push("Cloudflare/DNS preflight helper must check Web/API DNS, Web config, headers, API health/ready, and strict mode");
+}
+if (!/pnpm cloudflare:check/.test(readme) || !/pnpm cloudflare:check/.test(userFacingDocs)) {
+  failures.push("Cloudflare/DNS preflight helper must be documented in README and launch readiness docs");
 }
 if (!/"check:web-flow"/.test(packageJson) || !/ci-web-flow-smoke\.mjs/.test(packageJson) || !/pnpm check:web-flow/.test(packageJson)) {
   failures.push("Web user-flow smoke must be wired into release checks");
@@ -353,7 +375,8 @@ if (
   !/Header application mode/.test(renderWebSettings) ||
   !/Manual Static Site/.test(renderWebSettings) ||
   !/Blueprint-managed/.test(renderWebSettings) ||
-  !/render\.com\/docs\/static-site-headers/.test(renderWebSettings)
+  !/render\.com\/docs\/static-site-headers/.test(renderWebSettings) ||
+  !/cloudflare:check/.test(renderWebSettings)
 ) {
   failures.push("Render Web settings helper must print strict header, live visual, integrated service watch, manual/Blueprint header mode, and clear-cache redeploy instructions");
 }
@@ -363,6 +386,7 @@ if (!/"launch:cutover-plan"/.test(packageJson) || !/launch-cutover-plan\.mjs/.te
 if (
   !/api\.musunil\.com/.test(launchCutoverPlan) ||
   !/Cloudflare DNS/.test(launchCutoverPlan) ||
+  !/cloudflare:check/.test(launchCutoverPlan) ||
   !/render:api-settings/.test(launchCutoverPlan) ||
   !/render:web-settings/.test(launchCutoverPlan) ||
   !/MUSUNIL_EXPECTED_API_BASE_URL/.test(launchCutoverPlan) ||

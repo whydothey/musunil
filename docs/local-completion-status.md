@@ -2,7 +2,7 @@
 
 외부 연결이 필요 없는 범위에서 완료한 항목이다.
 
-Last updated: 2026-07-12 07:10 KST
+Last updated: 2026-07-12 07:25 KST
 
 ## 완료
 
@@ -102,6 +102,7 @@ Last updated: 2026-07-12 07:10 KST
   - `pnpm launch:final-gate`
   - `pnpm launch:external-smoke`
   - `pnpm render:api-settings`
+  - `pnpm cloudflare:check`
   - `pnpm storage:smoke`
   - `pnpm redaction:smoke`
   - `pnpm mobile:integrity-smoke`

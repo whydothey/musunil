@@ -1,0 +1,183 @@
+import { lookup } from "node:dns/promises";
+
+const args = process.argv.slice(2).filter((arg) => arg !== "--");
+const strict = args.includes("--strict");
+const webBaseUrl = deployedHttpsUrl(process.env.MUSUNIL_WEB_BASE_URL ?? "https://musunil.com");
+const apiBaseUrl = deployedHttpsUrl(process.env.MUSUNIL_API_BASE_URL ?? "https://api.musunil.com");
+const expectedApiBaseUrl = deployedHttpsUrl(process.env.MUSUNIL_EXPECTED_API_BASE_URL ?? apiBaseUrl);
+const checks = [];
+
+await check("web_dns", async () => dnsSummary(new URL(webBaseUrl).hostname));
+await check("api_dns", async () => dnsSummary(new URL(apiBaseUrl).hostname));
+await check("web_https", async () => {
+  const response = await fetchWithTimeout(`${webBaseUrl}/`);
+  if (response.status !== 200) throw new Error(`expected 200, got ${response.status}`);
+  return {
+    status: response.status,
+    cacheControl: response.headers.get("cache-control") || "",
+    cfCacheStatus: response.headers.get("cf-cache-status") || "",
+    server: response.headers.get("server") || ""
+  };
+});
+await check("web_config", async () => {
+  const response = await fetchWithTimeout(`${webBaseUrl}/config.js`);
+  if (response.status !== 200) throw new Error(`expected 200, got ${response.status}`);
+  const source = await response.text();
+  const config = parseWebConfig(source);
+  const apiBase = deployedHttpsUrl(config.apiBaseUrl);
+  if (apiBase !== expectedApiBaseUrl) throw new Error(`apiBaseUrl ${apiBase || "(invalid)"} != ${expectedApiBaseUrl}`);
+  const publicKeys = Object.keys(config).sort();
+  if (JSON.stringify(publicKeys) !== JSON.stringify(["apiBaseUrl", "mapStyleUrl"])) {
+    throw new Error(`unexpected public config keys: ${publicKeys.join(", ") || "(none)"}`);
+  }
+  return {
+    apiBaseUrl: apiBase,
+    cacheControl: response.headers.get("cache-control") || "",
+    cfCacheStatus: response.headers.get("cf-cache-status") || "",
+    publicKeys
+  };
+});
+await check("web_header_smoke", async () => {
+  const failures = [];
+  for (const path of ["/", "/config.js", "/build-info.json"]) {
+    const response = await fetchWithTimeout(`${webBaseUrl}${path}`);
+    const cacheControl = response.headers.get("cache-control") || "";
+    const csp = response.headers.get("content-security-policy") || "";
+    const permissions = response.headers.get("permissions-policy") || "";
+    const referrer = response.headers.get("referrer-policy") || "";
+    const nosniff = response.headers.get("x-content-type-options") || "";
+    const frame = response.headers.get("x-frame-options") || "";
+    if (!cacheControl.toLowerCase().includes("no-store")) failures.push(`${path} Cache-Control=${cacheControl || "missing"}`);
+    if (!csp.includes("default-src 'self'")) failures.push(`${path} CSP missing`);
+    if (!permissions.includes("camera=(self)") || !permissions.includes("geolocation=(self)")) failures.push(`${path} Permissions-Policy=${permissions || "missing"}`);
+    if (referrer.toLowerCase() !== "no-referrer") failures.push(`${path} Referrer-Policy=${referrer || "missing"}`);
+    if (nosniff.toLowerCase() !== "nosniff") failures.push(`${path} X-Content-Type-Options=${nosniff || "missing"}`);
+    if (frame.toUpperCase() !== "DENY") failures.push(`${path} X-Frame-Options=${frame || "missing"}`);
+  }
+  if (failures.length > 0) throw new Error(failures.join("; "));
+  return { paths: ["/", "/config.js", "/build-info.json"] };
+});
+if (checkOk("api_dns")) {
+  await check("api_health", async () => {
+    const response = await fetchWithTimeout(`${apiBaseUrl}/health`);
+    if (response.status !== 200) throw new Error(`expected 200, got ${response.status}`);
+    const body = await response.json();
+    if (body.ok !== true) throw new Error(`health ok is not true: ${JSON.stringify(body)}`);
+    return { status: response.status, ok: body.ok };
+  });
+  await check("api_ready", async () => {
+    const response = await fetchWithTimeout(`${apiBaseUrl}/ready`);
+    const body = await response.json().catch(() => ({}));
+    if (response.status !== 200 || body.ready !== true) {
+      throw new Error(`ready failed: status=${response.status}, ready=${body.ready}`);
+    }
+    return { status: response.status, ready: body.ready };
+  });
+} else {
+  skip("api_health", "skipped: API DNS failed");
+  skip("api_ready", "skipped: API DNS failed");
+}
+
+const result = {
+  checked: "cloudflare_dns_and_edge_preflight",
+  strict,
+  webBaseUrl,
+  apiBaseUrl,
+  ok: checks.every((item) => item.ok),
+  checks,
+  requiredActions: requiredActions(checks)
+};
+
+console.log(JSON.stringify(result, null, 2));
+if (strict && !result.ok) process.exit(1);
+
+async function check(id, run) {
+  try {
+    const detail = await run();
+    checks.push({ id, ok: true, detail });
+  } catch (error) {
+    checks.push({ id, ok: false, message: error instanceof Error ? error.message : String(error) });
+  }
+}
+
+function skip(id, message) {
+  checks.push({ id, ok: false, skipped: true, message });
+}
+
+function checkOk(id) {
+  return checks.find((item) => item.id === id)?.ok === true;
+}
+
+async function dnsSummary(hostname) {
+  const addresses = await lookup(hostname, { all: true });
+  return {
+    hostname,
+    addressFamilies: [...new Set(addresses.map((item) => `IPv${item.family}`))],
+    addresses: addresses.map((item) => item.address).slice(0, 4)
+  };
+}
+
+async function fetchWithTimeout(url) {
+  return fetch(url, {
+    redirect: "manual",
+    headers: {
+      "cache-control": "no-cache",
+      pragma: "no-cache"
+    },
+    signal: AbortSignal.timeout(12_000)
+  });
+}
+
+function parseWebConfig(source) {
+  const match = source.match(/window\.MUSUNIL_WEB_CONFIG\s*=\s*({[\s\S]*?})\s*;?\s*$/);
+  if (!match) throw new Error("config.js missing MUSUNIL_WEB_CONFIG");
+  return JSON.parse(match[1]);
+}
+
+function deployedHttpsUrl(value) {
+  if (typeof value !== "string" || !value.trim()) throw new Error("deployed HTTPS URL is required");
+  const parsed = new URL(value.trim());
+  if (parsed.protocol !== "https:") throw new Error(`deployed URL must use HTTPS: ${value}`);
+  return parsed.toString().replace(/\/$/, "");
+}
+
+function requiredActions(items) {
+  const failedIds = new Set(items.filter((item) => !item.ok && !item.skipped).map((item) => item.id));
+  const actions = [];
+  if (failedIds.has("api_dns")) {
+    actions.push({
+      id: "connect_api_dns",
+      action: "Render musunil-api Custom Domains에 api.musunil.com을 추가하고, Render target을 Cloudflare api CNAME에 DNS only로 연결한다.",
+      verify: "pnpm cloudflare:check:strict"
+    });
+  }
+  if (failedIds.has("web_dns") || failedIds.has("web_https")) {
+    actions.push({
+      id: "connect_web_dns",
+      action: "musunil.com/www가 Render musunil-web custom-domain target을 가리키는지 확인한다.",
+      verify: "pnpm cloudflare:check"
+    });
+  }
+  if (failedIds.has("web_config")) {
+    actions.push({
+      id: "fix_web_config",
+      action: "Render Web build command가 MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com으로 config.js를 생성하는지 확인하고 Clear build cache & deploy를 실행한다.",
+      verify: "pnpm render:web-settings && pnpm cloudflare:check"
+    });
+  }
+  if (failedIds.has("web_header_smoke")) {
+    actions.push({
+      id: "apply_static_headers",
+      action: "Render musunil-web Settings > Headers에 Cache-Control, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options를 적용한다.",
+      verify: "MUSUNIL_STRICT_WEB_HEADERS=1 pnpm check:web-deploy"
+    });
+  }
+  if (failedIds.has("api_health") || failedIds.has("api_ready")) {
+    actions.push({
+      id: "fix_api_runtime",
+      action: "Render musunil-api 환경변수, Secret File, DB/Redis, pre-deploy migration, /ready health check를 확인한다.",
+      verify: "pnpm render:api-settings && pnpm launch:post-deploy-smoke -- --require-laws"
+    });
+  }
+  return actions;
+}
