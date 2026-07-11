@@ -123,7 +123,14 @@ const launchEnv = {
   MUSUNIL_USER_TOKEN_SECRET: "render_generated_user_token_secret_32_bytes",
   MUSUNIL_ENCRYPTION_KEY: "render_generated_encryption_key_32_bytes",
   MUSUNIL_INTERNAL_API_KEY: "render_generated_internal_api_key",
-  MUSUNIL_USER_INPUTS_B64: Buffer.from(launchYaml).toString("base64")
+  MUSUNIL_USER_INPUTS_B64: Buffer.from(launchYaml).toString("base64"),
+  RENDER: "true",
+  RENDER_SERVICE_ID: "srv-musunil-web",
+  RENDER_SERVICE_NAME: "musunil-web",
+  RENDER_SERVICE_TYPE: "static",
+  RENDER_GIT_COMMIT: "1234567890abcdef1234567890abcdef12345678",
+  RENDER_GIT_BRANCH: "main",
+  RENDER_EXTERNAL_URL: "https://musunil-web.onrender.com"
 };
 
 let exitCode = 0;
@@ -132,6 +139,10 @@ const tempYaml = join(tempDir, "user-inputs.yaml");
 const generatedYaml = join(tempDir, "generated-user-inputs.yaml");
 const brokenYaml = join(tempDir, "broken-user-inputs.yaml");
 const unsafeLiveYaml = join(tempDir, "unsafe-live-user-inputs.yaml");
+const buildInfoJsPath = join(process.cwd(), "apps/web/build-info.js");
+const buildInfoJsonPath = join(process.cwd(), "apps/web/build-info.json");
+const originalBuildInfoJs = readFileSync(buildInfoJsPath, "utf8");
+const originalBuildInfoJson = readFileSync(buildInfoJsonPath, "utf8");
 
 try {
   writeFileSync(tempYaml, launchYaml, { mode: 0o600 });
@@ -153,11 +164,14 @@ moderation:
   runExpectFailure(["config:encode", "--", "--check", unsafeLiveYaml], launchEnv);
   runExpectFailure(["launch:verify-inputs", "--", unsafeLiveYaml], launchEnv);
   run(["build:web-config"], launchEnv);
+  assertRenderBuildInfo();
   run(["launch:check"], launchEnv);
 } catch (error) {
   exitCode = 1;
   console.error(error instanceof Error ? error.message : String(error));
 } finally {
+  writeFileSync(buildInfoJsPath, originalBuildInfoJs);
+  writeFileSync(buildInfoJsonPath, originalBuildInfoJson);
   try {
     run(["build:web-config"], localPreviewEnv);
   } catch (error) {
@@ -197,4 +211,20 @@ function fillGeneratedLaunchInputs(raw) {
     .replaceAll("CHANGE_ME_PRIVACY_OFFICER_EMAIL", "privacy@musunil.kr")
     .replaceAll("CHANGE_ME_LOCATION_MANAGER_EMAIL", "location@musunil.kr")
     .replace(/CHANGE_ME_[A-Z_]+/g, "Musunil Test Value");
+}
+
+function assertRenderBuildInfo() {
+  const buildInfo = JSON.parse(readFileSync(buildInfoJsonPath, "utf8"));
+  if (buildInfo.commitSha !== launchEnv.RENDER_GIT_COMMIT) {
+    throw new Error(`Render build-info commitSha mismatch: ${buildInfo.commitSha}`);
+  }
+  if (buildInfo.branch !== launchEnv.RENDER_GIT_BRANCH) {
+    throw new Error(`Render build-info branch mismatch: ${buildInfo.branch}`);
+  }
+  if (buildInfo.source !== "render") {
+    throw new Error(`Render build-info source mismatch: ${buildInfo.source}`);
+  }
+  if (buildInfo.staticMode !== false) {
+    throw new Error(`Render build-info staticMode should reflect build:web-config default: ${buildInfo.staticMode}`);
+  }
 }
