@@ -114,7 +114,8 @@ const publicPayloads = [
   await app.handle({ method: "GET", path: "/targets/occurrence/occ_1/live-claims" }),
   await app.handle({ method: "GET", path: "/targets/issue/issue_1/live-claims" }),
   await app.handle({ method: "GET", path: "/area-clusters" }),
-  await app.handle({ method: "GET", path: "/map" })
+  await app.handle({ method: "GET", path: "/map" }),
+  await app.handle({ method: "GET", path: "/transparency/logs" })
 ];
 for (const payload of publicPayloads) {
   assert.equal(payload.status, 200);
@@ -919,6 +920,7 @@ const detail = await app.handle({ method: "GET", path: "/occurrences/occ_1" });
 assert.equal(detail.status, 200);
 assert.equal(JSON.stringify(detail.body).includes("이 원문은 공개 응답에 나오면 안 된다"), false);
 
+const publicDetailBeforeQueuedWrites = JSON.stringify(detail.body);
 const correction = await app.handle({
   method: "POST",
   path: "/corrections/on-site",
@@ -931,8 +933,14 @@ const correction = await app.handle({
     rawText: "정정 원문도 공개 응답에 나오면 안 된다"
   }
 });
-assert.equal(correction.status, 201);
+assert.equal(correction.status, 202);
+assert.equal((correction.body as { claim: { visibility: string; sourceProvenance: string; evidenceStrength: string } }).claim.visibility, "held_private");
+assert.equal((correction.body as { claim: { sourceProvenance: string } }).claim.sourceProvenance, "material_report");
+assert.equal((correction.body as { claim: { evidenceStrength: string } }).claim.evidenceStrength, "single_source");
 assert.equal(JSON.stringify(correction.body).includes("정정 원문도 공개 응답에 나오면 안 된다"), false);
+const detailAfterCorrection = await app.handle({ method: "GET", path: "/occurrences/occ_1" });
+assert.equal(JSON.stringify(detailAfterCorrection.body).includes("위치가 일부 다르다는 현장 정정이 접수되었습니다."), false);
+assert.equal(JSON.stringify(detailAfterCorrection.body), publicDetailBeforeQueuedWrites);
 
 assert.equal(
   (await app.handle({
@@ -956,7 +964,8 @@ const rights = await app.handle({
     rawText: "신고 원문도 공개 응답에 나오면 안 된다"
   }
 });
-assert.equal(rights.status, 201);
+assert.equal(rights.status, 202);
+assert.equal((rights.body as { claim: { visibility: string } }).claim.visibility, "held_private");
 assert.equal(JSON.stringify(rights.body).includes("auto_delete"), false);
 assert.equal(JSON.stringify(rights.body).includes("신고 원문도 공개 응답에 나오면 안 된다"), false);
 for (let index = 0; index < 3; index += 1) {
@@ -975,7 +984,7 @@ for (let index = 0; index < 3; index += 1) {
         }
       })
     ).status,
-    201
+    202
   );
 }
 assert.equal(store.claims.some((claim) => claim.id === "claim_occ_live_1"), true);
@@ -995,8 +1004,11 @@ const rebuttal = await app.handle({
     rawText: "반론 원문도 공개 응답에 나오면 안 된다"
   }
 });
-assert.equal(rebuttal.status, 201);
+assert.equal(rebuttal.status, 202);
+assert.equal((rebuttal.body as { claim: { visibility: string; evidenceStrength: string } }).claim.visibility, "held_private");
+assert.equal((rebuttal.body as { claim: { evidenceStrength: string } }).claim.evidenceStrength, "single_source");
 assert.equal(JSON.stringify(rebuttal.body).includes("반론 원문도 공개 응답에 나오면 안 된다"), false);
+assert.equal(JSON.stringify((await app.handle({ method: "GET", path: "/occurrences/occ_1" })).body).includes("반론이 접수되었습니다."), false);
 
 const subscription = await app.handle({
   method: "POST",
@@ -1021,7 +1033,7 @@ assert.equal(
       body: { userId: user1Session.userId, targetType: "occurrence", targetId: "occ_1", rawText: "자료 제보는 단독 알림이 아니다" }
     })
   ).status,
-  201
+  202
 );
 assert.equal(store.notificationOutbox.length, outboxBeforeNonStateReport);
 

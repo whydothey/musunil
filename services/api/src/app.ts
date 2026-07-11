@@ -893,7 +893,7 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
   if (request.method === "GET" && path === "/me/subscriptions") {
     return withVerifiedUserScope(store, request, options, url.searchParams.get("userId"), (userId) => getMySubscriptions(store, userId));
   }
-  if (request.method === "GET" && path === "/transparency/logs") return json(200, { logs: store.transparencyLogs });
+  if (request.method === "GET" && path === "/transparency/logs") return json(200, { logs: store.transparencyLogs.map(toPublicTransparencyLog) });
   if (request.method === "GET" && path === "/transparency/monthly") return getTransparencyMonthly(store);
   if (request.method === "POST" && path === "/uploads/live") return await postLiveUpload(store, request, options);
   if (request.method === "POST" && path === "/reports/live") return postLiveReport(store, request, options);
@@ -2426,6 +2426,7 @@ function postMaterialReport(store: Store, request: ApiRequest, options: AppOptio
     proofOfPresenceStatus: "material_only"
   };
   const claim = addClaim(store, {
+    visibility: "held_private",
     targetType,
     targetId,
     sourceProvenance: "material_report",
@@ -2435,13 +2436,12 @@ function postMaterialReport(store: Store, request: ApiRequest, options: AppOptio
     evidenceStrength: "single_source",
     riskLevel: "misleading_possible",
     evidenceIds: [evidence.id]
-  });
+  }, { attach: false });
 
   store.evidence.push(evidence);
-  attachEvidence(store, targetType, targetId, evidence.id);
   rememberReport(store, userId, "material", targetType, targetId, claim.id);
-  audit(store, "correction", targetType, targetId, "material report accepted as Claim/Evidence");
-  return json(201, { status: "material_report_received", claim: toPublicClaim(claim), evidenceId: evidence.id });
+  audit(store, "hold", targetType, targetId, "material report held for operator review before public visibility");
+  return json(202, { status: "material_report_queued_for_review", claim: toPublicClaim(claim), evidenceId: evidence.id });
 }
 
 function postOnSiteCorrection(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
@@ -2450,20 +2450,21 @@ function postOnSiteCorrection(store: Store, request: ApiRequest, options: AppOpt
   const targetType = readTargetType(data, "targetType", "occurrence");
   const targetId = readString(data, "targetId");
   const claim = addClaim(store, {
+    visibility: "held_private",
     targetType,
     targetId,
-    sourceProvenance: "verified_citizen_report",
+    sourceProvenance: "material_report",
     claimantLabel: readOptionalString(data, "claimantLabel") ?? "현장 정정",
     statement: readOptionalString(data, "rawText") ?? "",
     normalizedStatement: readString(data, "normalizedStatement"),
-    evidenceStrength: readEvidenceStrength(data, "evidenceStrength", "multiple_proof_of_presence"),
-    riskLevel: readRiskLevel(data, "riskLevel", "misleading_possible"),
+    evidenceStrength: "single_source",
+    riskLevel: "misleading_possible",
     evidenceIds: []
-  });
+  }, { attach: false });
 
   rememberReport(store, userId, "on_site_correction", targetType, targetId, claim.id);
-  audit(store, "correction", targetType, targetId, "on-site correction added as Claim");
-  return json(201, { status: "on_site_correction_received", claim: toPublicClaim(claim) });
+  audit(store, "hold", targetType, targetId, "on-site correction held for operator review before public visibility");
+  return json(202, { status: "on_site_correction_queued_for_review", claim: toPublicClaim(claim) });
 }
 
 function postRightsViolation(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
@@ -2473,6 +2474,7 @@ function postRightsViolation(store: Store, request: ApiRequest, options: AppOpti
   const targetId = readString(data, "targetId");
   const riskLevel = readRiskLevel(data, "riskLevel", "rights_risk");
   const claim = addClaim(store, {
+    visibility: "held_private",
     targetType,
     targetId,
     sourceProvenance: "rights_violation_report",
@@ -2482,12 +2484,12 @@ function postRightsViolation(store: Store, request: ApiRequest, options: AppOpti
     evidenceStrength: "single_source",
     riskLevel,
     evidenceIds: []
-  });
+  }, { attach: false });
   const decision = moderationDecisionFromRightsReports({ count: 1, highestRiskLevel: riskLevel, coordinatedAttackSuspected: false });
 
   rememberReport(store, userId, "rights_violation", targetType, targetId, claim.id);
-  audit(store, decision === "mask_or_hold_for_review" ? "hold" : "correction", targetType, targetId, "rights report queued without automatic deletion");
-  return json(201, { status: "rights_violation_report_received", decision, claim: toPublicClaim(claim) });
+  audit(store, "hold", targetType, targetId, "rights report queued without automatic deletion");
+  return json(202, { status: "rights_violation_report_queued_for_review", decision, claim: toPublicClaim(claim) });
 }
 
 function postRebuttal(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
@@ -2496,20 +2498,21 @@ function postRebuttal(store: Store, request: ApiRequest, options: AppOptions): A
   const targetType = readTargetType(data, "targetType", "occurrence");
   const targetId = readString(data, "targetId");
   const claim = addClaim(store, {
+    visibility: "held_private",
     targetType,
     targetId,
     sourceProvenance: "rebuttal",
     claimantLabel: readOptionalString(data, "claimantLabel") ?? "반론 제출자",
     statement: readOptionalString(data, "rawText") ?? "",
     normalizedStatement: readString(data, "normalizedStatement"),
-    evidenceStrength: readEvidenceStrength(data, "evidenceStrength", "single_source"),
-    riskLevel: readRiskLevel(data, "riskLevel", "misleading_possible"),
+    evidenceStrength: "single_source",
+    riskLevel: "misleading_possible",
     evidenceIds: []
-  });
+  }, { attach: false });
 
   rememberReport(store, userId, "rebuttal", targetType, targetId, claim.id);
-  audit(store, "rebuttal", targetType, targetId, "rebuttal added as Claim");
-  return json(201, { status: "rebuttal_received", claim: toPublicClaim(claim) });
+  audit(store, "hold", targetType, targetId, "rebuttal held for operator review before public visibility");
+  return json(202, { status: "rebuttal_queued_for_review", claim: toPublicClaim(claim) });
 }
 
 function postSubscription(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
@@ -3350,6 +3353,45 @@ function audit(store: Store, action: AuditLog["action"], targetType: AuditLog["t
     createdAt: new Date(),
     publicReason: reason
   });
+}
+
+function toPublicTransparencyLog(log: TransparencyLog) {
+  return {
+    id: log.id,
+    action: log.action,
+    targetType: log.targetType,
+    targetId: log.targetId,
+    createdAt: log.createdAt.toISOString(),
+    publicReason: sanitizePublicReason(log.publicReason)
+  };
+}
+
+function sanitizePublicReason(reason: string): string {
+  const fallback = "검토 기록이 등록되었습니다.";
+  const normalized = reason.replace(/\s+/g, " ").trim();
+  if (!normalized) return fallback;
+  if (containsPrivatePublicReasonToken(normalized)) return fallback;
+  return normalized.slice(0, 180);
+}
+
+function containsPrivatePublicReasonToken(value: string): boolean {
+  return [
+    /private\/live\//i,
+    /storageKey/i,
+    /publicStorageKey/i,
+    /publicPosterKey/i,
+    /rawText/i,
+    /userId/i,
+    /tokenHash/i,
+    /ciHash/i,
+    /diHash/i,
+    /subjectHash/i,
+    /identityVerificationId/i,
+    /gps/i,
+    /geoCell/i,
+    /01[016789][-\s]?\d{3,4}[-\s]?\d{4}/,
+    /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i
+  ].some((pattern) => pattern.test(value));
 }
 
 function rememberReport(store: Store, userId: string | undefined, reportType: ReportRecord["reportType"], targetType: TargetType, targetId: string, claimId: string): ReportRecord {

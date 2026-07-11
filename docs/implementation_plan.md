@@ -86,6 +86,7 @@ Web/PWA, Mobile
 
 - `GET /home`, `GET /issues`, `GET /occurrences/:id`, `GET /targets/:type/:id`.
 - `POST /reports/live`, `POST /reports/material`, `POST /internal/ingest/public-source`, `POST /internal/ingest/public-occurrence`.
+- 사용자 제출 중 LIVE 제보는 Proof-of-Presence와 비식별 검토 전 `held_private`이고, 자료 제보/정정/권리침해/반론은 모두 `202 queued_for_review`로 접수해 Admin review 전 공개 집계에 반영하지 않는다.
 - `GET /ready`, 내부/admin 라우트 키 보호, 공개 원천 Occurrence upsert.
 - 메모리 저장소로 먼저 동작 확인 후 DB로 교체한다.
 - 실제 공개 원천 기반 seed를 Claim/Evidence로 넣는다: 경찰청 전국 통계, 대구 신고·개최 현황, 대구 오늘의 집회시위 일정.

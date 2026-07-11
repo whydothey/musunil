@@ -2,6 +2,7 @@ import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync } fr
 import { spawnSync } from "node:child_process";
 import { lookup } from "node:dns/promises";
 import { resolve } from "node:path";
+import { publicPayloadRoutes } from "./public-api-routes.mjs";
 
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
 const once = args.includes("--once");
@@ -134,7 +135,7 @@ async function runChecks() {
 
     return { posterBytes, clipBytes };
   });
-  for (const path of ["/home", "/issues", "/map", "/laws", "/public-sources/coverage"]) {
+  for (const path of publicPayloadRoutes) {
     await check(checks, `public_payload_${path.slice(1).replaceAll("/", "_")}`, async () => {
       skipIfApiUnreachable();
       const body = await getJson(`${apiBaseUrl}${path}`);
@@ -238,6 +239,7 @@ function assertAbsent(text, tokens) {
 function assertPublicPayloadSafe(body) {
   const text = JSON.stringify(body);
   assertAbsent(text, [
+    '"statement"',
     "private/live/",
     '"mediaBase64"',
     '"storageKey"',
@@ -277,6 +279,7 @@ function summaryFor(path, body) {
   if (path === "/map") return { pins: body.geojson?.pins?.features?.length ?? 0, areas: body.geojson?.presenceAreas?.features?.length ?? 0 };
   if (path === "/laws") return { laws: body.laws?.length ?? 0 };
   if (path === "/public-sources/coverage") return { activeScheduleRegions: body.coverage?.activeScheduleRegions, nextRefreshAt: body.coverage?.nextRefreshAt };
+  if (path === "/transparency/logs") return { logs: body.logs?.length ?? 0 };
   return {};
 }
 

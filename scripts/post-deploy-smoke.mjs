@@ -1,4 +1,5 @@
 import { loadUserInputs } from "../packages/config/src/index.ts";
+import { publicPayloadRoutes } from "./public-api-routes.mjs";
 
 const config = safeConfig();
 const apiBaseUrl = (process.env.MUSUNIL_API_BASE_URL ?? readString(config, "api.public_base_url") ?? "").replace(/\/$/, "");
@@ -83,7 +84,7 @@ await check("public_payload_safety", async () => {
       assertPublicPayloadSafe(path, issueResponse.body);
     }
   }
-  for (const path of ["/area-clusters", "/map", "/public-sources/coverage", "/laws"]) {
+  for (const path of publicPayloadRoutes.filter((item) => item !== "/home" && item !== "/issues")) {
     const publicResponse = await raw("GET", path);
     assert(publicResponse.status === 200, `${path} returned ${publicResponse.status}`);
     assertPublicPayloadSafe(path, publicResponse.body);

@@ -154,8 +154,10 @@ Last updated: 2026-07-12 01:29 KST
   - `pnpm ops:diagnose`는 외부 연결 전 storage, redaction, mobile integrity, identity metadata 상태와 다음 조치를 secret 원문 없이 출력
   - `pnpm check:ops-diagnostics`는 template 기반 metadata 진단을 release gate에서 실행해 운영 준비 항목 누락 회귀를 차단
   - `pnpm launch:ready -- <yaml>`는 입력 검증, config encode check, Render runtime sample gate, 운영 metadata 진단, external smoke, release check를 단일 순서로 실행
-  - `pnpm launch:post-deploy-smoke`는 배포 후 실제 API URL의 `/health`, `/ready`, public payload safety, coverage, laws, admin auth boundary를 비파괴로 확인
-  - `pnpm service:watch -- --once`는 live static hash, build metadata fallback, Web header, API DNS preflight, public payload safety를 확인하고 차단 항목별 owner/action/verify/reference를 문서화
+  - 자료 제보, 현장 정정, 권리침해 신고, 반론은 본인확인 후에도 `202 queued_for_review`/`held_private`로만 접수되고 공개 detail과 집계는 Admin review 전까지 변하지 않음
+  - `GET /transparency/logs`는 공개용 DTO와 sanitized public reason만 반환하며 raw audit reason, private media, identity, GPS field를 노출하지 않음
+  - `pnpm launch:post-deploy-smoke`는 배포 후 실제 API URL의 `/health`, `/ready`, public payload safety, `/transparency/logs`, coverage, laws, admin auth boundary를 비파괴로 확인
+  - `pnpm service:watch -- --once`는 live static hash, build metadata fallback, Web header, API DNS preflight, public payload safety, `/transparency/logs`를 확인하고 차단 항목별 owner/action/verify/reference를 문서화
   - `docs/splus-master-tracker.md`
   - `docs/national-issue-splus-tracker.md`
   - `docs/splus-completion-audit.md`

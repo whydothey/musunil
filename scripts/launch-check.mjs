@@ -34,6 +34,7 @@ const launchCutoverRunbook = readFileSync(resolve(cwd, "docs/launch-cutover-runb
 const webFlowSmoke = readFileSync(resolve(cwd, "scripts/ci-web-flow-smoke.mjs"), "utf8");
 const uxSurfaceSmoke = readFileSync(resolve(cwd, "scripts/ci-ux-surface-smoke.mjs"), "utf8");
 const visualSurfaceSmoke = readFileSync(resolve(cwd, "scripts/ci-visual-surface-smoke.mjs"), "utf8");
+const publicApiRoutes = readFileSync(resolve(cwd, "scripts/public-api-routes.mjs"), "utf8");
 const webStaticManifestScript = readFileSync(resolve(cwd, "scripts/write-web-static-manifest.mjs"), "utf8");
 const rootPackageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
 const gitignore = readFileSync(resolve(cwd, ".gitignore"), "utf8");
@@ -169,17 +170,19 @@ if (
   !/cors_boundary/.test(postDeploySmoke) ||
   !/not-allowed\.musunil\.invalid/.test(postDeploySmoke) ||
   !/assertPublicPayloadSafe/.test(postDeploySmoke) ||
+  !/publicPayloadRoutes/.test(postDeploySmoke) ||
   !/\/issues/.test(postDeploySmoke) ||
   !/\/issues\/\$\{encodeURIComponent/.test(postDeploySmoke) ||
   !/\/targets\/issue\/\$\{encodeURIComponent/.test(postDeploySmoke) ||
   !/\/laws\/\$\{encodeURIComponent/.test(postDeploySmoke) ||
-  !/\/map/.test(postDeploySmoke) ||
+  !/\/map/.test(publicApiRoutes) ||
   !/\/ready/.test(postDeploySmoke) ||
   !/assertReadyCheck/.test(postDeploySmoke) ||
   !/"config_source"/.test(postDeploySmoke) ||
   !/"postgres"/.test(postDeploySmoke) ||
   !/"redis"/.test(postDeploySmoke) ||
-  !/\/public-sources\/coverage/.test(postDeploySmoke) ||
+  !/\/public-sources\/coverage/.test(publicApiRoutes) ||
+  !/\/transparency\/logs/.test(publicApiRoutes) ||
   !/\/media\/redacted\/preview-occ-live-1-poster\.png/.test(postDeploySmoke) ||
   !/\/media\/redacted\/preview-occ-live-1\.webm/.test(postDeploySmoke) ||
   !/video\/webm/.test(postDeploySmoke) ||
@@ -289,6 +292,7 @@ if (
   !/api_endpoint_preflight/.test(serviceWatch) ||
   !/web_header_contract/.test(serviceWatch) ||
   !/web_visual_surface/.test(serviceWatch) ||
+  !/publicPayloadRoutes/.test(serviceWatch) ||
   !/withVisualSurface/.test(serviceWatch) ||
   !/stop_live_visual_surface_regression/.test(serviceWatch) ||
   !/requiredActions/.test(serviceWatch) ||

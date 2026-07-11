@@ -81,7 +81,7 @@
 - 잘못된 JSON은 400, 과대 JSON body는 413으로 실패한다.
 - 공개 write API는 IP 단위 rate limit으로 429를 반환한다.
 - `pnpm smoke:api`는 비파괴로 공개 schema, 금지 타입 부재, 잘못된 내부 키 거부를 확인한다.
-- staging에서는 `pnpm smoke:api -- --boundary-checks`와 `pnpm smoke:api -- --write-checks`로 HTTP 경계와 원문 비공개 write path를 확인한다.
+- staging에서는 `pnpm smoke:api -- --boundary-checks`와 `pnpm smoke:api -- --write-checks`로 HTTP 경계, 원문 비공개, 검수 전 공개 detail 불변 write path를 확인한다.
 - 자유 댓글, 추천/비추천, 찬반투표, 후원 영향 UI가 없다.
 - 국내 v1 운영에서 `domestic_operation.service_country`는 `KR`이고 해외 서비스/해외 결제/세액공제 기부금 영수증/개인 계좌 공개 플래그가 모두 꺼져 있다.
 - 후원은 `payments.influence_on_ranking_enabled`, `payments.influence_on_alerts_enabled`, `payments.influence_on_trust_enabled`가 모두 false다.
@@ -95,7 +95,7 @@
 - `pnpm check:ops-diagnostics`는 외부 연결 없이 storage, redaction, mobile integrity, identity metadata 구조를 확인하고 secret 값이나 provider raw output을 출력하지 않는다.
 - production에서 포트원 본인확인 `identity.portone_store_id`, `identity.portone_identity_channel_key`, `identity.portone_api_secret`이 없으면 launch validation이 실패한다.
 - 로그인 없이 공개 읽기 API는 접근 가능하지만, 제보·현장 판단·반론·권리침해 신고·알림 설정·`/me/*`는 본인확인 완료 세션 없이는 `identity_required`로 실패한다.
-- `pnpm service:watch -- --once`가 Web static hash/build metadata, Web header contract, API DNS/HTTPS endpoint preflight, API readiness, 공개 payload 안전성, 법안/coverage, 인증 write boundary를 검증하고 `docs/splus-service-watch.md`를 갱신한다. API endpoint preflight가 실패하면 하위 API checks는 `skip`이어야 하며, 실패 원인은 `api_endpoint_preflight`에 남아야 한다. 실패 시 `Required Actions` 섹션이 다음 운영 조치와 검증 명령을 표시해야 한다.
+- `pnpm service:watch -- --once`가 Web static hash/build metadata, Web header contract, API DNS/HTTPS endpoint preflight, API readiness, 공개 payload 안전성, `/transparency/logs`, 법안/coverage, 인증 write boundary를 검증하고 `docs/splus-service-watch.md`를 갱신한다. API endpoint preflight가 실패하면 하위 API checks는 `skip`이어야 하며, 실패 원인은 `api_endpoint_preflight`에 남아야 한다. 실패 시 `Required Actions` 섹션이 다음 운영 조치와 검증 명령을 표시해야 한다.
 - `pnpm service:watch:visual`은 위 감시에 live visual surface까지 포함한다. 배포 직후와 사용자에게 화면 확인을 요청하기 전에는 이 명령을 사용한다.
 - production Web fallback에도 프리뷰/mock 카드와 프리뷰 전용 지도 핀이 보이지 않는다.
 - production Web은 `config.js`의 `apiBaseUrl`을 기준으로 하며, `?api=`와 localStorage API override는 localhost에서만 허용된다.
@@ -126,6 +126,8 @@
 - 사용자별 `/me/*`, 구독 생성/수정, 제보 소유권 기록은 서버 서명 anonymous token과 요청 userId가 일치해야 한다.
 - Anonymous token은 만료 시간을 포함한다.
 - LIVE 제보는 anonymous token 없이는 401이며, 운영 기본값에서는 `held_private`로 검수 대기한다.
+- 자료 제보, 현장 정정, 권리침해 신고, 반론은 본인확인 완료 세션 없이는 401이며, 성공해도 `202 queued_for_review`와 `held_private` Claim으로만 저장된다.
+- 비-LIVE 사용자 제출은 Admin review에서 공개 전환되기 전까지 공개 홈/상세/우선순위/지도 집계와 evidence count에 반영되지 않는다.
 - LIVE Proof-of-Presence는 앱 내 촬영 `in_app_camera`와 최소 5초 영상만 통과하고 gallery, screen recording, external link, 너무 짧은 영상은 현장 인증 Claim으로 인정하지 않는다.
 - LIVE 제보와 현장 판단 Claim의 5분 제한은 클라이언트가 보낸 `uploadedAt`이 아니라 서버가 기록한 업로드/요청 시각으로 판정한다.
 - 현장 판단 Claim은 내부 verifier의 device integrity pass/proof 전에는 `held_private`이며 공개 판단 요약과 이견 수에 반영되지 않는다.

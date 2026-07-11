@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 import { loadUserInputs } from "../packages/config/src/index.ts";
+import { publicPayloadRoutes } from "./public-api-routes.mjs";
 
 const runtime = readRuntime();
 const runWriteChecks = process.argv.includes("--write-checks");
@@ -228,14 +229,13 @@ await check("internal_redaction_worker", async () => {
 });
 
 await check("public_schema_safety", async () => {
-	  for (const path of [
-	    "/home",
-	    "/occurrences/occ_1",
-	    "/targets/occurrence/occ_1/live-claims",
-	    "/targets/issue/issue_1/live-claims",
-	    "/continuous-presences/presence_1",
-	    "/area-clusters"
-	  ]) {
+  for (const path of [
+    ...publicPayloadRoutes,
+    "/occurrences/occ_1",
+    "/targets/occurrence/occ_1/live-claims",
+    "/targets/issue/issue_1/live-claims",
+    "/continuous-presences/presence_1"
+  ]) {
     assertPublicPayloadSafe(await request("GET", path));
   }
 });
@@ -253,10 +253,19 @@ if (runWriteChecks) {
   await check("write_claim_raw_safety", async () => {
     const marker = `SMOKE_RAW_${Date.now()}`;
     const session = await anonymousSession();
-    const created = await request("POST", "/reports/material", { userId: session.userId, targetType: "occurrence", targetId: "occ_1", rawText: marker }, false, userHeaders(session));
-    assert(JSON.stringify(created).includes(marker) === false, "raw report text leaked from create response");
+    const beforeDetail = await request("GET", "/occurrences/occ_1");
+    const created = await rawRequest(
+      "POST",
+      "/reports/material",
+      JSON.stringify({ userId: session.userId, targetType: "occurrence", targetId: "occ_1", rawText: marker }),
+      userHeaders(session)
+    );
+    assert(created.status === 202, `material report should queue for review, got ${created.status}`);
+    assert(created.body?.claim?.visibility === "held_private", "material report claim should stay held_private before review");
+    assert(JSON.stringify(created.body).includes(marker) === false, "raw report text leaked from create response");
     const detail = await request("GET", "/occurrences/occ_1");
     assert(JSON.stringify(detail).includes(marker) === false, "raw report text leaked from public detail");
+    assert(JSON.stringify(detail) === JSON.stringify(beforeDetail), "public detail changed before operator review");
   });
 }
 
