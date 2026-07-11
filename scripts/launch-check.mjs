@@ -28,6 +28,7 @@ const webServer = readFileSync(resolve(cwd, "scripts/serve-web.mjs"), "utf8");
 const webDeployCheck = readFileSync(resolve(cwd, "scripts/check-web-deploy.mjs"), "utf8");
 const renderWebSettings = readFileSync(resolve(cwd, "scripts/render-web-settings.mjs"), "utf8");
 const launchCutoverPlan = readFileSync(resolve(cwd, "scripts/launch-cutover-plan.mjs"), "utf8");
+const launchReady = readFileSync(resolve(cwd, "scripts/launch-ready.mjs"), "utf8");
 const launchCutoverRunbook = readFileSync(resolve(cwd, "docs/launch-cutover-runbook.md"), "utf8");
 const webFlowSmoke = readFileSync(resolve(cwd, "scripts/ci-web-flow-smoke.mjs"), "utf8");
 const webStaticManifestScript = readFileSync(resolve(cwd, "scripts/write-web-static-manifest.mjs"), "utf8");
@@ -134,6 +135,13 @@ if (/checked:\s*"storage_put_delete"[\s\S]*storageKey/.test(storageSmoke)) {
 }
 if (!/"ops:diagnose"/.test(packageJson) || !/"check:ops-diagnostics"/.test(packageJson) || !/check:ops-diagnostics/.test(JSON.parse(packageJson).scripts["check:release"] ?? "")) {
   failures.push("release check must include operational readiness metadata diagnostics");
+}
+if (
+  !/operational_metadata_diagnostics/.test(launchReady) ||
+  !/"ops:diagnose",\s*"--",\s*"--require-external-smoke-ready"/.test(launchReady) ||
+  !/operational_metadata_diagnostics[\s\S]*external_smoke/.test(launchReady)
+) {
+  failures.push("launch:ready must run operational metadata diagnostics before external smoke");
 }
 if (
   !/operational_readiness_metadata/.test(operationalDiagnostics) ||

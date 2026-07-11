@@ -13,6 +13,7 @@ const steps = [
   { id: "input_validation", args: ["launch:verify-inputs", "--", inputPath], scope: "actual_input" },
   { id: "config_encode_check", args: ["config:encode", "--", "--check", inputPath], scope: "actual_input" },
   { id: "render_runtime_config_sample", args: ["check:render-runtime-config"], scope: "sample_render_generated_secrets" },
+  { id: "operational_metadata_diagnostics", args: ["ops:diagnose", "--", "--require-external-smoke-ready"], scope: "actual_input" },
   { id: "external_smoke", args: ["launch:external-smoke", ...(postLaws ? ["--", "--post-laws"] : [])], scope: "actual_input" },
   { id: "release_check", args: ["check:release"], scope: "repo_release_gate" }
 ];

@@ -6,6 +6,7 @@
 - `pnpm check:splus` 통과.
 - `pnpm check:release` 통과.
 - `pnpm launch:ready` 통과.
+- `pnpm launch:ready`는 external smoke 전에 `pnpm ops:diagnose -- --require-external-smoke-ready`를 실행한다.
 - `pnpm launch:post-deploy-smoke` 통과.
 - `pnpm build:web-config`가 운영 YAML 기준으로 실행됨.
 - `pnpm launch:check` 통과.
