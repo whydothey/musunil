@@ -199,6 +199,9 @@ if (
   !/cors_boundary/.test(postDeploySmoke) ||
   !/not-allowed\.musunil\.invalid/.test(postDeploySmoke) ||
   !/assertPublicPayloadSafe/.test(postDeploySmoke) ||
+  !/assertHomeIssueReadiness/.test(postDeploySmoke) ||
+  !/at least 3 topic Issues/.test(postDeploySmoke) ||
+  !/public source bundle/.test(postDeploySmoke) ||
   !/publicPayloadRoutes/.test(postDeploySmoke) ||
   !/\/issues/.test(postDeploySmoke) ||
   !/\/issues\/\$\{encodeURIComponent/.test(postDeploySmoke) ||

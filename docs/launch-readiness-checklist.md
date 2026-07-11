@@ -41,7 +41,7 @@
 - `/health` 200.
 - `/ready` 200, `config_source`, `postgres`, `redis` check가 모두 ok.
 - `/ready` 응답은 `summary.failedIds`, `summary.blockingGroups`, `requiredActions`를 포함한다. 실패 시 이 값으로 DB/Redis/스토리지/본인확인/법 원천/모바일 무결성 등 막힌 묶음을 바로 식별해야 한다.
-- 배포 후 `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws` 통과. 두 값은 localhost나 HTTP가 아닌 실제 배포 HTTPS URL이어야 하며, Web `config.js`가 같은 API를 가리키는지, 요청 timeout과 redirect 수동 처리, API 보안 헤더, CORS 경계, `/home`, `/issues`, 첫 이슈 상세, 첫 이슈 live-claims, `/area-clusters`, `/map`, `/public-sources/coverage`, `/laws`, 첫 법안 상세 공개 응답 안전성을 함께 확인한다.
+- 배포 후 `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws` 통과. 두 값은 localhost나 HTTP가 아닌 실제 배포 HTTPS URL이어야 하며, Web `config.js`가 같은 API를 가리키는지, 요청 timeout과 redirect 수동 처리, API 보안 헤더, CORS 경계, `/home.issueCards` 주제형 Issue 3개 이상과 첫 항목 공개자료 묶음 금지, `/issues`, 첫 이슈 상세, 첫 이슈 live-claims, `/area-clusters`, `/map`, `/public-sources/coverage`, `/laws`, 첫 법안 상세 공개 응답 안전성을 함께 확인한다.
 - 배포 후 `pnpm launch:post-deploy-smoke`는 API `/media/redacted/preview-occ-live-1-poster.png`가 200 `image/png`, `/media/redacted/preview-occ-live-1.webm`이 200 `video/webm`으로 열리고 encoded traversal가 차단되는지 확인한다.
 - Render API health check path가 `/ready`다.
 - Render API build에서 `pnpm check`, `pnpm build:web-config`, `pnpm launch:check`가 실행된다.

@@ -86,6 +86,7 @@ await check("public_payload_safety", async () => {
   assert(response.status === 200, `/home returned ${response.status}`);
   assert(Array.isArray(response.body?.cards), "/home cards missing");
   assertPublicPayloadSafe("/home", response.body);
+  assertHomeIssueReadiness(response.body);
   const issues = await raw("GET", "/issues");
   assert(issues.status === 200, `/issues returned ${issues.status}`);
   assertPublicPayloadSafe("/issues", issues.body);
@@ -245,6 +246,30 @@ function assertPublicPayloadSafe(path, body) {
   ]) {
     assert(!text.includes(token), `${path} leaked forbidden token: ${token}`);
   }
+}
+
+function assertHomeIssueReadiness(body) {
+  const issues = Array.isArray(body?.issueCards) ? body.issueCards : [];
+  assert(issues.length > 0, "/home issueCards is empty; launch requires topic issue feed data");
+  const topicIssues = issues.filter((issue) => !isPublicSourceBundleIssue(issue));
+  assert(topicIssues.length >= 3, `/home issueCards needs at least 3 topic Issues, got ${topicIssues.length}`);
+  assert(!isPublicSourceBundleIssue(issues[0]), `/home first issueCard is a public source bundle: ${publicIssueTitle(issues[0])}`);
+}
+
+function isPublicSourceBundleIssue(issue) {
+  const text = [
+    issue?.id,
+    issue?.normalizedTopicKey,
+    issue?.title,
+    ...(Array.isArray(issue?.topicTags) ? issue.topicTags : [])
+  ].filter(Boolean).join(" ");
+  return /^issue_public_/.test(String(issue?.id || ""))
+    || /real-public-assembly-sources|public-assembly-(schedules|statistics)/.test(text)
+    || /공개\s*(일정|자료)|신고[·\s-]*(개최|통계)|집회\s*신고\s*통계/.test(text);
+}
+
+function publicIssueTitle(issue) {
+  return String(issue?.title || issue?.id || "(untitled)").slice(0, 120);
 }
 
 function firstId(items) {
