@@ -263,6 +263,8 @@ if (
   !/service:watch:visual/.test(launchNextActions) ||
   !/render:api-settings/.test(launchNextActions) ||
   !/render:web-settings/.test(launchNextActions) ||
+  !/cloudflare:check/.test(launchNextActions) ||
+  !/cloudflare:check:strict/.test(launchNextActions) ||
   !/launch:post-deploy-smoke -- --require-laws/.test(launchNextActions)
 ) {
   failures.push("Launch blockers helper must summarize service watch freshness, required actions, and Web/API/laws verification commands");
@@ -452,6 +454,7 @@ if (
   !/pnpm launch:final-gate/.test(serviceWatch) ||
   !/render:api-settings/.test(serviceWatch) ||
   !/apply_static_headers/.test(serviceWatch) ||
+  !/cloudflare:check/.test(serviceWatch) ||
   !/deploy_latest_static/.test(serviceWatch) ||
   !/publish_build_metadata/.test(serviceWatch) ||
   !/fix_api_readiness/.test(serviceWatch) ||

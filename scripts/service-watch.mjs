@@ -515,7 +515,7 @@ function requiredActions(result) {
       id: "fix_web_runtime_config",
       owner: "operator",
       action: "Render musunil-web Build Command가 pnpm render:web-settings 출력처럼 MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com으로 config.js를 생성하는지 확인한다. config.js에는 apiBaseUrl/mapStyleUrl 외 공개 필드가 있으면 안 되며, 수정 후 Clear build cache & deploy를 실행한다.",
-      verify: "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
+      verify: "pnpm render:web-settings && pnpm cloudflare:check && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
       reference: "docs/launch-cutover-runbook.md#2-render-static-site"
     });
   }
@@ -528,8 +528,8 @@ function requiredActions(result) {
         ? "pnpm render:api-settings 출력대로 Render musunil-api 설정과 환경변수를 확인한다. Custom Domains에 api.musunil.com을 추가하고, Render가 표시한 target을 Cloudflare DNS의 api 레코드에 DNS only로 연결한다."
         : "api.musunil.com의 TLS 인증서, Render musunil-api 서비스 상태, /health 응답을 확인한다.",
       verify: withVisualSurface
-        ? `pnpm render:api-settings && ${finalGateVerify}`
-        : "pnpm render:api-settings && MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once",
+        ? `pnpm render:api-settings && pnpm cloudflare:check && ${finalGateVerify}`
+        : "pnpm render:api-settings && pnpm cloudflare:check && MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once",
       reference: "docs/launch-cutover-runbook.md#3-render-api"
     });
   }
@@ -539,7 +539,7 @@ function requiredActions(result) {
       id: "apply_static_headers",
       owner: "operator",
       action: "pnpm render:web-settings 출력의 Header application mode를 먼저 확인한다. 수동 Static Site이면 Render musunil-web Settings > Headers에 Cache-Control, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options를 그대로 입력하고 Clear build cache & deploy를 실행한다. Blueprint-managed이면 render.yaml headers가 sync됐는지 확인한다. Cloudflare proxy가 켜져 있으면 캐시 우회와 header override 규칙도 함께 확인한다.",
-      verify: "pnpm render:web-settings && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy",
+      verify: "pnpm render:web-settings && pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy",
       reference: "docs/launch-cutover-runbook.md#2-render-static-site"
     });
   }
