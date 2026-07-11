@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-11 11:21 KST
+Last updated: 2026-07-11 11:26 KST
 
 Status: 완료 아님.
 
@@ -79,6 +79,7 @@ GET /ready -> 200
 - 2026-07-11 11:10 34차 패치로 실제 공개 `redactedClipUrl`과 poster가 모두 있는 LIVE Claim은 풀스크린 인증영상 탭에서 `<video class="reel-video">`로 렌더된다. `check:web-smoke`는 이 계약과 poster-only 회귀 금지를 검증하지만 실제 공개 영상 파일 기반 캡처와 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-11 11:16 35차 패치로 seed/API가 참조하는 preview webm 파일, 정적 서버 video MIME, `media-src` CSP를 검증한다. sample은 UI에서 실제 제보처럼 노출하지 않으며, 실제 운영 공개 영상 캡처와 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-11 11:21 36차 패치로 배포 후 smoke, runtime smoke, service watch까지 공개 preview clip route를 검사한다. poster만 살아 있고 실제 영상 route가 깨지는 배포 회귀는 차단하지만, 실제 운영 공개 영상 캡처와 사용자 수락 전에는 S+로 승급하지 않는다.
+- 2026-07-11 11:26 라이브 점검에서 `musunil.com` HTML과 공개 preview clip은 최신으로 보였지만 build-info 404와 정적 no-store 헤더 미적용이 확인됐다. Render Dashboard/Blueprint가 새 build command와 headers를 적용하기 전에는 운영 배포 준비를 S+로 승급하지 않는다.
 
 ## Next Active Goal Order
 

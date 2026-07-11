@@ -84,8 +84,9 @@
 - production Web은 `config.js`의 `apiBaseUrl`을 기준으로 하며, `?api=`와 localStorage API override는 localhost에서만 허용된다.
 - 로컬 dev 검증은 `MUSUNIL_WEB_API_BASE_URL=http://localhost:<api-port> pnpm dev:web`가 stale `apps/web/config.js` 값보다 우선해야 하며, `pnpm check:web-smoke`가 이 runtime override를 검증한다.
 - production Web은 `build-info.json`의 `commitSha`가 배포 대상 Git SHA와 같아야 한다.
-- Render Static Site는 repo root에서 `pnpm build:web-static`을 실행하고 `apps/web`만 publish한다.
-- Render Static Site와 Cloudflare 경로는 `/`, `/config.js`, `/build-info.json`에 `Cache-Control: no-store`를 보내야 한다.
+- Render Static Site는 repo root에서 `pnpm build:web-static`과 `pnpm check:web-smoke`를 실행하고 `apps/web`만 publish한다.
+- Render Static Site와 Cloudflare 경로는 `/`, `/config.js`, `/build-info.json`에 `Cache-Control: no-store`를 보내야 하며, 공개 영상 확인을 위해 CSP에 `media-src 'self' https: blob:`가 있어야 한다.
+- `/build-info.json` 또는 `/build-info.js`가 404면 Static Site build command가 실행되지 않았거나, repo root/Publish Directory/Blueprint 연결이 잘못된 상태로 본다.
 - 배포 후 `MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm launch:post-deploy-smoke`가 live Web SHA와 API smoke를 함께 통과해야 한다.
 - 공개 홈 카드에는 `WEAKLY_OBSERVED`, `traffic_control` 같은 내부 enum 원문이 보이지 않는다.
 - 내부/admin 라우트는 `x-musunil-internal-key` 없이는 막히고 constant-time 비교를 사용한다.

@@ -335,11 +335,14 @@ if (!/preDeployCommand:\s*pnpm db:migrate/.test(renderYaml)) failures.push("Rend
 if (!/name:\s*musunil-api[\s\S]*?buildCommand:[^\n]*pnpm check[^\n]*pnpm build:web-config[^\n]*pnpm launch:check/.test(renderYaml)) {
   failures.push("Render API build must run pnpm check, pnpm build:web-config, and pnpm launch:check");
 }
-if (!/name:\s*musunil-web[\s\S]*?buildCommand:[^\n]*pnpm build:web-static[^\n]*pnpm launch:check/.test(renderYaml)) {
-  failures.push("Render Web build must run pnpm build:web-static and pnpm launch:check");
+if (!/name:\s*musunil-web[\s\S]*?buildCommand:[^\n]*pnpm build:web-static[^\n]*pnpm check:web-smoke/.test(renderYaml)) {
+  failures.push("Render Web build must run pnpm build:web-static and pnpm check:web-smoke");
 }
 for (const header of ["Cache-Control", "Content-Security-Policy", "Permissions-Policy", "Referrer-Policy", "X-Content-Type-Options", "X-Frame-Options"]) {
   if (!hasRenderHeader(renderWeb, header)) failures.push(`Render Web static header is missing: ${header}`);
+}
+if (!/Content-Security-Policy[\s\S]*media-src\s+'self'\s+https:\s+blob:/.test(renderWeb)) {
+  failures.push("Render Web static CSP must allow public redacted video via media-src");
 }
 if (!/databases:\s*[\s\S]*-\s+name:\s*musunil-postgres\b[\s\S]*databaseName:\s*musunil\b[\s\S]*ipAllowList:\s*\[\]/.test(renderYaml)) {
   failures.push("Render managed Postgres must be declared with private-network-only access");

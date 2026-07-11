@@ -50,10 +50,12 @@ Render Static Site 수동 생성값:
 ```text
 Branch: main
 Root Directory: 비움
-Build Command: corepack enable && pnpm install --frozen-lockfile && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com pnpm build:web-static && pnpm launch:check
+Build Command: corepack enable && pnpm install --frozen-lockfile && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com pnpm build:web-static && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com pnpm check:web-smoke
 Publish Directory: apps/web
-Cache-Control header: no-store
+Required headers: render.yaml의 musunil-web headers 블록과 동일하게 적용
 ```
+
+`/build-info.json` 또는 `/build-info.js`가 404면 Render가 build command를 실행하지 않았거나, Static Site가 repo root/Publish Directory/Blueprint 설정을 잘못 보고 있는 상태다.
 
 배포 후에는 아래 명령으로 API와 Web이 같은 최신 커밋을 보고 있는지 확인한다.
 
@@ -64,7 +66,7 @@ MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) \
 pnpm launch:post-deploy-smoke
 ```
 
-이 검증이 실패하면 Render가 다른 브랜치/Root/Publish Directory를 보고 있거나, Static Site 헤더/Cloudflare 캐시가 구버전을 반환하는 상태다.
+이 검증이 실패하면 Render가 다른 브랜치/Root/Build Command/Publish Directory를 보고 있거나, Static Site headers/Cloudflare 캐시가 구버전을 반환하는 상태다.
 
 ## 현재 구현 범위
 
