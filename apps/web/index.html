@@ -2681,23 +2681,6 @@
         font-weight: 760;
       }
 
-      .mini-stat {
-        min-width: 0;
-        padding: 8px;
-        border-radius: 7px;
-        background: color-mix(in srgb, var(--surface-3) 72%, var(--surface));
-      }
-
-      .mini-stat strong {
-        display: block;
-        font-size: 13px;
-      }
-
-      .mini-stat span {
-        color: var(--muted);
-        font-size: 11px;
-      }
-
       .chip {
         display: inline-flex;
         align-items: center;
@@ -5590,16 +5573,16 @@
           <div class="stack">
             <div class="issue-stories" id="issue-stories" aria-label="주요 이슈 빠른 보기"></div>
             <div class="issue-list" id="issues" aria-label="주요 이슈"></div>
-            <div class="issue-situations-block" id="issue-situations-block" aria-label="선택 이슈 관련 상황">
+            <div class="issue-situations-block" id="issue-situations-block" aria-label="선택 이슈 연결 현장">
               <div class="section-title compact">
                 <div>
                   <h2 id="cards-title">현장 단위</h2>
                   <p class="fine" id="issue-context">지역과 시간이 다른 자료는 별도 현장으로 봅니다.</p>
                 </div>
               </div>
-              <details class="filter-panel" aria-label="상황 범위">
+              <details class="filter-panel" aria-label="보기 범위">
                 <summary>
-                  <strong>상황 범위</strong>
+                  <strong>보기 범위</strong>
                   <span class="fine" id="filter-summary">지금 · 전국</span>
                 </summary>
                 <div class="filter-controls">
@@ -8595,7 +8578,7 @@
         const cardsToShow = visibleCards(cards);
         const selectedIndex = cardsToShow.findIndex((card) => card.id === selected?.id);
         if (selectedIndex > 0) cardsToShow.unshift(cardsToShow.splice(selectedIndex, 1)[0]);
-        $("cards-title").textContent = selectedIssue ? `${selectedIssue.title} 관련 상황` : "주요 상황";
+        $("cards-title").textContent = selectedIssue ? `${selectedIssue.title} 연결 현장` : "주요 현장";
         $("issue-context").textContent = selectedIssue
           ? `${(selectedIssue.topicTags || []).join(" · ") || "주제 확인 중"} · ${relatedTargetCountText(cardsToShow.length)}`
           : relatedTargetCountText(cardsToShow.length);
@@ -8933,8 +8916,8 @@
 	              <span>${escapeHtml(law.lawName)} · ${escapeHtml(law.stage)}</span>
 	            </article>
 	            <article class="evidence-row">
-	              <strong>관련 상황</strong>
-	              <span>${relatedTargets.length}건의 상황이 연결 이슈 아래에서 확인됩니다.</span>
+	              <strong>연결 현장</strong>
+	              <span>${relatedTargets.length}건의 현장 자료가 연결 이슈 아래에서 확인됩니다.</span>
 	            </article>
 	            <article class="evidence-row">
 	              <strong>공식 링크</strong>
@@ -8952,7 +8935,7 @@
 	            at: law.statusDate || law.effectiveDate || law.lastUpdatedAt
 	          },
 	          ...issues.map((issue) => ({ title: issue.title, body: "연결 이슈", at: issue.lastUpdatedAt })),
-	          ...relatedTargets.slice(0, 4).map(({ item }) => ({ title: publicDisplayTitle(item.title || item.id), body: item.regionLabel || "관련 상황", at: item.updatedAt }))
+	          ...relatedTargets.slice(0, 4).map(({ item }) => ({ title: publicDisplayTitle(item.title || item.id), body: item.regionLabel || "연결 현장", at: item.updatedAt }))
 	        ];
 	        return rows
 	          .map((row) => `

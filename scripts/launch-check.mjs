@@ -31,6 +31,7 @@ const launchCutoverPlan = readFileSync(resolve(cwd, "scripts/launch-cutover-plan
 const launchReady = readFileSync(resolve(cwd, "scripts/launch-ready.mjs"), "utf8");
 const launchCutoverRunbook = readFileSync(resolve(cwd, "docs/launch-cutover-runbook.md"), "utf8");
 const webFlowSmoke = readFileSync(resolve(cwd, "scripts/ci-web-flow-smoke.mjs"), "utf8");
+const uxSurfaceSmoke = readFileSync(resolve(cwd, "scripts/ci-ux-surface-smoke.mjs"), "utf8");
 const webStaticManifestScript = readFileSync(resolve(cwd, "scripts/write-web-static-manifest.mjs"), "utf8");
 const rootPackageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
 const gitignore = readFileSync(resolve(cwd, ".gitignore"), "utf8");
@@ -203,6 +204,19 @@ if (
   !/identity_write_boundary_for_user_actions/.test(webFlowSmoke)
 ) {
   failures.push("Web user-flow smoke must cover home, detail, reels, report, and identity flows");
+}
+if (!/"check:ux-surface"/.test(packageJson) || !/ci-ux-surface-smoke\.mjs/.test(packageJson) || !/pnpm check:ux-surface/.test(packageJson)) {
+  failures.push("Commercial UX surface smoke must be wired into release checks");
+}
+if (
+  !/home_issue_first/.test(uxSurfaceSmoke) ||
+  !/no_dashboard_regression/.test(uxSurfaceSmoke) ||
+  !/reels_objective/.test(uxSurfaceSmoke) ||
+  !/map_context_tool/.test(uxSurfaceSmoke) ||
+  !/report_beginner_flow/.test(uxSurfaceSmoke) ||
+  !/forbidden_social_surface/.test(uxSurfaceSmoke)
+) {
+  failures.push("Commercial UX surface smoke must cover issue-first home, dashboard regression, reels, map, report, and forbidden social UI");
 }
 if (!/MUSUNIL_STRICT_WEB_HEADERS=1/.test(renderWebSettings) || !/Clear build cache & deploy/.test(renderWebSettings)) {
   failures.push("Render Web settings helper must print strict header verification and clear-cache redeploy instructions");
