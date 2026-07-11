@@ -92,6 +92,8 @@ GET /ready -> 200
 - 2026-07-11 12:40 독립 Visual Critique의 P1인 동등한 카드 액션 위계를 반영해 홈 카드 primary를 `근거 보기`로 올리고 `지도/영상/반론`을 secondary로 낮췄다. 390px 첫 카드 primary action evidence, visible cards 3, `scrollWidth=390`, forbidden 0을 확인했지만 공통 이슈 요약 바, 실제 운영 공개 영상/GPS, 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-11 12:48 `인증영상/지도/현장촬영`에 공통 이슈 요약 바를 붙이고, 모바일→데스크톱 전환 시 현재 화면과 레일 선택 상태가 유지되게 했다. 390px 세 화면과 1440px 지도 캡처에서 같은 이슈명/상태/요약, `navOverlap=false`, forbidden 0, desktop `activeRail=explore`를 확인했지만 실제 운영 공개 영상/GPS, 독립 재검증, 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-11 13:11 surface44 독립 비평을 반영해 홈 primary를 `상세 보기`로 바꾸고, 카드/상세/탐색 지도에 공통 `확인 요약`을 붙였다. 상세는 비동기 로딩 지연과 무관하게 `개요` 탭으로 열리며, 최상위 탭은 `홈/영상/탐색/법안/제보`로 정리됐다. 390px 홈/상세/지도와 1440px 데스크톱 캡처에서 forbidden 0, `scrollWidth=390/1440`, 상세 `selectedDetailTab=개요`, 지도 current tab `탐색`을 확인했지만 실제 운영 공개 영상/GPS, 독립 재검증, 사용자 수락 전에는 S+로 승급하지 않는다.
+- 2026-07-11 13:24 surface45 독립 재비평이 10초 기준 실패를 지적해 구체 이슈 우선 정렬, 짧은 공통 요약, 반복 감사 라벨 제거, 카드 보조 CTA 제거, 지도 CTA `근거·영상 보기`를 반영했다. 390px/1440px 첫 카드가 `정보통신망법 개정 반대 집회`로 시작하고 forbidden 0, `scrollWidth=390/1440`을 확인했지만 live build-info/header 실패, 실제 운영 공개 영상/GPS, 독립 재검증, 사용자 수락 전에는 S+로 승급하지 않는다.
+- 2026-07-11 13:24 live `https://musunil.com` 검증은 `/static-manifest.json` 최신 hash는 확인되지만 `/build-info.json` placeholder와 no-store header 미적용 때문에 실패한다. Render build output/header가 실제 반영되기 전 운영 배포 준비를 S+로 승급하지 않는다.
 
 ## Next Active Goal Order
 

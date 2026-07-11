@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 13:11 KST
+Last updated: 2026-07-11 13:24 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -46,6 +46,8 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 12:40 패치로 홈 카드 액션을 4개 동등 버튼에서 `근거 보기` primary와 `지도/영상/반론` secondary로 재정렬했다. 모바일 390px 첫 카드 primary action은 evidence, secondary는 map/video/dispute, visible cards 3, `scrollWidth=390`, forbidden 0을 확인했다. 사용자 수락 전 S+는 아니다.
 - 12:48 패치로 `인증영상/지도/현장촬영` 상단에 같은 이슈 요약 바를 붙였다. 상태, 이슈명, 지역·일정·위치 수·현장 수·공식 근거·영상 상태가 화면마다 같은 구조로 유지되고, 모바일에서 데스크톱으로 확장해도 현재 화면과 좌측 레일 선택 상태가 보존된다. 사용자 수락 전 S+는 아니다.
 - 13:11 패치로 독립 Visual Critique/IA Red-Team의 surface44 지적을 반영해 홈 primary를 `상세 보기`로 바꾸고, 카드/상세/지도에 공통 `확인 요약` 문장을 붙였다. 상세 진입은 비동기 로딩과 무관하게 `개요` 탭으로 안정화했고, 최상위 탭은 `홈/영상/탐색/법안/제보`로 고정했다. 그래도 실제 운영 공개 영상/GPS와 사용자 수락 전 S+는 아니다.
+- 13:24 독립 surface45 재비평은 10초 기준 실패로 판정했다. 46차 패치는 fallback/빈 API 상태에서도 구체 이슈를 먼저 정렬하고, 요약을 `지역 · 일시 · 기준 · 위치 · 공식 · 영상 · 반론` 짧은 순서로 고정했다. 카드 반복 라벨 `공개자료 기준/확인 요약`과 보조 CTA 3개를 제거하고, 지도 시트 CTA를 `근거·영상 보기`로 바꿨다. 사용자 수락 전 S+는 아니다.
+- 13:24 live `https://musunil.com` 검증은 여전히 실패한다. `/static-manifest.json`은 최신 index hash를 가리키지만 `/build-info.json`은 placeholder이고 `/`, `/config.js`, `/build-info.json` 모두 no-store가 아니다. Render build/header 계약이 실제 서비스에서 반영되기 전 운영 배포 준비는 S+로 승급하지 않는다.
 
 ## Agent Feedback Summary
 
@@ -100,6 +102,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | PM Local Patch 20 | 12:40 홈 카드의 `지도/근거/영상/반론` 4개 버튼이 같은 무게라 기능 목록처럼 보였다. | `근거 보기`를 full-width primary로 올리고 `지도/영상/반론`을 3개 secondary로 낮춤. 지도는 별도 위치 미리보기와 보조 버튼으로 유지 |
 | PM Local Patch 21 | 12:48 영상·지도·현장촬영 화면이 각각 따로 노는 화면처럼 읽힐 수 있었다. | 공통 이슈 요약 바에 상태 pill, 이슈명, 지역·현장·근거 요약을 통일하고, 모바일→데스크톱 전환 시 선택 화면과 레일 상태를 유지 |
 | Visual/IA Surface44 | 홈은 B+, 상세 B, 지도 B+, 데스크톱 B+ 후보. 가장 큰 문제는 감사 라벨과 반복 버튼이 여전히 대시보드처럼 읽히고, 10초 안에 `언제/어디/근거/반론`을 한 줄로 파악하기 어렵다는 점이다. | 홈 primary를 `상세 보기`로 바꾸고, 모든 주요 표면에 `확인 요약` 문장을 공유. 상세 탭은 즉시 `개요`로 열리게 하고, 탭 라벨은 `홈/영상/탐색/법안/제보`로 단순화 |
+| Visual/IA Surface45 | 5초 주제 파악은 부분통과, 10초 `어디/언제/어느 정도`는 실패. `공개자료 기준`, `확인 요약`, `7월 9일 공개자료`가 내부 운영어처럼 보이고 첫 카드가 메타 이슈라 목적이 흐렸다. | 구체 이슈 우선 정렬, 짧은 공통 요약 포맷, 반복 감사 라벨 제거, 카드 보조 CTA 제거, 지도 CTA `근거·영상 보기` 적용 |
 
 ## Active Goal Board
 
@@ -158,6 +161,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 49 | 홈 카드 액션 위계 재정렬 | 재수정 완료 | surface44 비평 이후 `근거 보기` primary는 근거 탭 직행으로 좁아 10초 이해에는 좋지만 첫 방문 CTA로 강했다. surface45에서 `상세 보기` primary와 `지도/영상/반론` secondary로 바꿈 |
 | 50 | 공통 이슈 요약 바와 반응형 상태 보존 | 1차 완료 | 영상·탐색·제보에 같은 상태/이슈명/위치·현장·근거 요약이 보이고, 모바일→데스크톱 전환 시 선택 레일이 유지됨 |
 | 51 | 소비자형 확인 요약·상세 진입 안정화 | 1차 완료 | 390px 홈 첫 카드 `primaryAction=summary`, `primaryLabel=상세 보기`, 확인 요약 `대구 · 전국 · 7월 9일 공개자료 · 위치 2곳 · 공식자료 6건 · 현장 영상 확인 중 · 반론/정정 없음`, 상세 `selectedDetailTab=개요`, 모바일/데스크톱 탭 `홈/영상/탐색/법안/제보`, `scrollWidth=390/1440`, forbidden 0 |
+| 52 | 구체 이슈 우선·요약 압축 | 1차 완료 | 390px/1440px 첫 카드가 `정보통신망법 개정 반대 집회`로 시작. 요약 `서울 · 일시 확인 중 · 기준 2026.07.11 · 위치 1곳 · 공식 확인 중 · 영상 1건 · 반론 1건`, 카드 action 1개 `상세 보기`, source/summary label visible false, 지도 CTA `근거·영상 보기`, forbidden 0 |
 
 ## Current Evidence
 
@@ -334,6 +338,12 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 13:11 mobile map confirm summary | `docs/commercial-splus-surface45-confirm-summary-map-mobile-390-2026-07-11.png` |
 | 13:11 desktop home confirm summary | `docs/commercial-splus-surface45-confirm-summary-home-desktop-1440-2026-07-11.png` |
 | 13:11 confirm summary metrics | 모바일 390px 홈 하단 탭 `홈/영상/탐색/법안/제보`, 첫 카드 `primaryAction=summary`, `primaryLabel=상세 보기`, 확인 요약 표시, `scrollWidth=390`, forbidden 0. 상세는 `selectedDetailTab=개요`, 확인 요약 유지, `scrollWidth=390`. 지도는 current tab `탐색`, `visibleMap=true`, 지도 요약 `서울 · 자료 위치와 현장 인증 범위를 함께 표시합니다.`. 데스크톱 1440px 레일 `홈/영상/탐색/법안/제보`, primary summary, `scrollWidth=1440`. 사용자 수락 전 S+는 아니다. |
+| 13:24 mobile home simplified issue | `docs/commercial-splus-surface46-simplified-card-home-mobile-390-2026-07-11.png` |
+| 13:24 mobile detail simplified issue | `docs/commercial-splus-surface46-simplified-card-detail-mobile-390-2026-07-11.png` |
+| 13:24 mobile map simplified issue | `docs/commercial-splus-surface46-simplified-card-map-mobile-390-2026-07-11.png` |
+| 13:24 desktop home simplified issue | `docs/commercial-splus-surface46-simplified-card-home-desktop-1440-2026-07-11.png` |
+| 13:24 simplified issue metrics | 390px 홈 첫 카드 `정보통신망법 개정 반대 집회`, status `반론 있음`, summary `서울 · 일시 확인 중 · 기준 2026.07.11 · 위치 1곳 · 공식 확인 중 · 영상 1건 · 반론 1건`, action labels `상세 보기`, `scrollWidth=390`, forbidden 0. 상세도 같은 title/summary와 `selectedDetailTab=개요`. 지도 current tab `탐색`, context line 동일, CTA `근거·영상 보기`. 데스크톱 1440px 첫 카드도 같은 이슈와 요약, `scrollWidth=1440`. 사용자 수락 전 S+는 아니다. |
+| 13:24 live deploy check | `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy` 실패. 원인: live `/build-info.json` body `commitSha=generated-at-build`, `source=placeholder`; live headers `/` public max-age 0, `/config.js` public max-age 14400, `/build-info.json` public max-age 0. |
 
 ## Non-Negotiable Gates
 

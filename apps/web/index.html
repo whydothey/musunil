@@ -1651,7 +1651,7 @@
       .issue-card-head {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: flex-start;
         gap: 10px;
         min-width: 0;
       }
@@ -1675,14 +1675,6 @@
         border-radius: 999px;
         background: var(--story-color, var(--brand));
         box-shadow: 0 0 0 4px color-mix(in srgb, var(--story-color, var(--brand)) 13%, transparent);
-      }
-
-      .issue-card-source {
-        flex: 0 0 auto;
-        color: var(--muted);
-        font-size: 11px;
-        font-weight: 760;
-        line-height: 1.2;
       }
 
       .issue-card-body {
@@ -1895,8 +1887,8 @@
 
       .issue-card-actions {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 7px;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
         min-width: 0;
       }
 
@@ -5486,7 +5478,7 @@
                   </div>
                 </div>
               </div>
-              <button class="button" id="split-view" aria-label="선택한 현장 상세 보기">상세</button>
+              <button class="button" id="split-view" aria-label="선택한 현장 근거와 영상 보기">근거·영상 보기</button>
             </div>
           </div>
           <div class="explore-grid" id="explore-grid" aria-label="지역·이슈 탐색"></div>
@@ -5539,7 +5531,7 @@
           <section class="report-panel" id="report-section" data-report-stage="locate" aria-label="현장 영상 제보">
             <div class="section-title">
               <div>
-                <h2>현장촬영</h2>
+                <h2>현장 제보</h2>
                 <p class="fine">근처 현장을 고른 뒤 촬영합니다.</p>
               </div>
 	              <span class="chip live" id="report-privacy-state">위치 비공개</span>
@@ -6369,6 +6361,17 @@
         if (cards.some((card) => ["UPCOMING", "STARTING_SOON"].includes(card.lifecycleState))) return "예정 일정 확인 중";
         if (cards.some((card) => card.lifecycleState === "LIVE")) return "진행 일정 확인 중";
         return "일정 확인 중";
+      }
+
+      function issueAssemblyTimeText(issue, cards = issueRelatedCards(issue)) {
+        const date = issueDateText(issue, cards);
+        if (/확인 중|예정|진행/.test(date)) return "일시 확인 중";
+        return `일시 ${date}`;
+      }
+
+      function issueSourceBasisText(issue) {
+        const basis = publicDate(issue?.updatedAt || issue?.lastUpdatedAt);
+        return basis ? `기준 ${basis}` : "기준 확인 중";
       }
 
       function issueContextFacts(issue) {
@@ -7315,12 +7318,18 @@
 	        return [...laws].sort((a, b) => lawOrderScore(b) - lawOrderScore(a));
 	      }
 
-	      function issueOrderScore(issue) {
-	        const archived = issue.lifecycleState === "ARCHIVED" || issue.status === "archived" ? 1000 : 0;
-	        return archived - Number(issue.currentCount || 0) * 20 - Number(issue.officialCount || 0) * 4 - Number(issue.targetCount || 0);
-	      }
+      function issueOrderScore(issue) {
+        const archived = issue.lifecycleState === "ARCHIVED" || issue.status === "archived" ? 1000 : 0;
+        const metaIssue = isMetaPublicSourceIssue(issue) ? 260 : 0;
+        return archived + metaIssue - Number(issue.currentCount || 0) * 20 - Number(issue.officialCount || 0) * 4 - Number(issue.targetCount || 0);
+      }
 
-	      function cardOrderScore(card) {
+      function isMetaPublicSourceIssue(issue) {
+        const text = searchText(`${issue?.id || ""} ${issue?.title || ""} ${(issue?.topicTags || []).join(" ")}`);
+        return text.includes("issue_real_public_sources") || text.includes("신고공개일정") || text.includes("신고통계") || text.includes("공개일정");
+      }
+
+      function cardOrderScore(card) {
 	        const stateRank = {
 	          LIVE: 0,
 	          UPCOMING: 0,
@@ -7890,27 +7899,26 @@
         const cards = issueRelatedCards(issue);
         const regions = issueRegions(issue, cards);
         const place = regions.length ? regions.slice(0, 2).join(" · ") : "지역 확인 중";
-        const date = issueDateText(issue, cards);
         const locationCount = Number(issue.regionCount || regions.length || 0);
         const official = Number(issue.officialCount || 0);
         const video = issueVideoCount(issue);
         const dispute = Number(issue.disputeCount || 0);
-        const dateLabel = /확인 중|예정|진행/.test(date) ? date : `${date} 공개자료`;
         return [
           place,
-          dateLabel,
+          issueAssemblyTimeText(issue, cards),
+          issueSourceBasisText(issue),
           locationCount ? `위치 ${locationCount}곳` : "위치 확인 중",
-          official ? `공식자료 ${official}건` : "공식자료 확인 중",
-          video ? `현장영상 ${video}건` : issueVideoReviewText(issue),
-          dispute ? `반론/정정 ${dispute}건` : "반론/정정 없음"
+          official ? `공식 ${official}건` : "공식 확인 중",
+          video ? `영상 ${video}건` : "영상 확인 중",
+          dispute ? `반론 ${dispute}건` : "반론 없음"
         ].join(" · ");
       }
 
       function issueCardStatusText(issue) {
         const state = issueStoryState(issue);
-        if (state === "dispute") return "반론 함께 표시";
+        if (state === "dispute") return "반론 있음";
         if (state === "pending") return "확인 중";
-        if (state === "official") return "공식 자료 확인";
+        if (state === "official") return "공개자료 확인";
         return "현장 변화 확인";
       }
 
@@ -7987,9 +7995,6 @@
         return `
           <div class="issue-card-actions" aria-label="${escapeHtml(title)} 확인 경로">
             ${issueCardActionButton("summary", "icon-stats", "상세 보기", `${title} 상세 보기`, "primary")}
-            ${issueCardActionButton("map", "icon-locate", "지도", `${title} 지도에서 위치 확인`)}
-            ${issueCardActionButton("video", "icon-video", "영상", `${title} 인증 영상 보기`)}
-            ${issueCardActionButton("dispute", "icon-assembly", "반론", `${title} 반론·정정 보기`)}
           </div>
         `;
       }
@@ -8112,7 +8117,6 @@
 	            <div class="issue-feed-cover">
 	              <div class="issue-card-head">
 	                <span class="issue-card-status">${escapeHtml(issueCardStatusText(issue))}</span>
-	                <span class="issue-card-source">공개자료 기준</span>
               </div>
               <div class="issue-card-body">
                 <div class="issue-card-copy">
@@ -8121,7 +8125,6 @@
                   </div>
                   <p class="issue-card-deck">${escapeHtml(issueCardDeckText(issue))}</p>
                   <div class="issue-confirm-summary" aria-label="확인 요약">
-                    <span>확인 요약</span>
                     <strong>${escapeHtml(issueConfirmedSummaryLine(issue))}</strong>
                   </div>
                 </div>
@@ -9145,7 +9148,7 @@
             <div class="reels-empty-actions" aria-label="영상 대기 상태에서 확인할 항목">
               <button class="button primary" type="button" data-reel-empty-action="map"><svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg><span>지도</span></button>
               <button class="button ghost" type="button" data-reel-empty-action="evidence"><svg class="button-symbol" aria-hidden="true"><use href="#icon-stats"></use></svg><span>근거</span></button>
-              <button class="button ghost" type="button" data-reel-empty-action="report"><svg class="button-symbol" aria-hidden="true"><use href="#icon-report"></use></svg><span>현장촬영</span></button>
+              <button class="button ghost" type="button" data-reel-empty-action="report"><svg class="button-symbol" aria-hidden="true"><use href="#icon-report"></use></svg><span>제보</span></button>
             </div>
           </article>
         `;
@@ -10038,6 +10041,16 @@
         if (minutes < 60) return `${minutes}분 전`;
         if (minutes < 1440) return `${Math.round(minutes / 60)}시간 전`;
         return new Date(value).toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
+      }
+
+      function publicDate(value) {
+        if (!value) return "";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "";
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}.${month}.${day}`;
       }
 
       function escapeHtml(value) {
