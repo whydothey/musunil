@@ -336,9 +336,11 @@ if (
   !/web_visual_surface/.test(completionAudit) ||
   !/pnpm cloudflare:check:strict/.test(completionAudit) ||
   !/serviceSyncState=live/.test(completionAudit) ||
-  !/pnpm launch:final-gate/.test(completionAudit)
+  !/pnpm launch:final-gate/.test(completionAudit) ||
+  !/stale/.test(completionAudit) ||
+  !/freshness window/.test(completionAudit)
 ) {
-  failures.push("completion audit must document current live blockers and require Cloudflare strict, live sync, and final gate evidence");
+  failures.push("completion audit must document current live blockers, stale evidence policy, and require Cloudflare strict, live sync, and final gate evidence");
 }
 const localCompletedSection = markdownSection(localCompletionStatus, "## 완료", "## 외부 연결 필요");
 const localExternalSection = markdownSection(localCompletionStatus, "## 외부 연결 필요", "\n## ");

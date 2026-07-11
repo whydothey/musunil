@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-12 07:51 KST
+Last updated: 2026-07-12 08:06 KST
 
 Status: 완료 아님.
 
@@ -60,7 +60,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 
 ## Current Live Blockers
 
-`pnpm launch:blockers` 최신 결과 기준 live completion은 아직 막혀 있다.
+`pnpm launch:blockers -- --refresh`를 실행해 freshness window 안에서 갱신된 결과만 live completion 증거로 본다. stale blocker report는 완료 판단에 쓰지 않는다. 최신 갱신 결과 기준 live completion은 아직 막혀 있다.
 
 - `api_endpoint_preflight`: `api.musunil.com` DNS가 아직 연결되지 않아 API `/health`, `/ready`, 공개 payload, identity boundary 검사가 skip 상태다.
 - `web_header_contract`: live Web에 no-store, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options가 아직 적용되지 않았다.
