@@ -8,12 +8,15 @@ const cwd = resolve(import.meta.dirname, "..");
 const config = safeConfig();
 const webBaseUrl = deployedUrl(process.env.MUSUNIL_WEB_BASE_URL ?? positionalArg() ?? readString(config, "app.public_base_url"));
 const expectedCommitSha = process.env.MUSUNIL_EXPECTED_COMMIT_SHA || process.env.RENDER_GIT_COMMIT || gitHead();
+const expectedApiBaseUrl = deployedUrl(
+  process.env.MUSUNIL_EXPECTED_API_BASE_URL ?? process.env.MUSUNIL_API_BASE_URL ?? readString(config, "api.public_base_url")
+);
 const checks = [];
 const warnings = [];
 let staticManifestVerified = false;
 const renderStaticHint =
   "Expected Render Static Site settings: Branch=main, Root Directory blank, " +
-  "Build Command=\"corepack enable && pnpm install --frozen-lockfile && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com pnpm build:web-static && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com pnpm check:web-smoke\", " +
+  "Build Command=\"corepack enable && pnpm install --frozen-lockfile && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com MUSUNIL_WRITE_BUILD_INFO=1 pnpm build:web-static && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com pnpm check:web-smoke\", " +
   "Publish Directory=apps/web, headers copied from render.yaml musunil-web. " +
   "If static-manifest and live file hashes match but build-info is placeholder, the latest committed static files are deployed but Render did not publish build metadata.";
 
@@ -75,9 +78,18 @@ await check("web_config_current", async () => {
   assert(response.body.includes("apiBaseUrl"), "config.js missing apiBaseUrl");
   assert(!response.body.includes("localhost:4000"), "config.js still points to localhost API");
   assert(!/internal|secret|jwt|postgres|redis|database|MUSUNIL_USER_INPUTS/i.test(response.body), "config.js leaked internal config pattern");
+  const deployedConfig = parseWebConfig(response.body);
+  assert(deployedUrl(deployedConfig.apiBaseUrl), `config.js apiBaseUrl must be deployed HTTPS, got ${deployedConfig.apiBaseUrl || "(missing)"}`);
+  if (expectedApiBaseUrl) {
+    assert(
+      deployedConfig.apiBaseUrl === expectedApiBaseUrl,
+      `config.js apiBaseUrl ${deployedConfig.apiBaseUrl} does not match expected ${expectedApiBaseUrl}`
+    );
+  }
+  return { apiBaseUrl: deployedConfig.apiBaseUrl, expectedApiBaseUrl: expectedApiBaseUrl ?? null };
 });
 
-console.log(JSON.stringify({ checked: "web_deploy_version", webBaseUrl, expectedCommitSha, checks, warnings }, null, 2));
+console.log(JSON.stringify({ checked: "web_deploy_version", webBaseUrl, expectedCommitSha, expectedApiBaseUrl, checks, warnings }, null, 2));
 
 async function raw(url) {
   const response = await fetch(withCacheBuster(url), {
@@ -113,8 +125,8 @@ async function text(url) {
 }
 
 async function check(id, run) {
-  await run();
-  checks.push({ id, ok: true });
+  const detail = await run();
+  checks.push(detail === undefined ? { id, ok: true } : { id, ok: true, detail });
 }
 
 function assert(condition, message) {
@@ -164,6 +176,16 @@ function deployedUrl(value) {
     return url.toString().replace(/\/$/, "");
   } catch {
     return undefined;
+  }
+}
+
+function parseWebConfig(source) {
+  const match = source.match(/window\.MUSUNIL_WEB_CONFIG\s*=\s*({[\s\S]*?})\s*;?\s*$/);
+  assert(match, "config.js could not be parsed");
+  try {
+    return JSON.parse(match[1]);
+  } catch (error) {
+    throw new Error(`config.js contains invalid JSON: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

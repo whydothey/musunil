@@ -318,7 +318,7 @@ function requiredActions(result) {
       id: "deploy_latest_static",
       owner: "operator",
       action: "Render musunil-web의 Branch, Root Directory, Build Command, Publish Directory가 pnpm render:web-settings 출력과 같은지 맞춘 뒤 Clear build cache & deploy를 실행한다.",
-      verify: "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
+      verify: "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
       reference: "docs/launch-cutover-runbook.md#2-render-static-site"
     });
   }
@@ -330,7 +330,9 @@ function requiredActions(result) {
       action: apiPreflight.message?.includes("ENOTFOUND")
         ? "pnpm render:api-settings 출력대로 Render musunil-api 설정과 환경변수를 확인한다. Custom Domains에 api.musunil.com을 추가하고, Render가 표시한 target을 Cloudflare DNS의 api 레코드에 DNS only로 연결한다."
         : "api.musunil.com의 TLS 인증서, Render musunil-api 서비스 상태, /health 응답을 확인한다.",
-      verify: "pnpm render:api-settings && MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once",
+      verify: withVisualSurface
+        ? "pnpm render:api-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm service:watch:visual"
+        : "pnpm render:api-settings && MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once",
       reference: "docs/launch-cutover-runbook.md#3-render-api"
     });
   }
@@ -340,7 +342,7 @@ function requiredActions(result) {
       id: "apply_static_headers",
       owner: "operator",
       action: "pnpm render:web-settings 출력의 Headers를 Render musunil-web Static Site Dashboard에 그대로 입력하고 Clear build cache & deploy를 실행한다. Cloudflare proxy가 켜져 있으면 캐시 우회 규칙도 함께 확인한다.",
-      verify: "pnpm render:web-settings && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com pnpm check:web-deploy",
+      verify: "pnpm render:web-settings && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy",
       reference: "docs/launch-cutover-runbook.md#2-render-static-site"
     });
   }
@@ -350,7 +352,7 @@ function requiredActions(result) {
       id: "publish_build_metadata",
       owner: "operator",
       action: "Static manifest hash로 최신 UI는 확인됐지만 build-info가 placeholder다. Render가 build command output을 publish하는지 확인하거나, static-manifest 검증을 fallback warning으로 유지한다.",
-      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
+      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
       reference: "docs/launch-readiness-checklist.md"
     });
   }
@@ -383,7 +385,7 @@ function requiredActions(result) {
       action: nonLiveDataState
         ? "실제 musunil.com이 저장된 공개자료 fallback 상태로 렌더링 중이다. API DNS/CORS/Web config 연결을 고쳐 `serviceSyncState=live`가 될 때까지 배포 승급을 중단한다."
         : "실제 musunil.com 렌더링 회귀다. 홈 이슈 수, 상세 전환, 인증영상/지도/제보 표면, 모바일 overflow와 하단 내비 겹침을 수정하기 전까지 배포 승급을 중단한다.",
-      verify: "pnpm service:watch:visual",
+      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm service:watch:visual",
       reference: nonLiveDataState ? "docs/launch-cutover-runbook.md#3-render-api" : "docs/commercial-splus-redesign.md"
     });
   }

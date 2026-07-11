@@ -26,19 +26,19 @@ const plan = {
       id: "static_headers",
       owner: "operator",
       action: "Copy every Render Static Site header from this plan or pnpm render:web-settings into the Render musunil-web dashboard, then Clear build cache & deploy.",
-      verify: "MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com pnpm check:web-deploy"
+      verify: "MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy"
     },
     {
       id: "build_metadata",
       owner: "operator",
       action: "Confirm Render publishes build output. Static hash match is acceptable for UI freshness, but build-info should eventually contain the deployed Git SHA.",
-      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy"
+      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy"
     },
     {
       id: "live_data_sync",
       owner: "operator",
       action: "After Web and API domains are connected, confirm the live browser surface is not rendering saved fallback data and reports serviceSyncState=live.",
-      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm service:watch:visual"
+      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm service:watch:visual"
     }
   ],
   renderStaticSite: {
@@ -99,14 +99,15 @@ const plan = {
     "pnpm render:api-settings",
     "pnpm render:web-settings",
     "Apply Render custom domains, Cloudflare DNS, and Render Static headers.",
-    "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
-    "MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
+    "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
+    "MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
     "pnpm check:visual-surface:live",
     "MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws",
-    "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm service:watch:visual"
+    "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm service:watch:visual"
   ],
   successCriteria: [
     "Live static manifest matches the current repo output.",
+    "Live config.js apiBaseUrl matches https://api.musunil.com.",
     "Live visual surface smoke passes on musunil.com across 390px, 430px, 768px, and 1440px.",
     "Integrated service watch passes with web_visual_surface ok and serviceSyncState=live.",
     "Strict Web header check passes with no-store on /, /config.js, and /build-info.json.",

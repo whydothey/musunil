@@ -263,6 +263,7 @@ if (
 }
 if (
   !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(renderWebSettings) ||
+  !/MUSUNIL_EXPECTED_API_BASE_URL/.test(renderWebSettings) ||
   !/Clear build cache & deploy/.test(renderWebSettings) ||
   !/check:visual-surface:live/.test(renderWebSettings) ||
   !/service:watch:visual/.test(renderWebSettings)
@@ -277,6 +278,7 @@ if (
   !/Cloudflare DNS/.test(launchCutoverPlan) ||
   !/render:api-settings/.test(launchCutoverPlan) ||
   !/render:web-settings/.test(launchCutoverPlan) ||
+  !/MUSUNIL_EXPECTED_API_BASE_URL/.test(launchCutoverPlan) ||
   !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(launchCutoverPlan) ||
   !/check:visual-surface:live/.test(launchCutoverPlan) ||
   !/service:watch:visual/.test(launchCutoverPlan) ||
@@ -486,8 +488,14 @@ if (
 if (!/"check:build-info-clean"/.test(packageJson) || !/ci-build-info-clean\.mjs/.test(packageJson) || !/pnpm check:build-info-clean/.test(JSON.parse(packageJson).scripts["check:release"] ?? "")) {
   failures.push("release check must verify local commands preserve tracked build-info placeholders");
 }
-if (!/generated-at-build/.test(webDeployCheck) || !/staticManifestVerified/.test(webDeployCheck) || !/web_build_info_placeholder/.test(webDeployCheck)) {
-  failures.push("web deploy check must verify static manifest freshness before tolerating tracked build-info placeholders");
+if (
+  !/generated-at-build/.test(webDeployCheck) ||
+  !/staticManifestVerified/.test(webDeployCheck) ||
+  !/web_build_info_placeholder/.test(webDeployCheck) ||
+  !/MUSUNIL_EXPECTED_API_BASE_URL/.test(webDeployCheck) ||
+  !/parseWebConfig/.test(webDeployCheck)
+) {
+  failures.push("web deploy check must verify static manifest freshness and deployed apiBaseUrl before tolerating tracked build-info placeholders");
 }
 if (!/static-manifest\.json/.test(webDeployCheck) || !/assertLiveFileHash/.test(webDeployCheck) || !/createHash\("sha256"\)/.test(webStaticManifestScript)) {
   failures.push("web deploy check must verify static manifest content hashes");
