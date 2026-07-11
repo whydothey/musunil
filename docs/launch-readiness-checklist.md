@@ -104,6 +104,7 @@
 - 로그인 없이 공개 읽기 API는 접근 가능하지만, 제보·현장 판단·반론·권리침해 신고·알림 설정·`/me/*`는 본인확인 완료 세션 없이는 `identity_required`로 실패한다.
 - `MUSUNIL_IDENTITY_TEST_MODE=true`는 production 런타임에서 본인확인 우회로 작동하지 않아야 하며, `/ready`는 `identity.test_mode` 실패를 보고해야 한다.
 - 본인확인 완료 후에는 `x-musunil-user-*` 헤더뿐 아니라 HttpOnly `musunil_session` 쿠키만으로도 `/me`와 사용자 범위 API가 인증되어야 한다. Web fetch는 `credentials: "include"`를 사용하고, localStorage token이 사라져도 `/me`로 쿠키 세션을 복구해야 한다.
+- production HTTPS Web은 본인확인 token을 장기 localStorage에 저장하지 않고, 개발/preview 환경에서만 헤더 fallback용 token 저장을 허용한다.
 - `pnpm service:watch -- --once`가 Web static hash/build metadata, live `config.js` 공개 필드와 `apiBaseUrl`, Web header contract, API DNS/HTTPS endpoint preflight, API readiness, 공개 payload 안전성, `/transparency/logs`, 법안/coverage, 인증 write boundary를 검증하고 `docs/splus-service-watch.md`를 갱신한다. API endpoint preflight가 실패하면 하위 API checks는 `skip`이어야 하며, 실패 원인은 `api_endpoint_preflight`에 남아야 한다. 실패 시 `Required Actions` 섹션이 다음 운영 조치와 검증 명령을 표시해야 한다.
 - `public_payload_home`은 `/home.issueCards`가 실제 주제형 Issue를 3개 이상 포함하고, 첫 항목이 지역별 공개 일정/신고 통계 같은 공개자료 묶음이 아니어야 통과한다.
 - `pnpm service:watch:visual`은 위 감시에 live visual surface와 Web `serviceSyncState` 확인까지 포함한다. 운영 도메인이 저장된 공개자료 fallback 상태인 `delayed`로 렌더링되면 실패해야 한다.

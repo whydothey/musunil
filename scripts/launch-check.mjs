@@ -696,6 +696,9 @@ if (!/verifiedCredentialsFromRequest/.test(apiApp) || !/cookieValueFromHeader/.t
 if (!/credentials:\s*"include"/.test(web) || !/restoreCookieSession/.test(web) || !/sessionFromMe/.test(web)) {
   failures.push("Web must restore HttpOnly identity cookie sessions through /me");
 }
+if (!/persistIdentitySession/.test(web) || !/shouldPersistIdentityToken/.test(web) || !/location\.protocol !== "https:"/.test(web)) {
+  failures.push("Web must avoid long-term localStorage identity token persistence on production HTTPS");
+}
 if (!/userTokenTtlMs/.test(apiApp) || !/expiresAt/.test(apiApp)) failures.push("verified identity session tokens must expire");
 if (/x-musunil-user-secret/.test(apiApp)) failures.push("user token secret must not be read from request headers");
 if (!/held_private/.test(apiApp) || !/publicClaimsForTarget/.test(apiApp) || !/setClaimVisibility/.test(apiApp)) {

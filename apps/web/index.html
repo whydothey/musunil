@@ -6479,7 +6479,7 @@
             const me = await api("/me", { headers: sessionHeaders(cached) });
             if (me.authenticated) {
               const refreshed = sessionFromMe(me, cached);
-              localStorage.setItem(SESSION_KEY, JSON.stringify(refreshed));
+              persistIdentitySession(refreshed);
               updateIdentityStatus(refreshed);
               return refreshed;
             }
@@ -6490,7 +6490,7 @@
         const restored = await restoreCookieSession();
         if (restored) return restored;
         const session = await openIdentitySheet(purpose);
-        localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        persistIdentitySession(session);
         updateIdentityStatus(session);
         return session;
       }
@@ -6504,7 +6504,7 @@
           const me = await api("/me");
           if (!me.authenticated) return null;
           const session = sessionFromMe(me);
-          localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+          persistIdentitySession(session);
           updateIdentityStatus(session);
           return session;
         } catch {
@@ -6515,10 +6515,21 @@
       function sessionFromMe(me, previous = {}) {
         return {
           userId: me.userId,
-          token: previous.token || "",
+          token: shouldPersistIdentityToken() ? previous.token || "" : "",
           authLevel: me.authLevel || "identity_verified",
           expiresAt: me.expiresAt
         };
+      }
+
+      function persistIdentitySession(session) {
+        localStorage.setItem(SESSION_KEY, JSON.stringify({
+          ...session,
+          token: shouldPersistIdentityToken() ? session.token || "" : ""
+        }));
+      }
+
+      function shouldPersistIdentityToken() {
+        return isPreviewApiBase || location.protocol !== "https:";
       }
 
       function openIdentitySheet(purpose = "general") {

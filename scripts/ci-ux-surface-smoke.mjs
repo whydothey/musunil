@@ -120,6 +120,8 @@ scenario("identity_write_boundary", [
   has('api("/auth/identity/complete"'),
   has('credentials: "include"'),
   has("restoreCookieSession"),
+  has("persistIdentitySession"),
+  has("shouldPersistIdentityToken"),
   functionHas("getUserSession", "openIdentitySheet(purpose)"),
   functionHas("sessionHeaders", '"x-musunil-user-id"'),
   functionHas("sessionHeaders", '"x-musunil-user-token"')

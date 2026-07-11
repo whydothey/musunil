@@ -284,6 +284,9 @@ async function checkWeb(port) {
   assert(index.includes('api("/auth/identity/complete"'), "identity complete API handoff missing");
   assert(index.includes('credentials: "include"'), "API fetch must include HttpOnly identity cookies");
   assert(index.includes("restoreCookieSession"), "identity cookie session restore missing");
+  assert(index.includes("persistIdentitySession"), "identity session persistence helper missing");
+  assert(index.includes("shouldPersistIdentityToken"), "identity token storage policy missing");
+  assert(index.includes('location.protocol !== "https:"'), "identity token should not persist on production HTTPS");
   assert(index.includes('api("/me")'), "identity cookie restore should use /me");
   assert(index.includes('id="report-auth-state"'), "report auth status chip missing");
   assert(index.includes('id="confirm-report-target"'), "report target confirmation action missing");
