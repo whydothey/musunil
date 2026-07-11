@@ -132,14 +132,16 @@ if (!packageJson.includes('"launch:external-smoke"')) failures.push("package.jso
 if (!packageJson.includes('"mobile:integrity-smoke"')) failures.push("package.json missing mobile:integrity-smoke");
 if (!packageJson.includes('"launch:ready"')) failures.push("package.json missing launch:ready");
 if (!packageJson.includes('"launch:post-deploy-smoke"')) failures.push("package.json missing launch:post-deploy-smoke");
+if (!packageJson.includes('"launch:final-gate"')) failures.push("package.json missing launch:final-gate");
 if (!launch.includes("`pnpm launch:external-smoke`")) failures.push("launch checklist missing unified external smoke command");
 if (!launch.includes("`pnpm mobile:integrity-smoke`")) failures.push("launch checklist missing mobile integrity smoke command");
 if (!launch.includes("`pnpm launch:ready`")) failures.push("launch checklist missing unified launch-ready command");
 if (!launch.includes("`pnpm launch:post-deploy-smoke`")) failures.push("launch checklist missing post-deploy smoke command");
-for (const term of ["pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws", "pnpm launch:post-deploy-smoke -- --require-laws"]) {
+if (!launch.includes("`pnpm launch:final-gate`")) failures.push("launch checklist missing final gate command");
+for (const term of ["pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws", "pnpm launch:post-deploy-smoke -- --require-laws", "pnpm launch:final-gate"]) {
   if (!userInputsManual.includes(term)) failures.push(`user inputs manual missing final launch command: ${term}`);
 }
-for (const term of ["pnpm launch:ready", "pnpm launch:post-deploy-smoke", "sample gate", "실제 `pnpm storage:smoke`", "실제 `pnpm redaction:smoke`", "실제 `pnpm mobile:integrity-smoke`", "운영 DB/Redis/Render `/ready`"]) {
+for (const term of ["pnpm launch:ready", "pnpm launch:post-deploy-smoke", "pnpm launch:final-gate", "sample gate", "실제 `pnpm storage:smoke`", "실제 `pnpm redaction:smoke`", "실제 `pnpm mobile:integrity-smoke`", "운영 DB/Redis/Render `/ready`"]) {
   if (!audit.includes(term)) failures.push(`completion audit missing final evidence term: ${term}`);
 }
 

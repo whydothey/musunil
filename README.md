@@ -80,6 +80,7 @@ pnpm launch:post-deploy-smoke -- --require-laws
 ```
 
 이 검증이 실패하면 Render가 다른 브랜치/Root/Build Command/Publish Directory를 보고 있거나, Static Site headers/Cloudflare 캐시가 구버전을 반환하는 상태다.
+최종 출시 판정은 같은 환경변수로 `pnpm launch:final-gate`를 실행한다. 이 명령은 post-deploy smoke와 live service watch blocker 갱신을 순서대로 실행하며, 법안·API·정적 해시·live visual sync 중 하나라도 남으면 실패한다.
 
 ## 현재 구현 범위
 

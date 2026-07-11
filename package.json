@@ -39,6 +39,7 @@
     "launch:external-smoke": "node scripts/external-smoke.mjs",
     "launch:ready": "node scripts/launch-ready.mjs",
     "launch:post-deploy-smoke": "node scripts/post-deploy-smoke-runner.mjs",
+    "launch:final-gate": "node scripts/launch-final-gate.mjs",
     "service:watch": "node scripts/service-watch.mjs",
     "service:watch:visual": "node scripts/service-watch.mjs -- --once --with-visual",
     "check:web-deploy": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/check-web-deploy.mjs",

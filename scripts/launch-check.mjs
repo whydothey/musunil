@@ -32,6 +32,7 @@ const renderWebSettings = readFileSync(resolve(cwd, "scripts/render-web-settings
 const launchCutoverPlan = readFileSync(resolve(cwd, "scripts/launch-cutover-plan.mjs"), "utf8");
 const launchNextActions = readFileSync(resolve(cwd, "scripts/launch-next-actions.mjs"), "utf8");
 const launchReady = readFileSync(resolve(cwd, "scripts/launch-ready.mjs"), "utf8");
+const launchFinalGate = readFileSync(resolve(cwd, "scripts/launch-final-gate.mjs"), "utf8");
 const launchCutoverRunbook = readFileSync(resolve(cwd, "docs/launch-cutover-runbook.md"), "utf8");
 const webFlowSmoke = readFileSync(resolve(cwd, "scripts/ci-web-flow-smoke.mjs"), "utf8");
 const uxSurfaceSmoke = readFileSync(resolve(cwd, "scripts/ci-ux-surface-smoke.mjs"), "utf8");
@@ -262,6 +263,17 @@ if (
   !/launch:post-deploy-smoke -- --require-laws/.test(launchNextActions)
 ) {
   failures.push("Launch blockers helper must summarize service watch freshness, required actions, and Web/API/laws verification commands");
+}
+if (
+  !/"launch:final-gate"/.test(packageJson) ||
+  !/launch-final-gate\.mjs/.test(packageJson) ||
+  !/launch_final_gate_plan/.test(launchFinalGate) ||
+  !/launch:post-deploy-smoke/.test(launchFinalGate) ||
+  !/--require-laws/.test(launchFinalGate) ||
+  !/launch:blockers:refresh-strict/.test(launchFinalGate) ||
+  !/post_deploy_smoke[\s\S]*live_blocker_refresh_strict/.test(launchFinalGate)
+) {
+  failures.push("Launch final gate must run post-deploy smoke with laws and refresh-strict blockers in one ordered command");
 }
 if (
   !/api\.musunil\.com/.test(renderApiSettings) ||
