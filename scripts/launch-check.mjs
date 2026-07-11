@@ -775,7 +775,10 @@ if (!/MUSUNIL_WEB_CONFIG/.test(web)) failures.push("web runtime config hook is m
 if (!/build-info\.js/.test(web)) failures.push("web build-info hook is missing");
 if (
   !/const writeBuildInfo/.test(webConfigWriter) ||
+  !/renderBuildDetected/.test(webConfigWriter) ||
   !/MUSUNIL_WRITE_BUILD_INFO/.test(webConfigWriter) ||
+  !/RENDER_GIT_COMMIT/.test(webConfigWriter) ||
+  !/RENDER_EXTERNAL_URL/.test(webConfigWriter) ||
   !/if \(writeBuildInfo\)/.test(webConfigWriter)
 ) {
   failures.push("web config writer must preserve tracked build-info placeholders unless Render or an explicit build-info flag is used");

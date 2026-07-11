@@ -5,7 +5,15 @@ import { loadUserInputs } from "../packages/config/src/index.ts";
 
 const cwd = resolve(import.meta.dirname, "..");
 const staticMode = process.argv.includes("--static");
-const writeBuildInfo = process.argv.includes("--write-build-info") || readEnv("MUSUNIL_WRITE_BUILD_INFO") === "1" || Boolean(readEnv("RENDER_SERVICE_ID"));
+const renderBuildDetected = Boolean(
+  readEnv("RENDER") ||
+  readEnv("RENDER_SERVICE_ID") ||
+  readEnv("RENDER_SERVICE_NAME") ||
+  readEnv("RENDER_SERVICE_TYPE") ||
+  readEnv("RENDER_GIT_COMMIT") ||
+  readEnv("RENDER_EXTERNAL_URL")
+);
+const writeBuildInfo = process.argv.includes("--write-build-info") || readEnv("MUSUNIL_WRITE_BUILD_INFO") === "1" || renderBuildDetected;
 let config = {};
 try {
   config = loadUserInputs({ cwd }).config;
@@ -18,11 +26,11 @@ const webConfig = {
   mapStyleUrl: publicUrl(process.env.MUSUNIL_WEB_MAP_STYLE_URL) ?? readString(config, "map.map_style_url") ?? "https://tiles.openfreemap.org/styles/positron"
 };
 const buildInfo = {
-  commitSha: gitValue("rev-parse", "HEAD") ?? readEnv("RENDER_GIT_COMMIT") ?? "unknown",
+  commitSha: readEnv("RENDER_GIT_COMMIT") ?? gitValue("rev-parse", "HEAD") ?? "unknown",
   branch: readEnv("RENDER_GIT_BRANCH") ?? gitValue("rev-parse", "--abbrev-ref", "HEAD") ?? "unknown",
   builtAt: new Date().toISOString(),
   staticMode,
-  source: readEnv("RENDER_SERVICE_ID") ? "render" : "local"
+  source: renderBuildDetected ? "render" : "local"
 };
 
 writeFileSync(
