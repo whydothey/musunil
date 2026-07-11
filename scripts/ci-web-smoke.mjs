@@ -312,6 +312,7 @@ async function checkWeb(port) {
   assert(index.includes("기준 ${basis}"), "source basis summary label missing");
   assert(index.includes("위치 ${locationCount}곳"), "compact location count label missing");
   assert(index.includes("영상 확인 중"), "compact field-video status label missing");
+  assert(!index.includes(">LOAD<"), "demo-style loading label must not appear in public UI");
   assert(index.includes("현장 영상 ${video}건"), "field-video status label missing");
   assert(!index.includes("영상 근거 ${videos}건"), "stale compact video evidence label present");
   assert(!index.includes("현장 영상 근거 ${issueVideoCount(issue)}건"), "zero-prone explore video count present");
