@@ -28,6 +28,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 06:23 패치로 데스크톱 기본 홈은 우측 상세 패널을 닫고 `이슈 목록 + 지역 현황 지도` 2축으로 시작한다. `근거/반론/카드 상세` 행동을 할 때만 `desktop-detail-open` 패널이 열리며, 1440px 기본 홈에서 `detailVisible=false`, 지도 폭 828px, 액션 후 상세에서 `selectedTab=근거`를 확인했다. 그래도 실제 제보 영상 품질과 사용자 수락 전 S+는 아니다.
 - 06:32 패치로 지도 위 선택 시트를 홈에서는 62px 선택 요약, 모바일 지도에서는 114px 요약으로 낮췄다. `상세 보기`는 `상세`로 줄이고, `상세 패널에 반영` 같은 내부 표현을 운영 화면에서 제거했다. 1440px 홈 `sheetMapRatio=0.13`, 390px 지도 `sheetMapRatio=0.25`, `navOverlap=false`, `rejected=[]`를 확인했다. 그래도 사용자 수락 전 S+는 아니다.
 - 09:37 패치로 지도 검색·범례를 하나의 얇은 지도 도구막대로 합치고, 탐색 타일을 52px 선택 pill로 낮췄다. 데스크톱 지도 시트도 62px로 낮아졌고, 1440px 지도 `toolbarMapRatio=0.08`, `sheetMapRatio=0.09`, 390px 지도 `toolbarMapRatio=0.11`, `firstTile.height=52`, `navOverlap=false`, `rejected=[]`를 확인했다. 사용자 수락 전 S+는 아니다.
+- 10:04 패치로 static/운영 API 빈 응답 상태에서도 공식 공개자료 fallback 이슈가 보여 빈 홈 회귀를 막았다. 지도 `상세`는 선택 이슈가 아니라 선택 현장 `target` 상세로 열리며, 검색 실패는 지도 시트 안에 회복 문구를 표시한다. 390px CDP 캡처에서 `scrollWidth=390`, 하단 5탭, 지도 상세 `detailTitle=mapTitle`, `selectedTab=근거`, `toastCount=0`을 확인했다. 그래도 실제 운영 API와 사용자 수락 전 S+는 아니다.
 
 ## Agent Feedback Summary
 
@@ -112,6 +113,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 31 | 데스크톱 첫 화면 패널 경쟁 완화 | 1차 완료 | 1440px 기본 홈 `detailVisible=false`, `mapVisible=true`, map width 828px. `근거` 클릭 후 `desktop-detail-open`, `detailVisible=true`, selected tab `근거` |
 | 32 | 지도 선택 시트 경량화 | 1차 완료 | 1440px 홈 지도 sheet 62px, `sheetMapRatio=0.13`, chips/context/summary hidden. 390px 지도 sheet 114px, `sheetMapRatio=0.25`, `navOverlap=false`, `rejected=[]` |
 | 33 | 지도 도구·탐색 타일 밀도 완화 | 1차 완료 | 1440px 지도 toolbar 54px, `toolbarMapRatio=0.08`, sheet 62px, `sheetMapRatio=0.09`. 390px 지도 toolbar 52px, first tile 52px, `navOverlap=false`, `overflowX=false`, `rejected=[]` |
+| 34 | 지도 상세 흐름·모바일 overflow 회귀 방지 | 1차 완료 | 390px CDP `scrollWidth=390`, 하단 탭 `홈/영상/지도/법안/영상제보`, 카드 액션 2열, 지도 상세 `detailTitle=mapTitle`, `selectedTab=근거`, `toastCount=0`; web smoke에 선택 현장 상세·검색 실패·공식 fallback 이슈 가드 추가 |
 
 ## Current Evidence
 

@@ -4147,6 +4147,12 @@
       }
 
       @media (max-width: 780px) {
+        html,
+        body {
+          max-width: 100%;
+          overflow-x: hidden;
+        }
+
         .topbar {
           grid-template-columns: 1fr auto;
           padding: 10px;
@@ -4178,6 +4184,9 @@
 
         .layout {
           grid-template-columns: 1fr;
+          width: 100%;
+          max-width: 100vw;
+          overflow-x: hidden;
           padding: 10px 10px 112px;
         }
 
@@ -4394,6 +4403,10 @@
         .issue-card.has-field-preview .issue-card-actions {
           grid-column: 1 / -1;
           padding-top: 2px;
+        }
+
+        .issue-card-actions {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
         .issue-feed-title .title {
@@ -4629,7 +4642,8 @@
           left: 10px;
           z-index: 30;
           display: grid;
-          grid-template-columns: repeat(5, 1fr);
+          width: calc(100vw - 20px);
+          grid-template-columns: repeat(5, minmax(0, 1fr));
           gap: 6px;
           padding: 8px;
           border: 1px solid var(--line);
@@ -4645,18 +4659,27 @@
           display: grid;
           place-items: center;
           gap: 2px;
+          min-width: 0;
           min-height: 44px;
           border: 0;
           border-radius: 7px;
           background: transparent;
           color: var(--muted);
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 720;
           transition:
             background-color var(--motion-fast) var(--ease-out),
             box-shadow var(--motion-fast) var(--ease-out),
             color var(--motion-fast) var(--ease-out),
             transform var(--motion-fast) var(--ease-out);
+        }
+
+        .mobile-nav button span {
+          min-width: 0;
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .mobile-nav button::before {
@@ -5356,6 +5379,23 @@
       const fallback = {
         issueCards: [
           {
+            id: "issue_real_public_sources",
+            targetType: "issue",
+            title: "전국 집회 신고·공개 일정",
+            lifecycleState: "UPCOMING",
+            status: "active",
+            topicTags: ["공개 일정", "신고 통계", "경찰청 자료"],
+            updatedAt: "2026-07-09T00:00:00.000+09:00",
+            targetCount: 6,
+            currentCount: 5,
+            regionCount: 2,
+            officialCount: 6,
+            disputeCount: 0,
+            needsVerificationCount: 0,
+            sourceSummary: { official: 6, media: 0, field: 0, estimate: 0 },
+            chips: ["공식 자료", "2개 권역", "일정·통계"]
+          },
+          {
             id: "issue_1",
             targetType: "issue",
             title: "정보통신망법 개정 반대 집회",
@@ -5922,6 +5962,16 @@
       }
 
       function openMapDetailPanel() {
+        const target = selected || visibleCards(loadedCards)[0] || loadedCards[0];
+        if (target) {
+          selected = target;
+          const targetIssue = loadedIssueCards.find((issue) => issue.id === target.issueId);
+          if (targetIssue) selectedIssue = targetIssue;
+          updatePinSelection();
+          updateIssueContextStrips();
+          renderMapSelectionContext(target);
+          renderDetail(target).then(() => document.querySelector('.tabs button[data-tab="summary"]')?.click());
+        }
         const layout = document.querySelector(".layout");
         if (innerWidth > 780 && layout?.classList.contains("desktop-explore")) {
           setPrimaryView("home");
@@ -7702,7 +7752,16 @@
             .includes(term);
         });
         if (!match) {
-          $("map-context").textContent = "검색어와 맞는 공개 상황이 아직 없습니다.";
+          $("map-state").textContent = "검색";
+          $("map-mode").textContent = "위치 확인";
+          $("map-title").textContent = "검색 결과 없음";
+          $("map-summary").textContent = "지역·이슈·현장명을 다시 입력해 주세요.";
+          $("map-context").textContent = "검색어와 맞는 공개 자료 위치가 아직 없습니다.";
+          $("map-impact").textContent = "다른 표현으로 검색하면 연결된 현장을 다시 확인합니다.";
+          $("map-proof").textContent = "공식 자료나 현장 인증 위치가 연결되면 지도에 표시합니다.";
+          $("map-update").textContent = "정밀 제보 위치는 공개하지 않습니다.";
+          $("map-risk").textContent = "공개 근거가 없는 위치는 핀으로 만들지 않습니다.";
+          pulseElement(document.querySelector(".map-sheet"));
           showToast("검색 결과가 없습니다.");
           return;
         }
@@ -9311,7 +9370,6 @@
       });
       $("split-view").addEventListener("click", () => {
         openMapDetailPanel();
-        showToast("선택한 현장을 상세에서 확인합니다.");
       });
       $("close-detail").addEventListener("click", closeDetailPanel);
       $("follow").addEventListener("click", async () => {

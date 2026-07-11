@@ -71,6 +71,7 @@ GET /ready -> 200
 - 운영 DB/Redis/Render `/ready` 결과가 아직 없다.
 - `check:render-runtime-config`는 Render generated secret fallback의 sample gate이며, 실제 배포 `/ready` 증거를 대체하지 않는다.
 - 2026-07-11 06:11 독립 평가 기준 UI/UX는 S+가 아니다. 28차 패치로 지도-first, 10초 상황 줄, `영상제보` 라벨, 지도 시트 과밀, 지도 도구 밀도, 영상 소셜 레일, 샘플 poster의 AI 데모감, 홈 대형 검토 썸네일, dev stale config 회귀, 데스크톱 지도 인스펙터 경쟁, scanline 혼선, 데스크톱 홈 빈 공간과 패널 경쟁은 개선됐지만, 독립 비평 재검증, 실제 제보 영상 품질, 사용자 수락이 남아 있다.
+- 2026-07-11 10:04 29차 패치로 static/운영 API 빈 응답 시 공식 공개자료 fallback 이슈가 보이고, 지도 `상세`가 선택 현장 상세와 `근거` 탭으로 이어지는 것을 390px/1440px CDP 캡처로 확인했다. 다만 실제 운영 API, 실제 제보 영상 품질, 독립 비평 재검증, 사용자 수락 전에는 S+로 승급하지 않는다.
 
 ## Next Active Goal Order
 

@@ -102,6 +102,8 @@ async function checkWeb(port) {
   assert(html.headers.get("content-security-policy")?.includes("default-src 'self'"), "content-security-policy missing");
   assert(html.headers.get("content-security-policy")?.includes("https://cdn.portone.io"), "PortOne SDK CSP allowlist missing");
   assert(index.includes("집회·시위 공개자료"), "commercial issue-file home title missing");
+  assert(index.includes('id: "issue_real_public_sources"'), "official public-source fallback issue missing");
+  assert(index.includes("전국 집회 신고·공개 일정"), "official public-source fallback issue title missing");
   assert(index.includes("issue-card-actions"), "issue card action hub missing");
   assert(index.includes('issueCardActionButton("evidence"'), "issue card evidence action missing");
   assert(index.includes('issueCardActionButton("video"'), "issue card video action missing");
@@ -180,6 +182,12 @@ async function checkWeb(port) {
   assert(index.includes("presence-areas"), "MapLibre presence area source missing");
   assert(index.includes("자료 위치"), "map source pin key missing");
   assert(index.includes("현장 인증 범위"), "map presence area key missing");
+  assert(index.includes("const target = selected || visibleCards(loadedCards)[0] || loadedCards[0];"), "map detail should resolve selected occurrence target");
+  assert(index.includes("renderDetail(target).then(() => document.querySelector('.tabs button[data-tab=\"summary\"]')?.click());"), "map detail should open selected occurrence detail");
+  assert(index.includes("검색 결과 없음"), "map search miss title missing");
+  assert(index.includes("지역·이슈·현장명을 다시 입력해 주세요."), "map search miss recovery copy missing");
+  assert(index.includes("검색어와 맞는 공개 자료 위치가 아직 없습니다."), "map search miss sheet state missing");
+  assert(!index.includes("검색어와 맞는 공개 상황이 아직 없습니다."), "stale map search miss toast-only copy present");
   assert(index.indexOf('class="map-shell"') < index.indexOf('id="explore-grid"'), "map should render before explore grid");
   assert(!/좋아요|댓글|찬반|추천|비추천|팔로우/u.test(index), "forbidden social mechanic copy present");
   assert(!/현장 증가|미확인 근거|낮은 신뢰도|중간 신뢰도|높은 신뢰도/u.test(index), "dashboard/confidence wording present");
