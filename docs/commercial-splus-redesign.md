@@ -184,6 +184,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 58 | 상세·지도 대시보드화 감소 | 1차 완료 | 상세 개요를 answer row 구조로 바꾸고 overview cards를 제거. 상세 열린 상태의 지도 시트를 compact로 낮춰 지도-상세 경쟁을 줄임 |
 | 59 | 실제 브라우저 시각 게이트 | 1차 완료 | 상단 숫자판 DOM/로직 제거. `pnpm check:visual-surface`가 390/430/768/1440px 홈·상세·영상·탐색·제보 20개 상태에서 overflow, nav overlap, dashboard visible, map sheet, report first action을 검사 |
 | 60 | 라이브 운영 화면 시각 게이트 | 1차 완료 | `pnpm check:visual-surface:live` 추가. 운영 fallback을 실제 공개자료 3개 이슈 파일로 분리. 새 Render 배포 후 live Chrome/CDP 검사 통과 |
+| 61 | 통합 live 감시 | 1차 완료 | `pnpm service:watch:visual` 추가. live visual surface 결과를 static hash, header, API DNS, payload safety 감시와 같은 보고서에 기록 |
 
 ## Current Evidence
 
@@ -404,6 +405,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 00:28 user flow gate | `pnpm check:web-flow` 통과. 11개 시나리오, 106개 assertion으로 홈 이슈 선택, 상세, 근거, 지도, 영상, 법안, 제보, 본인확인 경계가 서로 연결되는지 검사한다. 실제 브라우저 사용자 수락 전 S+는 아니다. |
 | 01:29 visual surface gate | `pnpm check:visual-surface` 통과. 390px, 430px, 768px, 1440px에서 홈·상세·영상·탐색·제보 20개 상태, 118개 assertion이 통과했다. 대시보드 숫자판 visible 0, forbidden 0, 하단 내비 겹침 0, 지도 시트 과밀 없음, 제보 첫 행동 `근처 현장 찾기` 유지 |
 | 01:52 live visual gate | `pnpm check:visual-surface:live` 통과. 실제 `https://musunil.com`에서 390px, 430px, 768px, 1440px 홈·상세·영상·탐색·제보 20개 상태가 통과했다. |
+| 02:05 integrated live watch | `pnpm service:watch:visual` 추가. 배포 직후 실제 화면 렌더링과 운영 차단 항목을 `docs/splus-service-watch.md` 한 문서에 남길 수 있게 됐다. |
 
 ## Non-Negotiable Gates
 

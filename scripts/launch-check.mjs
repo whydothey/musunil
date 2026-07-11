@@ -288,6 +288,9 @@ if (
 if (
   !/api_endpoint_preflight/.test(serviceWatch) ||
   !/web_header_contract/.test(serviceWatch) ||
+  !/web_visual_surface/.test(serviceWatch) ||
+  !/withVisualSurface/.test(serviceWatch) ||
+  !/stop_live_visual_surface_regression/.test(serviceWatch) ||
   !/requiredActions/.test(serviceWatch) ||
   !/connect_api_endpoint/.test(serviceWatch) ||
   !/render:api-settings/.test(serviceWatch) ||
@@ -301,7 +304,10 @@ if (
   !/skipIfApiUnreachable/.test(serviceWatch) ||
   !/skipped:\s*true/.test(serviceWatch)
 ) {
-  failures.push("service-watch must separate API endpoint preflight failure from downstream skipped API checks and produce actionable launch required actions");
+  failures.push("service-watch must separate API endpoint preflight failure from downstream skipped API checks, optionally run live visual surface, and produce actionable launch required actions");
+}
+if (!/"service:watch:visual"/.test(packageJson) || !/--with-visual/.test(packageJson)) {
+  failures.push("service-watch visual command must be exposed for post-deploy live render verification");
 }
 if (
   !/redaction_engine_smoke/.test(redactionSmoke) ||

@@ -1,9 +1,11 @@
 import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { lookup } from "node:dns/promises";
 import { resolve } from "node:path";
 
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
 const once = args.includes("--once");
+const withVisualSurface = args.includes("--with-visual") || process.env.MUSUNIL_SERVICE_WATCH_VISUAL === "1";
 const intervalMs = Number(process.env.MUSUNIL_SERVICE_WATCH_INTERVAL_MS ?? 5 * 60_000);
 const webBaseUrl = (process.env.MUSUNIL_WEB_BASE_URL ?? "https://musunil.com").replace(/\/$/, "");
 const apiBaseUrl = (process.env.MUSUNIL_API_BASE_URL ?? "https://api.musunil.com").replace(/\/$/, "");
@@ -66,6 +68,25 @@ async function runChecks() {
     const html = await getText(`${webBaseUrl}/`);
     assertAbsent(html, ["좋아요", "댓글", "찬반", "추천", "비추천", "팔로우", "localhost:4000", "traffic_control", "WEAKLY_OBSERVED"]);
     return { bytes: html.length };
+  });
+  await check(checks, "web_visual_surface", async () => {
+    if (!withVisualSurface) throw new SkipCheck("skipped: run service-watch with --with-visual or MUSUNIL_SERVICE_WATCH_VISUAL=1");
+    const result = spawnSync(process.execPath, ["scripts/ci-visual-surface-smoke.mjs", "--base-url", webBaseUrl], {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8",
+      maxBuffer: 20 * 1024 * 1024
+    });
+    if (result.status !== 0) {
+      throw new Error(tail([result.stderr, result.stdout].filter(Boolean).join("\n"), 1200));
+    }
+    const parsed = JSON.parse(result.stdout);
+    return {
+      mode: parsed.mode,
+      baseUrl: parsed.baseUrl,
+      scenarios: parsed.scenarios?.length ?? 0,
+      failedScenarios: parsed.scenarios?.filter((item) => item.ok !== true).length ?? 0
+    };
   });
   await check(checks, "api_endpoint_preflight", async () => {
     const url = deployedHttpsUrl(apiBaseUrl);
@@ -341,9 +362,25 @@ function requiredActions(result) {
       reference: "AGENTS.md"
     });
   }
+  const visualSurface = byId.get("web_visual_surface");
+  if (visualSurface && !visualSurface.ok && !visualSurface.skipped) {
+    actions.push({
+      id: "stop_live_visual_surface_regression",
+      owner: "lead",
+      action: "실제 musunil.com 렌더링 회귀다. 홈 이슈 수, 상세 전환, 인증영상/지도/제보 표면, 모바일 overflow와 하단 내비 겹침을 수정하기 전까지 배포 승급을 중단한다.",
+      verify: "pnpm service:watch:visual",
+      reference: "docs/commercial-splus-redesign.md"
+    });
+  }
   return actions;
 }
 
 function cell(value) {
   return String(value).replaceAll("|", "\\|").replaceAll("\n", " ");
+}
+
+function tail(value, maxLength) {
+  const text = String(value || "").trim();
+  if (text.length <= maxLength) return text;
+  return `...${text.slice(-maxLength)}`;
 }

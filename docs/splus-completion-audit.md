@@ -16,6 +16,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - `pnpm launch:post-deploy-smoke -- --require-laws`가 실제 배포 API URL로 통과한다.
 - `pnpm service:watch -- --once`가 실제 Web/API URL 기준으로 통과한다.
 - `pnpm check:visual-surface:live`가 실제 `https://musunil.com` 기준으로 통과한다.
+- `pnpm service:watch:visual`의 `web_visual_surface`가 ok이고 남은 failure가 없다.
 - storage, redaction, mobile integrity, law source dry-run/post, production `/ready`가 실제 외부 연결로 통과한다.
 - 공개 화면과 공개 API에 원문, 정밀 위치, private media key, 요구사항 문구가 나오지 않는다.
 
@@ -64,6 +65,7 @@ pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws
 MUSUNIL_API_BASE_URL=https://api.example.com pnpm launch:post-deploy-smoke -- --require-laws
 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.example.com pnpm service:watch -- --once
 pnpm check:visual-surface:live
+pnpm service:watch:visual
 ```
 
 배포 후:

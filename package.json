@@ -39,6 +39,7 @@
     "launch:ready": "node scripts/launch-ready.mjs",
     "launch:post-deploy-smoke": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/post-deploy-smoke.mjs && pnpm check:web-deploy",
     "service:watch": "node scripts/service-watch.mjs",
+    "service:watch:visual": "node scripts/service-watch.mjs -- --once --with-visual",
     "check:web-deploy": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/check-web-deploy.mjs",
     "ops:diagnose": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/operational-readiness-diagnostics.mjs",
     "render:api-settings": "node scripts/render-api-settings.mjs",
