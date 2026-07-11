@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-12 02:50 KST
+Last updated: 2026-07-12 07:51 KST
 
 Status: 완료 아님.
 
@@ -13,6 +13,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - 모든 항목이 S+ 또는 운영에서 동등하게 검증된 Guard 상태다.
 - Active row가 0개다.
 - `pnpm launch:ready -- <운영 user-inputs.yaml>`가 실제 운영 입력값으로 통과한다.
+- `pnpm cloudflare:check:strict`가 실제 `musunil.com`/`api.musunil.com` 기준으로 통과한다.
 - `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws`가 실제 배포 Web/API URL로 통과한다.
 - `pnpm launch:final-gate`가 실제 배포 Web/API URL로 통과한다.
 - `pnpm service:watch -- --once`가 실제 Web/API URL 기준으로 통과한다.
@@ -38,14 +39,15 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 | 본인확인 기반 쓰기 경계 | A+ Active | 포트원 provider 설정, identity start/complete, write endpoint `identity_required` 경계, 비-LIVE 사용자 제출 `held_private` 검수 대기, 검수 전 공개 detail 불변 write smoke | 실제 포트원 채널 키와 운영 SDK 결제 전 인증 리허설 |
 | 운영 배포 준비 | A- Active | Render blueprint, `/ready`, not-ready write fail-closed, `launch:ready` | 실제 운영 YAML/Secret, DB/Redis, Render 배포 health 통과 |
 
-## Current Passing Evidence
+## Current Local/Static Passing Evidence
+
+아래 항목은 로컬 코드, 정적 빌드, sample config, 또는 metadata gate의 현재 통과 증거다. 실제 `musunil.com` live API 동기화나 운영 provider 연결 완료 증거가 아니다.
 
 - `pnpm check:release`
 - `pnpm check:splus`
 - `pnpm check:web-flow`
 - `pnpm check:ux-surface`
 - `pnpm check:visual-surface`
-- `pnpm check:visual-surface:live`
 - `pnpm check:build-info-clean`
 - `pnpm check:source-diagnostics`
 - `pnpm check:law-diagnostics`
@@ -56,6 +58,14 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - `pnpm render:api-settings`
 - API/runtime/web smoke 경계 검증
 
+## Current Live Blockers
+
+`pnpm launch:blockers` 최신 결과 기준 live completion은 아직 막혀 있다.
+
+- `api_endpoint_preflight`: `api.musunil.com` DNS가 아직 연결되지 않아 API `/health`, `/ready`, 공개 payload, identity boundary 검사가 skip 상태다.
+- `web_header_contract`: live Web에 no-store, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options가 아직 적용되지 않았다.
+- `web_visual_surface`: API 미연결 때문에 `serviceSyncState=delayed`이고 live 홈 이슈 피드가 0건으로 감시된다. 최종 완료에는 `serviceSyncState=live`, 홈 topic issue 3개 이상, `web_visual_surface=ok`가 필요하다.
+
 ## Required Final Evidence
 
 아래는 실제 운영 입력값과 외부 연결이 있어야 한다.
@@ -63,6 +73,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 ```bash
 pnpm launch:ready -- config/musunil.user-inputs.local.yaml
 pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws
+pnpm cloudflare:check:strict
 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws
 pnpm launch:final-gate
 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once

@@ -23,6 +23,7 @@ const userFacingDocs = [
   "docs/local-completion-status.md",
   "docs/launch-readiness-checklist.md"
 ].map((path) => `${path}\n${readFileSync(resolve(cwd, path), "utf8")}`).join("\n");
+const completionAudit = readFileSync(resolve(cwd, "docs/splus-completion-audit.md"), "utf8");
 const webConfigJs = readFileSync(resolve(cwd, "apps/web/config.js"), "utf8");
 const webConfigWriter = readFileSync(resolve(cwd, "scripts/write-web-config.mjs"), "utf8");
 const webHeaderWriter = readFileSync(resolve(cwd, "scripts/write-web-headers.mjs"), "utf8");
@@ -321,6 +322,22 @@ if (
 }
 if (!/pnpm cloudflare:check/.test(readme) || !/pnpm cloudflare:check/.test(userFacingDocs)) {
   failures.push("Cloudflare/DNS preflight helper must be documented in README and launch readiness docs");
+}
+const completionPassingEvidence = markdownSection(completionAudit, "## Current Local/Static Passing Evidence", "## Current Live Blockers");
+if (!completionPassingEvidence) failures.push("completion audit must separate local/static passing evidence from live blockers");
+if (/check:visual-surface:live/.test(completionPassingEvidence)) {
+  failures.push("completion audit must not list live visual surface as current passing evidence while serviceSyncState=live is still required");
+}
+if (
+  !/## Current Live Blockers/.test(completionAudit) ||
+  !/api_endpoint_preflight/.test(completionAudit) ||
+  !/web_header_contract/.test(completionAudit) ||
+  !/web_visual_surface/.test(completionAudit) ||
+  !/pnpm cloudflare:check:strict/.test(completionAudit) ||
+  !/serviceSyncState=live/.test(completionAudit) ||
+  !/pnpm launch:final-gate/.test(completionAudit)
+) {
+  failures.push("completion audit must document current live blockers and require Cloudflare strict, live sync, and final gate evidence");
 }
 if (!/"check:web-flow"/.test(packageJson) || !/ci-web-flow-smoke\.mjs/.test(packageJson) || !/pnpm check:web-flow/.test(packageJson)) {
   failures.push("Web user-flow smoke must be wired into release checks");
@@ -914,6 +931,13 @@ function hasRenderSyncFalseEnv(block, key) {
 
 function hasRenderHeader(block, name) {
   return new RegExp(`headers:[\\s\\S]*name:\\s*${escapeRegExp(name)}\\s*\\n\\s*value:`).test(block);
+}
+
+function markdownSection(source, heading, nextHeading) {
+  const start = source.indexOf(heading);
+  if (start < 0) return "";
+  const end = source.indexOf(nextHeading, start + heading.length);
+  return source.slice(start, end < 0 ? undefined : end);
 }
 
 function escapeRegExp(value) {
