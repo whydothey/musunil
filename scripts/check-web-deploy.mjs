@@ -16,7 +16,7 @@ const warnings = [];
 let staticManifestVerified = false;
 const renderStaticHint =
   "Expected Render Static Site settings: Branch=main, Root Directory blank, " +
-  "Build Command=\"corepack enable && pnpm install --frozen-lockfile && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com MUSUNIL_WRITE_BUILD_INFO=1 pnpm build:web-static && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com pnpm check:web-smoke\", " +
+  "Build Command=\"corepack enable && pnpm install --frozen-lockfile && pnpm build:web-static:render\", " +
   "Publish Directory=apps/web, headers copied from render.yaml musunil-web. " +
   "If static-manifest and live file hashes match but build-info is placeholder, the latest committed static files are deployed but Render did not publish build metadata.";
 const webHeaderContract = [

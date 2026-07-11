@@ -43,7 +43,7 @@ pnpm dev:web
 
 브라우저에서 출력된 `http://localhost:<port>`를 연다. API가 `http://localhost:4000`에서 실행 중이면 데이터를 가져오고, 아니면 내장 샘플을 표시한다.
 운영 정적 빌드는 `pnpm build:web-config`로 단일 YAML의 `api.public_base_url`, `map.map_style_url`만 [apps/web/config.js](/Users/mk/Documents/Musunil/apps/web/config.js)에 공개 주입한다.
-Render Static Site는 `pnpm build:web-static`을 사용한다. Render build command는 `MUSUNIL_WRITE_BUILD_INFO=1`로 [apps/web/build-info.json](/Users/mk/Documents/Musunil/apps/web/build-info.json)을 실제 커밋 SHA로 덮어써야 하며, 로컬 release check는 tracked placeholder를 보존한다.
+Render Static Site는 `pnpm build:web-static:render`를 사용한다. 이 명령은 `MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com`, `MUSUNIL_WRITE_BUILD_INFO=1`, `pnpm build:web-static`, `pnpm check:web-smoke`를 한 번에 실행한다. Render build command가 이 단일 명령을 쓰면 [apps/web/build-info.json](/Users/mk/Documents/Musunil/apps/web/build-info.json)이 실제 커밋 SHA로 덮어써지고, 로컬 release check는 tracked placeholder를 보존한다.
 
 Render Static Site 수동 생성값은 아래 명령으로 `render.yaml`에서 추출한다.
 
@@ -56,7 +56,7 @@ pnpm render:web-settings
 ```text
 Branch: main
 Root Directory: 비움
-Build Command: corepack enable && pnpm install --frozen-lockfile && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com MUSUNIL_WRITE_BUILD_INFO=1 pnpm build:web-static && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com pnpm check:web-smoke
+Build Command: corepack enable && pnpm install --frozen-lockfile && pnpm build:web-static:render
 Publish Directory: apps/web
 Required headers: render.yaml의 musunil-web headers 블록과 동일하게 적용
 ```

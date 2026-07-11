@@ -54,7 +54,7 @@
 - Render 서비스는 `MUSUNIL_RUNTIME_ENV=production`을 설정해 설정 로드 실패 fallback에서도 mock 데이터와 LIVE 자동 공개를 끈다.
 - Render API만 `MUSUNIL_USER_INPUTS_B64`를 prompt 받는다. Static Web에는 사용자 입력 YAML, DB/Redis URL, user token secret, encryption key, internal API key를 주입하지 않는다.
 - Render API는 `MUSUNIL_INTERNAL_API_KEY`, `MUSUNIL_USER_TOKEN_SECRET`, `MUSUNIL_ENCRYPTION_KEY`를 생성한다.
-- Render Web은 공개 정적 빌드에 필요한 `NODE_VERSION`, `MUSUNIL_RUNTIME_ENV`, `MUSUNIL_WEB_API_BASE_URL` build command 값만 사용한다.
+- Render Web은 공개 정적 빌드에 필요한 `NODE_VERSION`, `MUSUNIL_RUNTIME_ENV`만 env var로 두고, API base와 build metadata 작성은 `pnpm build:web-static:render` 단일 build command 안에서 고정한다.
 - Render cron worker는 API 서비스의 `MUSUNIL_INTERNAL_API_KEY`를 참조한다.
 - Render cron worker는 `MUSUNIL_USER_INPUTS_B64`를 요구하지 않는다.
 - Render Web Static Site headers가 `render.yaml`에 선언되어 있다.
@@ -118,7 +118,7 @@
 - Render Static Site 수동 설정값은 `pnpm render:web-settings`로 출력한 Branch, Root Directory, Build Command, Publish Directory, Headers를 기준으로 맞춘다.
 - 출시 컷오버는 `pnpm launch:cutover-plan`과 [launch-cutover-runbook.md](/Users/mk/Documents/Musunil/docs/launch-cutover-runbook.md)를 기준으로 API DNS, Cloudflare DNS, Render Static headers, 검증 순서를 한 번에 확인한다.
 - production Web은 가능하면 `build-info.json`의 `commitSha`가 배포 대상 Git SHA와 같아야 한다. Render 수동 Static Site가 build metadata를 반영하지 않는 경우에는 `/static-manifest.json`과 live HTML/config/media SHA-256이 현재 repo 산출물과 정확히 일치해야 한다.
-- Render Static Site는 repo root에서 `pnpm build:web-static`과 `pnpm check:web-smoke`를 실행하고 `apps/web`만 publish한다.
+- Render Static Site는 repo root에서 `pnpm build:web-static:render`를 실행하고 `apps/web`만 publish한다. 이 단일 명령은 운영 API base 주입, 실제 build-info 작성, 정적 manifest 생성, web smoke를 모두 포함한다.
 - Render 배포 뒤에는 `pnpm check:visual-surface:live`로 실제 `musunil.com` 화면의 이슈 스토리, 이슈 카드, 상세, 인증영상 대기/영상, 지도, 제보 첫 행동이 390px, 430px, 768px, 1440px에서 모두 유지되는지 확인한다.
 - 운영 감시 문서까지 갱신하려면 `pnpm service:watch:visual`을 실행한다.
 - `service:watch` 결과에서 `skip`은 검증 생략이지 통과가 아니다. 출시 판단은 모든 check가 `ok`이고 Required Actions가 비어 있을 때만 `S+ Guard`로 본다.

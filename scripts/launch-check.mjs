@@ -777,11 +777,25 @@ if (!/preDeployCommand:\s*pnpm db:migrate/.test(renderYaml)) failures.push("Rend
 if (!/name:\s*musunil-api[\s\S]*?buildCommand:[^\n]*pnpm check[^\n]*pnpm build:web-config[^\n]*pnpm launch:check/.test(renderYaml)) {
   failures.push("Render API build must run pnpm check, pnpm build:web-config, and pnpm launch:check");
 }
-if (!/name:\s*musunil-web[\s\S]*?buildCommand:[^\n]*MUSUNIL_WRITE_BUILD_INFO=1[^\n]*pnpm build:web-static[^\n]*pnpm check:web-smoke/.test(renderYaml)) {
-  failures.push("Render Web build must write build-info and run pnpm build:web-static and pnpm check:web-smoke");
+const packageScripts = JSON.parse(packageJson).scripts ?? {};
+const renderWebBuildScript = packageScripts["build:web-static:render"] ?? "";
+if (
+  !/"build:web-static:render"/.test(packageJson) ||
+  !/MUSUNIL_WEB_API_BASE_URL=https:\/\/api\.musunil\.com/.test(renderWebBuildScript) ||
+  !/MUSUNIL_WRITE_BUILD_INFO=1/.test(renderWebBuildScript) ||
+  !/pnpm build:web-static/.test(renderWebBuildScript) ||
+  !/pnpm check:web-smoke/.test(renderWebBuildScript)
+) {
+  failures.push("package.json must define build:web-static:render with production API base, build-info writing, static build, and web smoke");
 }
-if (!/Build Command:[^\n]*MUSUNIL_WRITE_BUILD_INFO=1[^\n]*pnpm build:web-static[^\n]*pnpm check:web-smoke/.test(readme)) {
-  failures.push("README Render Static Site build command must include MUSUNIL_WRITE_BUILD_INFO=1 and match render.yaml");
+if (!/name:\s*musunil-web[\s\S]*?buildCommand:\s*corepack enable && pnpm install --frozen-lockfile && pnpm build:web-static:render/.test(renderYaml)) {
+  failures.push("Render Web buildCommand must use pnpm build:web-static:render");
+}
+if (!/Build Command:\s*corepack enable && pnpm install --frozen-lockfile && pnpm build:web-static:render/.test(readme)) {
+  failures.push("README Render Static Site build command must match pnpm build:web-static:render");
+}
+if (!/Render Static Site는 `pnpm build:web-static:render`/.test(readme) || !/MUSUNIL_WRITE_BUILD_INFO=1/.test(readme)) {
+  failures.push("README must explain that build:web-static:render writes build-info and preserves local placeholders");
 }
 if (!/MUSUNIL_STRICT_WEB_HEADERS=1[^\n]*MUSUNIL_EXPECTED_API_BASE_URL=https:\/\/api\.musunil\.com[^\n]*pnpm check:web-deploy/.test(readme)) {
   failures.push("README strict web deploy check must verify the expected API base URL");

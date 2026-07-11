@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-12 08:06 KST
+Last updated: 2026-07-12 08:28 KST
 
 Status: 완료 아님.
 
@@ -155,6 +155,7 @@ GET /ready -> 200
 - 2026-07-12 01:29 숨겨진 상단 숫자판 DOM과 갱신 로직을 제거하고 `pnpm check:visual-surface`를 release gate에 추가했다. Chrome/CDP로 390px, 430px, 768px, 1440px 홈·상세·영상·탐색·제보 20개 상태를 실제 렌더링해 overflow, nav overlap, dashboard visible, map sheet, report first action을 검사하지만, 실제 운영 공개 영상/GPS와 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-12 01:52 `pnpm check:visual-surface:live`를 추가하고 운영 fallback을 실제 공개자료 기준 3개 이슈 파일로 분리했다. API가 아직 연결되지 않아도 live 홈이 단일 공개자료 카드로 축소되는 회귀를 차단한다. 새 Render 배포 후 live 명령은 통과했지만, 실제 운영 공개 영상/GPS와 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-12 02:09 visual smoke가 Web `serviceSyncState`와 서비스 배너 상태를 출력하고, `pnpm service:watch:visual`은 운영 도메인이 `delayed` fallback 상태이면 `web_visual_surface`를 실패 처리한다. 이제 live visual 통과만으로 API live 동기화가 된 것처럼 판정하지 않는다.
+- 2026-07-12 08:28 Render Static Site build command를 `pnpm build:web-static:render` 단일 명령으로 수렴했다. 이 명령은 운영 API base, 실제 build-info 작성, 정적 빌드, web smoke를 묶고 `launch-check`가 Render/README 계약을 감시한다. 다만 실제 Render build metadata, static headers, API DNS가 live에서 통과하기 전 운영 준비 완료가 아니다.
 
 ## Next Active Goal Order
 
