@@ -3,6 +3,7 @@
 이 문서는 `musunil.com`을 실제 공개 서비스로 넘길 때 마지막에 사람이 입력해야 하는 값을 한곳에 모은다. 세부 값은 `render.yaml`과 `config/musunil.user-inputs.local.yaml`을 기준으로 하며, 복사 가능한 최신 출력은 항상 아래 명령을 먼저 본다.
 
 ```bash
+pnpm launch:operator-brief
 pnpm launch:cutover-rehearsal
 pnpm launch:blockers
 pnpm launch:cutover-plan
@@ -10,6 +11,8 @@ pnpm render:api-settings
 pnpm render:web-settings
 pnpm cloudflare:check
 ```
+
+`pnpm launch:operator-brief`는 위 명령들의 핵심 출력과 현재 blocker를 [launch-operator-brief.md](/Users/mk/Documents/Musunil/docs/launch-operator-brief.md)에 합쳐 쓰는 운영자용 단일 브리프다. Render/Cloudflare 화면을 열기 전에는 이 파일을 먼저 본다.
 
 ## 1. 현재 차단 항목
 

@@ -37,7 +37,9 @@ const launchNextActions = readFileSync(resolve(cwd, "scripts/launch-next-actions
 const launchReady = readFileSync(resolve(cwd, "scripts/launch-ready.mjs"), "utf8");
 const launchFinalGate = readFileSync(resolve(cwd, "scripts/launch-final-gate.mjs"), "utf8");
 const launchCutoverRehearsal = readFileSync(resolve(cwd, "scripts/launch-cutover-rehearsal.mjs"), "utf8");
+const launchOperatorBrief = readFileSync(resolve(cwd, "scripts/launch-operator-brief.mjs"), "utf8");
 const launchCutoverRunbook = readFileSync(resolve(cwd, "docs/launch-cutover-runbook.md"), "utf8");
+const launchOperatorBriefDoc = readFileSync(resolve(cwd, "docs/launch-operator-brief.md"), "utf8");
 const webFlowSmoke = readFileSync(resolve(cwd, "scripts/ci-web-flow-smoke.mjs"), "utf8");
 const uxSurfaceSmoke = readFileSync(resolve(cwd, "scripts/ci-ux-surface-smoke.mjs"), "utf8");
 const visualSurfaceSmoke = readFileSync(resolve(cwd, "scripts/ci-visual-surface-smoke.mjs"), "utf8");
@@ -293,6 +295,28 @@ if (
   !/launch:cutover-rehearsal/.test(userFacingDocs)
 ) {
   failures.push("Launch cutover rehearsal helper must combine blockers, cutover plan, final gate plan, ordered operator actions, refresh, and strict modes");
+}
+if (
+  !/"launch:operator-brief"/.test(packageJson) ||
+  !/launch-operator-brief\.mjs/.test(packageJson) ||
+  !/launch_operator_brief/.test(launchOperatorBrief) ||
+  !/docs\/launch-operator-brief\.md/.test(launchOperatorBrief) ||
+  !/launch-cutover-rehearsal\.mjs/.test(launchOperatorBrief) ||
+  !/launch-cutover-plan\.mjs/.test(launchOperatorBrief) ||
+  !/render-web-settings\.mjs/.test(launchOperatorBrief) ||
+  !/render-api-settings\.mjs/.test(launchOperatorBrief) ||
+  !/Header application mode/.test(launchOperatorBrief) ||
+  !/Static Web에는 DB\/Redis/.test(launchOperatorBrief) ||
+  !/Launch Operator Brief/.test(launchOperatorBriefDoc) ||
+  !/Render Web Static Site/.test(launchOperatorBriefDoc) ||
+  !/Render API Service/.test(launchOperatorBriefDoc) ||
+  !/Cloudflare/.test(launchOperatorBriefDoc) ||
+  !/User Inputs/.test(launchOperatorBriefDoc) ||
+  !/pnpm launch:final-gate/.test(launchOperatorBriefDoc) ||
+  !/api\.musunil\.com/.test(launchOperatorBriefDoc) ||
+  !/MUSUNIL_USER_INPUTS_B64/.test(launchOperatorBriefDoc)
+) {
+  failures.push("Launch operator brief must combine current blockers, Render Web/API settings, Cloudflare DNS, user inputs, and final verification into one generated handoff document");
 }
 if (
   !/"launch:final-gate"/.test(packageJson) ||
