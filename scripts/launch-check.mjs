@@ -46,6 +46,9 @@ for (const term of ["공식 원천", "일정 수집", "데이터 커버리지", 
 for (const pattern of ["config/*.local.yaml", "config/*.secret.yaml", ".env", ".env.*", "*.pem", "*.key"]) {
   if (!gitignore.split("\n").includes(pattern)) failures.push(`.gitignore must block local secret pattern: ${pattern}`);
 }
+for (const pattern of ["apps/web/build-info.js", "apps/web/build-info.json"]) {
+  if (gitignore.split("\n").includes(pattern)) failures.push(`web deploy build-info artifact must not be ignored: ${pattern}`);
+}
 
 const publicResponseFiles = [
   "services/api/src/app.ts",

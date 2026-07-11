@@ -12,5 +12,3 @@ config/*.secret.yaml
 *.pem
 *.key
 *.log
-apps/web/build-info.js
-apps/web/build-info.json
