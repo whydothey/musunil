@@ -99,6 +99,7 @@ Last updated: 2026-07-12 02:55 KST
   - `pnpm check:splus`
   - `pnpm launch:ready`
   - `pnpm launch:post-deploy-smoke`
+  - `pnpm launch:final-gate`
   - `pnpm launch:external-smoke`
   - `pnpm render:api-settings`
   - `pnpm storage:smoke`
@@ -158,6 +159,7 @@ Last updated: 2026-07-12 02:55 KST
   - `GET /transparency/logs`는 공개용 DTO와 sanitized public reason만 반환하며 raw audit reason, private media, identity, GPS field를 노출하지 않음
   - `pnpm launch:post-deploy-smoke`는 배포 후 실제 Web `config.js`와 API URL 정합성, API `/health`, `/ready`, public payload safety, `/transparency/logs`, coverage, laws, admin auth boundary를 비파괴로 확인
   - `pnpm service:watch -- --once`는 live static hash, build metadata fallback, Web header, API DNS preflight, public payload safety, `/transparency/logs`를 확인하고 차단 항목별 owner/action/verify/reference를 문서화
+  - `pnpm launch:final-gate`는 배포 후 post-deploy smoke와 live blocker refresh-strict를 한 순서로 실행하고, 앞 단계가 실패해도 service watch blocker 갱신을 시도
   - `docs/splus-master-tracker.md`
   - `docs/national-issue-splus-tracker.md`
   - `docs/splus-completion-audit.md`
@@ -176,5 +178,6 @@ Last updated: 2026-07-12 02:55 KST
 - Render Dashboard에서 Blueprint 생성과 `MUSUNIL_USER_INPUTS_B64` 1회 입력.
 - 운영 DB/Redis 연결 상태에서 `/ready` 200 확인.
 - 실제 Web/API URL 기준 `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws` 통과.
+- 실제 Web/API URL 기준 `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm launch:final-gate` 통과.
 - Render cron 실제 실행과 실패 알림 확인.
 - FCM/APNs 실제 발송 provider를 켤 경우 별도 provider smoke.

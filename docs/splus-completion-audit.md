@@ -148,4 +148,5 @@ GET /ready -> 200
 3. `pnpm launch:ready -- <yaml>`를 통과시킨다.
 4. `pnpm launch:ready -- <yaml> --post-laws`를 staging 또는 운영 전 리허설에서 통과시킨다.
 5. Render 배포 후 `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws`를 실제 URL 기준으로 통과시킨다.
-6. Element Execution Board의 Active row를 증거 기반으로 Guard 또는 S+로 승급한다.
+6. `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm launch:final-gate`를 통과시킨다.
+7. Element Execution Board의 Active row를 증거 기반으로 Guard 또는 S+로 승급한다.

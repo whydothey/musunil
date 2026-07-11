@@ -156,12 +156,19 @@ MUSUNIL_WEB_BASE_URL=https://musunil.com \
 MUSUNIL_API_BASE_URL=https://api.musunil.com \
 MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com \
 pnpm service:watch:visual
+
+MUSUNIL_WEB_BASE_URL=https://musunil.com \
+MUSUNIL_API_BASE_URL=https://api.musunil.com \
+MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com \
+MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) \
+pnpm launch:final-gate
 ```
 
 ## 7. 완료 판정
 
 출시 직전 S+ 운영 준비는 아래가 모두 현재 증거로 통과해야 한다.
 
+- `pnpm launch:final-gate`가 실제 운영 Web/API URL 기준으로 통과한다.
 - Live static manifest가 현재 repo 산출물과 일치한다.
 - Live `config.js`의 `apiBaseUrl`이 `https://api.musunil.com`이다.
 - `pnpm check:visual-surface:live`가 실제 운영 도메인에서 통과한다.
