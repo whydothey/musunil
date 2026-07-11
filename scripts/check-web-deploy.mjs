@@ -14,11 +14,11 @@ if (!webBaseUrl) {
 await check("web_build_info", async () => {
   const response = await raw(`${webBaseUrl}/build-info.json`);
   assert(response.status === 200, `/build-info.json returned ${response.status}`);
-  assertWebNoStore(response.headers, "/build-info.json");
   assert(typeof response.body?.commitSha === "string" && response.body.commitSha.length >= 7, "build-info commitSha missing");
   assert(typeof response.body?.builtAt === "string" && response.body.builtAt.includes("T"), "build-info builtAt missing");
   assert(response.body.commitSha !== "generated-at-build", "build-info placeholder was deployed; Render build command output was not published");
   assert(response.body.source !== "placeholder", "build-info placeholder source was deployed; Render build command output was not published");
+  assertWebNoStore(response.headers, "/build-info.json");
   if (expectedCommitSha) {
     assert(response.body.commitSha === expectedCommitSha, `deployed web commit ${response.body.commitSha} does not match expected ${expectedCommitSha}`);
   }
