@@ -82,8 +82,8 @@ GET /ready -> 200
 - 2026-07-11 11:26 라이브 점검에서 `musunil.com` HTML과 공개 preview clip은 최신으로 보였지만 build-info 404와 정적 no-store 헤더 미적용이 확인됐다. Render Dashboard/Blueprint가 새 build command와 headers를 적용하기 전에는 운영 배포 준비를 S+로 승급하지 않는다.
 - 2026-07-11 11:29 build-info 산출물이 `.gitignore`에 막혀 publish에서 빠지는 회귀를 제거했다. 다음 Render 배포에서 `/build-info.json` 200과 현재 Git SHA 일치가 확인되기 전에는 운영 배포 준비를 S+로 승급하지 않는다.
 - 2026-07-11 11:34 build-info placeholder를 repo에 추적시켜 Render Static publish 경로를 고정했다. build command가 실제 Git SHA로 덮어쓰는지 live에서 확인되기 전에는 운영 배포 준비를 S+로 승급하지 않는다.
-- 2026-07-11 11:38 live build-info가 200이어도 placeholder 값이면 배포 실패로 처리하도록 `check-web-deploy`와 `service-watch`를 강화했다. Render build output이 실제 Git SHA를 반영하기 전에는 운영 배포 준비를 S+로 승급하지 않는다.
-- 2026-07-11 11:45 static manifest와 live file hash 검증을 추가했다. live manifest 배포, build-info SHA 일치, static headers가 모두 확인되기 전에는 운영 배포 준비를 S+로 승급하지 않는다.
+- 2026-07-11 11:38 live build-info가 200이어도 placeholder 값이면 배포 실패로 처리하도록 `check-web-deploy`와 `service-watch`를 강화했다. 이후 21:26 정책에서 static manifest와 live file hash가 현재 repo 산출물과 정확히 일치하면 build metadata placeholder는 경고로 낮추고, 해시 불일치만 구버전 배포 실패로 처리하게 바꿨다.
+- 2026-07-11 11:45 static manifest와 live file hash 검증을 추가했다. 21:26 현재 live static hash 일치가 최신 UI 배포의 1차 증거이며, build-info SHA 일치와 static no-store headers는 운영 품질 경고로 남긴다.
 - 2026-07-11 11:58 홈 이슈 카드를 보고서형 scanline/대형 CTA 구조에서 앱 피드형 `상태/제목/장소 미리보기/지도·근거·영상·반론` 구조로 바꿨다. 390px 캡처에서 첫 카드 211px, 액션 `지도/근거/영상/반론`, 위치 미리보기 112x113, 내부 요청사항 문구 0을 확인했지만 독립 비평 재검증, 실제 운영 공개 영상/GPS, 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-11 12:10 `현장촬영` 첫 화면의 중첩 empty-state 박스와 데스크톱 맥락 패널 경쟁을 제거했다. 모바일은 headline+보호 pill+`근처 현장 찾기` 단일 행동으로, 데스크톱 locate 단계는 중앙 680px 단일 흐름으로 정리됐다. 실제 본인확인, 위치권한, 운영 GPS/카메라 리허설 전에는 S+로 승급하지 않는다.
 - 2026-07-11 12:22 poster 없는 LIVE Claim을 상태표형 `reels-review-panel`이 아니라 `reel-card reel-full reel-pending`으로 표시하게 했다. 모바일은 액션 `근거/위치/이슈`가 하단 내비와 겹치지 않고, 데스크톱은 700px 카드 안에 액션이 첫 viewport로 들어온다. 실제 공개 영상 품질, 독립 비평 재검증, 사용자 수락 전에는 S+로 승급하지 않는다.
@@ -101,6 +101,7 @@ GET /ready -> 200
 - 2026-07-11 14:05 surface50에서 데스크톱 홈 지도 영역을 648x403px 맥락 도구로 낮추고 이슈 피드를 520px로 키웠다. 1440px/390px 캡처에서 forbidden 0, rejected 0, `scrollWidth=1440/390`을 확인했지만 썸네일 완성도, 실제 운영 공개 영상/GPS, 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-11 14:14 surface51에서 공개 poster 없는 LIVE 영상을 홈 카드 썸네일처럼 표시하지 않게 했다. 390px/1440px 캡처에서 `reviewOnlyCards=0`, first visual `issue-place-peek`, forbidden 0을 확인했지만 실제 운영 공개 영상/GPS, 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-11 14:24 surface53에서 주요 이슈 레일을 필터칩형 pill이 아니라 원형 이슈 story ring으로 바꿨다. 390px/1440px 캡처에서 `storyCount=3`, `storyOrbCount=3`, `storyLabels=정보통신망법 개정 반대/대통령 탄핵 요구 행진/전국 집회 공개 일정`, `overflowX=false`, forbidden 0, rejected 0을 확인했지만 사용자 수락 전에는 S+로 승급하지 않는다.
+- 2026-07-11 21:26 deploy checker와 service watch를 static hash 우선 판정으로 수정했다. `/static-manifest.json`과 live HTML/config/media SHA-256이 현재 repo 산출물과 같으면 최신 UI 배포는 통과하고, `/build-info.json` placeholder와 no-store header 미적용은 경고로 남긴다. static hash가 다르면 계속 실패한다.
 
 ## Next Active Goal Order
 

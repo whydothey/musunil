@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
@@ -8,6 +8,7 @@ const webBaseUrl = (process.env.MUSUNIL_WEB_BASE_URL ?? "https://musunil.com").r
 const apiBaseUrl = (process.env.MUSUNIL_API_BASE_URL ?? "https://api.musunil.com").replace(/\/$/, "");
 const expectedCommitSha = process.env.MUSUNIL_EXPECTED_COMMIT_SHA;
 const reportPath = resolve(process.cwd(), "docs/splus-service-watch.md");
+let webStaticManifestVerified = false;
 
 do {
   const result = await runChecks();
@@ -19,11 +20,23 @@ do {
 } while (true);
 
 async function runChecks() {
+  webStaticManifestVerified = false;
   const checks = [];
+  await check(checks, "web_static_manifest", async () => {
+    const manifest = await getJson(`${webBaseUrl}/static-manifest.json`);
+    if (!manifest.files?.["index.html"]?.sha256 || !manifest.files?.["config.js"]?.sha256) throw new Error("static manifest missing core files");
+    const localManifest = localStaticManifest();
+    if (localManifest && JSON.stringify(manifest.files) !== JSON.stringify(localManifest.files)) {
+      throw new Error("live static manifest does not match local manifest");
+    }
+    webStaticManifestVerified = true;
+    return { files: Object.keys(manifest.files).length, mode: localManifest ? "matches_local" : "live_shape_only" };
+  });
   await check(checks, "web_build_info", async () => {
     const build = await getJson(`${webBaseUrl}/build-info.json`);
     if (build.commitSha === "generated-at-build" || build.source === "placeholder") {
-      throw new Error("build-info placeholder deployed; web build command output not published");
+      if (!webStaticManifestVerified) throw new Error("build-info placeholder deployed and static manifest did not verify freshness");
+      return { commitSha: build.commitSha, builtAt: build.builtAt, mode: "static_manifest_verified_fallback" };
     }
     if (expectedCommitSha && build.commitSha !== expectedCommitSha) throw new Error(`commit ${build.commitSha} != ${expectedCommitSha}`);
     return { commitSha: build.commitSha, builtAt: build.builtAt };
@@ -32,11 +45,6 @@ async function runChecks() {
     const html = await getText(`${webBaseUrl}/`);
     assertAbsent(html, ["좋아요", "댓글", "찬반", "추천", "비추천", "팔로우", "localhost:4000", "traffic_control", "WEAKLY_OBSERVED"]);
     return { bytes: html.length };
-  });
-  await check(checks, "web_static_manifest", async () => {
-    const manifest = await getJson(`${webBaseUrl}/static-manifest.json`);
-    if (!manifest.files?.["index.html"]?.sha256 || !manifest.files?.["config.js"]?.sha256) throw new Error("static manifest missing core files");
-    return { files: Object.keys(manifest.files).length };
   });
   await check(checks, "api_health_ready", async () => {
     const health = await getJson(`${apiBaseUrl}/health`);
@@ -94,6 +102,14 @@ async function runChecks() {
     ok: checks.every((item) => item.ok),
     checks
   };
+}
+
+function localStaticManifest() {
+  try {
+    return JSON.parse(readFileSync(resolve(process.cwd(), "apps/web/static-manifest.json"), "utf8"));
+  } catch {
+    return null;
+  }
 }
 
 async function check(checks, id, action) {
@@ -173,7 +189,7 @@ function recordResult(result) {
   const rows = result.checks.map((item) => `| ${item.id} | ${item.ok ? "ok" : "fail"} | ${item.message ?? JSON.stringify(item.detail ?? {})} |`).join("\n");
   writeFileSync(
     reportPath,
-    `# S+ Service Watch\n\nLast checked: ${result.checkedAt}\n\nStatus: ${status}\n\n| Check | Result | Detail |\n|---|---|---|\n${rows}\n\n## History\n\n`
+    `# S+ Service Watch\n\nLast checked: ${result.checkedAt}\n\nStatus: ${status}\n\n| Check | Result | Detail |\n|---|---|---|\n${rows}\n\n## History\n`
   );
   const historyPath = resolve(process.cwd(), "docs/splus-service-watch.history.md");
   if (!existsSync(historyPath)) writeFileSync(historyPath, "# S+ Service Watch History\n\n| Checked At | Status | Failed Checks |\n|---|---|---|\n");

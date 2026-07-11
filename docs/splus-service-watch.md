@@ -1,7 +1,21 @@
 # S+ Service Watch
 
-Last checked: not run yet
+Last checked: 2026-07-11T12:29:01.721Z
 
 Status: Active
 
-이 파일은 `pnpm service:watch -- --once` 실행 결과로 갱신된다. 완료 판정은 Web SHA, API readiness, 공개 payload 안전성, 법안 원천, coverage, 인증 write boundary가 모두 통과할 때만 `S+ Guard`로 본다.
+| Check | Result | Detail |
+|---|---|---|
+| web_static_manifest | ok | {"files":4,"mode":"matches_local"} |
+| web_build_info | ok | {"commitSha":"generated-at-build","builtAt":"1970-01-01T00:00:00.000Z","mode":"static_manifest_verified_fallback"} |
+| web_forbidden_ui_absent | ok | {"bytes":373208} |
+| api_health_ready | fail | fetch failed |
+| public_redacted_media | fail | fetch failed |
+| public_payload_home | fail | fetch failed |
+| public_payload_issues | fail | fetch failed |
+| public_payload_map | fail | fetch failed |
+| public_payload_laws | fail | fetch failed |
+| public_payload_public-sources_coverage | fail | fetch failed |
+| identity_public_read_write_boundary | fail | fetch failed |
+
+## History

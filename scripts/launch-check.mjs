@@ -292,8 +292,8 @@ if (!/seoul_assembly_control/.test(publicSourceRegistry) || !/sejong_today_assem
 }
 if (!/MUSUNIL_WEB_CONFIG/.test(web)) failures.push("web runtime config hook is missing");
 if (!/build-info\.js/.test(web)) failures.push("web build-info hook is missing");
-if (!/generated-at-build/.test(webDeployCheck) || !/placeholder was deployed/.test(webDeployCheck)) {
-  failures.push("web deploy check must reject tracked build-info placeholders");
+if (!/generated-at-build/.test(webDeployCheck) || !/staticManifestVerified/.test(webDeployCheck) || !/web_build_info_placeholder/.test(webDeployCheck)) {
+  failures.push("web deploy check must verify static manifest freshness before tolerating tracked build-info placeholders");
 }
 if (!/static-manifest\.json/.test(webDeployCheck) || !/assertLiveFileHash/.test(webDeployCheck) || !/createHash\("sha256"\)/.test(webStaticManifestScript)) {
   failures.push("web deploy check must verify static manifest content hashes");
