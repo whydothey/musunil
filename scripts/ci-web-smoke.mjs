@@ -109,7 +109,7 @@ async function checkWeb(port) {
   assert(html.headers.get("content-security-policy")?.includes("default-src 'self'"), "content-security-policy missing");
   assert(html.headers.get("content-security-policy")?.includes("https://cdn.portone.io"), "PortOne SDK CSP allowlist missing");
   assert(html.headers.get("content-security-policy")?.includes("media-src 'self'"), "public media CSP allowlist missing");
-  assert(index.includes("집회·시위 공개자료"), "commercial issue-file home title missing");
+  assert(index.includes("확인된 집회·시위"), "consumer issue-feed home title missing");
   assert(index.includes('id: "issue_real_public_sources"'), "official public-source fallback issue missing");
   assert(index.includes("전국 집회 신고·공개 일정"), "official public-source fallback issue title missing");
   assert(index.includes("issue-card-actions"), "issue card action hub missing");
@@ -122,10 +122,14 @@ async function checkWeb(port) {
   assert(index.includes("issueSourceBasisText"), "issue source basis summary helper missing");
   assert(index.includes("isMetaPublicSourceIssue"), "meta public-source issue sort guard missing");
   assert(index.includes('id="detail-confirm-summary"'), "detail confirmed summary line missing");
-  assert(index.includes('issueCardActionButton("summary", "icon-stats", "상세 보기"'), "issue card consumer primary action label missing");
+  assert(index.includes("issue-card-action-context"), "issue card footer context missing");
+  assert(index.includes("근거·영상·지도"), "issue card footer path copy missing");
+  assert(index.includes("issue-card-action-label"), "issue card footer action label missing");
+  assert(index.includes(">자세히</span>"), "issue card lightweight detail label missing");
+  assert(index.includes(".issue-card-action.primary-action") && index.includes("background: transparent;"), "issue card primary action should be lightweight, not a filled CTA");
   assert(!index.includes('issueCardActionButton("evidence", "icon-stats", "근거 보기", `${title} 근거 보기`, "primary")'), "evidence should not remain the primary home card action");
   assert(!index.includes('issueCardActionButton("map", "icon-locate", "지도", `${title} 지도에서 위치 확인`, "primary")'), "map action should not be the primary card action");
-  assert(index.includes('issueCardActionButton("summary"'), "issue card summary action missing");
+  assert(index.includes('data-issue-card-action="summary"'), "issue card summary action missing");
   assert(!index.includes('issueCardActionButton("video"'), "issue card video action should not be a repeated CTA");
   assert(!index.includes('issueCardActionButton("dispute"'), "issue card rebuttal action should not be a repeated CTA");
   assert(!index.includes('issue-card-source">공개자료 기준'), "repeated issue card source label present");

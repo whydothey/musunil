@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 13:40 KST
+Last updated: 2026-07-11 13:50 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -50,6 +50,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 13:24 live `https://musunil.com` 검증은 여전히 실패한다. `/static-manifest.json`은 최신 index hash를 가리키지만 `/build-info.json`은 placeholder이고 `/`, `/config.js`, `/build-info.json` 모두 no-store가 아니다. Render build/header 계약이 실제 서비스에서 반영되기 전 운영 배포 준비는 S+로 승급하지 않는다.
 - 13:31 `e8b098c` 푸시 후 GitHub Actions는 통과했고 live manifest도 새 커밋과 일치했지만 `/build-info.json`은 여전히 placeholder다. `check:web-deploy` 실패 메시지와 launch 문서를 강화해 Render 수동 Static Site가 빌드 산출물이 아니라 커밋된 `apps/web`을 그대로 publish하는 경우를 즉시 식별하게 했다.
 - 13:40 surface47 패치로 브랜드 subtitle을 `공개 위치·근거 확인`, 홈 제목을 `확인된 집회·시위`, fallback 상태 문구를 `위치와 근거 기준`으로 바꾸고, 스토리 레일은 짧은 이슈명 pill로 정리했다. 390px/1440px 캡처에서 첫 이슈는 `정보통신망법 개정 반대 집회`, story labels는 `정보통신망법 개정 반대/대통령 탄핵 요구 행진/전국 집회 공개 일정`, forbidden 0, `scrollWidth=390/1440`이다. 카드 CTA와 데스크톱 지도 비중은 다음 개선 대상으로 남긴다.
+- 13:50 surface48 패치로 반복되는 큰 청록 CTA를 제거했다. 홈 카드는 전체 탭 가능한 피드 카드로 유지하고, 하단은 `근거·영상·지도 / 자세히`의 가벼운 경로 footer로 낮췄다. 390px/1440px 캡처에서 action background는 transparent, action height는 30/32px, forbidden 0, `scrollWidth=390/1440`이다. 아직 카드 요약 줄과 하단 경로의 중복, 데스크톱 지도 비중은 다음 개선 대상으로 남긴다.
 
 ## Agent Feedback Summary
 
@@ -350,6 +351,9 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 13:40 mobile home surface47 | `docs/commercial-splus-surface47-home-mobile-390-2026-07-11.png` |
 | 13:40 desktop home surface47 | `docs/commercial-splus-surface47-home-desktop-1440-2026-07-11.png` |
 | 13:40 surface47 metrics | 390px/1440px subtitle `공개 위치·근거 확인`, home title `확인된 집회·시위`, api state `위치와 근거 기준`, first issue `정보통신망법 개정 반대 집회`, first action `상세 보기`, forbidden 0, `scrollWidth=390/1440`. 사용자 수락 전 S+는 아니다. |
+| 13:50 mobile home surface48 | `docs/commercial-splus-surface48-light-card-footer-mobile-390-2026-07-11.png` |
+| 13:50 desktop home surface48 | `docs/commercial-splus-surface48-light-card-footer-desktop-1440-2026-07-11.png` |
+| 13:50 surface48 metrics | 390px/1440px first action `근거·영상·지도 자세히`, action background transparent, action height 30/32px, first issue `정보통신망법 개정 반대 집회`, forbidden 0, `scrollWidth=390/1440`. 사용자 수락 전 S+는 아니다. |
 
 ## Non-Negotiable Gates
 

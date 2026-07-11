@@ -1899,21 +1899,22 @@
       .issue-card-actions {
         display: grid;
         grid-template-columns: minmax(0, 1fr);
-        gap: 0;
         min-width: 0;
+        padding-top: 2px;
       }
 
       .issue-card-action {
         display: inline-flex;
         align-items: center;
-        justify-content: center;
-        gap: 5px;
+        justify-content: space-between;
+        gap: 10px;
         min-width: 0;
-        min-height: 34px;
-        padding: 0 9px;
+        min-height: 28px;
+        padding: 8px 0 0;
         border: 0;
-        border-radius: 999px;
-        background: color-mix(in srgb, var(--surface-2) 74%, transparent);
+        border-top: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+        border-radius: 0;
+        background: transparent;
         color: var(--muted);
         font-size: 12px;
         font-weight: 800;
@@ -1927,7 +1928,7 @@
       }
 
       .issue-card-action:hover {
-        background: color-mix(in srgb, var(--brand) 8%, var(--surface));
+        background: transparent;
         color: var(--brand);
       }
 
@@ -1937,23 +1938,45 @@
 
       .issue-card-action.primary-action {
         grid-column: 1 / -1;
-        min-height: 40px;
-        border-color: color-mix(in srgb, var(--brand) 72%, var(--line));
-        background: var(--brand);
-        color: #fff;
-        box-shadow: 0 10px 22px color-mix(in srgb, var(--brand) 18%, transparent);
+        min-height: 32px;
+        border-color: color-mix(in srgb, var(--line) 78%, transparent);
+        background: transparent;
+        color: var(--muted);
+        box-shadow: none;
       }
 
       .issue-card-action.primary-action:hover {
-        border-color: color-mix(in srgb, var(--brand-strong) 84%, var(--line));
-        background: var(--brand-strong);
-        color: #fff;
+        border-color: color-mix(in srgb, var(--brand) 24%, var(--line));
+        background: transparent;
+        color: var(--brand);
       }
 
-      .issue-card-action .button-symbol {
-        width: 15px;
-        height: 15px;
+      .issue-card-action-context {
+        min-width: 0;
+        overflow: hidden;
+        color: var(--faint);
+        font-size: 11px;
+        font-weight: 760;
+        text-overflow: ellipsis;
+      }
+
+      .issue-card-action-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
         flex: 0 0 auto;
+        color: var(--brand);
+        font-size: 12px;
+        font-weight: 860;
+      }
+
+      .issue-card-action-label::after {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-top: 1.8px solid currentColor;
+        border-right: 1.8px solid currentColor;
+        transform: rotate(45deg);
       }
 
       .confirm-summary-line {
@@ -4859,7 +4882,7 @@
         }
 
         .issue-card-actions {
-          gap: 6px;
+          padding-top: 0;
         }
 
         .issue-feed-title .title {
@@ -4892,18 +4915,17 @@
         }
 
         .issue-card-action {
-          min-height: 34px;
-          padding: 0 5px;
+          min-height: 30px;
+          padding-top: 7px;
           font-size: 11px;
         }
 
-        .issue-card-action .button-symbol {
-          width: 14px;
-          height: 14px;
+        .issue-card-action-context {
+          font-size: 10.5px;
         }
 
         .issue-card-action.primary-action {
-          min-height: 39px;
+          min-height: 30px;
         }
 
         .issue-confirm-summary strong {
@@ -8005,17 +8027,11 @@
         const title = issue?.title || "선택 이슈";
         return `
           <div class="issue-card-actions" aria-label="${escapeHtml(title)} 확인 경로">
-            ${issueCardActionButton("summary", "icon-stats", "상세 보기", `${title} 상세 보기`, "primary")}
+            <button class="issue-card-action primary-action" type="button" data-issue-card-action="summary" aria-label="${escapeHtml(title)} 상세 보기">
+              <span class="issue-card-action-context">근거·영상·지도</span>
+              <span class="issue-card-action-label">자세히</span>
+            </button>
           </div>
-        `;
-      }
-
-      function issueCardActionButton(action, icon, label, ariaLabel, variant = "") {
-        return `
-          <button class="issue-card-action${variant === "primary" ? " primary-action" : ""}" type="button" data-issue-card-action="${escapeHtml(action)}" aria-label="${escapeHtml(ariaLabel)}">
-            <svg class="button-symbol" aria-hidden="true"><use href="#${escapeHtml(icon)}"></use></svg>
-            <span>${escapeHtml(label)}</span>
-          </button>
         `;
       }
 
