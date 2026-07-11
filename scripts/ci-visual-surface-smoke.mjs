@@ -140,7 +140,7 @@ async function runViewport(client, viewport, url) {
   scenario(`${viewport.id}_home`, [
     () => assert(
       homeReady,
-      `home issue feed not ready: issues=${home.issueCount}, stories=${home.storyCount}, state=${home.serviceSyncState}, banner=${home.serviceBannerTitle || "none"}, first=${home.firstIssueTitle || "none"}, empty=${home.issueEmptyStateVisible ? "controlled" : "missing"}, emptyActions=${home.issueEmptyActions.join("/") || "none"}`
+      `home issue feed not ready: issues=${home.issueCount}, stories=${home.storyCount}, state=${home.serviceSyncState}, banner=${home.serviceBannerTitle || "none"}, first=${home.firstIssueTitle || "none"}, empty=${home.issueEmptyStateVisible ? "controlled" : "missing"}, emptyTitle=${home.issueEmptyTitle || "none"}, emptyBody=${home.issueEmptyBody || "none"}, emptyActions=${home.issueEmptyActions.join("/") || "none"}`
     ),
     () => assert(homeReady || home.issueEmptyStateVisible, "home issue feed has no cards and no controlled empty state"),
     () => assert(homeReady || /새 이슈를 확인 중입니다/.test(home.issueEmptyTitle), `home issue empty title changed: ${home.issueEmptyTitle}`),
