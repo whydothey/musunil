@@ -239,9 +239,10 @@ if (
   !/--refresh/.test(launchNextActions) ||
   !/service:watch:visual/.test(launchNextActions) ||
   !/render:api-settings/.test(launchNextActions) ||
-  !/render:web-settings/.test(launchNextActions)
+  !/render:web-settings/.test(launchNextActions) ||
+  !/launch:post-deploy-smoke -- --require-laws/.test(launchNextActions)
 ) {
-  failures.push("Launch blockers helper must summarize service watch required actions and verification commands");
+  failures.push("Launch blockers helper must summarize service watch required actions and Web/API/laws verification commands");
 }
 if (
   !/api\.musunil\.com/.test(renderApiSettings) ||
@@ -308,9 +309,13 @@ if (
   !/MUSUNIL_EXPECTED_API_BASE_URL/.test(renderWebSettings) ||
   !/Clear build cache & deploy/.test(renderWebSettings) ||
   !/check:visual-surface:live/.test(renderWebSettings) ||
-  !/service:watch:visual/.test(renderWebSettings)
+  !/service:watch:visual/.test(renderWebSettings) ||
+  !/Header application mode/.test(renderWebSettings) ||
+  !/Manual Static Site/.test(renderWebSettings) ||
+  !/Blueprint-managed/.test(renderWebSettings) ||
+  !/render\.com\/docs\/static-site-headers/.test(renderWebSettings)
 ) {
-  failures.push("Render Web settings helper must print strict header, live visual, integrated service watch, and clear-cache redeploy instructions");
+  failures.push("Render Web settings helper must print strict header, live visual, integrated service watch, manual/Blueprint header mode, and clear-cache redeploy instructions");
 }
 if (!/"launch:cutover-plan"/.test(packageJson) || !/launch-cutover-plan\.mjs/.test(packageJson)) {
   failures.push("launch cutover plan helper command is missing");
@@ -326,9 +331,12 @@ if (
   !/service:watch:visual/.test(launchCutoverPlan) ||
   !/serviceSyncState=live/.test(launchCutoverPlan) ||
   !/\/home\.issueCards/.test(launchCutoverPlan) ||
-  !/3 topic issue cards/.test(launchCutoverPlan)
+  !/3 topic issue cards/.test(launchCutoverPlan) ||
+  !/Header application mode/.test(launchCutoverPlan) ||
+  !/Manual Static Site/.test(launchCutoverPlan) ||
+  !/Blueprint-managed/.test(launchCutoverPlan)
 ) {
-  failures.push("launch cutover plan must cover API DNS, Cloudflare DNS, Render headers, live visual surface, live data sync state, topic issue cards, and verification commands");
+  failures.push("launch cutover plan must cover API DNS, Cloudflare DNS, Render header application modes, live visual surface, live data sync state, topic issue cards, and verification commands");
 }
 if (
   !/Launch Cutover Runbook/.test(launchCutoverRunbook) ||
@@ -336,9 +344,12 @@ if (
   !/api\.musunil\.com/.test(launchCutoverRunbook) ||
   !/Cloudflare/.test(launchCutoverRunbook) ||
   !/check:visual-surface:live/.test(launchCutoverRunbook) ||
-  !/identity_required/.test(launchCutoverRunbook)
+  !/identity_required/.test(launchCutoverRunbook) ||
+  !/Header 적용 방식/.test(launchCutoverRunbook) ||
+  !/수동 Static Site/.test(launchCutoverRunbook) ||
+  !/Blueprint-managed/.test(launchCutoverRunbook)
 ) {
-  failures.push("launch cutover runbook must explain the final service cutover and identity boundary");
+  failures.push("launch cutover runbook must explain the final service cutover, identity boundary, and manual/Blueprint static header application mode");
 }
 if (/sourceBundleFirst=4\/4/.test(launchCutoverRunbook) || /첫 카드가 `지역별 집회 공개 일정`/.test(launchCutoverRunbook)) {
   failures.push("launch cutover runbook current blockers must reflect the latest live issue-feed state, not stale source-bundle-first evidence");
@@ -357,6 +368,7 @@ if (
   !/web_visual_surface/.test(serviceWatch) ||
   !/publicPayloadRoutes/.test(serviceWatch) ||
   !/assertHomeIssueFirstPayload/.test(serviceWatch) ||
+  !/at least 3 topic Issues/.test(serviceWatch) ||
   !/public source bundle/.test(serviceWatch) ||
   !/serviceStates/.test(serviceWatch) ||
   !/firstIssues/.test(serviceWatch) ||

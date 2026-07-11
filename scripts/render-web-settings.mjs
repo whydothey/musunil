@@ -53,6 +53,14 @@ const settings = {
   publishDirectory,
   envVars,
   headers,
+  officialDocs: {
+    staticHeaders: "https://render.com/docs/static-site-headers",
+    blueprintHeaders: "https://render.com/docs/blueprint-spec#static-sites"
+  },
+  headerApplicationModes: [
+    "Manual Static Site: open Render musunil-web > Settings > Headers and copy every header rule below. render.yaml does not sync into a manually created Static Site.",
+    "Blueprint-managed service: sync render.yaml and confirm the musunil-web headers section is applied by Render."
+  ],
   afterSave: [
     "Clear build cache & deploy",
     "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
@@ -71,6 +79,11 @@ if (process.argv.includes("--json")) {
   console.log("Root Directory: (blank)");
   console.log(`Build Command: ${settings.buildCommand}`);
   console.log(`Publish Directory: ${settings.publishDirectory}`);
+  console.log("");
+  console.log("Header application mode:");
+  for (const mode of settings.headerApplicationModes) console.log(`- ${mode}`);
+  console.log(`- Render docs: ${settings.officialDocs.staticHeaders}`);
+  console.log(`- Blueprint docs: ${settings.officialDocs.blueprintHeaders}`);
   console.log("");
   console.log("Environment Variables:");
   for (const envVar of settings.envVars) {

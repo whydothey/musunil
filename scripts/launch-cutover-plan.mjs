@@ -25,7 +25,7 @@ const plan = {
     {
       id: "static_headers",
       owner: "operator",
-      action: "Copy every Render Static Site header from this plan or pnpm render:web-settings into the Render musunil-web dashboard, then Clear build cache & deploy.",
+      action: "Check pnpm render:web-settings Header application mode. For a manual Static Site, copy every header into Render musunil-web Settings > Headers; for Blueprint-managed, sync render.yaml. Then Clear build cache & deploy.",
       verify: "MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy"
     },
     {
@@ -82,6 +82,11 @@ const plan = {
     "Do not cache /, /config.js, /build-info.json, or /static-manifest.json.",
     "Do not transform HTML, JS, JSON, poster, or video responses before launch verification.",
     "After proxying is enabled, rerun strict web headers and service watch."
+  ],
+  renderHeaderApplication: [
+    "Manual Static Site: custom response headers must be entered in the Render Dashboard.",
+    "Blueprint-managed service: render.yaml musunil-web.headers can be synced by Blueprint.",
+    "Reference: https://render.com/docs/static-site-headers and https://render.com/docs/blueprint-spec#static-sites"
   ],
   userInputPriority: [
     "app.support_email",
@@ -155,6 +160,9 @@ function printMarkdown(value) {
   for (const header of value.renderStaticSite.headers) {
     console.log(`- ${header.path} | ${header.name}: ${header.value}`);
   }
+  console.log("");
+  console.log("Header application mode:");
+  for (const mode of value.renderHeaderApplication) console.log(`- ${mode}`);
   console.log("");
   console.log("## Render API Service");
   console.log("");

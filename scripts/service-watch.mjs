@@ -387,6 +387,9 @@ function assertHomeIssueFirstPayload(body) {
   if (topicIssues.length === 0) {
     throw new Error("/home issueCards contains only public source bundles; move schedule/statistics bundles to source coverage context");
   }
+  if (topicIssues.length < 3) {
+    throw new Error(`/home issueCards needs at least 3 topic Issues for launch visual readiness, got ${topicIssues.length}`);
+  }
   if (isPublicSourceBundleIssue(issues[0])) {
     throw new Error(`/home first issueCard is a public source bundle, not a topic Issue: ${publicIssueTitle(issues[0])}`);
   }
@@ -486,7 +489,7 @@ function requiredActions(result) {
     actions.push({
       id: "apply_static_headers",
       owner: "operator",
-      action: "pnpm render:web-settings 출력의 Cache-Control, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options Headers를 Render musunil-web Static Site Dashboard에 그대로 입력하고 Clear build cache & deploy를 실행한다. Cloudflare proxy가 켜져 있으면 캐시 우회와 header override 규칙도 함께 확인한다.",
+      action: "pnpm render:web-settings 출력의 Header application mode를 먼저 확인한다. 수동 Static Site이면 Render musunil-web Settings > Headers에 Cache-Control, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options를 그대로 입력하고 Clear build cache & deploy를 실행한다. Blueprint-managed이면 render.yaml headers가 sync됐는지 확인한다. Cloudflare proxy가 켜져 있으면 캐시 우회와 header override 규칙도 함께 확인한다.",
       verify: "pnpm render:web-settings && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy",
       reference: "docs/launch-cutover-runbook.md#2-render-static-site"
     });
