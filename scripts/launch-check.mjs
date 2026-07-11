@@ -271,6 +271,9 @@ if (
   !/launch:post-deploy-smoke/.test(launchFinalGate) ||
   !/--require-laws/.test(launchFinalGate) ||
   !/launch:blockers:refresh-strict/.test(launchFinalGate) ||
+  !/deriveLaunchEnv/.test(launchFinalGate) ||
+  !/MUSUNIL_EXPECTED_COMMIT_SHA/.test(launchFinalGate) ||
+  !/gitHead\(\)/.test(launchFinalGate) ||
   !/scope:\s*step\.scope/.test(launchFinalGate) ||
   !/command:\s*stepCommands\.get\(step\.id\)/.test(launchFinalGate) ||
   !/post_deploy_smoke[\s\S]*live_blocker_refresh_strict/.test(launchFinalGate)
@@ -284,7 +287,7 @@ if (
   !/Render generated/.test(renderApiSettings) ||
   !/Cloudflare DNS/.test(renderApiSettings) ||
   !/MUSUNIL_WEB_BASE_URL=https:\/\/musunil\.com MUSUNIL_API_BASE_URL=https:\/\/api\.musunil\.com pnpm launch:post-deploy-smoke/.test(renderApiSettings) ||
-  !/launch:final-gate/.test(renderApiSettings) ||
+  !/pnpm launch:final-gate/.test(renderApiSettings) ||
   !/launch:post-deploy-smoke/.test(renderApiSettings) ||
   !/service:watch/.test(renderApiSettings)
 ) {
@@ -344,7 +347,7 @@ if (
   !/Clear build cache & deploy/.test(renderWebSettings) ||
   !/check:visual-surface:live/.test(renderWebSettings) ||
   !/service:watch:visual/.test(renderWebSettings) ||
-  !/launch:final-gate/.test(renderWebSettings) ||
+  !/pnpm launch:final-gate/.test(renderWebSettings) ||
   !/Header application mode/.test(renderWebSettings) ||
   !/Manual Static Site/.test(renderWebSettings) ||
   !/Blueprint-managed/.test(renderWebSettings) ||
@@ -364,7 +367,7 @@ if (
   !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(launchCutoverPlan) ||
   !/check:visual-surface:live/.test(launchCutoverPlan) ||
   !/service:watch:visual/.test(launchCutoverPlan) ||
-  !/launch:final-gate/.test(launchCutoverPlan) ||
+  !/pnpm launch:final-gate/.test(launchCutoverPlan) ||
   !/Final launch gate exits 0/.test(launchCutoverPlan) ||
   !/serviceSyncState=live/.test(launchCutoverPlan) ||
   !/\/home\.issueCards/.test(launchCutoverPlan) ||
@@ -420,7 +423,7 @@ if (
   !/requiredActions/.test(serviceWatch) ||
   !/connect_api_endpoint/.test(serviceWatch) ||
   !/fix_web_runtime_config/.test(serviceWatch) ||
-  !/MUSUNIL_WEB_BASE_URL=https:\/\/musunil\.com MUSUNIL_API_BASE_URL=https:\/\/api\.musunil\.com MUSUNIL_EXPECTED_API_BASE_URL=https:\/\/api\.musunil\.com MUSUNIL_EXPECTED_COMMIT_SHA=\$\(git rev-parse HEAD\) pnpm launch:final-gate/.test(serviceWatch) ||
+  !/pnpm launch:final-gate/.test(serviceWatch) ||
   !/render:api-settings/.test(serviceWatch) ||
   !/apply_static_headers/.test(serviceWatch) ||
   !/deploy_latest_static/.test(serviceWatch) ||

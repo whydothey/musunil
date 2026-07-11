@@ -178,6 +178,6 @@ Last updated: 2026-07-12 02:55 KST
 - Render Dashboard에서 Blueprint 생성과 `MUSUNIL_USER_INPUTS_B64` 1회 입력.
 - 운영 DB/Redis 연결 상태에서 `/ready` 200 확인.
 - 실제 Web/API URL 기준 `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws` 통과.
-- 실제 Web/API URL 기준 `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm launch:final-gate` 통과.
+- 실제 Web/API URL 기준 `pnpm launch:final-gate` 통과.
 - Render cron 실제 실행과 실패 알림 확인.
 - FCM/APNs 실제 발송 provider를 켤 경우 별도 provider smoke.

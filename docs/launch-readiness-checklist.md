@@ -106,7 +106,7 @@
 - `pnpm launch:blockers`가 `docs/splus-service-watch.md`의 실패 checks, skipped checks, Required Actions, Render/API/Web 검증 명령을 한 화면에 요약한다. 출력에는 `Report freshness`가 포함되어야 하며, 기본 15분보다 오래된 보고서는 stale로 표시하고 출시 판단에 쓰지 않는다. 최신 live 상태로 갱신하려면 `pnpm launch:blockers -- --refresh`를 사용한다.
 - 자동화나 최종 출시 gate에서는 `pnpm launch:blockers:strict`를 사용한다. 이 명령은 stale 보고서, 실패 check, skipped check, 남은 Required Actions가 하나라도 있으면 non-zero로 종료해야 한다.
 - 배포 직후 최종 판정 자동화에서는 `pnpm launch:blockers:refresh-strict`를 사용한다. 이 명령은 먼저 live `service:watch:visual`을 갱신한 뒤 같은 strict 기준으로 실패해야 하므로, 오래된 문서와 실제 live 상태를 혼동하지 않는다. refresh 시도 뒤 `docs/splus-service-watch.md`의 `Last checked`가 바뀌지 않으면 보고서 미갱신으로 보고 차단해야 한다.
-- 배포 직후 운영자가 최종 출시 여부를 볼 때는 `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:final-gate`를 사용한다. 이 명령 하나가 live Web/API smoke, 법안 공개자료 존재, static hash, live visual sync, stale blocker 보고서 갱신 여부를 이어서 확인하고, 실패하더라도 blocker 요약 갱신을 시도한다.
+- 배포 직후 운영자가 최종 출시 여부를 볼 때는 `pnpm launch:final-gate`를 사용한다. 이 명령은 production 기본값으로 `musunil.com`, `api.musunil.com`, 현재 Git SHA를 보정하고, live Web/API smoke, 법안 공개자료 존재, static hash, live visual sync, stale blocker 보고서 갱신 여부를 이어서 확인한다. staging/preview 도메인에서는 `MUSUNIL_WEB_BASE_URL`, `MUSUNIL_API_BASE_URL`, `MUSUNIL_EXPECTED_API_BASE_URL`, `MUSUNIL_EXPECTED_COMMIT_SHA`만 override한다.
 - production Web fallback에도 프리뷰/mock 카드와 프리뷰 전용 지도 핀이 보이지 않는다.
 - production Web fallback은 API가 끊긴 상태에서도 지역별 공개 일정/신고 통계 같은 공개자료 묶음을 홈 이슈 카드로 대체하지 않는다. 주제형 이슈가 없으면 빈 이슈 상태로 남겨야 한다.
 - production Web은 `config.js`의 `apiBaseUrl`을 기준으로 하며, `?api=`와 localStorage API override는 localhost에서만 허용된다.

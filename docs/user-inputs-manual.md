@@ -389,12 +389,10 @@ pnpm launch:post-deploy-smoke -- --require-laws
 배포 후 최종 판정:
 
 ```bash
-MUSUNIL_WEB_BASE_URL=https://musunil.com \
-MUSUNIL_API_BASE_URL=https://api.musunil.com \
 pnpm launch:final-gate
 ```
 
-`pnpm launch:final-gate`는 post-deploy smoke를 법안 필수 조건으로 실행한 뒤 live service watch를 새로 갱신하고 blocker가 하나라도 남아 있으면 실패한다. 앞 검증이 실패해도 blocker 갱신은 시도하므로, 이 명령이 실패하면 출력된 단계별 결과와 `docs/splus-service-watch.md`의 Required Actions를 기준으로 고친다.
+`pnpm launch:final-gate`는 production 기본값으로 `musunil.com`, `api.musunil.com`, 현재 Git SHA를 보정한다. post-deploy smoke를 법안 필수 조건으로 실행한 뒤 live service watch를 새로 갱신하고 blocker가 하나라도 남아 있으면 실패한다. 앞 검증이 실패해도 blocker 갱신은 시도하므로, 이 명령이 실패하면 출력된 단계별 결과와 `docs/splus-service-watch.md`의 Required Actions를 기준으로 고친다.
 
 Render Static Site 수동 설정값 확인:
 

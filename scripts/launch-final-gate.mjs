@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
 const listOnly = args.includes("--list");
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+const launchEnv = deriveLaunchEnv(process.env);
 
 const steps = [
   {
@@ -21,6 +22,7 @@ const stepCommands = new Map(steps.map((step) => [step.id, [pnpm, ...step.args].
 if (listOnly) {
   console.log(JSON.stringify({
     checked: "launch_final_gate_plan",
+    env: launchEnv.summary,
     steps: steps.map((step) => ({
       id: step.id,
       scope: step.scope,
@@ -36,6 +38,7 @@ const failed = results.filter((result) => !result.ok);
 const summary = {
   checked: "launch_final_gate",
   ok: failed.length === 0,
+  env: launchEnv.summary,
   steps: results
 };
 
@@ -47,7 +50,7 @@ if (failed.length > 0) {
 function run(step) {
   const result = spawnSync(pnpm, step.args, {
     cwd: process.cwd(),
-    env: process.env,
+    env: launchEnv.env,
     stdio: "inherit"
   });
 
@@ -80,4 +83,39 @@ function run(step) {
     ok: result.status === 0,
     status: result.status ?? 1
   };
+}
+
+function deriveLaunchEnv(baseEnv) {
+  const env = { ...baseEnv };
+  const defaults = [];
+  setDefault(env, defaults, "MUSUNIL_WEB_BASE_URL", "https://musunil.com");
+  setDefault(env, defaults, "MUSUNIL_API_BASE_URL", "https://api.musunil.com");
+  setDefault(env, defaults, "MUSUNIL_EXPECTED_API_BASE_URL", env.MUSUNIL_API_BASE_URL);
+  setDefault(env, defaults, "MUSUNIL_EXPECTED_COMMIT_SHA", env.RENDER_GIT_COMMIT || gitHead());
+  return {
+    env,
+    summary: {
+      webBaseUrl: env.MUSUNIL_WEB_BASE_URL,
+      apiBaseUrl: env.MUSUNIL_API_BASE_URL,
+      expectedApiBaseUrl: env.MUSUNIL_EXPECTED_API_BASE_URL,
+      expectedCommitSha: env.MUSUNIL_EXPECTED_COMMIT_SHA || null,
+      defaulted: defaults
+    }
+  };
+}
+
+function setDefault(env, defaults, key, value) {
+  if (env[key] || !value) return;
+  env[key] = value;
+  defaults.push(key);
+}
+
+function gitHead() {
+  const result = spawnSync("git", ["rev-parse", "HEAD"], {
+    cwd: process.cwd(),
+    env: process.env,
+    encoding: "utf8"
+  });
+  if (result.status !== 0) return "";
+  return result.stdout.trim();
 }

@@ -14,7 +14,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - Active row가 0개다.
 - `pnpm launch:ready -- <운영 user-inputs.yaml>`가 실제 운영 입력값으로 통과한다.
 - `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws`가 실제 배포 Web/API URL로 통과한다.
-- `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:final-gate`가 실제 배포 Web/API URL로 통과한다.
+- `pnpm launch:final-gate`가 실제 배포 Web/API URL로 통과한다.
 - `pnpm service:watch -- --once`가 실제 Web/API URL 기준으로 통과한다.
 - `pnpm check:visual-surface:live`가 실제 `https://musunil.com` 기준으로 통과한다.
 - `pnpm service:watch:visual`의 `web_visual_surface`가 ok이고 `serviceSyncState=live`이며 남은 failure가 없다.
@@ -64,7 +64,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 pnpm launch:ready -- config/musunil.user-inputs.local.yaml
 pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws
 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws
-MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:final-gate
+pnpm launch:final-gate
 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once
 pnpm check:visual-surface:live
 pnpm service:watch:visual
@@ -148,5 +148,5 @@ GET /ready -> 200
 3. `pnpm launch:ready -- <yaml>`를 통과시킨다.
 4. `pnpm launch:ready -- <yaml> --post-laws`를 staging 또는 운영 전 리허설에서 통과시킨다.
 5. Render 배포 후 `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws`를 실제 URL 기준으로 통과시킨다.
-6. `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm launch:final-gate`를 통과시킨다.
+6. `pnpm launch:final-gate`를 통과시킨다.
 7. Element Execution Board의 Active row를 증거 기반으로 Guard 또는 S+로 승급한다.

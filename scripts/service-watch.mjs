@@ -498,7 +498,7 @@ function recordResult(result) {
 function requiredActions(result) {
   const actions = [];
   const byId = new Map(result.checks.map((item) => [item.id, item]));
-  const finalGateVerify = "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm launch:final-gate";
+  const finalGateVerify = "pnpm launch:final-gate";
   const staticManifest = byId.get("web_static_manifest");
   if (staticManifest && !staticManifest.ok) {
     actions.push({

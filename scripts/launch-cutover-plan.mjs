@@ -38,7 +38,7 @@ const plan = {
       id: "live_data_sync",
       owner: "operator",
       action: "After Web and API domains are connected, confirm the live browser surface reports serviceSyncState=live and renders at least 3 topic issue cards from /home.issueCards.",
-      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm launch:final-gate"
+      verify: "pnpm launch:final-gate"
     }
   ],
   renderStaticSite: {
@@ -110,7 +110,7 @@ const plan = {
     "pnpm check:visual-surface:live",
     "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws",
     "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm service:watch:visual",
-    "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm launch:final-gate"
+    "pnpm launch:final-gate"
   ],
   successCriteria: [
     "Final launch gate exits 0 with live post-deploy smoke and refreshed strict blocker checks.",
