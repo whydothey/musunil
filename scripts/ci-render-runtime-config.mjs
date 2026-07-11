@@ -6,12 +6,12 @@ const cwd = resolve(import.meta.dirname, "..");
 const port = await freePort();
 const launchYaml = `app:
   name: "무슨일"
-  public_base_url: "https://musunil.kr"
-  support_email: "ops@musunil.kr"
+  public_base_url: "https://musunil.com"
+  support_email: "ops@musunil.com"
   default_locale: "ko-KR"
   timezone: "Asia/Seoul"
 api:
-  public_base_url: "https://api.musunil.kr"
+  public_base_url: "https://api.musunil.com"
 organization:
   legal_name: "Musunil Inc."
   operator_name: "Musunil Ops"
@@ -20,9 +20,9 @@ organization:
   mail_order_sales_registration_number: ""
   business_bank_account_holder: ""
   privacy_officer_name: "Privacy Officer"
-  privacy_officer_email: "privacy@musunil.kr"
+  privacy_officer_email: "privacy@musunil.com"
   location_info_manager_name: "Location Officer"
-  location_info_manager_email: "location@musunil.kr"
+  location_info_manager_email: "location@musunil.com"
 domestic_operation:
   service_country: "KR"
   service_language: "ko-KR"
@@ -41,7 +41,7 @@ security:
   internal_api_key: ""
 web:
   allowed_origins:
-    - "https://musunil.kr"
+    - "https://musunil.com"
   pwa_enabled: true
 mobile:
   android_package_name: "app.musunil.android"
@@ -57,7 +57,7 @@ identity:
   portone_identity_channel_key: "identity-channel-musunil-production"
   portone_api_secret: "portone_identity_api_secret_32_bytes"
   portone_api_base_url: "https://api.portone.io"
-  session_cookie_domain: ".musunil.kr"
+  session_cookie_domain: ".musunil.com"
 map:
   provider: "openfreemap"
   map_style_url: "https://tiles.openfreemap.org/styles/positron"
@@ -99,9 +99,9 @@ payments:
   pg_client_key: ""
   pg_secret_key: ""
   pg_webhook_secret: ""
-  success_url: "https://musunil.kr/support/complete"
-  fail_url: "https://musunil.kr/support/fail"
-  webhook_url: "https://api.musunil.kr/payments/webhook"
+  success_url: "https://musunil.com/support/complete"
+  fail_url: "https://musunil.com/support/fail"
+  webhook_url: "https://api.musunil.com/payments/webhook"
   influence_on_ranking_enabled: false
   influence_on_alerts_enabled: false
   influence_on_trust_enabled: false
