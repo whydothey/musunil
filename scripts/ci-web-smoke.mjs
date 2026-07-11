@@ -120,8 +120,11 @@ async function checkWeb(port) {
   }
   assert(index.includes("issue-card-actions"), "issue card action hub missing");
   assert(index.includes('data-issue-empty-state="sync-waiting"'), "home issue empty sync state missing");
+  assert(index.includes("새 이슈를 확인 중입니다"), "home issue empty state must use user-facing status copy");
+  assert(index.includes("지역별 현장 맥락"), "home issue empty state must point to regional context");
   assert(index.includes('data-issue-empty-action="refresh"'), "home issue empty refresh action missing");
   assert(index.includes('data-issue-empty-action="explore"'), "home issue empty explore action missing");
+  assert(index.includes(">지역 보기<"), "home issue empty explore action must use regional label");
   assert(index.includes("!isPreviewIssue(issue.id) && !isMetaPublicSourceIssue(issue)"), "production fallback must not expose public-source bundles as issue cards");
   assert(!index.includes("issue-card-secondary-actions"), "legacy issue card secondary action row present");
   assert(index.includes("issue-place-peek"), "issue card place preview missing");

@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-12 08:44 KST
+Last updated: 2026-07-12 09:22 KST
 
 Status: 완료 아님.
 
@@ -157,6 +157,7 @@ GET /ready -> 200
 - 2026-07-12 02:09 visual smoke가 Web `serviceSyncState`와 서비스 배너 상태를 출력하고, `pnpm service:watch:visual`은 운영 도메인이 `delayed` fallback 상태이면 `web_visual_surface`를 실패 처리한다. 이제 live visual 통과만으로 API live 동기화가 된 것처럼 판정하지 않는다.
 - 2026-07-12 08:28 Render Static Site build command를 `pnpm build:web-static:render` 단일 명령으로 수렴했다. 이 명령은 운영 API base, 실제 build-info 작성, 정적 빌드, web smoke를 묶고 `launch-check`가 Render/README 계약을 감시한다. 다만 실제 Render build metadata, static headers, API DNS가 live에서 통과하기 전 운영 준비 완료가 아니다.
 - 2026-07-12 08:44 `pnpm launch:blockers -- --refresh`로 live evidence를 갱신했다. `docs/splus-service-watch.md`는 `publish_build_metadata` 조치가 `pnpm build:web-static:render` 확인을 요구하도록 바뀌었지만, Web header contract, `api.musunil.com` DNS, live issue feed 0건은 계속 실패다. 이 상태는 완료 증거가 아니라 외부 조치 전 차단 증거다.
+- 2026-07-12 09:22 홈 빈 상태의 운영 문구를 `새 이슈를 확인 중입니다`와 `다시 확인/지역 보기`로 낮췄다. 이는 API 미연결 상태에서도 사용자가 다음 행동을 이해하게 하는 UX guard이며, `serviceSyncState=live` 또는 `/home.issueCards` 운영 데이터 연결 완료 증거가 아니다.
 
 ## Next Active Goal Order
 

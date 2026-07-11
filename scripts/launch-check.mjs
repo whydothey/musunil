@@ -433,6 +433,15 @@ if (
   failures.push("Commercial visual surface smoke must guard first issue card density, action count, primary action count, chip count, and card height");
 }
 if (
+  !/issueEmptyTitle/.test(visualSurfaceSmoke) ||
+  !/issueEmptyBody/.test(visualSurfaceSmoke) ||
+  !/새 이슈를 확인 중입니다/.test(visualSurfaceSmoke) ||
+  !/지역별 현장 맥락/.test(visualSurfaceSmoke) ||
+  !/다시 확인\/지역 보기/.test(visualSurfaceSmoke)
+) {
+  failures.push("Commercial visual surface smoke must guard the live empty issue state copy and recovery actions");
+}
+if (
   !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(renderWebSettings) ||
   !/MUSUNIL_EXPECTED_API_BASE_URL/.test(renderWebSettings) ||
   !/Clear build cache & deploy/.test(renderWebSettings) ||
