@@ -42,6 +42,7 @@ const postDeploySmokeRunner = readFileSync(resolve(cwd, "scripts/post-deploy-smo
 const rootPackageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
 const ciWorkflow = readFileSync(resolve(cwd, ".github/workflows/ci.yml"), "utf8");
 const gitignore = readFileSync(resolve(cwd, ".gitignore"), "utf8");
+const readme = readFileSync(resolve(cwd, "README.md"), "utf8");
 const renderYaml = readFileSync(resolve(cwd, "render.yaml"), "utf8");
 const renderApi = renderServiceBlock(renderYaml, "musunil-api");
 const renderWeb = renderServiceBlock(renderYaml, "musunil-web");
@@ -652,6 +653,12 @@ if (!/name:\s*musunil-api[\s\S]*?buildCommand:[^\n]*pnpm check[^\n]*pnpm build:w
 }
 if (!/name:\s*musunil-web[\s\S]*?buildCommand:[^\n]*MUSUNIL_WRITE_BUILD_INFO=1[^\n]*pnpm build:web-static[^\n]*pnpm check:web-smoke/.test(renderYaml)) {
   failures.push("Render Web build must write build-info and run pnpm build:web-static and pnpm check:web-smoke");
+}
+if (!/Build Command:[^\n]*MUSUNIL_WRITE_BUILD_INFO=1[^\n]*pnpm build:web-static[^\n]*pnpm check:web-smoke/.test(readme)) {
+  failures.push("README Render Static Site build command must include MUSUNIL_WRITE_BUILD_INFO=1 and match render.yaml");
+}
+if (!/MUSUNIL_STRICT_WEB_HEADERS=1[^\n]*MUSUNIL_EXPECTED_API_BASE_URL=https:\/\/api\.musunil\.com[^\n]*pnpm check:web-deploy/.test(readme)) {
+  failures.push("README strict web deploy check must verify the expected API base URL");
 }
 for (const header of ["Cache-Control", "Content-Security-Policy", "Permissions-Policy", "Referrer-Policy", "X-Content-Type-Options", "X-Frame-Options"]) {
   if (!hasRenderHeader(renderWeb, header)) failures.push(`Render Web static header is missing: ${header}`);
