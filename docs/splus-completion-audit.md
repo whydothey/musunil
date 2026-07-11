@@ -84,6 +84,7 @@ GET /ready -> 200
 - 2026-07-11 11:34 build-info placeholder를 repo에 추적시켜 Render Static publish 경로를 고정했다. build command가 실제 Git SHA로 덮어쓰는지 live에서 확인되기 전에는 운영 배포 준비를 S+로 승급하지 않는다.
 - 2026-07-11 11:38 live build-info가 200이어도 placeholder 값이면 배포 실패로 처리하도록 `check-web-deploy`와 `service-watch`를 강화했다. Render build output이 실제 Git SHA를 반영하기 전에는 운영 배포 준비를 S+로 승급하지 않는다.
 - 2026-07-11 11:45 static manifest와 live file hash 검증을 추가했다. live manifest 배포, build-info SHA 일치, static headers가 모두 확인되기 전에는 운영 배포 준비를 S+로 승급하지 않는다.
+- 2026-07-11 11:58 홈 이슈 카드를 보고서형 scanline/대형 CTA 구조에서 앱 피드형 `상태/제목/장소 미리보기/지도·근거·영상·반론` 구조로 바꿨다. 390px 캡처에서 첫 카드 211px, 액션 `지도/근거/영상/반론`, 위치 미리보기 112x113, 내부 요청사항 문구 0을 확인했지만 독립 비평 재검증, 실제 운영 공개 영상/GPS, 사용자 수락 전에는 S+로 승급하지 않는다.
 
 ## Next Active Goal Order
 

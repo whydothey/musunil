@@ -1260,11 +1260,12 @@
 
       .issue-card {
         grid-template-columns: minmax(0, 1fr);
-        padding: 17px 4px 18px;
-        border-color: transparent;
-        border-bottom: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
-        border-radius: 0;
-        background: transparent;
+        padding: 15px;
+        border-color: color-mix(in srgb, var(--line) 76%, transparent);
+        border-radius: 18px;
+        background:
+          linear-gradient(180deg, color-mix(in srgb, #fff 86%, transparent), transparent 58%),
+          var(--surface);
         box-shadow: none;
       }
 
@@ -1273,27 +1274,25 @@
       }
 
       .issue-card:hover {
-        border-color: transparent;
-        border-bottom-color: color-mix(in srgb, var(--brand) 28%, var(--line));
+        border-color: color-mix(in srgb, var(--brand) 30%, var(--line));
         background: color-mix(in srgb, var(--brand) 3%, transparent);
-        box-shadow: none;
+        box-shadow: 0 14px 32px rgb(20 32 42 / 8%);
       }
 
       .issue-card[aria-selected="true"] {
-        border-color: transparent;
-        border-bottom-color: color-mix(in srgb, var(--brand) 38%, var(--line));
+        border-color: color-mix(in srgb, var(--brand) 34%, var(--line));
         background:
-          linear-gradient(180deg, color-mix(in srgb, var(--brand) 4%, transparent), transparent 74%),
+          linear-gradient(180deg, color-mix(in srgb, var(--brand) 5%, transparent), transparent 68%),
           var(--surface);
         box-shadow:
-          inset 0 0 0 1px color-mix(in srgb, var(--brand) 13%, transparent),
-          0 8px 18px rgb(21 31 41 / 4%);
+          inset 0 0 0 1px color-mix(in srgb, var(--brand) 9%, transparent),
+          0 14px 34px rgb(20 32 42 / 8%);
       }
 
       .issue-feed-cover {
         position: relative;
         display: grid;
-        gap: 10px;
+        gap: 12px;
         overflow: visible;
         padding: 0;
         border-bottom: 0;
@@ -1580,6 +1579,170 @@
         -webkit-line-clamp: 2;
       }
 
+      .issue-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .issue-card-status {
+        display: inline-flex;
+        align-items: center;
+        min-width: 0;
+        gap: 6px;
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 820;
+        line-height: 1.2;
+      }
+
+      .issue-card-status::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        flex: 0 0 auto;
+        border-radius: 999px;
+        background: var(--story-color, var(--brand));
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--story-color, var(--brand)) 13%, transparent);
+      }
+
+      .issue-card-source {
+        flex: 0 0 auto;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 760;
+        line-height: 1.2;
+      }
+
+      .issue-card-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 122px;
+        gap: 14px;
+        align-items: stretch;
+      }
+
+      .issue-card-copy {
+        display: grid;
+        min-width: 0;
+        align-content: start;
+        gap: 8px;
+      }
+
+      .issue-card-deck {
+        margin: 0;
+        color: var(--text);
+        font-size: 13px;
+        font-weight: 650;
+        line-height: 1.45;
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+      }
+
+      .issue-card-proof-row {
+        display: grid;
+        gap: 4px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 680;
+        line-height: 1.36;
+      }
+
+      .issue-card-proof-row span {
+        display: -webkit-box;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+      }
+
+      .issue-place-peek {
+        position: relative;
+        display: grid;
+        min-height: 112px;
+        overflow: hidden;
+        padding: 10px;
+        border: 1px solid color-mix(in srgb, var(--brand) 16%, var(--line));
+        border-radius: 14px;
+        background:
+          radial-gradient(circle at 68% 34%, color-mix(in srgb, var(--story-color, var(--brand)) 19%, transparent) 0 20px, transparent 21px),
+          linear-gradient(135deg, color-mix(in srgb, var(--surface-3) 88%, #fff), color-mix(in srgb, var(--brand) 7%, var(--surface)));
+        color: var(--ink);
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .issue-place-peek::before {
+        content: "";
+        position: absolute;
+        inset: 30px 14px 22px 18px;
+        border: 1px solid color-mix(in srgb, var(--story-color, var(--brand)) 32%, transparent);
+        border-radius: 999px 999px 999px 42px;
+        background: color-mix(in srgb, var(--story-color, var(--brand)) 10%, transparent);
+        transform: rotate(-12deg);
+      }
+
+      .issue-place-peek::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(90deg, transparent 0 27%, rgb(255 255 255 / 42%) 27% 28%, transparent 28% 61%, rgb(255 255 255 / 36%) 61% 62%, transparent 62%),
+          linear-gradient(0deg, transparent 0 32%, rgb(255 255 255 / 38%) 32% 33%, transparent 33% 70%, rgb(255 255 255 / 30%) 70% 71%, transparent 71%);
+        opacity: .62;
+      }
+
+      .issue-place-pin {
+        position: absolute;
+        right: 28px;
+        top: 33px;
+        width: 24px;
+        height: 24px;
+        border: 3px solid #fff;
+        border-radius: 999px 999px 999px 4px;
+        background: var(--story-color, var(--brand));
+        box-shadow: 0 8px 18px rgb(15 34 42 / 18%);
+        transform: rotate(-45deg);
+      }
+
+      .issue-place-pin::after {
+        content: "";
+        position: absolute;
+        inset: 5px;
+        border-radius: 999px;
+        background: #fff;
+      }
+
+      .issue-place-text {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        align-self: end;
+        gap: 2px;
+        min-width: 0;
+      }
+
+      .issue-place-text strong {
+        overflow: hidden;
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 850;
+        line-height: 1.2;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .issue-place-text span {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 760;
+        line-height: 1.25;
+      }
+
       .issue-plain-summary {
         display: grid;
         gap: 5px;
@@ -1637,15 +1800,10 @@
       }
 
       .issue-card-actions {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
+        display: flex;
+        align-items: center;
         gap: 7px;
-      }
-
-      .issue-card-secondary-actions {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 6px;
+        min-width: 0;
       }
 
       .issue-card-action {
@@ -1654,10 +1812,11 @@
         justify-content: center;
         gap: 5px;
         min-width: 0;
-        min-height: 38px;
-        padding: 0 8px;
+        min-height: 36px;
+        flex: 1 1 0;
+        padding: 0 9px;
         border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
-        border-radius: 7px;
+        border-radius: 999px;
         background: color-mix(in srgb, var(--surface) 92%, transparent);
         color: var(--ink);
         font-size: 12px;
@@ -1688,12 +1847,10 @@
       }
 
       .issue-card-action.primary-action {
-        min-height: 42px;
-        border-color: color-mix(in srgb, var(--brand) 78%, var(--line));
-        background: var(--brand);
-        color: #fff;
-        font-size: 13px;
-        box-shadow: 0 12px 28px color-mix(in srgb, var(--brand) 20%, transparent);
+        border-color: color-mix(in srgb, var(--brand) 34%, var(--line));
+        background: color-mix(in srgb, var(--brand) 9%, var(--surface));
+        color: var(--brand);
+        box-shadow: 0 1px 0 rgb(255 255 255 / 68%) inset;
       }
 
       .issue-card-action.primary-action:hover {
@@ -4448,42 +4605,42 @@
         }
 
         .issue-card {
-          padding: 13px 13px 12px;
+          padding: 14px 13px 12px;
+          border-radius: 16px;
         }
 
         .issue-feed-cover {
-          gap: 8px;
+          gap: 10px;
           padding: 0;
         }
 
         .issue-card.has-field-preview .issue-feed-cover {
-          grid-template-columns: minmax(0, 1fr) 112px;
-          column-gap: 12px;
-          row-gap: 7px;
-          align-items: start;
+          grid-template-columns: 1fr;
+          gap: 10px;
         }
 
-        .issue-card.has-field-preview .card-top {
-          grid-column: 1 / -1;
+        .issue-card-body {
+          grid-template-columns: minmax(0, 1fr) 112px;
+          gap: 12px;
         }
 
         .issue-card.has-field-preview .issue-feed-title {
-          grid-column: 1;
-          grid-row: 2;
+          grid-column: auto;
+          grid-row: auto;
           min-width: 0;
         }
 
         .issue-card.has-field-preview .issue-field-preview {
-          grid-column: 2;
-          grid-row: 2 / span 2;
+          grid-column: auto;
+          grid-row: auto;
           align-self: start;
           height: 96px;
           min-height: 96px;
         }
 
         .issue-card.has-field-preview .issue-field-preview.is-review-only {
-          grid-column: 1 / -1;
-          grid-row: 4;
+          grid-column: auto;
+          grid-row: auto;
           height: auto;
           min-height: 0;
         }
@@ -4539,16 +4696,11 @@
         }
 
         .issue-card.has-field-preview .issue-card-actions {
-          grid-column: 1 / -1;
           padding-top: 2px;
         }
 
         .issue-card-actions {
-          grid-template-columns: minmax(0, 1fr);
-        }
-
-        .issue-card-secondary-actions {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 6px;
         }
 
         .issue-feed-title .title {
@@ -7556,6 +7708,60 @@
         ].filter(Boolean).join(" · ");
       }
 
+      function issueCardStatusText(issue) {
+        const state = issueStoryState(issue);
+        if (state === "dispute") return "반론 함께 표시";
+        if (state === "pending") return "확인 중";
+        if (state === "official") return "공식 자료 확인";
+        return "현장 변화 확인";
+      }
+
+      function issueCardDeckText(issue) {
+        const cards = issueRelatedCards(issue);
+        const regions = [...new Set(cards.map((card) => card.regionLabel).filter(Boolean))].slice(0, 2);
+        const place = regions.length ? regions.join(", ") : "지역 공개자료";
+        const count = Number(issue.currentCount || cards.length || 0);
+        if (issue.lifecycleState === "ARCHIVED" || issue.status === "archived") {
+          return `${place}에서 확인된 자료를 기록으로 보관하고 있습니다.`;
+        }
+        if (count) return `${place}에서 같은 주제로 확인된 현장 ${count}건을 묶어 봅니다.`;
+        return `${place}의 시간과 장소가 확인되는 순서대로 정리됩니다.`;
+      }
+
+      function issueCardProofText(issue) {
+        const official = Number(issue.officialCount || 0);
+        const video = issueVideoCount(issue);
+        const dispute = Number(issue.disputeCount || 0);
+        if (official && video) return `공식 자료 ${official}건과 현장 영상 ${video}건`;
+        if (official) return `공식 자료 ${official}건 기준`;
+        if (video) return `현장 영상 ${video}건 검토 중`;
+        if (dispute) return `반론·정정 ${dispute}건 분리 표시`;
+        return "공개 자료 확인 중";
+      }
+
+      function issueCardSafetyText(issue) {
+        const needs = Number(issue.needsVerificationCount || 0);
+        if (needs > 0) return "추가 확인이 필요한 자료는 분리해서 표시합니다.";
+        return "정밀 위치와 제보자 정보는 공개하지 않습니다.";
+      }
+
+      function issuePlacePeekMarkup(issue) {
+        const cards = issueRelatedCards(issue);
+        const regions = [...new Set(cards.map((card) => card.regionLabel).filter(Boolean))].slice(0, 2);
+        const label = regions.length ? regions.join(" · ") : "위치 확인 중";
+        const count = Number(issue.regionCount || regions.length || 0);
+        const countLabel = count ? `위치 ${count}곳` : "공개 위치 정리 중";
+        return `
+          <button class="issue-place-peek" type="button" data-issue-card-action="map" aria-label="${escapeHtml(issue.title || "이슈")} 지도에서 확인">
+            <span class="issue-place-pin" aria-hidden="true"></span>
+            <span class="issue-place-text">
+              <strong>${escapeHtml(label)}</strong>
+              <span>${escapeHtml(countLabel)}</span>
+            </span>
+          </button>
+        `;
+      }
+
       function issueEvidenceText(issue) {
         const official = Number(issue.officialCount || 0);
         const video = issueVideoCount(issue);
@@ -7582,12 +7788,10 @@
         const title = issue?.title || "선택 이슈";
         return `
           <div class="issue-card-actions" aria-label="${escapeHtml(title)} 확인 도구">
-            ${issueCardActionButton("map", "icon-search", "지도에서 확인", `${title} 지도에서 위치 확인`, "primary")}
-            <div class="issue-card-secondary-actions" aria-label="${escapeHtml(title)} 보조 확인">
-              ${issueCardActionButton("evidence", "icon-stats", "근거", `${title} 근거 보기`)}
-              ${issueCardActionButton("video", "icon-video", "인증영상", `${title} 인증 영상 보기`)}
-              ${issueCardActionButton("dispute", "icon-assembly", "반론", `${title} 반론·정정 보기`)}
-            </div>
+            ${issueCardActionButton("map", "icon-locate", "지도", `${title} 지도에서 위치 확인`, "primary")}
+            ${issueCardActionButton("evidence", "icon-stats", "근거", `${title} 근거 보기`)}
+            ${issueCardActionButton("video", "icon-video", "영상", `${title} 인증 영상 보기`)}
+            ${issueCardActionButton("dispute", "icon-assembly", "반론", `${title} 반론·정정 보기`)}
           </div>
         `;
       }
@@ -7693,6 +7897,7 @@
 
 	        for (const issue of issues) {
           const fieldPreviewHtml = renderIssueFieldPreview(issue);
+          const visualPreviewHtml = fieldPreviewHtml || issuePlacePeekMarkup(issue);
 		          const card = document.createElement("article");
 		          card.className = `issue-card${fieldPreviewHtml ? " has-field-preview" : ""}`;
 		          card.dataset.issueId = issue.id;
@@ -7703,17 +7908,22 @@
           card.setAttribute("aria-label", `${issue.title} 상세 보기`);
 		          card.innerHTML = `
 	            <div class="issue-feed-cover">
-	              <div class="card-top issue-card-scanline">
-	                <span class="issue-status-line"><span>${escapeHtml(issueCardScanlineText(issue))}</span></span>
+	              <div class="issue-card-head">
+	                <span class="issue-card-status">${escapeHtml(issueCardStatusText(issue))}</span>
+	                <span class="issue-card-source">공개자료 기준</span>
               </div>
-              <div class="issue-feed-title">
-                <div class="title">${escapeHtml(issue.title)}</div>
-              </div>
-	              ${fieldPreviewHtml}
-              <div class="issue-plain-summary" aria-label="시민 5초 요약">
-                <p><strong>${escapeHtml(issuePlainSummaryText(issue))}</strong></p>
-                <small>${escapeHtml(issueEvidenceLineText(issue))} ${escapeHtml(issueUncertaintyText(issue))}</small>
-	                <small>${escapeHtml(issuePublicLocationScopeText(issue))}</small>
+              <div class="issue-card-body">
+                <div class="issue-card-copy">
+                  <div class="issue-feed-title">
+                    <div class="title">${escapeHtml(issue.title)}</div>
+                  </div>
+                  <p class="issue-card-deck">${escapeHtml(issueCardDeckText(issue))}</p>
+                  <div class="issue-card-proof-row" aria-label="근거와 공개 범위">
+                    <span>${escapeHtml(issueCardProofText(issue))}</span>
+                    <span>${escapeHtml(issueCardSafetyText(issue))}</span>
+                  </div>
+                </div>
+	              ${visualPreviewHtml}
 	              </div>
 	              ${issueCardActionMarkup(issue)}
 	            </div>

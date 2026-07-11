@@ -292,6 +292,9 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 04:14 mobile map context | `docs/commercial-splus-map-context-mobile-390-2026-07-11.png` |
 | 04:14 desktop map context | `docs/commercial-splus-map-context-v3-desktop-1440-2026-07-11.png` |
 | 04:14 map metrics | 모바일 지도 `exploreGrid=84px`, `mapShell.top=217`, `overlapNavSheet=false`, `labelDisplays=none`. 데스크톱 지도와 우측 상세 제목이 모두 `대구 7월 9일 집회 공개 일정`, `visibleRejected=[]`, `overflowX=false` |
+| 11:58 mobile home feed card | `docs/commercial-splus-surface37-home-mobile-390-2026-07-11.png` |
+| 11:58 desktop home feed card | `docs/commercial-splus-surface37-home-desktop-1440-2026-07-11.png` |
+| 11:58 home card metrics | 모바일 390px 첫 화면 이슈 카드 2개 이상, 첫 카드 211px, 카드 액션 `지도/근거/영상/반론`, 위치 미리보기 `112x113`, `scrollWidth=390`, 내부 `시민 5초 요약` 노출 0. 데스크톱 1440px 첫 카드 3개, 각 카드 222px, `detailVisible=false`, `mapVisible=true`, `overflowX=false`. 다만 실제 운영 영상/GPS와 사용자 수락 전 S+는 아니다. |
 
 ## Non-Negotiable Gates
 
