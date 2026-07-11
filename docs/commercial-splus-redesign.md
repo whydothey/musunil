@@ -58,6 +58,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 21:26 배포 검증 정책을 static hash 우선으로 고쳤다. Render가 build metadata를 publish하지 않아 `/build-info.json`이 placeholder여도 `/static-manifest.json`과 live HTML/config/media SHA-256이 현재 repo 산출물과 같으면 최신 UI 배포는 통과시키고, placeholder/no-store는 경고로 남긴다. static hash가 다르면 계속 실패한다.
 - 23:23 surface54 패치로 운영 API 미연결 상태를 조용한 fallback이 아니라 얇은 서비스 동기화 배너로 표시한다. 모바일은 한 줄 `실시간 동기화 지연`과 `다시 확인`만 보이고, 데스크톱은 저장된 공개자료 기준 안내를 함께 표시한다. 390px/1440px 모두 `overflowX=false`, forbidden 0이다.
 - 23:33 Render 수동 Static Site 설정값을 `render.yaml`에서 추출하는 `pnpm render:web-settings` helper를 추가했다. Branch, Root Directory, Build Command, Publish Directory, Headers, strict header 검증 명령을 한 번에 출력해 build-info placeholder/no-store 경고를 사람이 바로 수정할 수 있게 했다.
+- 23:58 surface55 패치로 독립 Visual Critique/IA Red-Team의 P0를 반영했다. API 미연결 배너는 장애성 카피 대신 `저장된 공개자료 기준`으로 낮추고, 홈 카드의 10초 요약은 `지역 · 현장 · 위치 · 영상 · 인원` 고정 문장으로 바꿨다. 데스크톱 이슈 피드는 1열 520px 카드가 되어 긴 주제가 잘리지 않고, 반론 있는 이슈와 영상에는 `다른 주장/반론` 진입이 생겼다. 390px/1440px 모두 `overflowX=false`, forbidden 0이다. 사용자 수락 전 S+는 아니다.
 
 ## Agent Feedback Summary
 
@@ -176,6 +177,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 54 | Render static deploy freshness 판정 | 1차 완료 | `check:web-deploy`와 `service:watch`가 live static manifest/hash를 1차 증거로 검증. build-info placeholder는 static hash 일치 시 경고, static hash 불일치 시 실패 |
 | 55 | API 미연결 UX 상태 표시 | 1차 완료 | API fetch 실패 시 상단 `실시간 동기화 지연` 배너와 `다시 확인` 액션을 표시. 정상 동기화 시 숨김. 모바일/데스크톱 캡처에서 가로 넘침과 금지 문구 0 |
 | 56 | Render Dashboard 설정 helper | 1차 완료 | `pnpm render:web-settings`가 `render.yaml`의 `musunil-web` 설정과 Headers를 복사 가능한 형태로 출력. `launch-check`가 helper와 strict header 검증 안내를 감시 |
+| 57 | 홈 10초 이해·반론 진입 보강 | 1차 완료 | 홈 요약을 `지역/현장/위치/영상/인원` 고정 문장으로 바꾸고, 데스크톱 이슈 카드를 1열로 정리. 반론 있는 이슈/영상에서 `다른 주장/반론` 직접 진입 제공 |
 
 ## Current Evidence
 
@@ -189,6 +191,11 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 23:23 surface54 desktop API sync banner | `docs/commercial-splus-surface54-api-sync-banner-desktop-1440-2026-07-11.png` |
 | 23:23 surface54 metrics | API 미연결 fallback 상태에서 banner visible, `실시간 동기화 지연`, `다시 확인`, `overflowX=false`, forbidden 0 |
 | 23:33 render settings helper | `pnpm render:web-settings -- --json` 통과. 출력값에 `Cache-Control: no-store`, CSP `media-src 'self' https: blob:`, `MUSUNIL_STRICT_WEB_HEADERS=1` 검증 명령 포함 |
+| 23:58 surface55 mobile home | `docs/commercial-splus-surface55-mobile-390-2026-07-11.png` |
+| 23:58 surface55 mobile 430 | `docs/commercial-splus-surface55-mobile-430-2026-07-11.png` |
+| 23:58 surface55 tablet 768 | `docs/commercial-splus-surface55-tablet-768-2026-07-11.png` |
+| 23:58 surface55 desktop home | `docs/commercial-splus-surface55-desktop-1440-2026-07-11.png` |
+| 23:58 surface55 metrics | 390px 첫 카드 `서울 · 현장 2건 · 위치 1곳 · 영상 1건 · 인원 추정 검토`, action `상세 보기/다른 주장`, story labels 자연 줄바꿈, `overflowX=false`, forbidden 0. 430px/768px도 `overflowX=false`, forbidden 0. 1440px 첫 카드 width 520px, 지도 648x410px, `overflowX=false`, forbidden 0 |
 | 06:00 desktop home region map | `docs/commercial-splus-surface24-home-map-desktop-1440-2026-07-11.png` |
 | 06:00 mobile home 390 | `docs/commercial-splus-surface24-home-map-mobile-390-2026-07-11.png` |
 | 06:00 mobile home 430 | `docs/commercial-splus-surface24-home-map-mobile-430-2026-07-11.png` |

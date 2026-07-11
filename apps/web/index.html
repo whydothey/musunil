@@ -29,16 +29,21 @@
         --surface: var(--neutral-0);
         --surface-2: var(--neutral-25);
         --surface-3: var(--neutral-75);
+        --surface-subtle: color-mix(in srgb, var(--neutral-25) 78%, var(--neutral-0));
         --ink: var(--neutral-900);
+        --text: #263744;
         --muted: var(--neutral-500);
         --faint: #8998a3;
         --line: var(--neutral-100);
+        --line-strong: #c7d4dc;
         --brand: var(--primary);
+        --brand-strong: #0a5063;
         --brand-2: var(--official);
         --warn: var(--pending);
         --issue: var(--dispute);
         --shadow: 0 18px 44px rgb(21 31 41 / 10%);
         --shadow-soft: 0 6px 18px rgb(21 31 41 / 5%);
+        --shadow-strong: 0 22px 54px rgb(21 31 41 / 16%);
         --radius: 8px;
         --ease-out: cubic-bezier(.2, .8, .2, 1);
         --ease-snap: cubic-bezier(.18, .9, .26, 1);
@@ -62,9 +67,14 @@
           --dispute: #b7a6f2;
           --risk: #ef7676;
           --law: #bad36a;
+          --text: #d7e0e6;
           --faint: #7f8d96;
+          --line-strong: #445460;
+          --brand-strong: #a8dcf5;
+          --surface-subtle: color-mix(in srgb, var(--neutral-25) 82%, var(--neutral-0));
           --shadow: 0 18px 40px rgb(0 0 0 / 32%);
           --shadow-soft: 0 8px 22px rgb(0 0 0 / 22%);
+          --shadow-strong: 0 24px 62px rgb(0 0 0 / 42%);
         }
       }
 
@@ -222,9 +232,9 @@
         grid-template-columns: auto minmax(0, 1fr) auto;
         align-items: center;
         gap: 10px;
-        padding: 8px 16px;
-        border-bottom: 1px solid color-mix(in srgb, var(--pending) 20%, var(--line));
-        background: color-mix(in srgb, var(--pending) 7%, var(--surface));
+        padding: 7px 16px;
+        border-bottom: 1px solid color-mix(in srgb, var(--brand) 14%, var(--line));
+        background: color-mix(in srgb, var(--surface-2) 78%, var(--surface));
         color: var(--ink);
       }
 
@@ -234,16 +244,16 @@
 
       .service-banner::before {
         content: "";
-        width: 8px;
-        height: 8px;
+        width: 7px;
+        height: 7px;
         border-radius: 999px;
-        background: var(--pending);
-        box-shadow: 0 0 0 4px color-mix(in srgb, var(--pending) 13%, transparent);
+        background: var(--brand);
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 10%, transparent);
       }
 
       .service-banner strong {
         display: block;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 820;
         line-height: 1.25;
       }
@@ -257,10 +267,10 @@
       }
 
       .service-banner .button {
-        min-height: 30px;
-        padding: 0 10px;
+        min-height: 28px;
+        padding: 0 9px;
         background: var(--surface);
-        font-size: 12px;
+        font-size: 11.5px;
       }
 
       .metric {
@@ -1012,8 +1022,15 @@
       .issue-list,
       .law-list {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         gap: 10px;
+      }
+
+      .issue-list {
+        grid-template-columns: 1fr;
+      }
+
+      .law-list {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       }
 
       .issue-situations-block {
@@ -1257,7 +1274,7 @@
         flex: 0 0 auto;
         justify-items: center;
         gap: 6px;
-        width: 88px;
+        width: 96px;
         min-height: 84px;
         padding: 0;
         border: 0;
@@ -1371,15 +1388,16 @@
 
       .story-label {
         display: -webkit-box;
-        width: 88px;
+        width: 96px;
         min-height: 25px;
         overflow: hidden;
         color: var(--muted);
-        font-size: 10.5px;
+        font-size: 10px;
         font-weight: 820;
         line-height: 1.18;
         text-overflow: ellipsis;
         white-space: normal;
+        word-break: keep-all;
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 2;
       }
@@ -1817,7 +1835,10 @@
         font-weight: 820;
         line-height: 1.32;
         text-overflow: ellipsis;
-        white-space: nowrap;
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
       }
 
       .issue-confirm-summary span {
@@ -1977,7 +1998,9 @@
 
       .issue-card-actions {
         display: grid;
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 12px;
         min-width: 0;
         padding-top: 2px;
       }
@@ -2016,12 +2039,18 @@
       }
 
       .issue-card-action.primary-action {
-        grid-column: 1 / -1;
         min-height: 32px;
         border-color: color-mix(in srgb, var(--line) 78%, transparent);
         background: transparent;
         color: var(--muted);
         box-shadow: none;
+      }
+
+      .issue-card-action.secondary-action {
+        justify-content: flex-end;
+        min-height: 32px;
+        padding-top: 8px;
+        color: var(--dispute);
       }
 
       .issue-card-action.primary-action:hover {
@@ -2031,12 +2060,7 @@
       }
 
       .issue-card-action-context {
-        min-width: 0;
-        overflow: hidden;
-        color: var(--faint);
-        font-size: 11px;
-        font-weight: 760;
-        text-overflow: ellipsis;
+        display: none;
       }
 
       .issue-card-action-label {
@@ -5471,10 +5495,10 @@
 
       <div class="service-banner" id="service-banner" role="status" aria-live="polite" hidden>
         <div>
-          <strong id="service-banner-title">실시간 동기화 확인 중</strong>
+          <strong id="service-banner-title">공개자료 확인 중</strong>
           <span id="service-banner-detail">저장된 공개자료 기준으로 먼저 보여드립니다.</span>
         </div>
-        <button class="button" type="button" id="service-retry">다시 확인</button>
+        <button class="button" type="button" id="service-retry">새로고침</button>
       </div>
 
       <main class="layout">
@@ -6495,7 +6519,7 @@
         const detail = $("service-banner-detail");
         banner.hidden = false;
         banner.dataset.state = state;
-        if (title) title.textContent = options.title || "실시간 동기화 확인 중";
+        if (title) title.textContent = options.title || "공개자료 확인 중";
         if (detail) detail.textContent = options.detail || "저장된 공개자료 기준으로 먼저 보여드립니다.";
       }
 
@@ -7266,8 +7290,8 @@
 	          selected = visibleCards(loadedCards).find((card) => card.id === selected?.id) || visibleCards(loadedCards)[0] || loadedCards[0];
 	          latestCoverage = undefined;
           setServiceSyncState("delayed", {
-            title: "실시간 동기화 지연",
-            detail: "저장된 공개자료 기준으로 먼저 보여드립니다. 새 자료 연결 상태를 다시 확인할 수 있습니다."
+            title: "저장된 공개자료 기준",
+            detail: "새 자료 연결 상태를 확인하는 동안 공개 가능한 자료를 먼저 보여드립니다."
           });
 	          setStatus(isPreviewApiBase ? "위치와 근거 기준" : "일부 자료 확인 중", { toast: false });
 	        }
@@ -8075,14 +8099,31 @@
         ].join(" · ");
       }
 
+      function issueCardMainFactLine(issue) {
+        const cards = issueRelatedCards(issue);
+        const regions = issueRegions(issue, cards);
+        const place = regions.length ? regions.slice(0, 2).join(" · ") : "지역 확인 중";
+        const targetCount = Number(issue.currentCount || cards.length || 0);
+        const locationCount = Number(issue.regionCount || regions.length || 0);
+        const video = issueVideoCount(issue);
+        const scale = issueScaleStatusText(issue)
+          .replace("규모 추정 검토 중", "인원 추정 검토")
+          .replace("인원 규모 확인 중", "인원 미확인");
+        return [
+          place,
+          targetCount ? `현장 ${targetCount}건` : "현장 확인 중",
+          locationCount ? `위치 ${locationCount}곳` : "위치 확인 중",
+          video ? `영상 ${video}건` : "영상 확인 중",
+          scale
+        ].join(" · ");
+      }
+
       function issueCardEvidenceLine(issue) {
         const official = Number(issue.officialCount || 0);
-        const video = issueVideoCount(issue);
         const dispute = Number(issue.disputeCount || 0);
         return [
           official ? `공식 ${official}건` : "공식 확인 중",
-          video ? `영상 ${video}건` : "영상 확인 중",
-          dispute ? `반론 ${dispute}건` : "반론 없음"
+          dispute ? `다른 주장 ${dispute}건` : "다른 주장 없음"
         ].join(" · ");
       }
 
@@ -8164,12 +8205,17 @@
 
       function issueCardActionMarkup(issue) {
         const title = issue?.title || "선택 이슈";
+        const dispute = Number(issue?.disputeCount || 0);
         return `
           <div class="issue-card-actions" aria-label="${escapeHtml(title)} 확인 경로">
             <button class="issue-card-action primary-action" type="button" data-issue-card-action="summary" aria-label="${escapeHtml(title)} 상세 보기">
-              <span class="issue-card-action-context">근거·영상·지도</span>
-              <span class="issue-card-action-label">자세히</span>
+              <span class="issue-card-action-label">상세 보기</span>
             </button>
+            ${dispute > 0 ? `
+              <button class="issue-card-action secondary-action" type="button" data-issue-card-action="dispute" aria-label="${escapeHtml(title)} 다른 주장 보기">
+                <span class="issue-card-action-label">다른 주장</span>
+              </button>
+            ` : ""}
           </div>
         `;
       }
@@ -8306,7 +8352,7 @@
                   </div>
                   <p class="issue-card-deck">${escapeHtml(issueCardDeckText(issue))}</p>
                   <div class="issue-confirm-summary" aria-label="확인 요약">
-                    <strong>${escapeHtml(issueCardPlaceLine(issue))}</strong>
+                    <strong>${escapeHtml(issueCardMainFactLine(issue))}</strong>
                     <span>${escapeHtml(issueCardEvidenceLine(issue))}</span>
                   </div>
                 </div>
@@ -9328,8 +9374,8 @@
               <span><b>위치</b><em>${escapeHtml(location)}</em></span>
             </div>
             <div class="reels-empty-actions" aria-label="영상 대기 상태에서 확인할 항목">
-              <button class="button primary" type="button" data-reel-empty-action="map"><svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg><span>지도</span></button>
-              <button class="button ghost" type="button" data-reel-empty-action="evidence"><svg class="button-symbol" aria-hidden="true"><use href="#icon-stats"></use></svg><span>근거</span></button>
+              <button class="button primary" type="button" data-reel-empty-action="evidence"><svg class="button-symbol" aria-hidden="true"><use href="#icon-stats"></use></svg><span>근거</span></button>
+              <button class="button ghost" type="button" data-reel-empty-action="map"><svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg><span>지도</span></button>
               <button class="button ghost" type="button" data-reel-empty-action="report"><svg class="button-symbol" aria-hidden="true"><use href="#icon-report"></use></svg><span>제보</span></button>
             </div>
           </article>
@@ -9356,6 +9402,7 @@
             <div class="reel-actions" aria-label="영상 검토 상태에서 확인할 항목">
               <button class="reel-action" type="button" data-reel-action="evidence"><svg class="button-symbol" aria-hidden="true"><use href="#icon-stats"></use></svg><span>근거</span></button>
               <button class="reel-action" type="button" data-reel-action="region"><svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg><span>위치</span></button>
+              <button class="reel-action" type="button" data-reel-action="dispute"><svg class="button-symbol" aria-hidden="true"><use href="#icon-assembly"></use></svg><span>반론</span></button>
               <button class="reel-action" type="button" data-reel-action="issue"><svg class="button-symbol" aria-hidden="true"><use href="#icon-home"></use></svg><span>이슈</span></button>
             </div>
           </article>
@@ -9440,6 +9487,7 @@
               <div class="reel-actions" aria-label="영상 확인 메뉴">
                 <button class="reel-action" type="button" data-reel-action="evidence"><svg class="button-symbol" aria-hidden="true"><use href="#icon-stats"></use></svg><span>근거</span></button>
                 <button class="reel-action" type="button" data-reel-action="region"><svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg><span>위치 범위</span></button>
+                <button class="reel-action" type="button" data-reel-action="dispute"><svg class="button-symbol" aria-hidden="true"><use href="#icon-assembly"></use></svg><span>반론</span></button>
                 <button class="reel-action" type="button" data-reel-action="issue"><svg class="button-symbol" aria-hidden="true"><use href="#icon-home"></use></svg><span>관련 이슈</span></button>
               </div>
             </article>
@@ -10503,10 +10551,10 @@
       $("refresh").addEventListener("click", async () => {
         setStatus("최신 자료 확인 중", { toast: false });
         if (latestServiceSyncState !== "live") {
-          setServiceSyncState("checking", {
-            title: "실시간 동기화 확인 중",
-            detail: "공개자료 서버 연결 상태를 다시 확인하고 있습니다."
-          });
+            setServiceSyncState("checking", {
+              title: "공개자료 확인 중",
+              detail: "공개자료 서버 연결 상태를 다시 확인하고 있습니다."
+            });
         }
         pulseElement($("cards"), "is-refreshing", 320);
         await load();

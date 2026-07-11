@@ -106,6 +106,7 @@ GET /ready -> 200
 - 2026-07-11 23:33 Render 수동 Static Site 설정값을 `render.yaml`에서 추출하는 `pnpm render:web-settings` helper를 추가했다. helper 출력은 Branch, Root Directory, Build Command, Publish Directory, Headers, strict header 검증 명령을 포함하지만, Render Dashboard에서 헤더가 실제 반영되고 `MUSUNIL_STRICT_WEB_HEADERS=1 pnpm check:web-deploy`가 통과하기 전 운영 배포 준비는 완료가 아니다.
 - 2026-07-11 23:38 `service:watch`가 API endpoint preflight를 먼저 실행하고, DNS/HTTPS preflight 실패 시 하위 API 검사들을 `skip`으로 기록하게 했다. 현재 live 감시는 `api_endpoint_preflight`만 실패하며 `getaddrinfo ENOTFOUND api.musunil.com`을 보여주지만, API DNS와 Render API 서비스 연결 전 운영 배포 준비는 완료가 아니다.
 - 2026-07-11 23:43 `service:watch`가 Web static header contract와 Required Actions를 문서에 남기게 했다. 현재 Required Actions는 API DNS 연결, Render Static headers 적용, build metadata publish 확인이지만, 이 조치들이 실제로 적용되어 `service:watch`와 strict web deploy check가 통과하기 전 운영 배포 준비는 완료가 아니다.
+- 2026-07-11 23:58 독립 Visual Critique와 IA Red-Team의 P0/P1 지적을 반영해 홈 카드 요약을 `지역 · 현장 · 위치 · 영상 · 인원` 고정 문장으로 바꾸고, 반론 있는 이슈/영상에 `다른 주장/반론` 진입을 추가했다. API 미연결 배너도 장애성 표현에서 `저장된 공개자료 기준`으로 낮췄다. 390px/1440px 캡처에서 forbidden 0, `overflowX=false`를 확인했지만 상세/지도 대시보드화, 실제 운영 공개 영상/GPS, 사용자 수락 전에는 S+로 승급하지 않는다.
 
 ## Next Active Goal Order
 
