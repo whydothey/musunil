@@ -6542,8 +6542,10 @@
 
       function setServiceSyncState(state, options = {}) {
         latestServiceSyncState = state;
+        document.documentElement.dataset.serviceSyncState = state;
         const banner = $("service-banner");
         if (!banner) return;
+        banner.dataset.state = state;
         if (state === "live") {
           banner.hidden = true;
           return;
@@ -6551,7 +6553,6 @@
         const title = $("service-banner-title");
         const detail = $("service-banner-detail");
         banner.hidden = false;
-        banner.dataset.state = state;
         if (title) title.textContent = options.title || "공개자료 확인 중";
         if (detail) detail.textContent = options.detail || "저장된 공개자료 기준으로 먼저 보여드립니다.";
       }

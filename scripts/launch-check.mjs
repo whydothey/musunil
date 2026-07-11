@@ -293,6 +293,8 @@ if (
   !/web_header_contract/.test(serviceWatch) ||
   !/web_visual_surface/.test(serviceWatch) ||
   !/publicPayloadRoutes/.test(serviceWatch) ||
+  !/serviceStates/.test(serviceWatch) ||
+  !/non-live data state/.test(serviceWatch) ||
   !/withVisualSurface/.test(serviceWatch) ||
   !/stop_live_visual_surface_regression/.test(serviceWatch) ||
   !/requiredActions/.test(serviceWatch) ||

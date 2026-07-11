@@ -99,10 +99,13 @@ async function main() {
     console.error(["Visual surface smoke failed:", ...failures.map((failure) => `- ${failure}`)].join("\n"));
     exitCode = 1;
   } else {
+    const serviceStates = [...new Set(scenarios.map((item) => item.detail?.serviceSyncState).filter(Boolean))];
     console.log(JSON.stringify({
       checked: "commercial_visual_surface",
       mode: visualBaseUrl ? "live_url" : "local_static",
       baseUrl: appUrl,
+      serviceStates,
+      serviceBannerVisibleCount: scenarios.filter((item) => item.detail?.serviceBannerVisible).length,
       scenarios
     }, null, 2));
   }
@@ -138,7 +141,7 @@ async function runViewport(client, viewport, url) {
     () => assert(home.firstIssueTitle.length >= 6, "first issue title is missing"),
     () => assert(/상세 보기/.test(home.firstIssueActions.join(" ")), `first issue primary path missing: ${home.firstIssueActions.join(", ")}`),
     () => assert(!/KPI|진행\/예정/.test(home.visibleText), "top-level dashboard metric copy is visible")
-  ]);
+  ], serviceDetail(home));
 
   await click(client, ".issue-card");
   await waitForExpression(client, viewport.mobile
@@ -153,7 +156,7 @@ async function runViewport(client, viewport, url) {
     () => assert(detail.detailTabs.join("/") === "개요/근거/영상/흐름/반론", `detail tab labels changed: ${detail.detailTabs.join("/")}`),
     () => assert(detail.detailActions.join("/") === "근거/영상/지도", `detail quick actions changed: ${detail.detailActions.join("/")}`),
     () => assert(!viewport.mobile || !detail.navOverlap, "mobile detail controls overlap bottom navigation")
-  ]);
+  ], serviceDetail(detail));
 
   await selectPrimaryView(client, viewport, "reels");
   await waitForExpression(client, "document.querySelector('#reels-section') && getComputedStyle(document.querySelector('#reels-section')).display !== 'none'");
@@ -166,7 +169,7 @@ async function runViewport(client, viewport, url) {
     () => assert(reels.reelActionLabels.some((label) => /위치|지도/.test(label)), `reels location action missing: ${reels.reelActionLabels.join(", ")}`),
     () => assert(reels.issueContextTitle.length >= 6, "reels issue context title is missing"),
     () => assert(!viewport.mobile || !reels.navOverlap, "mobile reels action surface overlaps bottom navigation")
-  ]);
+  ], serviceDetail(reels));
 
   await selectPrimaryView(client, viewport, "explore");
   await waitForExpression(client, "document.querySelector('#map-section') && getComputedStyle(document.querySelector('#map-section')).display !== 'none'");
@@ -179,7 +182,7 @@ async function runViewport(client, viewport, url) {
     () => assert(map.mapKeyLabels.join("/") === "자료 위치/현장 인증 범위", `map key changed: ${map.mapKeyLabels.join("/")}`),
     () => assert(map.mapSheetHeight <= (viewport.mobile ? 260 : 220), `map sheet too tall: ${map.mapSheetHeight}`),
     () => assert(!viewport.mobile || !map.navOverlap, "mobile map sheet overlaps bottom navigation")
-  ]);
+  ], serviceDetail(map));
 
   await selectPrimaryView(client, viewport, "report");
   await waitForExpression(client, "document.querySelector('#report-section') && getComputedStyle(document.querySelector('#report-section')).display !== 'none'");
@@ -192,7 +195,15 @@ async function runViewport(client, viewport, url) {
     () => assert(report.reportPrimaryAction === "근처 현장 찾기", `report primary action changed: ${report.reportPrimaryAction}`),
     () => assert(report.visibleReportPanels.length === 0, `report exposes target panels before user action: ${report.visibleReportPanels.join(", ")}`),
     () => assert(!viewport.mobile || !report.navOverlap, "mobile report surface overlaps bottom navigation")
-  ]);
+  ], serviceDetail(report));
+}
+
+function serviceDetail(metrics) {
+  return {
+    serviceSyncState: metrics.serviceSyncState,
+    serviceBannerVisible: metrics.serviceBannerVisible,
+    serviceBannerTitle: metrics.serviceBannerTitle
+  };
 }
 
 function visualMetrics(label) {
@@ -221,11 +232,16 @@ function visualMetrics(label) {
       .map((node) => node.getBoundingClientRect());
     const navOverlap = Boolean(navRect && watched.some((item) => item.bottom > navRect.top + 1 && item.top < navRect.bottom - 1));
     const firstIssue = document.querySelector(".issue-card");
+    const serviceBanner = document.querySelector("#service-banner");
+    const serviceBannerVisible = visible(serviceBanner);
     return {
       label: ${JSON.stringify(label)},
       innerWidth,
       scrollWidth: document.documentElement.scrollWidth,
       visibleText: text.slice(0, 2400),
+      serviceSyncState: document.documentElement.dataset.serviceSyncState || serviceBanner?.dataset.state || "unknown",
+      serviceBannerVisible,
+      serviceBannerTitle: serviceBannerVisible ? (document.querySelector("#service-banner-title")?.textContent?.trim() || "") : "",
       forbidden,
       dashboardVisible,
       navOverlap,
@@ -299,7 +315,7 @@ async function evaluate(client, expression) {
   return response.result?.value;
 }
 
-function scenario(id, assertions) {
+function scenario(id, assertions, detail = {}) {
   const before = failures.length;
   for (const assertion of assertions) {
     try {
@@ -308,7 +324,7 @@ function scenario(id, assertions) {
       failures.push(`${id}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
-  scenarios.push({ id, ok: failures.length === before, assertions: assertions.length });
+  scenarios.push({ id, ok: failures.length === before, assertions: assertions.length, detail });
 }
 
 function assert(condition, message) {

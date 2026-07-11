@@ -17,8 +17,8 @@ pnpm render:web-settings
 | API DNS | `pnpm render:api-settings` 출력대로 Render `musunil-api` 설정과 env source를 확인하고, `api.musunil.com` custom domain과 Cloudflare DNS를 연결한다. | `pnpm render:api-settings && MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once` |
 | Static headers | `pnpm render:web-settings` 출력의 모든 Header를 Render Static Site에 입력하고 `Clear build cache & deploy`를 실행한다. | `MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com pnpm check:web-deploy` |
 | Build metadata | 최신 UI는 static manifest hash로 확인하되, build-info가 실제 Git SHA로 덮이는지 계속 확인한다. | `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy` |
-| Live visual surface | 파일 해시가 최신이어도 실제 운영 도메인 화면이 빈약하거나 오래된 상태일 수 있으므로 라이브 브라우저 렌더링을 확인한다. | `pnpm check:visual-surface:live` |
-| Integrated watch | live visual surface와 API/헤더 차단 항목을 같은 문서에 기록한다. | `pnpm service:watch:visual` |
+| Live visual surface | 파일 해시가 최신이어도 실제 운영 도메인 화면이 빈약하거나 오래된 상태일 수 있으므로 라이브 브라우저 렌더링을 확인한다. 이 검사는 화면 구조 검증이며 API 동기화 성공 증거는 아니다. | `pnpm check:visual-surface:live` |
+| Integrated watch | live visual surface, Web `serviceSyncState=live`, API/헤더 차단 항목을 같은 문서에 기록한다. | `pnpm service:watch:visual` |
 
 ## 2. Render Static Site
 
@@ -129,7 +129,7 @@ pnpm service:watch:visual
 
 - Live static manifest가 현재 repo 산출물과 일치한다.
 - `pnpm check:visual-surface:live`가 실제 운영 도메인에서 통과한다.
-- `pnpm service:watch:visual`의 `web_visual_surface`가 ok다.
+- `pnpm service:watch:visual`의 `web_visual_surface`가 ok이고 detail 또는 scenarios의 `serviceSyncState`가 `live`다.
 - Strict Web header check가 통과한다.
 - `api.musunil.com`이 HTTPS로 resolve되고 `/ready`가 `ready=true`다.
 - 공개 payload에 사용자 원문, 정밀 GPS, storage key, identity hash가 없다.

@@ -18,6 +18,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 제보는 일반 업로드가 아니라 `현장 영상 제보`로 제한한다. 첫 화면은 후보/조건 목록보다 `근처 현장 찾기` 단일 주행동을 먼저 보여준다.
 - 2026-07-12 01:29 패치로 숨겨져 있던 상단 숫자판 DOM과 갱신 로직까지 제거했다. `pnpm check:visual-surface`는 Chrome/CDP로 390px, 430px, 768px, 1440px에서 홈·상세·영상·탐색·제보 20개 상태를 실제 렌더링으로 검사하고, 가로 넘침·하단 내비 겹침·대시보드 숫자판 회귀·지도 시트 과밀·제보 첫 행동 회귀를 막는다. 그래도 실제 운영 GPS evidence, 실제 공개 영상 품질, 독립 재검증, 사용자 수락 전 S+는 아니다.
 - 2026-07-12 01:52 패치로 같은 시각 검사를 `https://musunil.com`에 직접 실행하는 `pnpm check:visual-surface:live`를 추가했다. 또한 API 미연결 운영 fallback이 공개자료 1개 이슈로 축소되던 문제를 막기 위해 경찰청·대구청 공개자료를 `지역별 집회 공개 일정`, `대구 집회 신고·개최 현황`, `전국 집회 신고·개최 통계` 세 이슈 파일로 분리했다. 새 Render 배포 후 live 명령은 통과했지만 실제 운영 공개 영상/GPS, 독립 재검증, 사용자 수락 전에는 운영 화면 S+로 보지 않는다.
+- 2026-07-12 02:09 패치로 visual smoke가 Web `serviceSyncState`와 서비스 배너 상태를 결과 JSON에 포함한다. `pnpm check:visual-surface:live`는 화면 구조 확인이고, `pnpm service:watch:visual`은 운영 도메인이 `delayed` fallback 상태이면 실패한다.
 - 04:43 독립 비평 기준 현재 화면은 S+가 아니다. Visual critique는 A- 공공서비스 프로토타입, IA red-team은 B-로 평가했다. 이번 패치는 `영상/지도/제보`가 선택 이슈 맥락으로 읽히게 하는 1차 보정이며, 상업용 S+ 승급 근거가 아니다.
 - 05:02 패치로 현장 영상 poster를 어두운 야간 placeholder 톤에서 밝은 비식별 공공 현장 프레임으로 재생성했고, 데스크톱 제보 화면에 연결 이슈·선택 현장·공개 위치·현재 단계 상태 패널을 추가했다. 그래도 사용자 수락 전 S+는 아니다.
 - 05:14 독립 비평 기준 Visual Design은 홈 모바일 6/10, 영상 모바일 5/10, 지도 데스크톱 4/10, 제보 데스크톱 4.5/10이고 IA Red-Team은 전체 B-다. 이번 19차 패치는 지도-first 재배치, 이슈 카드의 지역·기준일·공개 현장·영상 근거 한 줄, `영상제보` 탭 라벨을 반영했지만, 사용자 수락 전 S+는 아니다.
@@ -185,6 +186,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 59 | 실제 브라우저 시각 게이트 | 1차 완료 | 상단 숫자판 DOM/로직 제거. `pnpm check:visual-surface`가 390/430/768/1440px 홈·상세·영상·탐색·제보 20개 상태에서 overflow, nav overlap, dashboard visible, map sheet, report first action을 검사 |
 | 60 | 라이브 운영 화면 시각 게이트 | 1차 완료 | `pnpm check:visual-surface:live` 추가. 운영 fallback을 실제 공개자료 3개 이슈 파일로 분리. 새 Render 배포 후 live Chrome/CDP 검사 통과 |
 | 61 | 통합 live 감시 | 1차 완료 | `pnpm service:watch:visual` 추가. live visual surface 결과를 static hash, header, API DNS, payload safety 감시와 같은 보고서에 기록 |
+| 62 | live API 동기화 판별 | 1차 완료 | visual smoke가 `serviceSyncState`/배너 상태를 출력. service-watch는 운영 도메인이 `delayed` fallback이면 `web_visual_surface` 실패 |
 
 ## Current Evidence
 
@@ -406,6 +408,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 01:29 visual surface gate | `pnpm check:visual-surface` 통과. 390px, 430px, 768px, 1440px에서 홈·상세·영상·탐색·제보 20개 상태, 118개 assertion이 통과했다. 대시보드 숫자판 visible 0, forbidden 0, 하단 내비 겹침 0, 지도 시트 과밀 없음, 제보 첫 행동 `근처 현장 찾기` 유지 |
 | 01:52 live visual gate | `pnpm check:visual-surface:live` 통과. 실제 `https://musunil.com`에서 390px, 430px, 768px, 1440px 홈·상세·영상·탐색·제보 20개 상태가 통과했다. |
 | 02:05 integrated live watch | `pnpm service:watch:visual` 추가. 배포 직후 실제 화면 렌더링과 운영 차단 항목을 `docs/splus-service-watch.md` 한 문서에 남길 수 있게 됐다. |
+| 02:09 live sync state gate | `pnpm check:visual-surface`는 local fallback에서 `serviceStates=["delayed"]`, banner visible 20을 출력하며 통과. `pnpm service:watch:visual`은 live fallback 상태를 `web_visual_surface` 실패로 기록한다. |
 
 ## Non-Negotiable Gates
 

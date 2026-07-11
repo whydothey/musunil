@@ -16,7 +16,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - `pnpm launch:post-deploy-smoke -- --require-laws`가 실제 배포 API URL로 통과한다.
 - `pnpm service:watch -- --once`가 실제 Web/API URL 기준으로 통과한다.
 - `pnpm check:visual-surface:live`가 실제 `https://musunil.com` 기준으로 통과한다.
-- `pnpm service:watch:visual`의 `web_visual_surface`가 ok이고 남은 failure가 없다.
+- `pnpm service:watch:visual`의 `web_visual_surface`가 ok이고 `serviceSyncState=live`이며 남은 failure가 없다.
 - storage, redaction, mobile integrity, law source dry-run/post, production `/ready`가 실제 외부 연결로 통과한다.
 - 공개 화면과 공개 API에 원문, 정밀 위치, private media key, 요구사항 문구가 나오지 않는다.
 
@@ -137,6 +137,7 @@ GET /ready -> 200
 - 2026-07-12 02:03 자료 제보, 현장 정정, 권리침해 신고, 반론이 인증 후에도 `202 queued_for_review`/`held_private`로만 저장되게 했다. Admin review 전에는 공개 현장 detail, 집계, evidence count가 변하지 않으며, `/transparency/logs`는 공개 DTO와 sanitized reason만 반환한다. `pnpm --filter @musunil/api test`, `pnpm smoke:api -- --write-checks`가 통과했다.
 - 2026-07-12 01:29 숨겨진 상단 숫자판 DOM과 갱신 로직을 제거하고 `pnpm check:visual-surface`를 release gate에 추가했다. Chrome/CDP로 390px, 430px, 768px, 1440px 홈·상세·영상·탐색·제보 20개 상태를 실제 렌더링해 overflow, nav overlap, dashboard visible, map sheet, report first action을 검사하지만, 실제 운영 공개 영상/GPS와 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-12 01:52 `pnpm check:visual-surface:live`를 추가하고 운영 fallback을 실제 공개자료 기준 3개 이슈 파일로 분리했다. API가 아직 연결되지 않아도 live 홈이 단일 공개자료 카드로 축소되는 회귀를 차단한다. 새 Render 배포 후 live 명령은 통과했지만, 실제 운영 공개 영상/GPS와 사용자 수락 전에는 S+로 승급하지 않는다.
+- 2026-07-12 02:09 visual smoke가 Web `serviceSyncState`와 서비스 배너 상태를 출력하고, `pnpm service:watch:visual`은 운영 도메인이 `delayed` fallback 상태이면 `web_visual_surface`를 실패 처리한다. 이제 live visual 통과만으로 API live 동기화가 된 것처럼 판정하지 않는다.
 
 ## Next Active Goal Order
 
