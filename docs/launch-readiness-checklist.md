@@ -15,6 +15,7 @@
 - `pnpm check:render-runtime-config` 통과.
 - `pnpm check:runtime-smoke` 통과.
 - `pnpm check:web-smoke` 통과.
+- `pnpm check:web-flow` 통과.
 - `pnpm launch:inputs`로 생성한 운영 YAML은 `CHANGE_ME_*` 값만 남기고 Render generated secret 필드는 비워 둔다.
 - 기본 템플릿은 production-safe로 preview/mock이 꺼져 있고 운영 입력값만 `CHANGE_ME_*`로 남긴다.
 - `pnpm launch:verify-inputs`는 Render 관리형 DB/Redis를 모의 주입해 사용자 YAML만 검증한다.

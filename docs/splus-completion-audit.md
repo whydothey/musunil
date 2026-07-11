@@ -109,6 +109,7 @@ GET /ready -> 200
 - 2026-07-11 23:58 독립 Visual Critique와 IA Red-Team의 P0/P1 지적을 반영해 홈 카드 요약을 `지역 · 현장 · 위치 · 영상 · 인원` 고정 문장으로 바꾸고, 반론 있는 이슈/영상에 `다른 주장/반론` 진입을 추가했다. API 미연결 배너도 장애성 표현에서 `저장된 공개자료 기준`으로 낮췄다. 390px/1440px 캡처에서 forbidden 0, `overflowX=false`를 확인했지만 상세/지도 대시보드화, 실제 운영 공개 영상/GPS, 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-11 23:59 상세 개요를 리포트형 카드에서 시민 질문형 답변 구조로 바꿨다. 390px/1440px에서 overview card 0, answer row 5, disclosure 2, 데스크톱 상세 상태 지도 시트 62px, forbidden 0, `overflowX=false`를 확인했지만 실제 운영 공개 영상/GPS와 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-12 00:14 `pnpm launch:cutover-plan`과 [launch-cutover-runbook.md](/Users/mk/Documents/Musunil/docs/launch-cutover-runbook.md)를 추가해 API DNS, Cloudflare DNS, Render Static headers, build metadata, 검증 순서를 한 화면에 고정했다. `pnpm launch:cutover-plan -- --json`, `pnpm check:launch-sample`, `pnpm check:render-runtime-config`, `pnpm check:web-smoke`는 통과했지만 실제 Render/Cloudflare 반영과 `service:watch` 통과 전 운영 배포 준비는 완료가 아니다.
+- 2026-07-12 00:28 `pnpm check:web-flow`를 release gate에 추가했다. 홈 이슈 카드, 상세 빠른 행동, 인증 영상 액션, 공통 이슈 맥락, 지도 선택/검색, 법안→이슈, 제보 대상 확정→촬영→접수, 본인확인 경계 등 11개 사용자 흐름 계약을 검사하며 현재 모두 통과한다. 다만 이 검사는 코드 계약 회귀 방지이며 실제 운영 API, 실제 영상/GPS, 사용자 수락을 대체하지 않는다.
 
 ## Next Active Goal Order
 

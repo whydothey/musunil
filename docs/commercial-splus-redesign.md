@@ -397,6 +397,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 14:14 desktop home surface51 | `docs/commercial-splus-surface51-card-visual-home-desktop-1440-2026-07-11.png` |
 | 14:14 surface51 metrics | 공개 poster 없는 LIVE 영상은 홈 카드 썸네일로 노출하지 않음. 390px/1440px first visual `issue-place-peek`, first visual text `서울 위치 1곳`, `reviewOnlyCards=0`, `fieldPreviewCards=0`, `placePeekCards=3`, forbidden 0, rejected 0, `scrollWidth=390/1440`. 실제 공개 영상/GPS와 사용자 수락 전 S+는 아니다. |
 | 00:14 launch cutover plan | `pnpm launch:cutover-plan -- --json`, `pnpm check:launch-sample`, `pnpm check:render-runtime-config`, `pnpm check:web-smoke` 통과. API DNS, Cloudflare DNS, Render Static headers, build metadata, 운영 입력 우선순위가 `docs/launch-cutover-runbook.md`와 helper로 고정됐다. 실제 Render/Cloudflare/API 반영 전 완료는 아니다. |
+| 00:28 user flow gate | `pnpm check:web-flow` 통과. 11개 시나리오, 106개 assertion으로 홈 이슈 선택, 상세, 근거, 지도, 영상, 법안, 제보, 본인확인 경계가 서로 연결되는지 검사한다. 실제 브라우저 사용자 수락 전 S+는 아니다. |
 
 ## Non-Negotiable Gates
 

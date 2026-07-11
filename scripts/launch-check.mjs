@@ -29,6 +29,7 @@ const webDeployCheck = readFileSync(resolve(cwd, "scripts/check-web-deploy.mjs")
 const renderWebSettings = readFileSync(resolve(cwd, "scripts/render-web-settings.mjs"), "utf8");
 const launchCutoverPlan = readFileSync(resolve(cwd, "scripts/launch-cutover-plan.mjs"), "utf8");
 const launchCutoverRunbook = readFileSync(resolve(cwd, "docs/launch-cutover-runbook.md"), "utf8");
+const webFlowSmoke = readFileSync(resolve(cwd, "scripts/ci-web-flow-smoke.mjs"), "utf8");
 const webStaticManifestScript = readFileSync(resolve(cwd, "scripts/write-web-static-manifest.mjs"), "utf8");
 const gitignore = readFileSync(resolve(cwd, ".gitignore"), "utf8");
 const renderYaml = readFileSync(resolve(cwd, "render.yaml"), "utf8");
@@ -155,6 +156,18 @@ if (
 }
 if (!/"render:web-settings"/.test(packageJson) || !/render-web-settings\.mjs/.test(packageJson)) {
   failures.push("Render Web settings helper command is missing");
+}
+if (!/"check:web-flow"/.test(packageJson) || !/ci-web-flow-smoke\.mjs/.test(packageJson) || !/pnpm check:web-flow/.test(packageJson)) {
+  failures.push("Web user-flow smoke must be wired into release checks");
+}
+if (
+  !/home_issue_card_to_detail_and_dispute/.test(webFlowSmoke) ||
+  !/detail_quick_actions_to_evidence_video_map/.test(webFlowSmoke) ||
+  !/reels_actions_keep_video_objective/.test(webFlowSmoke) ||
+  !/report_target_first_capture_and_receipt/.test(webFlowSmoke) ||
+  !/identity_write_boundary_for_user_actions/.test(webFlowSmoke)
+) {
+  failures.push("Web user-flow smoke must cover home, detail, reels, report, and identity flows");
 }
 if (!/MUSUNIL_STRICT_WEB_HEADERS=1/.test(renderWebSettings) || !/Clear build cache & deploy/.test(renderWebSettings)) {
   failures.push("Render Web settings helper must print strict header verification and clear-cache redeploy instructions");
