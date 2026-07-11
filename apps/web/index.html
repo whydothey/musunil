@@ -8179,19 +8179,11 @@
       }
 
       function issueCardMainFactLine(issue) {
-        const cards = issueRelatedCards(issue);
-        const regions = issueRegions(issue, cards);
-        const place = regions.length ? regions.slice(0, 2).join(" · ") : "지역 확인 중";
-        const targetCount = Number(issue.currentCount || cards.length || 0);
-        const locationCount = Number(issue.regionCount || regions.length || 0);
         const video = issueVideoCount(issue);
         const scale = issueScaleStatusText(issue)
           .replace("규모 추정 검토 중", "인원 추정 검토")
           .replace("인원 규모 확인 중", "인원 미확인");
         return [
-          place,
-          targetCount ? `현장 ${targetCount}건` : "현장 확인 중",
-          locationCount ? `위치 ${locationCount}곳` : "위치 확인 중",
           video ? `영상 ${video}건` : "영상 확인 중",
           scale
         ].join(" · ");
@@ -8216,14 +8208,16 @@
 
       function issueCardDeckText(issue) {
         const cards = issueRelatedCards(issue);
-        const regions = [...new Set(cards.map((card) => card.regionLabel).filter(Boolean))].slice(0, 2);
-        const place = regions.length ? regions.join(", ") : "지역 공개자료";
+        const regions = issueRegions(issue, cards);
+        const place = regions.length ? regions.slice(0, 2).join(" · ") : "지역 확인 중";
         const count = Number(issue.currentCount || cards.length || 0);
-        if (issue.lifecycleState === "ARCHIVED" || issue.status === "archived") {
-          return `${place}에서 확인된 자료를 기록으로 보관하고 있습니다.`;
-        }
-        if (count) return `${place}에서 같은 주제로 확인된 현장 ${count}건을 묶어 봅니다.`;
-        return `${place}의 시간과 장소가 확인되는 순서대로 정리됩니다.`;
+        const locationCount = Number(issue.regionCount || regions.length || 0);
+        if (issue.lifecycleState === "ARCHIVED" || issue.status === "archived") return `${place} · 기록 보관`;
+        return [
+          place,
+          count ? `현장 ${count}건` : "현장 확인 중",
+          locationCount ? `위치 ${locationCount}곳` : "위치 확인 중"
+        ].join(" · ");
       }
 
       function issueCardProofText(issue) {
