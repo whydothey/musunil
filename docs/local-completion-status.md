@@ -2,7 +2,7 @@
 
 외부 연결이 필요 없는 범위에서 완료한 항목이다.
 
-Last updated: 2026-07-12 00:49 KST
+Last updated: 2026-07-12 00:54 KST
 
 ## 완료
 
@@ -146,6 +146,7 @@ Last updated: 2026-07-12 00:49 KST
   - `pnpm check:ops-diagnostics`는 template 기반 metadata 진단을 release gate에서 실행해 운영 준비 항목 누락 회귀를 차단
   - `pnpm launch:ready -- <yaml>`는 입력 검증, config encode check, Render runtime sample gate, 운영 metadata 진단, external smoke, release check를 단일 순서로 실행
   - `pnpm launch:post-deploy-smoke`는 배포 후 실제 API URL의 `/health`, `/ready`, public payload safety, coverage, laws, admin auth boundary를 비파괴로 확인
+  - `pnpm service:watch -- --once`는 live static hash, build metadata fallback, Web header, API DNS preflight, public payload safety를 확인하고 차단 항목별 owner/action/verify/reference를 문서화
   - `docs/splus-master-tracker.md`
   - `docs/national-issue-splus-tracker.md`
   - `docs/splus-completion-audit.md`

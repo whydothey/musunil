@@ -264,11 +264,11 @@ function recordResult(result) {
   const status = result.ok ? "S+ Guard" : "Active";
   const rows = result.checks.map((item) => `| ${cell(item.id)} | ${item.ok ? "ok" : item.skipped ? "skip" : "fail"} | ${cell(item.message ?? JSON.stringify(item.detail ?? {}))} |`).join("\n");
   const actionRows = result.requiredActions.length
-    ? result.requiredActions.map((item) => `| ${cell(item.id)} | ${cell(item.action)} | ${cell(item.verify)} |`).join("\n")
-    : "| - | - | - |";
+    ? result.requiredActions.map((item) => `| ${cell(item.id)} | ${cell(item.owner ?? "operator")} | ${cell(item.action)} | ${cell(item.verify)} | ${cell(item.reference ?? "-")} |`).join("\n")
+    : "| - | - | - | - | - |";
   writeFileSync(
     reportPath,
-    `# S+ Service Watch\n\nLast checked: ${result.checkedAt}\n\nStatus: ${status}\n\n| Check | Result | Detail |\n|---|---|---|\n${rows}\n\n## Required Actions\n\n| ID | Action | Verify |\n|---|---|---|\n${actionRows}\n\n## History\n`
+    `# S+ Service Watch\n\nLast checked: ${result.checkedAt}\n\nStatus: ${status}\n\n| Check | Result | Detail |\n|---|---|---|\n${rows}\n\n## Required Actions\n\n| ID | Owner | Action | Verify | Reference |\n|---|---|---|---|---|\n${actionRows}\n\n## History\n`
   );
   const historyPath = resolve(process.cwd(), "docs/splus-service-watch.history.md");
   if (!existsSync(historyPath)) writeFileSync(historyPath, "# S+ Service Watch History\n\n| Checked At | Status | Failed Checks |\n|---|---|---|\n");
@@ -279,30 +279,66 @@ function recordResult(result) {
 function requiredActions(result) {
   const actions = [];
   const byId = new Map(result.checks.map((item) => [item.id, item]));
+  const staticManifest = byId.get("web_static_manifest");
+  if (staticManifest && !staticManifest.ok) {
+    actions.push({
+      id: "deploy_latest_static",
+      owner: "operator",
+      action: "Render musunil-web의 Branch, Root Directory, Build Command, Publish Directory가 pnpm render:web-settings 출력과 같은지 맞춘 뒤 Clear build cache & deploy를 실행한다.",
+      verify: "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
+      reference: "docs/launch-cutover-runbook.md#2-render-static-site"
+    });
+  }
   const apiPreflight = byId.get("api_endpoint_preflight");
   if (apiPreflight && !apiPreflight.ok) {
     actions.push({
       id: "connect_api_endpoint",
+      owner: "operator",
       action: apiPreflight.message?.includes("ENOTFOUND")
-        ? "Create or fix the DNS record for api.musunil.com so it points to the Render API service, then redeploy the API."
-        : "Verify the deployed API URL, TLS certificate, and Render API service health.",
-      verify: "MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once"
+        ? "Render musunil-api의 Custom Domains에 api.musunil.com을 추가하고, Render가 표시한 target을 Cloudflare DNS의 api 레코드에 DNS only로 연결한다. API 서비스에 MUSUNIL_USER_INPUTS_B64와 generated secrets가 있는지도 확인한다."
+        : "api.musunil.com의 TLS 인증서, Render musunil-api 서비스 상태, /health 응답을 확인한다.",
+      verify: "pnpm launch:cutover-plan && MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once",
+      reference: "docs/launch-cutover-runbook.md#3-render-api"
     });
   }
   const webHeaders = byId.get("web_header_contract");
   if (webHeaders && !webHeaders.ok) {
     actions.push({
       id: "apply_static_headers",
-      action: "Run pnpm render:web-settings, copy the Headers into the Render Static Site Dashboard, then Clear build cache & deploy.",
-      verify: "MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com pnpm check:web-deploy"
+      owner: "operator",
+      action: "pnpm render:web-settings 출력의 Headers를 Render musunil-web Static Site Dashboard에 그대로 입력하고 Clear build cache & deploy를 실행한다. Cloudflare proxy가 켜져 있으면 캐시 우회 규칙도 함께 확인한다.",
+      verify: "pnpm render:web-settings && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com pnpm check:web-deploy",
+      reference: "docs/launch-cutover-runbook.md#2-render-static-site"
     });
   }
   const buildInfo = byId.get("web_build_info");
   if (buildInfo?.detail?.mode === "static_manifest_verified_fallback") {
     actions.push({
       id: "publish_build_metadata",
-      action: "Ensure Render publishes build command output instead of only committed apps/web files, or keep accepting static-manifest verification as a fallback warning.",
-      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy"
+      owner: "operator",
+      action: "Static manifest hash로 최신 UI는 확인됐지만 build-info가 placeholder다. Render가 build command output을 publish하는지 확인하거나, static-manifest 검증을 fallback warning으로 유지한다.",
+      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
+      reference: "docs/launch-readiness-checklist.md"
+    });
+  }
+  const apiReady = byId.get("api_health_ready");
+  if (apiReady && !apiReady.ok && !apiReady.skipped) {
+    actions.push({
+      id: "fix_api_readiness",
+      owner: "operator",
+      action: "/ready가 ready=true가 아니다. 응답의 summary.blockingGroups와 requiredActions를 보고 DB, Redis, storage, identity, public source, mobile integrity 설정을 채운 뒤 API를 재배포한다.",
+      verify: "MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws",
+      reference: "docs/user-inputs-manual.md#15-운영-전-최종-확인"
+    });
+  }
+  const unsafePublicPayload = result.checks.find((item) => item.id.startsWith("public_payload_") && !item.ok && !item.skipped);
+  if (unsafePublicPayload) {
+    actions.push({
+      id: "stop_public_payload_regression",
+      owner: "lead",
+      action: "공개 payload 안전성 회귀다. 사용자 원문, 정밀 GPS, storage key, identity hash, private media field 노출 여부를 먼저 막고 배포를 중단한다.",
+      verify: "MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws",
+      reference: "AGENTS.md"
     });
   }
   return actions;

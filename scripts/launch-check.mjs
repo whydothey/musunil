@@ -234,11 +234,16 @@ if (
   !/requiredActions/.test(serviceWatch) ||
   !/connect_api_endpoint/.test(serviceWatch) ||
   !/apply_static_headers/.test(serviceWatch) ||
+  !/deploy_latest_static/.test(serviceWatch) ||
+  !/publish_build_metadata/.test(serviceWatch) ||
+  !/fix_api_readiness/.test(serviceWatch) ||
+  !/stop_public_payload_regression/.test(serviceWatch) ||
+  !/docs\/launch-cutover-runbook\.md/.test(serviceWatch) ||
   !/deployedHttpsUrl/.test(serviceWatch) ||
   !/skipIfApiUnreachable/.test(serviceWatch) ||
   !/skipped:\s*true/.test(serviceWatch)
 ) {
-  failures.push("service-watch must separate API endpoint preflight failure from downstream skipped API checks and produce required actions");
+  failures.push("service-watch must separate API endpoint preflight failure from downstream skipped API checks and produce actionable launch required actions");
 }
 if (
   !/redaction_engine_smoke/.test(redactionSmoke) ||

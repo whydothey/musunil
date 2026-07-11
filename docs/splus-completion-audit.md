@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-12 00:49 KST
+Last updated: 2026-07-12 00:54 KST
 
 Status: 완료 아님.
 
@@ -120,6 +120,7 @@ GET /ready -> 200
 - 2026-07-12 00:38 `/ready`와 `runtime_not_ready` 응답에 safe `summary.failedIds`, `summary.blockingGroups`, `requiredActions`를 추가했다. API self-check, `pnpm check:render-runtime-config`, `pnpm check:runtime-smoke`가 통과했으며, Render DB/Redis 미연결 같은 운영 차단 원인을 그룹 단위로 식별한다. 실제 운영 `/ready=true` 증거 전에는 운영 준비 완료가 아니다.
 - 2026-07-12 00:44 `pnpm ops:diagnose`와 `pnpm check:ops-diagnostics`를 추가했다. 외부 연결 전에도 storage, redaction, mobile integrity, identity metadata 준비 상태와 다음 조치를 secret 원문 없이 확인하고, release gate에서 이 진단 계약을 검사한다. 실제 provider smoke와 운영 `/ready=true` 증거 전에는 운영 준비 완료가 아니다.
 - 2026-07-12 00:49 `pnpm launch:ready`가 external smoke 전에 `pnpm ops:diagnose -- --require-external-smoke-ready`를 실행하게 했다. 운영 입력 누락이 provider smoke 실패로만 보이지 않고 `requiredActions`로 먼저 정리된다. 실제 provider smoke와 운영 `/ready=true` 증거 전에는 운영 준비 완료가 아니다.
+- 2026-07-12 00:54 live `pnpm service:watch -- --once` 결과 static manifest는 local과 일치하지만 `web_header_contract`와 `api_endpoint_preflight`가 실패했다. Required Actions는 Render API custom domain + Cloudflare DNS, Render Static headers, build metadata fallback을 owner/action/verify/reference로 문서화한다. 실제 조치와 재검증 전에는 운영 준비 완료가 아니다.
 
 ## Next Active Goal Order
 

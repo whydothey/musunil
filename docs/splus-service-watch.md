@@ -1,6 +1,6 @@
 # S+ Service Watch
 
-Last checked: 2026-07-11T15:17:23.051Z
+Last checked: 2026-07-11T15:54:38.390Z
 
 Status: Active
 
@@ -22,10 +22,10 @@ Status: Active
 
 ## Required Actions
 
-| ID | Action | Verify |
-|---|---|---|
-| connect_api_endpoint | Create or fix the DNS record for api.musunil.com so it points to the Render API service, then redeploy the API. | MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once |
-| apply_static_headers | Run pnpm render:web-settings, copy the Headers into the Render Static Site Dashboard, then Clear build cache & deploy. | MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com pnpm check:web-deploy |
-| publish_build_metadata | Ensure Render publishes build command output instead of only committed apps/web files, or keep accepting static-manifest verification as a fallback warning. | MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy |
+| ID | Owner | Action | Verify | Reference |
+|---|---|---|---|---|
+| connect_api_endpoint | operator | Render musunil-api의 Custom Domains에 api.musunil.com을 추가하고, Render가 표시한 target을 Cloudflare DNS의 api 레코드에 DNS only로 연결한다. API 서비스에 MUSUNIL_USER_INPUTS_B64와 generated secrets가 있는지도 확인한다. | pnpm launch:cutover-plan && MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once | docs/launch-cutover-runbook.md#3-render-api |
+| apply_static_headers | operator | pnpm render:web-settings 출력의 Headers를 Render musunil-web Static Site Dashboard에 그대로 입력하고 Clear build cache & deploy를 실행한다. Cloudflare proxy가 켜져 있으면 캐시 우회 규칙도 함께 확인한다. | pnpm render:web-settings && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com pnpm check:web-deploy | docs/launch-cutover-runbook.md#2-render-static-site |
+| publish_build_metadata | operator | Static manifest hash로 최신 UI는 확인됐지만 build-info가 placeholder다. Render가 build command output을 publish하는지 확인하거나, static-manifest 검증을 fallback warning으로 유지한다. | MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy | docs/launch-readiness-checklist.md |
 
 ## History
