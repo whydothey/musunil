@@ -95,6 +95,7 @@ GET /ready -> 200
 - 2026-07-11 13:24 surface45 독립 재비평이 10초 기준 실패를 지적해 구체 이슈 우선 정렬, 짧은 공통 요약, 반복 감사 라벨 제거, 카드 보조 CTA 제거, 지도 CTA `근거·영상 보기`를 반영했다. 390px/1440px 첫 카드가 `정보통신망법 개정 반대 집회`로 시작하고 forbidden 0, `scrollWidth=390/1440`을 확인했지만 live build-info/header 실패, 실제 운영 공개 영상/GPS, 독립 재검증, 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-11 13:24 live `https://musunil.com` 검증은 `/static-manifest.json` 최신 hash는 확인되지만 `/build-info.json` placeholder와 no-store header 미적용 때문에 실패한다. Render build output/header가 실제 반영되기 전 운영 배포 준비를 S+로 승급하지 않는다.
 - 2026-07-11 13:31 `e8b098c` 푸시 후 GitHub Actions는 통과했고 live static manifest는 최신 커밋과 일치했지만 `/build-info.json` placeholder는 유지됐다. deploy checker와 문서를 보강했으며, Render Dashboard 설정과 headers가 실제로 고쳐지기 전 운영 배포 준비를 S+로 승급하지 않는다.
+- 2026-07-11 13:40 surface47에서 브랜드 subtitle, 홈 제목, fallback 상태, 스토리 레일을 시민용 앱 언어로 낮췄다. 390px/1440px 캡처에서 첫 구체 이슈, forbidden 0, `scrollWidth=390/1440`을 확인했지만 카드 CTA, 데스크톱 지도 비중, 실제 운영 공개 영상/GPS, 사용자 수락 전에는 S+로 승급하지 않는다.
 
 ## Next Active Goal Order
 

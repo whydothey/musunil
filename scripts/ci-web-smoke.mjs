@@ -350,6 +350,10 @@ async function checkWeb(port) {
   assert(index.includes("isSampleRedactedPreviewUrl"), "sample poster display guard missing");
   assert(index.includes("field-review-slot"), "review-state video slot missing");
   assert(index.includes("현장 영상 공개 준비 중"), "review-state video copy missing");
+  assert(index.includes('<p class="subtitle">공개 위치·근거 확인</p>'), "consumer-facing brand subtitle missing");
+  assert(index.includes("<h2>확인된 집회·시위</h2>"), "consumer-facing home headline missing");
+  assert(!index.includes("<h2>집회·시위 공개자료</h2>"), "old home headline is still visible");
+  assert(index.includes("compactIssueTitle"), "compact issue story labels missing");
   assert(index.includes("publicRedactedMediaUrl"), "strict public redacted media resolver missing");
   assert(index.includes("hasPublicLiveMedia"), "public live media poster+clip gate missing");
   assert(index.includes("redactedPosterUrl"), "redacted public poster contract missing");

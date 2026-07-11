@@ -1193,9 +1193,9 @@
 
       .issue-stories {
         display: flex;
-        gap: 8px;
+        gap: 7px;
         overflow-x: auto;
-        padding: 0 2px 4px;
+        padding: 0 2px 6px;
         scrollbar-width: none;
       }
 
@@ -1207,16 +1207,27 @@
         display: inline-flex;
         flex: 0 0 auto;
         align-items: center;
-        max-width: 210px;
-        min-height: 38px;
-        padding: 0 12px;
-        border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
-        border-radius: 999px;
-        background: color-mix(in srgb, var(--surface) 96%, transparent);
+        gap: 7px;
+        max-width: 168px;
+        min-height: 36px;
+        padding: 0 11px 0 10px;
+        border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--surface) 98%, transparent);
         color: var(--ink);
         text-align: left;
         cursor: pointer;
-        box-shadow: none;
+        box-shadow: 0 1px 0 rgb(255 255 255 / 80%) inset;
+      }
+
+      .story-ring::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        flex: 0 0 auto;
+        border-radius: 999px;
+        background: var(--story-color, var(--brand));
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--story-color, var(--brand)) 13%, transparent);
       }
 
       .story-orb {
@@ -1294,8 +1305,8 @@
         width: auto;
         overflow: hidden;
         color: var(--muted);
-        font-size: 12px;
-        font-weight: 760;
+        font-size: 11px;
+        font-weight: 820;
         line-height: 1.25;
         display: block;
         white-space: nowrap;
@@ -1308,7 +1319,7 @@
 
       .story-ring[aria-selected="true"] {
         border-color: color-mix(in srgb, var(--brand) 44%, var(--line));
-        background: color-mix(in srgb, var(--brand) 8%, var(--surface));
+        background: color-mix(in srgb, var(--brand) 7%, var(--surface));
       }
 
       .story-ring[data-state="official"] {
@@ -5317,7 +5328,7 @@
           </div>
           <div>
             <h1>무슨일</h1>
-            <p class="subtitle">집회·시위 공개자료 확인</p>
+            <p class="subtitle">공개 위치·근거 확인</p>
           </div>
         </div>
 
@@ -5347,7 +5358,7 @@
         <section class="column stack" id="home-section" aria-label="이슈와 상황 목록">
           <div class="section-title home-lead">
             <div>
-              <h2>집회·시위 공개자료</h2>
+              <h2>확인된 집회·시위</h2>
               <p class="fine" id="api-state">자료 불러오는 중</p>
             </div>
           </div>
@@ -6343,9 +6354,9 @@
       function homeStatusText(issues, mapData) {
         const hasIssues = Array.isArray(issues) && issues.length > 0;
         const hasLocations = Number(mapData?.occurrenceUnits?.length || 0) > 0;
-        if (hasIssues && hasLocations) return "공개 자료로 확인된 집회·시위 이슈를 정리했습니다.";
-        if (hasIssues) return "확인된 이슈를 공개 자료 기준으로 정리했습니다.";
-        return "공개 자료가 확인되는 대로 이슈별로 정리합니다.";
+        if (hasIssues && hasLocations) return "위치와 근거가 확인된 순서입니다.";
+        if (hasIssues) return "이슈별로 확인 중입니다.";
+        return "확인되는 대로 이슈별로 정리합니다.";
       }
 
       function issueRegions(issue, cards = issueRelatedCards(issue)) {
@@ -7105,7 +7116,7 @@
 	          selectedLaw = loadedLaws.find((law) => law.id === selectedLaw?.id) || loadedLaws[0];
 	          selected = visibleCards(loadedCards).find((card) => card.id === selected?.id) || visibleCards(loadedCards)[0] || loadedCards[0];
 	          latestCoverage = undefined;
-	          setStatus(isPreviewApiBase ? "공개 자료 기준" : "일부 자료 확인 중", { toast: false });
+	          setStatus(isPreviewApiBase ? "위치와 근거 기준" : "일부 자료 확인 중", { toast: false });
 	        }
 
 	        renderCoverage(latestCoverage);
@@ -8080,10 +8091,22 @@
           button.dataset.issueId = issue.id;
           button.dataset.state = issueStoryState(issue);
           button.setAttribute("aria-selected", String(issue.id === selectedIssue?.id));
-          button.innerHTML = `<span>${escapeHtml(issue.title)}</span>`;
+          button.setAttribute("aria-label", `${issue.title} 상세 보기`);
+          button.innerHTML = `<span>${escapeHtml(compactIssueTitle(issue.title))}</span>`;
           button.addEventListener("click", () => selectIssue(issue, { openDetail: true, scrollToCards: false }));
           root.append(button);
         }
+      }
+
+      function compactIssueTitle(value) {
+        return publicDisplayTitle(value || "이슈")
+          .replace(/[ \t\r\n]+집회$/g, "")
+          .replace(/[ \t\r\n]+행진$/g, " 행진")
+          .replace(/개정[ \t\r\n]+반대[ \t\r\n]+집회/g, "개정 반대")
+          .replace(/요구[ \t\r\n]+행진/g, "요구 행진")
+          .replace(/신고·공개[ \t\r\n]+일정/g, "공개 일정")
+          .replace(/[ \t\r\n]+/g, " ")
+          .trim();
       }
 
 	      function renderIssues(issues) {

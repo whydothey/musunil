@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 13:31 KST
+Last updated: 2026-07-11 13:40 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -49,6 +49,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 13:24 독립 surface45 재비평은 10초 기준 실패로 판정했다. 46차 패치는 fallback/빈 API 상태에서도 구체 이슈를 먼저 정렬하고, 요약을 `지역 · 일시 · 기준 · 위치 · 공식 · 영상 · 반론` 짧은 순서로 고정했다. 카드 반복 라벨 `공개자료 기준/확인 요약`과 보조 CTA 3개를 제거하고, 지도 시트 CTA를 `근거·영상 보기`로 바꿨다. 사용자 수락 전 S+는 아니다.
 - 13:24 live `https://musunil.com` 검증은 여전히 실패한다. `/static-manifest.json`은 최신 index hash를 가리키지만 `/build-info.json`은 placeholder이고 `/`, `/config.js`, `/build-info.json` 모두 no-store가 아니다. Render build/header 계약이 실제 서비스에서 반영되기 전 운영 배포 준비는 S+로 승급하지 않는다.
 - 13:31 `e8b098c` 푸시 후 GitHub Actions는 통과했고 live manifest도 새 커밋과 일치했지만 `/build-info.json`은 여전히 placeholder다. `check:web-deploy` 실패 메시지와 launch 문서를 강화해 Render 수동 Static Site가 빌드 산출물이 아니라 커밋된 `apps/web`을 그대로 publish하는 경우를 즉시 식별하게 했다.
+- 13:40 surface47 패치로 브랜드 subtitle을 `공개 위치·근거 확인`, 홈 제목을 `확인된 집회·시위`, fallback 상태 문구를 `위치와 근거 기준`으로 바꾸고, 스토리 레일은 짧은 이슈명 pill로 정리했다. 390px/1440px 캡처에서 첫 이슈는 `정보통신망법 개정 반대 집회`, story labels는 `정보통신망법 개정 반대/대통령 탄핵 요구 행진/전국 집회 공개 일정`, forbidden 0, `scrollWidth=390/1440`이다. 카드 CTA와 데스크톱 지도 비중은 다음 개선 대상으로 남긴다.
 
 ## Agent Feedback Summary
 
@@ -346,6 +347,9 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 13:24 simplified issue metrics | 390px 홈 첫 카드 `정보통신망법 개정 반대 집회`, status `반론 있음`, summary `서울 · 일시 확인 중 · 기준 2026.07.11 · 위치 1곳 · 공식 확인 중 · 영상 1건 · 반론 1건`, action labels `상세 보기`, `scrollWidth=390`, forbidden 0. 상세도 같은 title/summary와 `selectedDetailTab=개요`. 지도 current tab `탐색`, context line 동일, CTA `근거·영상 보기`. 데스크톱 1440px 첫 카드도 같은 이슈와 요약, `scrollWidth=1440`. 사용자 수락 전 S+는 아니다. |
 | 13:24 live deploy check | `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy` 실패. 원인: live `/build-info.json` body `commitSha=generated-at-build`, `source=placeholder`; live headers `/` public max-age 0, `/config.js` public max-age 14400, `/build-info.json` public max-age 0. |
 | 13:31 deploy contract diagnosis | `e8b098c` push 및 GitHub Actions success 후 live `/static-manifest.json`은 최신 manifest와 일치. 실패 원인은 `/build-info.json` placeholder 유지. `check:web-deploy`가 body와 Render 수동 설정 힌트를 함께 출력하도록 강화. |
+| 13:40 mobile home surface47 | `docs/commercial-splus-surface47-home-mobile-390-2026-07-11.png` |
+| 13:40 desktop home surface47 | `docs/commercial-splus-surface47-home-desktop-1440-2026-07-11.png` |
+| 13:40 surface47 metrics | 390px/1440px subtitle `공개 위치·근거 확인`, home title `확인된 집회·시위`, api state `위치와 근거 기준`, first issue `정보통신망법 개정 반대 집회`, first action `상세 보기`, forbidden 0, `scrollWidth=390/1440`. 사용자 수락 전 S+는 아니다. |
 
 ## Non-Negotiable Gates
 
