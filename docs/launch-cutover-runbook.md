@@ -9,10 +9,12 @@ pnpm launch:blockers
 pnpm launch:cutover-plan
 pnpm render:api-settings
 pnpm render:web-settings
+pnpm cloudflare:headers
 pnpm cloudflare:check
 ```
 
 `pnpm launch:operator-brief`는 위 명령들의 핵심 출력과 현재 blocker를 [launch-operator-brief.md](/Users/mk/Documents/Musunil/docs/launch-operator-brief.md)에 합쳐 쓰는 운영자용 단일 브리프다. Render/Cloudflare 화면을 열기 전에는 이 파일을 먼저 본다.
+`pnpm cloudflare:headers`는 Render Static headers가 live에 적용되지 않을 때 쓸 Cloudflare Response Header Transform Rule 템플릿을 [cloudflare-response-headers.md](/Users/mk/Documents/Musunil/docs/cloudflare-response-headers.md)와 [response-headers.tf.example](/Users/mk/Documents/Musunil/infra/cloudflare/response-headers.tf.example)에 생성한다.
 
 ## 1. 현재 차단 항목
 
@@ -102,6 +104,8 @@ Cloudflare에는 Render Dashboard가 보여주는 custom-domain target을 그대
 | `musunil.com` | CNAME 또는 Render가 안내한 apex 방식 | Render `musunil-web` target | strict header 검증 전까지 DNS only 권장 |
 | `www` | CNAME | `musunil.com` 또는 Render `musunil-web` target | Web과 동일 |
 | `api` | CNAME | Render `musunil-api` target | `/health`, `/ready`, CORS, media smoke 통과 전까지 DNS only 권장 |
+
+Render Static Site Headers가 계속 live 응답에 반영되지 않으면 `pnpm cloudflare:headers`를 실행하고, `docs/cloudflare-response-headers.md`의 Dashboard Rule 또는 Terraform 예시를 Web 레코드에만 적용한다. 이 rule은 Cloudflare proxied Web 레코드에서만 동작한다. API 레코드는 smoke 통과 전까지 DNS only를 유지한다.
 
 프록시를 켠 뒤에는 HTML, config, build-info, static manifest에 캐시 우회가 적용되는지 다시 검증한다.
 

@@ -63,7 +63,7 @@ const plan = {
       name: "musunil.com",
       type: "CNAME or Render-supported apex record",
       target: "Render musunil-web custom-domain target shown in Render",
-      proxy: "DNS only until strict header checks pass; optional proxied after cache bypass is confirmed"
+      proxy: "DNS only when Render headers are applied directly; proxied if using the Cloudflare response header rule, with cache bypass confirmed"
     },
     {
       name: "www",

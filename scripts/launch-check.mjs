@@ -38,8 +38,11 @@ const launchReady = readFileSync(resolve(cwd, "scripts/launch-ready.mjs"), "utf8
 const launchFinalGate = readFileSync(resolve(cwd, "scripts/launch-final-gate.mjs"), "utf8");
 const launchCutoverRehearsal = readFileSync(resolve(cwd, "scripts/launch-cutover-rehearsal.mjs"), "utf8");
 const launchOperatorBrief = readFileSync(resolve(cwd, "scripts/launch-operator-brief.mjs"), "utf8");
+const cloudflareResponseHeaders = readFileSync(resolve(cwd, "scripts/cloudflare-response-headers-template.mjs"), "utf8");
 const launchCutoverRunbook = readFileSync(resolve(cwd, "docs/launch-cutover-runbook.md"), "utf8");
 const launchOperatorBriefDoc = readFileSync(resolve(cwd, "docs/launch-operator-brief.md"), "utf8");
+const cloudflareResponseHeadersDoc = readFileSync(resolve(cwd, "docs/cloudflare-response-headers.md"), "utf8");
+const cloudflareResponseHeadersTerraform = readFileSync(resolve(cwd, "infra/cloudflare/response-headers.tf.example"), "utf8");
 const webFlowSmoke = readFileSync(resolve(cwd, "scripts/ci-web-flow-smoke.mjs"), "utf8");
 const uxSurfaceSmoke = readFileSync(resolve(cwd, "scripts/ci-ux-surface-smoke.mjs"), "utf8");
 const visualSurfaceSmoke = readFileSync(resolve(cwd, "scripts/ci-visual-surface-smoke.mjs"), "utf8");
@@ -351,6 +354,8 @@ if (
 if (
   !/"cloudflare:check"/.test(packageJson) ||
   !/"cloudflare:check:strict"/.test(packageJson) ||
+  !/"cloudflare:headers"/.test(packageJson) ||
+  !/"check:cloudflare-headers"/.test(packageJson) ||
   !/cloudflare-dns-check\.mjs/.test(packageJson) ||
   !/cloudflare_dns_and_edge_preflight/.test(cloudflareDnsCheck) ||
   !/web_dns/.test(cloudflareDnsCheck) ||
@@ -365,7 +370,26 @@ if (
 ) {
   failures.push("Cloudflare/DNS preflight helper must check Web/API DNS, Web config, headers, API health/ready, and strict mode");
 }
-if (!/pnpm cloudflare:check/.test(readme) || !/pnpm cloudflare:check/.test(userFacingDocs)) {
+if (
+  !/cloudflare_response_headers_template/.test(cloudflareResponseHeaders) ||
+  !/http_response_headers_transform/.test(cloudflareResponseHeaders) ||
+  !/operation = "set"/.test(cloudflareResponseHeaders) ||
+  !/docs\/cloudflare-response-headers\.md/.test(cloudflareResponseHeaders) ||
+  !/infra\/cloudflare\/response-headers\.tf\.example/.test(cloudflareResponseHeaders) ||
+  !/Response Header Transform Rule/.test(cloudflareResponseHeadersDoc) ||
+  !/Set static/.test(cloudflareResponseHeadersDoc) ||
+  !/http_response_headers_transform/.test(cloudflareResponseHeadersDoc) ||
+  !/Cloudflare proxied/.test(cloudflareResponseHeadersDoc) ||
+  !/cloudflare_ruleset/.test(cloudflareResponseHeadersTerraform) ||
+  !/phase\s+=\s*"http_response_headers_transform"/.test(cloudflareResponseHeadersTerraform) ||
+  !/Cache-Control/.test(cloudflareResponseHeadersTerraform) ||
+  !/Content-Security-Policy/.test(cloudflareResponseHeadersTerraform) ||
+  !/X-Frame-Options/.test(cloudflareResponseHeadersTerraform) ||
+  !/pnpm check:cloudflare-headers/.test(JSON.parse(packageJson).scripts["check:release"] ?? "")
+) {
+  failures.push("Cloudflare response header template must generate dashboard docs and Terraform example from render.yaml headers and be wired into release checks");
+}
+if (!/pnpm cloudflare:check/.test(readme) || !/pnpm cloudflare:headers/.test(readme) || !/pnpm cloudflare:check/.test(userFacingDocs)) {
   failures.push("Cloudflare/DNS preflight helper must be documented in README and launch readiness docs");
 }
 const completionPassingEvidence = markdownSection(completionAudit, "## Current Local/Static Passing Evidence", "## Current Live Blockers");

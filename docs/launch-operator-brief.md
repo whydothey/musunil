@@ -4,8 +4,8 @@
 
 ## Current State
 
-- Generated: 2026-07-11T22:52:23.670Z
-- Git SHA: f4b81535045d4bb122060720dbfbf8eebee83752
+- Generated: 2026-07-11T23:00:53.559Z
+- Git SHA: d47623a1e18131e53b52b4a078277d7200bf40df
 - Stage: connect_api_endpoint
 - Release blocked: yes
 - Service watch: 2026-07-11T22:53:55.177Z (fresh)
@@ -118,7 +118,13 @@ Environment source summary:
 
 Render Dashboard가 보여주는 custom-domain target을 그대로 복사한다. API는 smoke 통과 전까지 DNS only가 안전하다.
 
-- `musunil.com`: CNAME or Render-supported apex record -> Render musunil-web custom-domain target shown in Render. Proxy: DNS only until strict header checks pass; optional proxied after cache bypass is confirmed.
+Web headers fallback:
+
+- Render Static Site Headers가 live 응답에 반영되지 않으면 `pnpm cloudflare:headers`로 Cloudflare Response Header Transform Rule 템플릿을 갱신한다.
+- Web 레코드가 Cloudflare proxied 상태일 때만 Cloudflare response header rule이 적용된다.
+- API 레코드는 `/health`, `/ready`, CORS, media smoke 통과 전까지 DNS only를 유지한다.
+
+- `musunil.com`: CNAME or Render-supported apex record -> Render musunil-web custom-domain target shown in Render. Proxy: DNS only when Render headers are applied directly; proxied if using the Cloudflare response header rule, with cache bypass confirmed.
 - `www`: CNAME -> musunil.com or the Render musunil-web custom-domain target. Proxy: same as musunil.com.
 - `api`: CNAME -> Render musunil-api custom-domain target shown in Render. Proxy: DNS only until /health, /ready, CORS, and media smoke pass.
 
