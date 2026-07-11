@@ -29,6 +29,7 @@
 - 실제 비식별 엔진 명령 입력 후 `pnpm redaction:smoke` 통과.
 - `/health` 200.
 - `/ready` 200, `config_source`, `postgres`, `redis` check가 모두 ok.
+- `/ready` 응답은 `summary.failedIds`, `summary.blockingGroups`, `requiredActions`를 포함한다. 실패 시 이 값으로 DB/Redis/스토리지/본인확인/법 원천/모바일 무결성 등 막힌 묶음을 바로 식별해야 한다.
 - 배포 후 `MUSUNIL_API_BASE_URL=https://... pnpm launch:post-deploy-smoke -- --require-laws` 통과. 이 값은 localhost나 HTTP가 아닌 실제 배포 HTTPS API URL이어야 하며, 요청 timeout과 redirect 수동 처리, API 보안 헤더, CORS 경계, `/home`, `/issues`, 첫 이슈 상세, 첫 이슈 live-claims, `/area-clusters`, `/map`, `/public-sources/coverage`, `/laws`, 첫 법안 상세 공개 응답 안전성을 함께 확인한다.
 - 배포 후 `pnpm launch:post-deploy-smoke`는 API `/media/redacted/preview-occ-live-1-poster.png`가 200 `image/png`, `/media/redacted/preview-occ-live-1.webm`이 200 `video/webm`으로 열리고 encoded traversal가 차단되는지 확인한다.
 - Render API health check path가 `/ready`다.
@@ -121,6 +122,7 @@
 - production LIVE 업로드는 S3-compatible storage adapter 또는 `media_encryption_key`가 없으면 `live_storage_unavailable`로 실패하고, 성공 시 원본 base64를 메모리에 보관하지 않으며 PUT 바이트를 AES-GCM으로 암호화한다.
 - privacy purge는 외부 storage 원본 media DELETE가 성공한 뒤에만 DB `storageKey`와 hash를 지운다. DELETE 실패 시 `privacy_purge_storage_unavailable`로 실패한다.
 - production runtime이 not-ready이면 POST/PATCH write request는 `runtime_not_ready` 503으로 실패한다.
+- `runtime_not_ready` 응답도 `/ready`와 같은 `summary`와 `requiredActions`를 포함해 쓰기 차단 원인을 숨기지 않는다.
 - production 설정에서 `moderation.auto_publish_low_risk_live_reports: true`이면 `pnpm launch:verify-inputs`와 `pnpm config:encode -- --check`가 실패한다.
 - 보존 기간이 지난 raw statement와 정밀 위치 필드는 privacy purge로 삭제된다.
 - API는 allowed origin만 CORS에 반영하고 `Vary: Origin`, `nosniff`, `no-store`, `no-referrer` 헤더를 보낸다.

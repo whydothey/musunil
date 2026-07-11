@@ -94,6 +94,16 @@ const postgresStore = readFileSync(resolve(cwd, "services/api/src/postgres-store
 const packageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
 if (!/pingPostgres/.test(apiServer)) failures.push("/ready postgres ping is missing");
 if (!/tcpUrlReadyCheck\("redis"/.test(apiServer)) failures.push("/ready redis reachability check is missing");
+if (
+  !/function describeReadiness/.test(apiApp) ||
+  !/summary:\s*\{[\s\S]*failedIds/.test(apiApp) ||
+  !/blockingGroups/.test(apiApp) ||
+  !/requiredActions/.test(apiApp) ||
+  !/function readinessAction/.test(apiApp) ||
+  !/runtime_not_ready/.test(apiApp)
+) {
+  failures.push("/ready must expose safe summary and required actions, and not-ready writes must return the same diagnostics");
+}
 if (!/x-content-type-options/.test(apiServer) || !/nosniff/.test(apiServer)) failures.push("API x-content-type-options header is missing");
 if (!/referrer-policy/.test(apiServer) || !/no-referrer/.test(apiServer)) failures.push("API referrer-policy header is missing");
 if (!/cache-control/.test(apiServer) || !/no-store/.test(apiServer)) failures.push("API cache-control header is missing");

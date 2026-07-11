@@ -104,6 +104,14 @@ export type ApiResponse = {
 export type ReadinessReport = {
   ready: boolean;
   checks: Array<{ id: string; ok: boolean; message: string }>;
+  summary?: {
+    total: number;
+    okCount: number;
+    failedCount: number;
+    failedIds: string[];
+    blockingGroups: string[];
+  };
+  requiredActions?: Array<{ id: string; action: string; verify: string }>;
 };
 
 export type AppOptions = {
@@ -830,12 +838,12 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
 
   if (request.method === "GET" && path === "/health") return json(200, { ok: true });
   if (request.method === "GET" && path === "/ready") {
-    const readiness = await (options.readiness?.() ?? defaultReadiness());
+    const readiness = describeReadiness(await (options.readiness?.() ?? defaultReadiness()));
     return json(readiness.ready ? 200 : 503, readiness);
   }
   if (options.requireReadyForWrites && request.method !== "GET") {
-    const readiness = await (options.readiness?.() ?? defaultReadiness());
-    if (!readiness.ready) return json(503, { error: "runtime_not_ready", checks: readiness.checks });
+    const readiness = describeReadiness(await (options.readiness?.() ?? defaultReadiness()));
+    if (!readiness.ready) return json(503, { error: "runtime_not_ready", checks: readiness.checks, summary: readiness.summary, requiredActions: readiness.requiredActions });
   }
   if (request.method === "POST" && path === "/session/anonymous") return postAnonymousSession(options);
   if (request.method === "POST" && path === "/auth/identity/start") return postIdentityStart(store, request, options);
@@ -913,6 +921,95 @@ function defaultReadiness(): ReadinessReport {
     ready: false,
     checks: [{ id: "runtime", ok: false, message: "readiness callback is not configured" }]
   };
+}
+
+function describeReadiness(report: ReadinessReport): ReadinessReport {
+  const failed = report.checks.filter((check) => !check.ok);
+  const blockingGroups = unique(failed.map((check) => readinessGroup(check.id)));
+  return {
+    ...report,
+    summary: {
+      total: report.checks.length,
+      okCount: report.checks.length - failed.length,
+      failedCount: failed.length,
+      failedIds: failed.map((check) => check.id),
+      blockingGroups
+    },
+    requiredActions: blockingGroups.map(readinessAction)
+  };
+}
+
+function readinessGroup(id: string): string {
+  if (id === "config" || id === "config_source") return "runtime_config";
+  if (id === "postgres" || id.startsWith("postgres.")) return "database";
+  if (id === "redis" || id.startsWith("redis.")) return "redis";
+  if (id.startsWith("security.")) return "security";
+  if (id.startsWith("storage.")) return "storage";
+  if (id.startsWith("redaction.")) return "redaction";
+  if (id.startsWith("mobile.")) return "mobile_integrity";
+  if (id.startsWith("identity.")) return "identity";
+  if (id.startsWith("public_data_sources.")) return "public_sources";
+  if (id.startsWith("organization.") || id.startsWith("app.") || id.startsWith("web.") || id.startsWith("domestic_operation.")) return "operator_profile";
+  if (id.startsWith("payments.")) return "payments";
+  return "runtime";
+}
+
+function readinessAction(group: string): { id: string; action: string; verify: string } {
+  const actions: Record<string, { action: string; verify: string }> = {
+    database: {
+      action: "Attach Render managed Postgres so DATABASE_URL is available to musunil-api.",
+      verify: "GET /ready shows the postgres check as ok."
+    },
+    redis: {
+      action: "Attach Render Key Value/Redis so REDIS_URL is available to musunil-api.",
+      verify: "GET /ready shows the redis check as ok."
+    },
+    runtime_config: {
+      action: "Provide production user-inputs through MUSUNIL_USER_INPUTS_B64 or a Render Secret File.",
+      verify: "GET /ready shows config_source as ok."
+    },
+    security: {
+      action: "Use Render generated secrets or fill the required security keys in the secret config only.",
+      verify: "GET /ready has no failed security.* checks."
+    },
+    storage: {
+      action: "Fill storage provider, bucket, region, and credentials for encrypted LIVE media originals.",
+      verify: "pnpm storage:smoke succeeds and GET /ready has no failed storage.* checks."
+    },
+    redaction: {
+      action: "Configure a redaction smoke command that accepts {input} and {output}.",
+      verify: "pnpm redaction:smoke succeeds and GET /ready has no failed redaction.* checks."
+    },
+    mobile_integrity: {
+      action: "Configure Android Play Integrity or iOS App Attest and the mobile integrity smoke command.",
+      verify: "pnpm mobile:integrity-smoke succeeds and GET /ready has no failed mobile.* checks."
+    },
+    identity: {
+      action: "Fill PortOne identity store, channel, and API secret through Render secret configuration.",
+      verify: "GET /ready has no failed identity.* checks and /auth/identity/start returns 201."
+    },
+    public_sources: {
+      action: "Fill the National Assembly bill API key or Law.go.kr OC value for official law source ingest.",
+      verify: "pnpm sources:laws dry-run returns official items and GET /ready has no failed public_data_sources.* checks."
+    },
+    operator_profile: {
+      action: "Fill public support email and operator/privacy/location manager contact fields.",
+      verify: "GET /ready has no failed app.*, organization.*, web.*, or domestic_operation.* checks."
+    },
+    payments: {
+      action: "Keep payments disabled until individual-business and PG values are ready, or fill every PG value before enabling support payments.",
+      verify: "GET /ready has no failed payments.* checks."
+    }
+  };
+  const selected = actions[group] ?? {
+    action: "Inspect the failed readiness checks and update the production configuration.",
+    verify: "GET /ready returns ready=true."
+  };
+  return { id: group, ...selected };
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values)];
 }
 
 function withInternalAuth(request: ApiRequest, options: AppOptions, action: () => ApiResponse | Promise<ApiResponse>): ApiResponse | Promise<ApiResponse> {

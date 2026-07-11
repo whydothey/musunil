@@ -346,8 +346,15 @@ assert.equal(issueLiveClaim?.regionLabel, "서울");
 assert.equal(typeof issueLiveClaim?.targetTitle, "string");
 assert.equal(issueLiveClaim?.fieldVerification.statusLabel, "현장 이견 있음");
 assertPublicPayloadSafe(issueLiveClaimsAfterVerification.body);
-assert.equal((await createApp().handle({ method: "GET", path: "/ready" })).status, 503);
-assert.equal((await app.handle({ method: "GET", path: "/ready" })).status, 200);
+const defaultReady = await createApp().handle({ method: "GET", path: "/ready" });
+assert.equal(defaultReady.status, 503);
+assert.equal((defaultReady.body as { summary: { failedIds: string[]; blockingGroups: string[] }; requiredActions: Array<{ id: string }> }).summary.failedIds.includes("runtime"), true);
+assert.equal((defaultReady.body as { summary: { blockingGroups: string[] } }).summary.blockingGroups.includes("runtime"), true);
+assert.equal((defaultReady.body as { requiredActions: Array<{ id: string }> }).requiredActions.some((item) => item.id === "runtime"), true);
+const readyResponse = await app.handle({ method: "GET", path: "/ready" });
+assert.equal(readyResponse.status, 200);
+assert.equal((readyResponse.body as { summary: { failedCount: number } }).summary.failedCount, 0);
+assert.equal((readyResponse.body as { requiredActions: Array<unknown> }).requiredActions.length, 0);
 assert.equal(
   (await createApp(createSeedStore(), { readiness: async () => ({ ready: false, checks: [{ id: "postgres", ok: false, message: "postgres unreachable" }] }) }).handle({
     method: "GET",
@@ -369,6 +376,9 @@ const notReadyWriteApp = createApp(createSeedStore(), {
 const notReadySession = await notReadyWriteApp.handle({ method: "POST", path: "/session/anonymous" });
 assert.equal(notReadySession.status, 503);
 assert.equal((notReadySession.body as { error: string }).error, "runtime_not_ready");
+assert.equal((notReadySession.body as { summary: { failedIds: string[]; blockingGroups: string[] } }).summary.failedIds.includes("postgres.database_url"), true);
+assert.equal((notReadySession.body as { summary: { blockingGroups: string[] } }).summary.blockingGroups.includes("database"), true);
+assert.equal((notReadySession.body as { requiredActions: Array<{ id: string }> }).requiredActions.some((item) => item.id === "database"), true);
 const notReadyInternalWrite = await notReadyWriteApp.handle({
   method: "POST",
   path: "/internal/ingest/public-source",

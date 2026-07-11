@@ -369,6 +369,8 @@ GET /health -> 200
 GET /ready -> 200
 ```
 
+`/ready`가 503이면 응답의 `summary.blockingGroups`와 `requiredActions`를 먼저 본다. 예를 들어 `database`, `redis`, `storage`, `identity`, `public_sources`, `mobile_integrity`가 표시되면 해당 Render 연결값 또는 YAML 값을 채운 뒤 다시 확인한다.
+
 배포 URL 기준 비파괴 smoke:
 
 ```bash

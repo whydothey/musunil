@@ -60,6 +60,8 @@ await check("ready", async () => {
   const response = await raw("GET", "/ready");
   assert(response.status === 200, `/ready returned ${response.status}`);
   assert(response.body?.ready === true, "/ready returned ready=false");
+  assert(response.body?.summary?.failedCount === 0, "/ready summary failedCount should be 0");
+  assert(Array.isArray(response.body?.requiredActions) && response.body.requiredActions.length === 0, "/ready requiredActions should be empty");
   assertReadyCheck(response.body, "config_source");
   assertReadyCheck(response.body, "postgres");
   assertReadyCheck(response.body, "redis");

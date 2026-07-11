@@ -146,6 +146,11 @@ try {
 
   assert(response.status === 503, `/ready should be blocked only by missing managed DB/Redis in this smoke, got ${response.status}`);
   assert(body.ready === false, "/ready should be false without managed DB/Redis env");
+  assert(body.summary?.failedCount === 2, `/ready summary should report only DB/Redis failures, got ${body.summary?.failedCount}`);
+  assert(body.summary?.blockingGroups?.includes("database"), "/ready summary missing database blocking group");
+  assert(body.summary?.blockingGroups?.includes("redis"), "/ready summary missing redis blocking group");
+  assert(body.requiredActions?.some((item) => item.id === "database"), "/ready requiredActions missing database action");
+  assert(body.requiredActions?.some((item) => item.id === "redis"), "/ready requiredActions missing redis action");
   assert(failedIds.includes("postgres.database_url"), "missing postgres.database_url was not reported");
   assert(failedIds.includes("redis.url"), "missing redis.url was not reported");
   for (const id of ["security.jwt_secret", "security.encryption_key", "security.internal_api_key"]) {
@@ -159,6 +164,9 @@ try {
   const writeBody = await writeResponse.json();
   assert(writeResponse.status === 503, `production writes should fail closed when /ready is false, got ${writeResponse.status}`);
   assert(writeBody.error === "runtime_not_ready", "not-ready write error code mismatch");
+  assert(writeBody.summary?.blockingGroups?.includes("database"), "not-ready write response missing database blocking group");
+  assert(writeBody.summary?.blockingGroups?.includes("redis"), "not-ready write response missing redis blocking group");
+  assert(writeBody.requiredActions?.some((item) => item.id === "database"), "not-ready write response missing database action");
   const lawsResponse = await fetch(`http://localhost:${port}/laws`);
   const lawsBody = await lawsResponse.json();
   assert(lawsResponse.status === 200, `/laws should stay readable in not-ready production smoke, got ${lawsResponse.status}`);

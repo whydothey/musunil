@@ -36,9 +36,15 @@ await check("ready", async () => {
   const body = await response.json();
   assert(typeof body.ready === "boolean", "/ready response is missing ready boolean");
   assert(Array.isArray(body.checks), "/ready response is missing checks array");
+  assert(typeof body.summary?.failedCount === "number", "/ready response is missing summary.failedCount");
+  assert(Array.isArray(body.summary?.failedIds), "/ready response is missing summary.failedIds");
+  assert(Array.isArray(body.summary?.blockingGroups), "/ready response is missing summary.blockingGroups");
+  assert(Array.isArray(body.requiredActions), "/ready response is missing requiredActions");
   if (process.argv.includes("--require-ready")) {
     assert(response.status === 200, `/ready returned ${response.status}`);
     assert(body.ready === true, "/ready returned ready=false");
+    assert(body.summary.failedCount === 0, "/ready summary failedCount should be 0 when require-ready passes");
+    assert(body.requiredActions.length === 0, "/ready requiredActions should be empty when ready");
   }
 });
 
