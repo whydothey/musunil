@@ -477,18 +477,27 @@ async function waitForHttp(url) {
 }
 
 async function waitForPageWebSocket(port) {
-  const deadline = Date.now() + 15_000;
+  const deadline = Date.now() + 45_000;
+  let lastError = "";
   while (Date.now() < deadline) {
     if (chrome.exitCode !== null) throw new Error(`chrome exited early with ${chrome.exitCode}`);
     try {
-      const pages = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
+      const response = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(2_000) });
+      if (!response.ok) {
+        lastError = `/json/list returned ${response.status}`;
+        await sleep(250);
+        continue;
+      }
+      const pages = await response.json();
       const page = pages.find((entry) => entry.type === "page" && entry.webSocketDebuggerUrl);
       if (page) return page.webSocketDebuggerUrl;
-    } catch {
-      await sleep(150);
+      lastError = `no debuggable page in ${pages.length} target(s)`;
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
     }
+    await sleep(250);
   }
-  throw new Error("Chrome remote debugging page did not become ready in time");
+  throw new Error(`Chrome remote debugging page did not become ready in time${lastError ? `: ${lastError}` : ""}`);
 }
 
 function once(client, eventName, timeoutMs) {
