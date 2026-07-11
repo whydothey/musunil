@@ -153,15 +153,18 @@ async function runChecks() {
     const serviceStates = Array.isArray(parsed.serviceStates)
       ? parsed.serviceStates
       : [...new Set((parsed.scenarios || []).map((item) => item.detail?.serviceSyncState).filter(Boolean))];
+    const homeScenarios = (parsed.scenarios || []).filter((item) => /_home$/.test(item.id));
+    const firstIssues = [...new Set(homeScenarios.map((item) => item.detail?.firstIssueTitle).filter(Boolean))];
+    const sourceBundleFirstCount = homeScenarios.filter((item) => item.detail?.sourceBundleFirst).length;
+    const firstIssueDetail = firstIssues.length
+      ? `; firstIssues=${firstIssues.join(" / ")}; sourceBundleFirst=${sourceBundleFirstCount}/${homeScenarios.length}`
+      : "";
     const nonLiveStates = serviceStates.filter((state) => state !== "live");
     if (nonLiveStates.length > 0) {
-      const homeScenarios = (parsed.scenarios || []).filter((item) => /_home$/.test(item.id));
-      const firstIssues = [...new Set(homeScenarios.map((item) => item.detail?.firstIssueTitle).filter(Boolean))];
-      const sourceBundleFirstCount = homeScenarios.filter((item) => item.detail?.sourceBundleFirst).length;
-      const firstIssueDetail = firstIssues.length
-        ? `; firstIssues=${firstIssues.join(" / ")}; sourceBundleFirst=${sourceBundleFirstCount}/${homeScenarios.length}`
-        : "";
       throw new Error(`live visual surface is rendering non-live data state: ${nonLiveStates.join(", ")}${firstIssueDetail}`);
+    }
+    if (sourceBundleFirstCount > 0) {
+      throw new Error(`live visual surface first issue is a public source bundle, not a topic Issue${firstIssueDetail}`);
     }
     return {
       mode: parsed.mode,
@@ -223,6 +226,7 @@ async function runChecks() {
       skipIfApiUnreachable();
       const body = await getJson(`${apiBaseUrl}${path}`);
       assertPublicPayloadSafe(body);
+      if (path === "/home") assertHomeIssueFirstPayload(body);
       return summaryFor(path, body);
     });
   }
@@ -374,8 +378,47 @@ function assertPublicPayloadSafe(body) {
   ]);
 }
 
+function assertHomeIssueFirstPayload(body) {
+  const issues = Array.isArray(body?.issueCards) ? body.issueCards : [];
+  if (issues.length === 0) {
+    throw new Error("/home issueCards is empty; live launch needs at least one topic Issue before the issue feed can be considered ready");
+  }
+  const topicIssues = issues.filter((issue) => !isPublicSourceBundleIssue(issue));
+  if (topicIssues.length === 0) {
+    throw new Error("/home issueCards contains only public source bundles; move schedule/statistics bundles to source coverage context");
+  }
+  if (isPublicSourceBundleIssue(issues[0])) {
+    throw new Error(`/home first issueCard is a public source bundle, not a topic Issue: ${publicIssueTitle(issues[0])}`);
+  }
+}
+
+function isPublicSourceBundleIssue(issue) {
+  const text = [
+    issue?.id,
+    issue?.normalizedTopicKey,
+    issue?.title,
+    ...(Array.isArray(issue?.topicTags) ? issue.topicTags : [])
+  ].filter(Boolean).join(" ");
+  return /^issue_public_/.test(String(issue?.id || ""))
+    || /real-public-assembly-sources|public-assembly-(schedules|statistics)/.test(text)
+    || /공개\s*(일정|자료)|신고[·\s-]*(개최|통계)|집회\s*신고\s*통계/.test(text);
+}
+
+function publicIssueTitle(issue) {
+  return String(issue?.title || issue?.id || "(untitled)").slice(0, 120);
+}
+
 function summaryFor(path, body) {
-  if (path === "/home") return { cards: body.cards?.length ?? 0, issues: body.issueCards?.length ?? 0 };
+  if (path === "/home") {
+    const issues = Array.isArray(body?.issueCards) ? body.issueCards : [];
+    return {
+      cards: body.cards?.length ?? 0,
+      issues: issues.length,
+      firstIssueTitle: publicIssueTitle(issues[0]),
+      sourceBundleFirst: Boolean(issues[0] && isPublicSourceBundleIssue(issues[0])),
+      topicIssues: issues.filter((issue) => !isPublicSourceBundleIssue(issue)).length
+    };
+  }
   if (path === "/issues") return { issues: body.issues?.length ?? 0 };
   if (path === "/map") return { pins: body.geojson?.pins?.features?.length ?? 0, areas: body.geojson?.presenceAreas?.features?.length ?? 0 };
   if (path === "/laws") return { laws: body.laws?.length ?? 0 };
@@ -468,6 +511,16 @@ function requiredActions(result) {
       reference: "docs/user-inputs-manual.md#15-운영-전-최종-확인"
     });
   }
+  const homePayload = byId.get("public_payload_home");
+  if (homePayload && !homePayload.ok && !homePayload.skipped && /topic Issue|public source bundle|issueCards/.test(homePayload.message || "")) {
+    actions.push({
+      id: "restore_issue_first_api_payload",
+      owner: "lead",
+      action: "/home issueCards는 지역별 공개 일정이나 신고 통계 묶음이 아니라 실제 주제형 Issue를 먼저 반환해야 한다. 공식자료 묶음은 source coverage/지역 현황 맥락으로 낮추고, 실제 주제 ingest 또는 topic grouping을 복구한다.",
+      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once",
+      reference: "docs/launch-readiness-checklist.md"
+    });
+  }
   const unsafePublicPayload = result.checks.find((item) => item.id.startsWith("public_payload_") && !item.ok && !item.skipped);
   if (unsafePublicPayload) {
     actions.push({
@@ -481,8 +534,9 @@ function requiredActions(result) {
   const visualSurface = byId.get("web_visual_surface");
   if (visualSurface && !visualSurface.ok && !visualSurface.skipped) {
     const nonLiveDataState = visualSurface.message?.includes("non-live data state");
-    const sourceBundleFirst = /sourceBundleFirst=([1-9]\d*)\/(\d+)/.test(visualSurface.message || "");
-    const firstIssues = visualSurface.message?.match(/firstIssues=([^;]+)/)?.[1]?.trim();
+    const sourceBundleFirst = /sourceBundleFirst=([1-9]\d*)\/(\d+)/.test(visualSurface.message || "") || /public source bundle/.test(visualSurface.message || "");
+    const firstIssues = visualSurface.message?.match(/firstIssues=([^;]+)/)?.[1]?.trim()
+      || visualSurface.message?.match(/public source bundle[^:]*:\s*([^\n]+)/)?.[1]?.trim();
     actions.push({
       id: "stop_live_visual_surface_regression",
       owner: "lead",

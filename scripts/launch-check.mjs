@@ -348,6 +348,8 @@ if (
   !/X-Frame-Options/.test(serviceWatch) ||
   !/web_visual_surface/.test(serviceWatch) ||
   !/publicPayloadRoutes/.test(serviceWatch) ||
+  !/assertHomeIssueFirstPayload/.test(serviceWatch) ||
+  !/public source bundle/.test(serviceWatch) ||
   !/serviceStates/.test(serviceWatch) ||
   !/firstIssues/.test(serviceWatch) ||
   !/sourceBundleFirst/.test(serviceWatch) ||
@@ -355,6 +357,7 @@ if (
   !/withVisualSurface/.test(serviceWatch) ||
   !/stop_live_visual_surface_regression/.test(serviceWatch) ||
   !/restore_issue_first_live_data/.test(serviceWatch) ||
+  !/restore_issue_first_api_payload/.test(serviceWatch) ||
   !/requiredActions/.test(serviceWatch) ||
   !/connect_api_endpoint/.test(serviceWatch) ||
   !/fix_web_runtime_config/.test(serviceWatch) ||
@@ -473,8 +476,8 @@ if (!/postPrivacyPurgeExpired/.test(apiApp) || !/privacy_purge_completed/.test(a
 if (!/public_source_claim_refreshed/.test(apiApp)) failures.push("public source ingest idempotency guard is missing");
 if (!/public-sources\/coverage/.test(apiApp) || !/sourceCoverageReport/.test(apiApp)) failures.push("public source coverage API is missing");
 if (!/function homeCardOrderScore/.test(apiApp)) failures.push("API home cards must not rank archive/stat cards first");
-if (!/issueCards\(store, cards\)/.test(apiApp) || !/function issueCards/.test(apiApp) || !/function issueTargets/.test(apiApp)) {
-  failures.push("API home must expose issue-first cards with linked target groups");
+if (!/issueCards\(store, cards\)/.test(apiApp) || !/function issueCards/.test(apiApp) || !/function issueTargets/.test(apiApp) || !/function isPublicSourceBundleIssue/.test(apiApp)) {
+  failures.push("API home must expose issue-first cards with linked target groups and exclude public source bundles");
 }
 if (!/targets: targets\.map/.test(apiApp) || !/\/issues\//.test(apiApp)) failures.push("issue detail API must return linked targets");
 if (!/resolveIssueIdForIngest/.test(apiApp) || !/topicTitle/.test(apiApp) || !/부정선거 의혹 제기 집회/.test(apiApp)) {

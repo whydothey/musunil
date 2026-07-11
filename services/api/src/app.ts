@@ -1408,7 +1408,7 @@ function homeCards(store: Store) {
 
 function issueCards(store: Store, cards = homeCards(store)) {
   return store.issues
-    .filter((issue) => issue.normalizedTopicKey !== "real-public-assembly-sources")
+    .filter((issue) => !isPublicSourceBundleIssue(issue))
     .map((issue) => {
       const relatedCards = cards.filter((card) => card.issueId === issue.id);
       const relatedTargets = issueTargets(store, issue.id);
@@ -1452,6 +1452,14 @@ function issueCards(store: Store, cards = homeCards(store)) {
       const stateRank = (card: { lifecycleState: string }) => (card.lifecycleState === "ARCHIVED" ? 1 : 0);
       return stateRank(a) - stateRank(b) || new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
     });
+}
+
+function isPublicSourceBundleIssue(issue: Issue): boolean {
+  const text = `${issue.id} ${issue.normalizedTopicKey} ${issue.title} ${issue.topicTags.join(" ")}`;
+  return issue.id.startsWith("issue_public_")
+    || issue.normalizedTopicKey === "real-public-assembly-sources"
+    || /public-assembly-(schedules|statistics)/.test(text)
+    || /신고[·\s-]*(공개|개최|통계)|공개\s*(일정|자료)|집회\s*신고\s*통계/.test(text);
 }
 
 function issueTargets(store: Store, issueId: string): Array<{ targetType: TargetType; target: TargetRecord }> {

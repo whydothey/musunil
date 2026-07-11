@@ -7386,9 +7386,9 @@
       async function load() {
         try {
 	          const [home, map, coverage, laws] = await Promise.all([api("/home"), api("/map"), api("/public-sources/coverage").catch(() => null), api("/laws").catch(() => null)]);
-	          loadedCards = normalizeCards(home.cards?.length ? home.cards : fallback.cards);
-	          loadedIssueCards = normalizeIssueCards(home.issueCards?.length ? home.issueCards : fallback.issueCards);
-	          loadedLaws = normalizeLaws(laws?.laws?.length ? laws.laws : fallback.laws);
+	          loadedCards = normalizeCards(Array.isArray(home.cards) ? home.cards : fallback.cards);
+	          loadedIssueCards = normalizeIssueCards(Array.isArray(home.issueCards) ? home.issueCards : fallback.issueCards);
+	          loadedLaws = normalizeLaws(Array.isArray(laws?.laws) ? laws.laws : fallback.laws);
 	          latestMapData = normalizeMapData(map, loadedCards, loadedIssueCards);
 	          selectedIssue = loadedIssueCards.find((issue) => issue.id === selectedIssue?.id) || loadedIssueCards[0];
 	          selectedLaw = loadedLaws.find((law) => law.id === selectedLaw?.id) || loadedLaws[0];

@@ -50,6 +50,7 @@ const productionHome = await createApp(productionSeed).handle({ method: "GET", p
 assert.equal(JSON.stringify(productionHome.body).includes("대구 0709(목) 오늘의 집회 공개 일정"), true);
 assert.equal(JSON.stringify(productionHome.body).includes("부산 도심 행진 가능성"), false);
 assert.equal(JSON.stringify(productionHome.body).includes("issueCards"), true);
+assert.equal((productionHome.body as { issueCards: unknown[] }).issueCards.length, 0);
 const productionLaws = await createApp(productionSeed).handle({ method: "GET", path: "/laws" });
 assert.equal((productionLaws.body as { laws: unknown[] }).laws.length, 0);
 assert.equal((await createApp(productionSeed).handle({ method: "GET", path: "/laws/law_info_network_amendment" })).status, 404);
