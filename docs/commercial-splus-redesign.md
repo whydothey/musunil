@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 11:45 KST
+Last updated: 2026-07-11 12:24 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -12,7 +12,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 지도, 영상, 법안은 별도 대시보드가 아니라 선택 이슈의 근거와 맥락으로 들어간다.
 - 첫 화면은 KPI, 내부 모델, 숫자판보다 `무슨 일`, 공개 위치 문장, 근거 문장, 불확실성 문장, `지도에서 확인` 주행동과 `근거/인증영상/반론` 보조 액션을 먼저 보여준다.
 - `아직 확인할 점`은 홈 카드마다 큰 박스로 반복하지 않고 상세의 개요·근거에서 확인하게 한다.
-- 상세 첫 화면은 `인증 영상`, `지도`, `근거` 빠른 버튼과 3줄 개요를 먼저 보여주고, 전국 현황·주제 묶음·규모·검증 신호는 접힌 세부 정보로 낮춘다.
+- 상세 첫 화면은 `근거`, `영상`, `지도` 빠른 버튼과 3줄 개요를 먼저 보여주고, 탭도 `개요/근거/영상/흐름/반론`처럼 짧게 유지한다. 전국 현황·주제 묶음·규모·검증 신호는 접힌 세부 정보로 낮춘다.
 - 공개 가능한 `redactedClipUrl`과 `redactedPosterUrl`이 모두 있는 이슈는 홈 카드 안에 16:9 `비식별 공개본` 프리뷰를 붙인다. 공개본이 없으면 장식 이미지나 가짜 썸네일을 만들지 않는다.
 - 홈 첫 화면에는 지도 화면과 현장촬영 도구를 기본 노출하지 않는다. 지도는 `지도` 탭/카드 주행동/상세 빠른 버튼에서, 공개 열람은 `인증영상` 탭에서, 제보 작성은 `현장촬영` 탭에서 독립 화면처럼 연다.
 - 제보는 일반 업로드가 아니라 `현장 영상 제보`로 제한한다. 첫 화면은 후보/조건 목록보다 `근처 현장 찾기` 단일 주행동을 먼저 보여준다.
@@ -41,6 +41,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 11:34 패치로 `apps/web/build-info.js/json` placeholder를 repo에 추적시킨다. Render Static이 untracked build output을 publish하지 않는 경우에도 파일 경로가 존재하고, build command가 실행되면 실제 Git SHA로 덮어쓴다. `launch-check`는 build-info 파일이 Git 추적 대상이 아니면 실패한다.
 - 11:38 라이브 점검에서 build-info 파일은 200으로 바뀌었지만 값이 `generated-at-build` placeholder 그대로였다. 즉 Render가 build command 산출물을 publish하지 않는 상태다. `check-web-deploy`와 `service-watch`가 placeholder build-info를 배포 실패로 처리하도록 강화했다.
 - 11:45 패치로 `static-manifest.json`을 추가했다. manifest는 `index.html`, `config.js`, 공개 poster/clip의 SHA-256과 byte size를 담고, `check-web-deploy`가 live 파일 해시를 비교한다. Render build output이 placeholder인 상태에서도 실제 UI 정적 파일이 현재 산출물인지 별도 증거를 확보한다.
+- 12:24 패치로 상세 시트의 긴 `인증 영상/시간 흐름/반론·정정` 탭 라벨을 화면에서는 `영상/흐름/반론`으로 줄이고 접근성 라벨에 전체 의미를 남겼다. 모바일 상세 시트는 내부 스크롤과 탭 최소 높이를 고정해 390px에서 하단 내비 겹침 없이 `근거/영상/지도`, `개요/근거/영상/흐름/반론`이 보인다. 사용자 수락 전 S+는 아니다.
 
 ## Agent Feedback Summary
 
@@ -144,6 +145,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 44 | build-info tracked placeholder | 1차 완료 | `apps/web/build-info.js/json` placeholder를 repo에 추적. build command가 실제 SHA로 덮어쓰며, tracked file이 아니면 `launch-check` 실패 |
 | 45 | placeholder 배포 실패 처리 | 1차 완료 | live build-info 200이더라도 `generated-at-build` 또는 `source: placeholder`면 `check-web-deploy`와 `service-watch` 실패. Render build output 미반영을 정상 배포로 인정하지 않음 |
 | 46 | static manifest content hash | 1차 완료 | `apps/web/static-manifest.json` tracked. `build:web-static`과 `check:web-smoke`가 manifest를 생성/검증하고, `check:web-deploy`가 live HTML/config/media 해시를 비교 |
+| 47 | 상세 시트 짧은 라벨·모바일 시트 보정 | 1차 완료 | 390px 상세 `actionLabels=근거/영상/지도`, `tabLabels=개요/근거/영상/흐름/반론`, `tabs.height=50`, `navOverlap=false`, `scrollWidth=390`. 1440px도 같은 라벨과 `navOverlap=false` |
 
 ## Current Evidence
 
@@ -301,6 +303,9 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 12:22 mobile reels pending full | `docs/commercial-splus-surface39-reels-mobile-390-2026-07-11.png` |
 | 12:22 desktop reels pending full | `docs/commercial-splus-surface39-reels-desktop-1440-2026-07-11.png` |
 | 12:22 reels metrics | poster 없는 LIVE Claim은 legacy `reels-review-panel` 대신 `reel-card reel-full reel-pending`으로 표시된다. 모바일 390px 카드 526px, review slot visible, 액션 `근거/위치/이슈`, `navOverlap=false`, `scrollWidth=390`. 데스크톱 1440px 카드 700px, 액션 bottom 892px로 첫 viewport 안에 표시. 실제 공개 영상 품질과 사용자 수락 전 S+는 아니다. |
+| 12:24 mobile detail short labels | `docs/commercial-splus-surface40-detail-mobile-390-2026-07-11.png` |
+| 12:24 desktop detail short labels | `docs/commercial-splus-surface40-detail-desktop-1440-2026-07-11.png` |
+| 12:24 detail metrics | 모바일 390px 상세 `actionLabels=근거/영상/지도`, 탭 `개요/근거/영상/흐름/반론`, `tabs.height=50`, `navOverlap=false`, `scrollWidth=390`. 데스크톱 1440px도 같은 짧은 라벨, `navOverlap=false`, `scrollWidth=1440`. 사용자 수락 전 S+는 아니다. |
 
 ## Non-Negotiable Gates
 

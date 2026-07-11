@@ -267,9 +267,13 @@ async function checkWeb(port) {
   assert(!index.includes("현장 영상 없음"), "zero-count public video empty copy present");
   assert(index.includes("fieldVerificationRatioText"), "field verification ratio copy helper missing");
   assert(index.includes("반론·정정"), "rebuttal/correction label missing");
-  assert(index.includes("인증 영상</button>"), "detail verified video tab label missing");
+  assert(index.includes('data-tab="video" aria-label="인증 영상">영상</button>'), "detail verified video short tab label missing");
+  assert(index.includes('data-tab="timeline" aria-label="시간 흐름">흐름</button>'), "detail timeline short tab label missing");
+  assert(index.includes('data-tab="dispute" aria-label="반론·정정">반론</button>'), "detail rebuttal short tab label missing");
+  assert(index.includes('data-detail-jump="video" aria-label="인증 영상 보기"'), "detail video quick action accessible label missing");
+  assert(!index.includes("data-tab=\"video\">인증 영상</button>"), "stale detail verified video long tab label present");
   assert(!index.includes(">현장 영상</button>"), "ambiguous detail video tab label present");
-  assert(index.includes("시간 흐름</button>"), "detail timeline tab label missing");
+  assert(!index.includes("data-tab=\"timeline\">시간 흐름</button>"), "stale detail timeline long tab label present");
   assert(index.includes("제보 기준"), "report criteria disclosure missing");
   assert(index.includes("검토로 제출"), "report submit review copy missing");
   assert(index.includes('id="submit-capture-action"'), "capture preview submit action missing");

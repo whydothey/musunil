@@ -873,6 +873,7 @@
       .detail-panel > .tabs {
         flex-wrap: nowrap;
         gap: 6px;
+        min-height: 50px;
         overflow-x: auto;
         padding: 8px 14px 7px;
         border: 0;
@@ -4600,10 +4601,15 @@
           display: grid;
           grid-template-columns: 1fr;
           max-height: calc(100vh - 112px);
-          overflow: auto;
+          overflow: hidden;
           border-radius: 12px;
           box-shadow: 0 24px 80px rgb(0 0 0 / 28%);
           animation: sheet-in var(--motion) var(--ease-out) both;
+        }
+
+        .layout.mobile-detail-open #record-section {
+          max-height: calc(100vh - 112px);
+          overflow: auto;
         }
 
         .layout.mobile-detail-open #close-detail {
@@ -5381,18 +5387,18 @@
                 <div class="plain-summary-row"><b id="stat-proof-label">근거</b><span id="stat-proof">0</span></div>
               </div>
               <div class="detail-action-row" aria-label="상세 빠른 보기">
-                <button type="button" data-detail-jump="evidence"><svg class="button-symbol" aria-hidden="true"><use href="#icon-stats"></use></svg><span>근거</span></button>
-                <button type="button" data-detail-jump="video"><svg class="button-symbol" aria-hidden="true"><use href="#icon-video"></use></svg><span>인증 영상</span></button>
-                <button type="button" data-detail-jump="map"><svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg><span>지도</span></button>
+                <button type="button" data-detail-jump="evidence" aria-label="근거 보기"><svg class="button-symbol" aria-hidden="true"><use href="#icon-stats"></use></svg><span>근거</span></button>
+                <button type="button" data-detail-jump="video" aria-label="인증 영상 보기"><svg class="button-symbol" aria-hidden="true"><use href="#icon-video"></use></svg><span>영상</span></button>
+                <button type="button" data-detail-jump="map" aria-label="지도 보기"><svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg><span>지도</span></button>
               </div>
             </div>
 
             <div class="tabs" role="tablist" aria-label="상세 보기">
               <button role="tab" aria-selected="true" data-tab="summary">개요</button>
               <button role="tab" aria-selected="false" data-tab="evidence">근거</button>
-              <button role="tab" aria-selected="false" data-tab="video">인증 영상</button>
-              <button role="tab" aria-selected="false" data-tab="timeline">시간 흐름</button>
-              <button role="tab" aria-selected="false" data-tab="dispute">반론·정정</button>
+              <button role="tab" aria-selected="false" data-tab="video" aria-label="인증 영상">영상</button>
+              <button role="tab" aria-selected="false" data-tab="timeline" aria-label="시간 흐름">흐름</button>
+              <button role="tab" aria-selected="false" data-tab="dispute" aria-label="반론·정정">반론</button>
             </div>
 
             <div id="summary-tab" class="claim-list"></div>
