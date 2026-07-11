@@ -2,7 +2,7 @@
 
 외부 연결이 필요 없는 범위에서 완료한 항목이다.
 
-Last updated: 2026-07-12 02:55 KST
+Last updated: 2026-07-12 07:10 KST
 
 ## 완료
 
@@ -157,8 +157,8 @@ Last updated: 2026-07-12 02:55 KST
   - `pnpm launch:ready -- <yaml>`는 입력 검증, config encode check, Render runtime sample gate, 운영 metadata 진단, external smoke, release check를 단일 순서로 실행
   - 자료 제보, 현장 정정, 권리침해 신고, 반론은 본인확인 후에도 `202 queued_for_review`/`held_private`로만 접수되고 공개 detail과 집계는 Admin review 전까지 변하지 않음
   - `GET /transparency/logs`는 공개용 DTO와 sanitized public reason만 반환하며 raw audit reason, private media, identity, GPS field를 노출하지 않음
-  - `pnpm launch:post-deploy-smoke`는 배포 후 실제 Web `config.js`와 API URL 정합성, API `/health`, `/ready`, public payload safety, `/transparency/logs`, coverage, laws, admin auth boundary를 비파괴로 확인
-  - `pnpm service:watch -- --once`는 live static hash, build metadata fallback, Web header, API DNS preflight, public payload safety, `/transparency/logs`를 확인하고 차단 항목별 owner/action/verify/reference를 문서화
+  - `pnpm launch:post-deploy-smoke`는 배포 후 실제 Web `config.js`와 API URL 정합성, API `/health`, `/ready`, public payload safety, `/me`, `/transparency/logs`, `/transparency/monthly`, coverage, laws, admin auth boundary를 비파괴로 확인
+  - `pnpm service:watch -- --once`는 live static hash, build metadata fallback, Web header, API DNS preflight, public payload safety, `/me`, `/transparency/logs`, `/transparency/monthly`를 확인하고 차단 항목별 owner/action/verify/reference를 문서화
   - `pnpm launch:final-gate`는 배포 후 post-deploy smoke와 live blocker refresh-strict를 한 순서로 실행하고, 앞 단계가 실패해도 service watch blocker 갱신을 시도
   - `docs/splus-master-tracker.md`
   - `docs/national-issue-splus-tracker.md`

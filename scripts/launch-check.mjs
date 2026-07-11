@@ -218,6 +218,8 @@ if (
   !/"redis"/.test(postDeploySmoke) ||
   !/\/public-sources\/coverage/.test(publicApiRoutes) ||
   !/\/transparency\/logs/.test(publicApiRoutes) ||
+  !/\/transparency\/monthly/.test(publicApiRoutes) ||
+  !/\/me/.test(publicApiRoutes) ||
   !/\/media\/redacted\/preview-occ-live-1-poster\.png/.test(postDeploySmoke) ||
   !/\/media\/redacted\/preview-occ-live-1\.webm/.test(postDeploySmoke) ||
   !/video\/webm/.test(postDeploySmoke) ||
