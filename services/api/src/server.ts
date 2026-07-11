@@ -1,10 +1,17 @@
 import { createServer } from "node:http";
 import { Socket } from "node:net";
+import { readFile } from "node:fs/promises";
+import { dirname, extname, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import { ApiError, createApp, createSeedStore, stripPreviewData } from "./app.ts";
 import { enforcePublicWriteRateLimit, readJsonBody } from "./http-boundary.ts";
 import { createLiveMediaStorage } from "./live-media-storage.ts";
 import { loadPostgresStore, pingPostgres, savePostgresStore } from "./postgres-store.ts";
 import { loadUserInputs, validateLaunchConfig } from "../../../packages/config/src/index.ts";
+
+const apiDir = dirname(fileURLToPath(import.meta.url));
+const publicRedactedMediaRoot = resolve(apiDir, "../../../apps/web/media/redacted");
+const publicRedactedMediaPrefix = "/media/redacted/";
 
 const runtime = loadRuntime();
 const seedStore = createSeedStore({ includeMockData: runtime.includeMockData });
@@ -32,6 +39,7 @@ const server = createServer(async (req, res) => {
       send(req, res, 204, undefined);
       return;
     }
+    if (await sendPublicRedactedMedia(req, res)) return;
     enforcePublicWriteRateLimit(req);
     const body = await readJsonBody(req);
     const response = await app.handle({
@@ -79,6 +87,86 @@ function persistStore(): Promise<void> {
   if (!databaseUrl) return Promise.resolve();
   persistQueue = persistQueue.catch(() => undefined).then(() => savePostgresStore(databaseUrl, app.store, runtime.encryptionKey));
   return persistQueue;
+}
+
+async function sendPublicRedactedMedia(
+  req: { method?: string; url?: string; headers?: Record<string, string | string[] | undefined> },
+  res: { writeHead: Function; end: Function }
+): Promise<boolean> {
+  const url = new URL(req.url ?? "/", "http://localhost");
+  if (!url.pathname.startsWith(publicRedactedMediaPrefix)) return false;
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    send(req, res, 404, { error: "not_found" });
+    return true;
+  }
+
+  const filePath = publicRedactedMediaPath(url.pathname);
+  if (!filePath) {
+    send(req, res, 403, { error: "forbidden" });
+    return true;
+  }
+
+  try {
+    const body = await readFile(filePath);
+    const headers = publicMediaHeaders(req, publicMediaContentType(filePath));
+    res.writeHead(200, headers);
+    res.end(req.method === "HEAD" ? undefined : body);
+  } catch {
+    send(req, res, 404, { error: "not_found" });
+  }
+  return true;
+}
+
+function publicRedactedMediaPath(pathname: string): string | undefined {
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    return undefined;
+  }
+  if (!decoded.startsWith(publicRedactedMediaPrefix)) return undefined;
+  if (decoded.includes("\\") || decoded.includes("//") || decoded.toLowerCase().includes("/private/")) return undefined;
+
+  const relativePath = decoded.slice(publicRedactedMediaPrefix.length);
+  const segments = relativePath.split("/");
+  if (segments.some((segment) => segment.length === 0 || segment === "." || segment === "..")) return undefined;
+
+  const allowedExtensions = new Set([".jpeg", ".jpg", ".mp4", ".png", ".webm", ".webp"]);
+  if (!allowedExtensions.has(extname(relativePath).toLowerCase())) return undefined;
+
+  const filePath = resolve(publicRedactedMediaRoot, relativePath);
+  return filePath.startsWith(`${publicRedactedMediaRoot}${sep}`) ? filePath : undefined;
+}
+
+function publicMediaContentType(path: string): string {
+  return (
+    {
+      ".jpeg": "image/jpeg",
+      ".jpg": "image/jpeg",
+      ".mp4": "video/mp4",
+      ".png": "image/png",
+      ".webm": "video/webm",
+      ".webp": "image/webp"
+    }[extname(path).toLowerCase()] ?? "application/octet-stream"
+  );
+}
+
+function publicMediaHeaders(req: { headers?: Record<string, string | string[] | undefined> }, type: string): Record<string, string> {
+  const origin = typeof req.headers?.origin === "string" ? req.headers.origin : undefined;
+  const headers: Record<string, string> = {
+    "cache-control": "no-store",
+    "content-type": type,
+    "referrer-policy": "no-referrer",
+    "vary": "Origin",
+    "x-content-type-options": "nosniff"
+  };
+  if (!origin) {
+    headers["access-control-allow-origin"] = runtime.allowedOrigins[0] ?? "*";
+  } else if (runtime.allowedOrigins.includes(origin) || (runtime.allowLocalDevOrigins && isLocalhostOrigin(origin))) {
+    headers["access-control-allow-origin"] = origin;
+    headers["access-control-allow-credentials"] = "true";
+  }
+  return headers;
 }
 
 function loadRuntime() {

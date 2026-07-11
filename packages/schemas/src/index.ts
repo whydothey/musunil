@@ -63,6 +63,7 @@ export type Evidence = {
   capturedAt?: Date;
   storageKey?: string;
   publicStorageKey?: string;
+  publicPosterKey?: string;
   redactionStatus?: "not_required" | "pending" | "completed" | "held_private";
   redactionCheckedAt?: Date;
   redactionProofHash?: string;

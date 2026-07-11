@@ -61,6 +61,17 @@ await check("security_headers", async () => {
   assert(response.headers["cache-control"] === "no-store", "cache-control header missing");
 });
 
+await check("public_redacted_media_static", async () => {
+  const poster = await fetch(`${runtime.apiBaseUrl}/media/redacted/preview-occ-live-1-poster.png`);
+  assert(poster.status === 200, `public redacted poster returned ${poster.status}`);
+  assert(poster.headers.get("content-type")?.startsWith("image/png"), "public redacted poster content-type mismatch");
+  assert(poster.headers.get("x-content-type-options") === "nosniff", "public redacted poster nosniff header missing");
+  assert((await poster.arrayBuffer()).byteLength > 10_000, "public redacted poster payload too small");
+
+  const traversal = await fetch(`${runtime.apiBaseUrl}/media/redacted/%2e%2e/private/live.png`);
+  assert([403, 404].includes(traversal.status), `encoded traversal should be blocked, got ${traversal.status}`);
+});
+
 await check("cors_allowed_origin", async () => {
   for (const origin of ["http://localhost:4173", "http://localhost:4174"]) {
     const response = await rawRequest("GET", "/health", undefined, { origin });
@@ -169,21 +180,36 @@ await check("internal_redaction_worker", async () => {
     { "x-musunil-internal-key": runtime.internalApiKey }
   );
   assert(invalid.status === 400, `private redaction URL should return 400, got ${invalid.status}`);
+  const invalidPoster = await rawRequest(
+    "PATCH",
+    "/internal/evidence/ev_occ_live_1/redaction",
+    JSON.stringify({ redactedClipUrl: "/media/redacted/runtime-live.webm", redactedPosterUrl: "/private/live/runtime-live-poster.webp", redactionProofToken: "runtime-redaction-report" }),
+    { "x-musunil-internal-key": runtime.internalApiKey }
+  );
+  assert(invalidPoster.status === 400, `private redaction poster URL should return 400, got ${invalidPoster.status}`);
   const proofless = await rawRequest(
     "PATCH",
     "/internal/evidence/ev_occ_live_1/redaction",
-    JSON.stringify({ redactedClipUrl: "/media/redacted/runtime-live.webm" }),
+    JSON.stringify({ redactedClipUrl: "/media/redacted/runtime-live.webm", redactedPosterUrl: "/media/redacted/runtime-live-poster.webp" }),
     { "x-musunil-internal-key": runtime.internalApiKey }
   );
   assert(proofless.status === 400, `proofless redaction patch should return 400, got ${proofless.status}`);
+  const missingPoster = await rawRequest(
+    "PATCH",
+    "/internal/evidence/ev_occ_live_1/redaction",
+    JSON.stringify({ redactedClipUrl: "/media/redacted/runtime-live.webm", redactionProofToken: "runtime-redaction-report" }),
+    { "x-musunil-internal-key": runtime.internalApiKey }
+  );
+  assert(missingPoster.status === 400, `posterless redaction patch should return 400, got ${missingPoster.status}`);
   const updated = await request(
     "PATCH",
     "/internal/evidence/ev_occ_live_1/redaction",
-    { redactedClipUrl: "/media/redacted/runtime-live.webm", redactionProofToken: "runtime-redaction-report" },
+    { redactedClipUrl: "/media/redacted/runtime-live.webm", redactedPosterUrl: "/media/redacted/runtime-live-poster.webp", redactionProofToken: "runtime-redaction-report" },
     true
   );
   assert(updated.status === "redaction_recorded", "redaction patch status mismatch");
   assert(updated.evidence?.redactionStatus === "completed", "redaction patch did not mark completed");
+  assert(updated.evidence?.publicPosterUrl === "/media/redacted/runtime-live-poster.webp", "redaction poster URL missing");
   assert(String(updated.evidence?.redactionProofHash || "").startsWith("sha256-"), "redaction proof hash missing");
   assert(JSON.stringify(updated).includes("runtime-redaction-report") === false, "redaction response leaked raw proof token");
   assert(JSON.stringify(updated).includes("storageKey") === false, "redaction response leaked storage key");
@@ -207,6 +233,7 @@ await check("public_live_claim_safety", async () => {
   assert(Array.isArray(body.liveClaims), "live claims response is missing liveClaims array");
   assert(body.liveClaims.length > 0, "seed live claims response is empty");
   assert(typeof body.liveClaims[0].publicRadiusM === "number", "live claim public radius is missing");
+  assert(typeof body.liveClaims[0].media?.redactedPosterUrl === "string", "live claim redacted poster URL is missing");
   assertPublicPayloadSafe(body);
 });
 
@@ -370,15 +397,33 @@ function assertPublicPayloadSafe(body) {
     '"targetRefs"',
     '"storageKey"',
     '"publicStorageKey"',
+    '"publicPosterKey"',
     '"privateMediaBase64"',
     '"mediaBase64"',
     '"hash"',
     '"geoCell"',
+    '"privateLng"',
+    '"privateLat"',
+    '"foregroundGps"',
+    '"captureMode"',
     '"gpsAccuracyM"',
     '"distanceToTargetM"',
+    '"deviceAttestationBucket"',
     '"deviceIntegrityProvider"',
     '"deviceIntegrityProofHash"',
-    '"deviceIntegrityCheckedAt"'
+    '"deviceIntegrityCheckedAt"',
+    '"redactionProofHash"',
+    '"redactionCheckedAt"',
+    '"reviewTargetClaimId"',
+    '"userId"',
+    '"tokenHash"',
+    '"ciHash"',
+    '"diHash"',
+    '"subjectHash"',
+    '"identityVerificationId"',
+    '"phone"',
+    '"name"',
+    '"birthDate"'
   ]) {
     assert(!text.includes(field), `public payload leaked ${field}`);
   }

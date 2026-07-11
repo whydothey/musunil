@@ -26,6 +26,12 @@ async function handler(req, res) {
   try {
     const url = new URL(req.url ?? "/", "http://localhost");
     const pathname = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
+    if (pathname === "/config.js" && hasRuntimeWebConfigOverride()) {
+      const body = `window.MUSUNIL_WEB_CONFIG = ${JSON.stringify(runtimeWebConfig(), null, 2)};\n`;
+      res.writeHead(200, responseHeaders("text/javascript; charset=utf-8"));
+      res.end(body);
+      return;
+    }
     const filePath = resolve(root, `.${pathname}`);
     if (!filePath.startsWith(`${root}${sep}`)) {
       res.writeHead(403, responseHeaders("application/json; charset=utf-8"));
@@ -41,11 +47,36 @@ async function handler(req, res) {
   }
 }
 
+function hasRuntimeWebConfigOverride() {
+  return Boolean(process.env.MUSUNIL_WEB_API_BASE_URL || process.env.MUSUNIL_WEB_MAP_STYLE_URL);
+}
+
+function runtimeWebConfig() {
+  return {
+    apiBaseUrl: publicUrl(process.env.MUSUNIL_WEB_API_BASE_URL, { allowLocal: true }) ?? "https://api.musunil.com",
+    mapStyleUrl: publicUrl(process.env.MUSUNIL_WEB_MAP_STYLE_URL, { allowLocal: true }) ?? "https://tiles.openfreemap.org/styles/positron"
+  };
+}
+
+function publicUrl(value, { allowLocal = false } = {}) {
+  if (typeof value !== "string" || !value.trim()) return undefined;
+  const trimmed = value.trim();
+  try {
+    const parsed = new URL(trimmed);
+    const localHost = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(parsed.hostname);
+    if (parsed.protocol === "https:") return parsed.toString().replace(/\/$/, "");
+    if (allowLocal && parsed.protocol === "http:" && localHost) return parsed.toString().replace(/\/$/, "");
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function responseHeaders(type) {
   return {
     "cache-control": "no-store",
     "content-security-policy":
-      "default-src 'self'; connect-src 'self' http://localhost:* http://127.0.0.1:* https:; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.portone.io; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob:",
+      "default-src 'self'; connect-src 'self' http://localhost:* http://127.0.0.1:* https:; img-src 'self' data: blob: http://localhost:* http://127.0.0.1:* https:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.portone.io; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob:",
     "content-type": type,
     "permissions-policy": "camera=(self), microphone=(), geolocation=(self)",
     "referrer-policy": "no-referrer",

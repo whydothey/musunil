@@ -29,6 +29,7 @@
 - `/health` 200.
 - `/ready` 200, `config_source`, `postgres`, `redis` check가 모두 ok.
 - 배포 후 `MUSUNIL_API_BASE_URL=https://... pnpm launch:post-deploy-smoke -- --require-laws` 통과. 이 값은 localhost나 HTTP가 아닌 실제 배포 HTTPS API URL이어야 하며, 요청 timeout과 redirect 수동 처리, API 보안 헤더, CORS 경계, `/home`, `/issues`, 첫 이슈 상세, 첫 이슈 live-claims, `/area-clusters`, `/map`, `/public-sources/coverage`, `/laws`, 첫 법안 상세 공개 응답 안전성을 함께 확인한다.
+- 배포 후 `pnpm launch:post-deploy-smoke`는 API `/media/redacted/preview-occ-live-1-poster.png`가 200 `image/png`로 열리고 encoded traversal가 차단되는지 확인한다.
 - Render API health check path가 `/ready`다.
 - Render API build에서 `pnpm check`, `pnpm build:web-config`, `pnpm launch:check`가 실행된다.
 - Render API pre-deploy에서 `pnpm db:migrate`가 실행된다.
@@ -57,6 +58,7 @@
 - Postgres snapshot payload는 `security.encryption_key` 또는 Render `MUSUNIL_ENCRYPTION_KEY`로 AES-GCM 암호화되어 저장된다.
 - 공개 응답에 사용자 원문, 정밀 위치, 원본 미디어 key가 나오지 않는다.
 - Runtime smoke는 공개 live-claims 응답의 `publicRadiusM`과 private key/raw GPS/media field 부재를 검증한다.
+- Runtime smoke는 공개 redacted poster가 API `/media/redacted/*`에서 열리고 private/traversal 경로가 차단되는지 검증한다.
 - 공개 응답에 내부 `claimIds/evidenceIds/*ClaimIds/targetRefs` 참조 배열이 나오지 않는다.
 - 규모 추정 공개 응답은 `musunil_ai_estimate` Claim 메타, evidence strength, risk level을 함께 노출한다.
 - 규모 추정의 독립 시점 수는 지역 수가 아니라 공개 가능한 현장 영상 근거 기준으로만 증가한다.
@@ -80,6 +82,7 @@
 - `pnpm service:watch -- --once`가 Web SHA, API readiness, 공개 payload 안전성, 법안/coverage, 인증 write boundary를 검증하고 `docs/splus-service-watch.md`를 갱신한다.
 - production Web fallback에도 프리뷰/mock 카드와 프리뷰 전용 지도 핀이 보이지 않는다.
 - production Web은 `config.js`의 `apiBaseUrl`을 기준으로 하며, `?api=`와 localStorage API override는 localhost에서만 허용된다.
+- 로컬 dev 검증은 `MUSUNIL_WEB_API_BASE_URL=http://localhost:<api-port> pnpm dev:web`가 stale `apps/web/config.js` 값보다 우선해야 하며, `pnpm check:web-smoke`가 이 runtime override를 검증한다.
 - production Web은 `build-info.json`의 `commitSha`가 배포 대상 Git SHA와 같아야 한다.
 - Render Static Site는 repo root에서 `pnpm build:web-static`을 실행하고 `apps/web`만 publish한다.
 - Render Static Site와 Cloudflare 경로는 `/`, `/config.js`, `/build-info.json`에 `Cache-Control: no-store`를 보내야 한다.
@@ -101,10 +104,11 @@
 - `held_private` Claim은 공개 홈/상세/우선순위/지도 집계에 반영되지 않고 admin review queue에만 보인다.
 - Admin review에서 `--publish`한 Claim만 공개 집계에 반영된다.
 - LIVE Claim은 redaction worker 완료 전 `--publish`가 실패하고, Admin review body의 `redactedClipUrl`은 `redaction_worker_required`로 실패한다.
-- Redaction worker는 공개본 URL과 함께 `redactionProofToken` 또는 `redactionProofHash`를 남겨야 하며, proof 없는 완료 처리는 `redaction_proof_required`로 실패한다.
+- Redaction worker는 공개본 영상 URL, 공개본 poster URL, `redactionProofToken` 또는 `redactionProofHash`를 함께 남겨야 하며, proof 없는 완료 처리는 `redaction_proof_required`, poster 없는 완료 처리는 `redactedPosterUrl_invalid`로 실패한다.
 - LIVE Claim 공개 응답은 정밀 GPS 값 대신 공개 반경 `publicRadiusM`만 노출한다.
 - 비식별 공개본 URL 확정 기록은 내부 인증된 `/internal/evidence/:id/redaction`만 수행한다.
-- LIVE Claim 공개본 URL은 HTTPS CDN URL 또는 `/media/redacted/` 경로만 허용하고, `http`와 private 경로는 실패한다.
+- LIVE Claim 공개본 영상/poster URL은 `/media/redacted/` 또는 `*.musunil.com` HTTPS 경로만 허용하고, `http`, private 경로, 외부 임의 host, encoded traversal, 영상/poster 확장자 불일치는 실패한다.
+- API 서버가 직접 서빙하는 공개 미디어는 `/media/redacted/*`로 제한하며, repo의 공개 redacted asset root 밖으로 벗어나면 403 또는 404로 실패한다.
 - production LIVE 업로드는 S3-compatible storage adapter 또는 `media_encryption_key`가 없으면 `live_storage_unavailable`로 실패하고, 성공 시 원본 base64를 메모리에 보관하지 않으며 PUT 바이트를 AES-GCM으로 암호화한다.
 - privacy purge는 외부 storage 원본 media DELETE가 성공한 뒤에만 DB `storageKey`와 hash를 지운다. DELETE 실패 시 `privacy_purge_storage_unavailable`로 실패한다.
 - production runtime이 not-ready이면 POST/PATCH write request는 `runtime_not_ready` 503으로 실패한다.

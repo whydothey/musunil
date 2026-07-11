@@ -89,6 +89,9 @@ if (!/x-musunil-user-id/.test(apiServer)) failures.push("API CORS user scope hea
 if (!/x-musunil-user-token/.test(apiServer)) failures.push("API CORS user token header is missing");
 if (!/userTokenSecret/.test(apiServer)) failures.push("API user token secret runtime wiring is missing");
 if (!/includeMockData/.test(apiServer) || !/stripPreviewData/.test(apiServer)) failures.push("production mock-data strip wiring is missing");
+if (!/sendPublicRedactedMedia/.test(apiServer) || !/publicRedactedMediaRoot/.test(apiServer) || !/publicRedactedMediaPrefix/.test(apiServer)) {
+  failures.push("API public redacted media route is missing");
+}
 if (!/autoPublishLiveReports/.test(apiServer) || !/moderation\.auto_publish_low_risk_live_reports/.test(apiServer)) {
   failures.push("LIVE report moderation auto-publish wiring is missing");
 }
@@ -125,6 +128,7 @@ if (
   !/"postgres"/.test(postDeploySmoke) ||
   !/"redis"/.test(postDeploySmoke) ||
   !/\/public-sources\/coverage/.test(postDeploySmoke) ||
+  !/\/media\/redacted\/preview-occ-live-1-poster\.png/.test(postDeploySmoke) ||
   !/--require-laws/.test(postDeploySmoke) ||
   !/admin\/review-queue/.test(postDeploySmoke) ||
   !/forbidden_engagement_surface_absent/.test(postDeploySmoke) ||
@@ -190,15 +194,18 @@ if (
   !/redaction_worker_required/.test(apiApp) ||
   !/redaction_proof_required/.test(apiApp) ||
   !/redactionProofHash/.test(apiApp) ||
+  !/publicPosterKey/.test(apiApp) ||
+  !/redactedPosterUrl_invalid/.test(apiApp) ||
   !/hasCompletedRedaction/.test(apiApp) ||
   !adminClaimReview ||
   /publicStorageKey\s*=/.test(adminClaimReview[0]) ||
+  /publicPosterKey\s*=/.test(adminClaimReview[0]) ||
   /redactionStatus\s*=\s*"completed"/.test(adminClaimReview[0])
 ) {
   failures.push("redacted media URLs must only be recorded by the internal redaction worker");
 }
 const adminCliClaim = adminReview.match(/command === "claim"[\s\S]*?} else if \(command ===/);
-if (!/"admin:redaction"/.test(packageJson) || !/command === "redaction"/.test(adminReview) || /redactedClipUrl/.test(adminCliClaim?.[0] ?? "")) {
+if (!/"admin:redaction"/.test(packageJson) || !/command === "redaction"/.test(adminReview) || !/poster-url/.test(adminReview) || /redactedClipUrl/.test(adminCliClaim?.[0] ?? "")) {
   failures.push("admin CLI redaction must use the worker-only route, not admin claim review");
 }
 if (!/productionRuntime/.test(apiServer) || !/includeMockData:\s*!productionRuntime/.test(apiServer) || !/autoPublishLiveReports:\s*false/.test(apiServer)) {
@@ -280,6 +287,9 @@ if (/const API = "http:\/\/localhost:4000"/.test(web)) failures.push("web API ba
 if (!/function safePublicApiBase/.test(web) || !/https:\/\/api\.musunil\.com/.test(web)) failures.push("web must ignore stale localhost config on production domains");
 if (!/isLocalPage/.test(web) || !/storedApi = isLocalPage/.test(web) || !/apiParam = isLocalPage/.test(web)) {
   failures.push("web API override must be localhost-only");
+}
+if (!/MUSUNIL_WEB_API_BASE_URL/.test(webServer) || !/allowLocal:\s*true/.test(webServer) || !/pathname === "\/config\.js"/.test(webServer)) {
+  failures.push("serve-web must support safe runtime web config override for local smoke");
 }
 if (!/isPreviewApiBase/.test(web) || !/fallback\.cards = fallback\.cards\.filter\(\(card\) => !isPreviewCard/.test(web) || !/isPreviewIssue/.test(web)) {
   failures.push("web production fallback must hide preview/mock data");

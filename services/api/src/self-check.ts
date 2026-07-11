@@ -124,12 +124,18 @@ const liveClaims = await app.handle({ method: "GET", path: "/targets/occurrence/
 assert.equal(liveClaims.status, 200);
 assert.equal((liveClaims.body as { liveClaims: Array<{ claim: { id: string }; redactionStatus: string; media: { redactedClipUrl: string } }> }).liveClaims[0]?.claim.id, "claim_occ_live_1");
 assert.equal((liveClaims.body as { liveClaims: Array<{ redactionStatus: string }> }).liveClaims[0]?.redactionStatus, "completed");
-assert.equal((liveClaims.body as { liveClaims: Array<{ media: { redactedClipUrl: string } }> }).liveClaims[0]?.media.redactedClipUrl, "/media/redacted/preview-occ-live-1.webm");
+assert.equal((liveClaims.body as { liveClaims: Array<{ media: { redactedClipUrl: string; redactedPosterUrl?: string } }> }).liveClaims[0]?.media.redactedClipUrl, "/media/redacted/preview-occ-live-1.webm");
+assert.equal((liveClaims.body as { liveClaims: Array<{ media: { redactedPosterUrl?: string } }> }).liveClaims[0]?.media.redactedPosterUrl, "/media/redacted/preview-occ-live-1-poster.png");
 const missingPublicRedactionStore = createSeedStore();
 const missingPublicRedactionEvidence = missingPublicRedactionStore.evidence.find((item) => item.id === "ev_occ_live_1");
 if (missingPublicRedactionEvidence) missingPublicRedactionEvidence.publicStorageKey = undefined;
 const missingPublicRedactionClaims = await createApp(missingPublicRedactionStore).handle({ method: "GET", path: "/targets/occurrence/occ_1/live-claims" });
 assert.equal((missingPublicRedactionClaims.body as { liveClaims: unknown[] }).liveClaims.length, 0);
+const missingPublicPosterStore = createSeedStore();
+const missingPublicPosterEvidence = missingPublicPosterStore.evidence.find((item) => item.id === "ev_occ_live_1");
+if (missingPublicPosterEvidence) missingPublicPosterEvidence.publicPosterKey = undefined;
+const missingPublicPosterClaims = await createApp(missingPublicPosterStore).handle({ method: "GET", path: "/targets/occurrence/occ_1/live-claims" });
+assert.equal((missingPublicPosterClaims.body as { liveClaims: unknown[] }).liveClaims.length, 0);
 for (const evidenceId of ["ev_occ_live_1", "ev_presence_1", "ev_daejeon_live_mock"]) {
   const evidence = missingPublicRedactionStore.evidence.find((item) => item.id === evidenceId);
   if (evidence) evidence.publicStorageKey = undefined;
@@ -141,6 +147,16 @@ assert.equal(
   (missingPublishableIssue.body as { nationalTimeline: { moments: Array<{ title: string }> } }).nationalTimeline.moments.some((moment) => moment.title.includes("현장 영상 Claim")),
   false
 );
+assert.equal(JSON.stringify(missingPublishableIssue.body).includes("공개 Claim"), false);
+assert.equal(JSON.stringify(missingPublishableIssue.body).includes("현장 Claim"), false);
+const missingPublishablePosterStore = createSeedStore();
+for (const evidenceId of ["ev_occ_live_1", "ev_presence_1", "ev_daejeon_live_mock"]) {
+  const evidence = missingPublishablePosterStore.evidence.find((item) => item.id === evidenceId);
+  if (evidence) evidence.publicPosterKey = undefined;
+}
+const missingPublishablePosterIssue = await createApp(missingPublishablePosterStore).handle({ method: "GET", path: "/issues/issue_1" });
+assert.equal((missingPublishablePosterIssue.body as { nationalSummary: { liveClaimCount: number } }).nationalSummary.liveClaimCount, 0);
+assert.equal((missingPublishablePosterIssue.body as { crowdEstimates: unknown[] }).crowdEstimates.length, 0);
 const integrityStore = createSeedStore();
 const integrityApp = createApp(integrityStore, { internalApiKey: "test_internal_key" });
 const unauthedIntegrityPatch = await integrityApp.handle({
@@ -737,11 +753,59 @@ const invalidWorkerRedaction = await heldApp.handle({
 });
 assert.equal(invalidWorkerRedaction.status, 400);
 assert.equal((invalidWorkerRedaction.body as { error: string }).error, "redactedClipUrl_invalid");
+const invalidTraversalWorkerRedaction = await heldApp.handle({
+  method: "PATCH",
+  path: `/internal/evidence/${heldEvidenceId}/redaction`,
+  headers: internalHeaders,
+  body: { redactedClipUrl: "/media/redacted/%2e%2e/private/held-live.webm", redactedPosterUrl: "/media/redacted/held-live-poster.webp", redactionProofToken: "trusted-redaction-report" }
+});
+assert.equal(invalidTraversalWorkerRedaction.status, 400);
+assert.equal((invalidTraversalWorkerRedaction.body as { error: string }).error, "redactedClipUrl_invalid");
+const invalidExternalWorkerRedaction = await heldApp.handle({
+  method: "PATCH",
+  path: `/internal/evidence/${heldEvidenceId}/redaction`,
+  headers: internalHeaders,
+  body: { redactedClipUrl: "https://evil.example/media/redacted/held-live.webm", redactedPosterUrl: "/media/redacted/held-live-poster.webp", redactionProofToken: "trusted-redaction-report" }
+});
+assert.equal(invalidExternalWorkerRedaction.status, 400);
+assert.equal((invalidExternalWorkerRedaction.body as { error: string }).error, "redactedClipUrl_invalid");
+const invalidClipExtensionWorkerRedaction = await heldApp.handle({
+  method: "PATCH",
+  path: `/internal/evidence/${heldEvidenceId}/redaction`,
+  headers: internalHeaders,
+  body: { redactedClipUrl: "/media/redacted/held-live.webp", redactedPosterUrl: "/media/redacted/held-live-poster.webp", redactionProofToken: "trusted-redaction-report" }
+});
+assert.equal(invalidClipExtensionWorkerRedaction.status, 400);
+assert.equal((invalidClipExtensionWorkerRedaction.body as { error: string }).error, "redactedClipUrl_invalid");
+const invalidPosterWorkerRedaction = await heldApp.handle({
+  method: "PATCH",
+  path: `/internal/evidence/${heldEvidenceId}/redaction`,
+  headers: internalHeaders,
+  body: { redactedClipUrl: "/media/redacted/held-live.webm", redactedPosterUrl: "/private/live/held-live-poster.webp", redactionProofToken: "trusted-redaction-report" }
+});
+assert.equal(invalidPosterWorkerRedaction.status, 400);
+assert.equal((invalidPosterWorkerRedaction.body as { error: string }).error, "redactedPosterUrl_invalid");
+const missingPosterWorkerRedaction = await heldApp.handle({
+  method: "PATCH",
+  path: `/internal/evidence/${heldEvidenceId}/redaction`,
+  headers: internalHeaders,
+  body: { redactedClipUrl: "/media/redacted/held-live.webm", redactionProofToken: "trusted-redaction-report" }
+});
+assert.equal(missingPosterWorkerRedaction.status, 400);
+assert.equal((missingPosterWorkerRedaction.body as { error: string }).error, "redactedPosterUrl_invalid");
+const invalidPosterExtensionWorkerRedaction = await heldApp.handle({
+  method: "PATCH",
+  path: `/internal/evidence/${heldEvidenceId}/redaction`,
+  headers: internalHeaders,
+  body: { redactedClipUrl: "/media/redacted/held-live.webm", redactedPosterUrl: "/media/redacted/held-live-poster.webm", redactionProofToken: "trusted-redaction-report" }
+});
+assert.equal(invalidPosterExtensionWorkerRedaction.status, 400);
+assert.equal((invalidPosterExtensionWorkerRedaction.body as { error: string }).error, "redactedPosterUrl_invalid");
 const prooflessWorkerRedaction = await heldApp.handle({
   method: "PATCH",
   path: `/internal/evidence/${heldEvidenceId}/redaction`,
   headers: internalHeaders,
-  body: { redactedClipUrl: "/media/redacted/held-live.webm" }
+  body: { redactedClipUrl: "/media/redacted/held-live.webm", redactedPosterUrl: "/media/redacted/held-live-poster.webp" }
 });
 assert.equal(prooflessWorkerRedaction.status, 400);
 assert.equal((prooflessWorkerRedaction.body as { error: string }).error, "redaction_proof_required");
@@ -749,10 +813,11 @@ const workerRedaction = await heldApp.handle({
   method: "PATCH",
   path: `/internal/evidence/${heldEvidenceId}/redaction`,
   headers: internalHeaders,
-  body: { redactedClipUrl: "/media/redacted/held-live.webm", redactionProofToken: "trusted-redaction-report" }
+  body: { redactedClipUrl: "/media/redacted/held-live.webm", redactedPosterUrl: "/media/redacted/held-live-poster.webp", redactionProofToken: "trusted-redaction-report" }
 });
 assert.equal(workerRedaction.status, 200);
-assert.equal((workerRedaction.body as { evidence: { redactionStatus: string; publicMediaUrl: string; redactionProofHash: string } }).evidence.redactionStatus, "completed");
+assert.equal((workerRedaction.body as { evidence: { redactionStatus: string; publicMediaUrl: string; publicPosterUrl?: string; redactionProofHash: string } }).evidence.redactionStatus, "completed");
+assert.equal((workerRedaction.body as { evidence: { publicPosterUrl?: string } }).evidence.publicPosterUrl, "/media/redacted/held-live-poster.webp");
 assert((workerRedaction.body as { evidence: { redactionProofHash: string } }).evidence.redactionProofHash.startsWith("sha256-"));
 assert.equal(JSON.stringify(workerRedaction.body).includes("trusted-redaction-report"), false);
 assert.equal(JSON.stringify(workerRedaction.body).includes("storageKey"), false);
@@ -1217,7 +1282,8 @@ assert.equal(issueVerificationSignals.some((signal) => signal.id === "official_a
 assert.equal(issueVerificationSignals.length >= 1, true);
 const issueTimeline = (issue.body as { nationalTimeline: { summary: { label: string }; moments: Array<{ title: string; sourceProvenance?: string; evidenceStrength?: string; riskLevel?: string }> } }).nationalTimeline;
 assert.equal(["동시다발 확인", "순차 확산 확인", "단일 권역 확인"].includes(issueTimeline.summary.label), true);
-assert.equal(issueTimeline.moments.some((moment) => moment.title.includes("현장 영상 Claim")), true);
+assert.equal(issueTimeline.moments.some((moment) => moment.title.includes("현장 영상")), true);
+assert.equal(issueTimeline.moments.some((moment) => moment.title.includes("현장 영상 Claim")), false);
 assert.equal(issueTimeline.moments.some((moment) => moment.sourceProvenance && moment.evidenceStrength && moment.riskLevel), true);
 assert.equal(JSON.stringify(issue.body).includes("private/live/2026"), false);
 
@@ -1260,11 +1326,12 @@ for (let index = 0; index < 4; index += 1) {
     deviceIntegrityCheckedAt: now,
     deviceIntegrityProofHash: `sha256-qualitydeviceintegrity${index}`,
     proofOfPresenceStatus: "pass",
-    redactionStatus: "completed",
-    redactionProofHash: `sha256-qualityredactionproof${index}`,
-    publicStorageKey: `/media/redacted/quality-live-${index}.webm`,
-    hash: `quality-live-${index}`
-  });
+	    redactionStatus: "completed",
+	    redactionProofHash: `sha256-qualityredactionproof${index}`,
+	    publicStorageKey: `/media/redacted/quality-live-${index}.webm`,
+	    publicPosterKey: `/media/redacted/quality-live-${index}-poster.webp`,
+	    hash: `quality-live-${index}`
+	  });
   qualityStore.claims.push({
     id: `claim_quality_${index}`,
     targetType: "occurrence",
@@ -1272,7 +1339,7 @@ for (let index = 0; index < 4; index += 1) {
     sourceProvenance: "verified_citizen_report",
     claimantLabel: "위치 인증 제보",
     statement: "",
-    normalizedStatement: "규모 추정 품질 검증용 현장 인증 Claim입니다.",
+	    normalizedStatement: "규모 추정 품질 검증용 현장 인증 자료입니다.",
     evidenceStrength: "media_time_location_crosscheck",
     riskLevel: "rights_risk",
     createdAt: now,
@@ -1561,18 +1628,33 @@ function assertPublicPayloadSafe(body: unknown): void {
     '"targetRefs"',
     '"storageKey"',
     '"publicStorageKey"',
+    '"publicPosterKey"',
+    '"privateMediaBase64"',
+    '"mediaBase64"',
     '"hash"',
     '"geoCell"',
     '"privateLng"',
     '"privateLat"',
+    '"foregroundGps"',
+    '"captureMode"',
     '"gpsAccuracyM"',
     '"distanceToTargetM"',
+    '"deviceAttestationBucket"',
     '"deviceIntegrityProvider"',
     '"deviceIntegrityProofHash"',
     '"deviceIntegrityCheckedAt"',
     '"redactionProofHash"',
     '"redactionCheckedAt"',
-    '"reviewTargetClaimId"'
+    '"reviewTargetClaimId"',
+    '"userId"',
+    '"tokenHash"',
+    '"ciHash"',
+    '"diHash"',
+    '"subjectHash"',
+    '"identityVerificationId"',
+    '"phone"',
+    '"name"',
+    '"birthDate"'
   ]) {
     assert.equal(text.includes(field), false, `public payload leaked ${field}`);
   }

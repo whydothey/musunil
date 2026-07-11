@@ -19,6 +19,23 @@ await check("health", async () => {
   assertApiSecurityHeaders(response.headers);
 });
 
+await check("public_redacted_media", async () => {
+  const poster = await fetch(`${apiBaseUrl}/media/redacted/preview-occ-live-1-poster.png`, {
+    redirect: "manual",
+    signal: AbortSignal.timeout(requestTimeoutMs)
+  });
+  assert(poster.status === 200, `public redacted poster returned ${poster.status}`);
+  assert(poster.headers.get("content-type")?.startsWith("image/png"), "public redacted poster content-type mismatch");
+  assert(poster.headers.get("x-content-type-options") === "nosniff", "public redacted poster nosniff header missing");
+  assert((await poster.arrayBuffer()).byteLength > 10_000, "public redacted poster payload too small");
+
+  const traversal = await fetch(`${apiBaseUrl}/media/redacted/%2e%2e/private/live.png`, {
+    redirect: "manual",
+    signal: AbortSignal.timeout(requestTimeoutMs)
+  });
+  assert([403, 404].includes(traversal.status), `encoded traversal should be blocked, got ${traversal.status}`);
+});
+
 await check("cors_boundary", async () => {
   const disallowedOrigin = "https://not-allowed.musunil.invalid";
   const disallowed = await raw("GET", "/health", { origin: disallowedOrigin });
@@ -142,6 +159,7 @@ function assertPublicPayloadSafe(path, body) {
     '"statement"',
     '"storageKey"',
     '"publicStorageKey"',
+    '"publicPosterKey"',
     '"rawText"',
     '"claimIds"',
     '"evidenceIds"',
@@ -150,11 +168,28 @@ function assertPublicPayloadSafe(path, body) {
     '"privateMediaBase64"',
     '"hash"',
     '"geoCell"',
+    '"privateLng"',
+    '"privateLat"',
+    '"foregroundGps"',
+    '"captureMode"',
     '"gpsAccuracyM"',
     '"distanceToTargetM"',
+    '"deviceAttestationBucket"',
     '"deviceIntegrityProvider"',
     '"deviceIntegrityProofHash"',
+    '"deviceIntegrityCheckedAt"',
     '"redactionProofHash"',
+    '"redactionCheckedAt"',
+    '"reviewTargetClaimId"',
+    '"userId"',
+    '"tokenHash"',
+    '"ciHash"',
+    '"diHash"',
+    '"subjectHash"',
+    '"identityVerificationId"',
+    '"phone"',
+    '"name"',
+    '"birthDate"',
     "hazard_area",
     "service_disruption",
     "preview-only",

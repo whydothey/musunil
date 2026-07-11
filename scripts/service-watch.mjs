@@ -37,6 +37,16 @@ async function runChecks() {
     if (ready.ready !== true) throw new Error("ready=false");
     return { ready: ready.ready, checks: ready.checks?.map((item) => item.id) ?? [] };
   });
+  await check(checks, "public_redacted_media", async () => {
+    const response = await fetch(`${apiBaseUrl}/media/redacted/preview-occ-live-1-poster.png`, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(12_000)
+    });
+    if (response.status !== 200) throw new Error(`poster returned ${response.status}`);
+    if (!response.headers.get("content-type")?.startsWith("image/png")) throw new Error("poster content-type mismatch");
+    if (response.headers.get("x-content-type-options") !== "nosniff") throw new Error("poster nosniff missing");
+    return { bytes: (await response.arrayBuffer()).byteLength };
+  });
   for (const path of ["/home", "/issues", "/map", "/laws", "/public-sources/coverage"]) {
     await check(checks, `public_payload_${path.slice(1).replaceAll("/", "_")}`, async () => {
       const body = await getJson(`${apiBaseUrl}${path}`);
@@ -95,18 +105,35 @@ function assertPublicPayloadSafe(body) {
   const text = JSON.stringify(body);
   assertAbsent(text, [
     "private/live/",
-    "mediaBase64",
-    "storageKey",
-    "privateLng",
-    "privateLat",
-    "geoCell",
-    "deviceIntegrityProofHash",
-    "redactionProofHash",
-    "rawText",
+    '"mediaBase64"',
+    '"storageKey"',
+    '"publicStorageKey"',
+    '"publicPosterKey"',
+    '"privateLng"',
+    '"privateLat"',
+    '"geoCell"',
+    '"foregroundGps"',
+    '"captureMode"',
+    '"gpsAccuracyM"',
+    '"distanceToTargetM"',
+    '"deviceAttestationBucket"',
+    '"deviceIntegrityProvider"',
+    '"deviceIntegrityProofHash"',
+    '"deviceIntegrityCheckedAt"',
+    '"redactionProofHash"',
+    '"redactionCheckedAt"',
+    '"reviewTargetClaimId"',
+    '"rawText"',
+    '"userId"',
+    '"tokenHash"',
     "identityProvider\":\"portone\"",
-    "ciHash",
-    "diHash",
-    "subjectHash"
+    '"identityVerificationId"',
+    '"ciHash"',
+    '"diHash"',
+    '"subjectHash"',
+    '"phone"',
+    '"name"',
+    '"birthDate"'
   ]);
 }
 

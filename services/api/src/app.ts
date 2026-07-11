@@ -464,6 +464,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       proofOfPresenceStatus: "pass",
       storageKey: "private/live/2026/ev_occ_live_1/original.mp4",
       publicStorageKey: "/media/redacted/preview-occ-live-1.webm",
+      publicPosterKey: "/media/redacted/preview-occ-live-1-poster.png",
       redactionStatus: "completed",
       redactionCheckedAt: now,
       redactionProofHash: "sha256-previewredactionproofocc1",
@@ -493,6 +494,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       proofOfPresenceStatus: "pass",
       storageKey: "private/live/2026/ev_presence_1/original.mp4",
       publicStorageKey: "/media/redacted/preview-presence-1.webm",
+      publicPosterKey: "/media/redacted/preview-presence-1-poster.png",
       redactionStatus: "completed",
       redactionCheckedAt: now,
       redactionProofHash: "sha256-previewredactionproofpresence1",
@@ -528,6 +530,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       proofOfPresenceStatus: "pass",
       storageKey: "private/live/2026/ev_busan_live_mock/original.mp4",
       publicStorageKey: "/media/redacted/preview-busan-live.webm",
+      publicPosterKey: "/media/redacted/preview-busan-live-poster.png",
       redactionStatus: "completed",
       redactionCheckedAt: new Date("2026-07-07T08:51:00.000Z"),
       redactionProofHash: "sha256-previewredactionproofbusan",
@@ -557,6 +560,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       proofOfPresenceStatus: "pass",
       storageKey: "private/live/2026/ev_daejeon_live_mock/original.mp4",
       publicStorageKey: "/media/redacted/preview-daejeon-live.webm",
+      publicPosterKey: "/media/redacted/preview-daejeon-live-poster.png",
       redactionStatus: "completed",
       redactionCheckedAt: new Date("2026-07-07T08:44:00.000Z"),
       redactionProofHash: "sha256-previewredactionproofdaejeon",
@@ -1422,7 +1426,7 @@ function issueTopicGrouping(store: Store, issue: Issue) {
     basis: [
       issue.topicTags.length ? `공통 주제어: ${issue.topicTags.slice(0, 4).join(" · ")}` : "공통 주제어 확인 중",
       `${regions.length || 0}개 권역의 ${targets.length}개 현장을 같은 주제로 탐색`,
-      `${claims.length}건의 공개 Claim과 ${sourceSummary.official}건의 공식 자료를 함께 확인`,
+      `${claims.length}건의 공개 주장과 ${sourceSummary.official}건의 공식 자료를 함께 확인`,
       "지역·시간이 다르면 별도 현장으로 유지"
     ],
     policy: "이 묶음은 탐색 단위이며 사실 확정이 아닙니다."
@@ -1514,7 +1518,7 @@ function emptyRegionalSignal(regionLabel: string) {
 function regionalSignalStatusLabels(signal: ReturnType<typeof emptyRegionalSignal>): string[] {
   return [
     signal.officialClaimCount ? `공식 ${signal.officialClaimCount}건` : "공식 자료 없음",
-    signal.liveClaimCount ? `현장 영상 ${signal.liveClaimCount}건` : signal.fieldClaimCount ? `현장 Claim ${signal.fieldClaimCount}건` : "현장 자료 없음",
+    signal.liveClaimCount ? `현장 영상 ${signal.liveClaimCount}건` : signal.fieldClaimCount ? `현장 자료 ${signal.fieldClaimCount}건` : "현장 자료 없음",
     signal.disputeCount ? `이견 ${signal.disputeCount}건` : "이견 없음",
     signal.needsVerificationCount ? `더 확인 필요 ${signal.needsVerificationCount}건` : "확인 신호 충분"
   ];
@@ -1550,7 +1554,7 @@ function issueNationalTimeline(store: Store, issueId: string) {
           targetType,
           targetId: target.id,
           at: claim.createdAt.toISOString(),
-          title: live ? `${regionLabel} 현장 영상 Claim` : `${regionLabel} ${claimKindLabel(claim)}`,
+          title: live ? `${regionLabel} 현장 영상` : `${regionLabel} ${claimKindLabel(claim)}`,
           body: claim.normalizedStatement,
           sourceProvenance: claim.sourceProvenance,
           evidenceStrength: claim.evidenceStrength,
@@ -1571,7 +1575,7 @@ function timelineSummary(moments: Array<{ kind: string; regionLabel: string; at:
     if (!current || at < current) firstByRegion.set(moment.regionLabel, at);
   }
   const times = [...firstByRegion.values()].sort((a, b) => a.getTime() - b.getTime());
-  if (!times.length) return { pattern: "unknown", label: "시간축 확인 중", summary: "공개 Claim이 쌓이면 지역별 첫 확인 시점을 비교합니다." };
+  if (!times.length) return { pattern: "unknown", label: "시간축 확인 중", summary: "공개 자료가 쌓이면 지역별 첫 확인 시점을 비교합니다." };
   if (times.length === 1) return { pattern: "single_region", label: "단일 권역 확인", summary: `${[...firstByRegion.keys()][0]} 기준 공개 신호가 먼저 확인되었습니다.`, regionCount: 1 };
   const spanMinutes = Math.round((times[times.length - 1].getTime() - times[0].getTime()) / 60000);
   const pattern = spanMinutes <= 180 ? "simultaneous" : "sequential";
@@ -1605,11 +1609,11 @@ function isFieldSource(claim: Claim): boolean {
 }
 
 function claimKindLabel(claim: Claim): string {
-  if (claim.sourceProvenance === "government_or_police") return "공식 자료 Claim";
-  if (claim.sourceProvenance === "media_report") return "보도 Claim";
-  if (claim.sourceProvenance === "musunil_ai_estimate") return "AI 추정 Claim";
-  if (isDisputeSource(claim)) return "반론·정정 Claim";
-  return "공개 Claim";
+  if (claim.sourceProvenance === "government_or_police") return "공식 자료";
+  if (claim.sourceProvenance === "media_report") return "보도 자료";
+  if (claim.sourceProvenance === "musunil_ai_estimate") return "AI 추정";
+  if (isDisputeSource(claim)) return "반론·정정";
+  return "공개 주장";
 }
 
 function crowdEstimatesForIssue(store: Store, issueId: string): CrowdEstimate[] {
@@ -1641,8 +1645,8 @@ function derivedCrowdEstimateForIssue(store: Store, issueId: string): CrowdEstim
   return derivedCrowdEstimateForScope(store, `derived_${issueId}_crowd_estimate`, issueId, targets, claims, [
     "자동 갱신 추정이며 참석 인원 확정치가 아닙니다.",
     publicEvidenceForClaims(store, claims).some((item) => item.evidenceType === "live_media")
-      ? "현장 영상 Claim이 일부 지역에 편중될 수 있습니다."
-      : "현장 영상 Claim이 부족해 공개 Claim 기반으로만 계산했습니다."
+      ? "현장 영상이 일부 지역에 편중될 수 있습니다."
+      : "현장 영상이 부족해 공개 자료 기반으로만 계산했습니다."
   ]);
 }
 
@@ -1741,15 +1745,15 @@ function issueVerificationSignals(store: Store, issueId: string) {
   const needsVerification = regionalSignals.reduce((sum, item) => sum + item.needsVerificationCount, 0);
   if (!officialCount) signals.push({ id: "official_absent", severity: "medium", label: "공식 자료 없음", summary: "현재 공개 화면은 현장·자료 Claim 중심입니다.", count: 0 });
   if (needsVerification) signals.push({ id: "needs_verification", severity: "medium", label: "추가 확인 필요", summary: "출처나 현장 자료가 부족한 관련 현장이 있습니다.", count: needsVerification });
-  if (duplicateHashes) signals.push({ id: "duplicate_media_hash", severity: "high", label: "중복 영상 해시", summary: "같은 영상 해시가 여러 Claim에 반복되었습니다.", count: duplicateHashes });
-  if (duplicateDeviceBuckets) signals.push({ id: "device_attestation_cluster", severity: "medium", label: "기기 군집", summary: "같은 기기 attestation bucket의 현장 Claim이 반복되었습니다.", count: duplicateDeviceBuckets });
+  if (duplicateHashes) signals.push({ id: "duplicate_media_hash", severity: "high", label: "중복 영상 해시", summary: "같은 영상 해시가 여러 공개 자료에 반복되었습니다.", count: duplicateHashes });
+  if (duplicateDeviceBuckets) signals.push({ id: "device_attestation_cluster", severity: "medium", label: "기기 군집", summary: "같은 기기 인증 묶음의 현장 자료가 반복되었습니다.", count: duplicateDeviceBuckets });
   if (weakDeviceIntegrity) signals.push({ id: "device_integrity", severity: "medium", label: "기기 무결성 확인", summary: "일부 현장 인증은 기기 무결성 상태를 다시 확인해야 합니다.", count: weakDeviceIntegrity });
-  if (userConcentration) signals.push({ id: "user_concentration", severity: "medium", label: "사용자 편중", summary: "공개 Claim 일부가 같은 제출자에 편중되어 있습니다.", count: userConcentration.maxCount });
+  if (userConcentration) signals.push({ id: "user_concentration", severity: "medium", label: "사용자 편중", summary: "공개 자료 일부가 같은 제출자에 편중되어 있습니다.", count: userConcentration.maxCount });
   if (lowAccuracy) signals.push({ id: "gps_quality", severity: "medium", label: "GPS 품질 확인", summary: "일부 현장 인증은 위치 정확도 기준을 다시 확인해야 합니다.", count: lowAccuracy });
   const liveTotal = regionalSignals.reduce((sum, item) => sum + item.liveClaimCount, 0);
   const dominant = Math.max(0, ...regionalSignals.map((item) => item.liveClaimCount));
-  if (liveTotal >= 4 && dominant / liveTotal > 0.75) signals.push({ id: "regional_concentration", severity: "low", label: "지역 편중", summary: "현장 영상 Claim이 특정 권역에 집중되어 있습니다.", count: dominant });
-  return signals.length ? signals : [{ id: "no_unusual_signal", severity: "low", label: "특이 신호 없음", summary: "현재 공개 Claim 기준으로 즉시 드러나는 반복·품질 신호는 없습니다." }];
+  if (liveTotal >= 4 && dominant / liveTotal > 0.75) signals.push({ id: "regional_concentration", severity: "low", label: "지역 편중", summary: "현장 영상이 특정 권역에 집중되어 있습니다.", count: dominant });
+  return signals.length ? signals : [{ id: "no_unusual_signal", severity: "low", label: "특이 신호 없음", summary: "현재 공개 자료 기준으로 즉시 드러나는 반복·품질 신호는 없습니다." }];
 }
 
 function repeatedCount(values: string[]): number {
@@ -2792,10 +2796,13 @@ function patchInternalEvidenceRedaction(store: Store, id: string | undefined, bo
   const evidence = store.evidence.find((item) => item.id === id && item.evidenceType === "live_media");
   if (!evidence) return json(404, { error: "evidence_not_found" });
   const data = asObject(body);
-  const redactedClipUrl = publicMediaUrl(readOptionalString(data, "redactedClipUrl"));
+  const redactedClipUrl = publicRedactedClipUrl(readOptionalString(data, "redactedClipUrl"));
   if (!redactedClipUrl) throw new ApiError(400, "redactedClipUrl_invalid");
+  const redactedPosterUrl = publicRedactedPosterUrl(readOptionalString(data, "redactedPosterUrl"));
+  if (!redactedPosterUrl) throw new ApiError(400, "redactedPosterUrl_invalid");
   const proofHash = redactionProofHash(data);
   evidence.publicStorageKey = redactedClipUrl;
+  evidence.publicPosterKey = redactedPosterUrl;
   evidence.redactionStatus = "completed";
   evidence.redactionCheckedAt = new Date();
   evidence.redactionProofHash = proofHash;
@@ -2808,7 +2815,8 @@ function patchInternalEvidenceRedaction(store: Store, id: string | undefined, bo
       redactionStatus: evidence.redactionStatus,
       redactionCheckedAt: evidence.redactionCheckedAt.toISOString(),
       redactionProofHash: evidence.redactionProofHash,
-      publicMediaUrl: publicMediaUrl(evidence.publicStorageKey)
+      publicMediaUrl: publicRedactedClipUrl(evidence.publicStorageKey),
+      publicPosterUrl: publicRedactedPosterUrl(evidence.publicPosterKey)
     }
   });
 }
@@ -3470,6 +3478,7 @@ type CompletedRedactionEvidence = Evidence & {
   redactionStatus: "completed";
   redactionProofHash: string;
   publicStorageKey: string;
+  publicPosterKey: string;
 };
 
 type TrustedDeviceEvidence = Evidence & {
@@ -3486,7 +3495,8 @@ function hasCompletedRedaction(evidence: Evidence | undefined): evidence is Comp
     evidence.proofOfPresenceStatus === "pass" &&
     evidence.redactionStatus === "completed" &&
     Boolean(evidence.redactionProofHash) &&
-    Boolean(publicMediaUrl(evidence.publicStorageKey))
+    Boolean(publicRedactedClipUrl(evidence.publicStorageKey)) &&
+    Boolean(publicRedactedPosterUrl(evidence.publicPosterKey))
   );
 }
 
@@ -3515,21 +3525,66 @@ function toPublicLiveClaim(store: Store, claim: Claim) {
     publicRadiusM: evidence?.publicRadiusM,
     proofOfPresenceStatus: evidence?.proofOfPresenceStatus ?? "unknown",
     redactionStatus: evidence?.redactionStatus ?? "pending",
-    media: { redactedClipUrl: publicMediaUrl(evidence?.publicStorageKey) },
+    media: {
+      redactedClipUrl: publicRedactedClipUrl(evidence?.publicStorageKey),
+      redactedPosterUrl: publicRedactedPosterUrl(evidence?.publicPosterKey)
+    },
     fieldVerification: fieldVerificationSummary(store, claim.id)
   };
 }
 
-function publicMediaUrl(publicStorageKey: string | undefined): string | undefined {
-  if (!publicStorageKey) return undefined;
-  if (publicStorageKey.startsWith("/media/redacted/") && !publicStorageKey.includes("..")) return publicStorageKey;
+function publicRedactedClipUrl(publicStorageKey: string | undefined): string | undefined {
+  return publicRedactedMediaUrl(publicStorageKey, ["webm", "mp4"]);
+}
+
+function publicRedactedPosterUrl(publicStorageKey: string | undefined): string | undefined {
+  return publicRedactedMediaUrl(publicStorageKey, ["webp", "jpg", "jpeg", "png"]);
+}
+
+function publicRedactedMediaUrl(publicStorageKey: string | undefined, allowedExtensions: string[]): string | undefined {
+  if (!publicStorageKey || /[\u0000-\u001f\\]/.test(publicStorageKey)) return undefined;
+  if (publicStorageKey.startsWith("/")) {
+    if (publicStorageKey.includes("?") || publicStorageKey.includes("#")) return undefined;
+    const path = safeDecodedPath(publicStorageKey);
+    return isSafeRedactedMediaPath(path, allowedExtensions) ? path : undefined;
+  }
   try {
     const url = new URL(publicStorageKey);
-    if (url.protocol === "https:" && !url.username && !url.password && !url.pathname.includes("/private/")) return url.toString();
+    if (
+      url.protocol === "https:" &&
+      !url.username &&
+      !url.password &&
+      !url.search &&
+      !url.hash &&
+      isAllowedRedactedMediaHost(url.hostname)
+    ) {
+      const path = safeDecodedPath(url.pathname);
+      if (isSafeRedactedMediaPath(path, allowedExtensions)) return `${url.origin}${path}`;
+    }
   } catch {
     return undefined;
   }
   return undefined;
+}
+
+function safeDecodedPath(path: string): string {
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    return "";
+  }
+}
+
+function isSafeRedactedMediaPath(path: string, allowedExtensions: string[]): boolean {
+  if (!path.startsWith("/media/redacted/")) return false;
+  if (path.includes("..") || path.includes("//") || path.toLowerCase().includes("/private/")) return false;
+  const extension = path.split(".").pop()?.toLowerCase();
+  return Boolean(extension && allowedExtensions.includes(extension));
+}
+
+function isAllowedRedactedMediaHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  return host === "musunil.com" || host.endsWith(".musunil.com");
 }
 
 function fieldVerificationSummary(store: Store, claimId: string) {
@@ -3539,7 +3594,7 @@ function fieldVerificationSummary(store: Store, claimId: string) {
   return {
     aligned,
     disputed,
-    statusLabel: disputed > 0 ? "현장 이견 있음" : aligned > 0 ? "현장 일치 Claim 있음" : "현장 판단 대기"
+    statusLabel: disputed > 0 ? "현장 이견 있음" : aligned > 0 ? "현장 일치 확인" : "현장 판단 대기"
   };
 }
 
@@ -3724,7 +3779,7 @@ function readFieldVerification(data: Record<string, unknown>): NonNullable<Claim
 function fieldVerificationStatement(value: NonNullable<Claim["fieldVerification"]>): string {
   return (
     {
-      field_aligned: "현장 인증 사용자가 영상 Claim이 현장과 일치한다고 판단했습니다.",
+      field_aligned: "현장 인증 사용자가 영상이 현장과 일치한다고 판단했습니다.",
       different_place_possible: "현장 인증 사용자가 다른 현장 가능성을 제기했습니다.",
       context_insufficient: "현장 인증 사용자가 시간·맥락 부족을 제기했습니다.",
       rights_review_needed: "현장 인증 사용자가 권리 검토 필요성을 제기했습니다."

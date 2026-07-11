@@ -34,6 +34,9 @@ const visualEvidenceFiles = [
 ];
 const auditByRequirement = new Map(auditRows.map((row) => [row["요구사항"], row]));
 const activeAuditRequirements = new Map([
+  ["상업용 UI/UX 재설계", "알권리 중심 UX"],
+  ["데스크톱·모바일 디자인", "알권리 중심 UX"],
+  ["지도·지역 UX", "지도·지역 UX"],
   ["운영형 현장 인증", "실시간 현장 인증"],
   ["운영 배포 준비", "운영 배포 준비"],
   ["법안·개정안 연결", "법안·개정안 연결"],

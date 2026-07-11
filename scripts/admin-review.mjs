@@ -47,12 +47,14 @@ try {
     const id = args[0];
     if (!id) throw new Error("evidence id is required.");
     const redactedClipUrl = readOption(args, "url");
+    const redactedPosterUrl = readOption(args, "poster-url");
     const proofToken = readOption(args, "proof-token");
     const proofHash = readOption(args, "proof-hash");
     if (!redactedClipUrl) throw new Error("--url is required.");
     if (!proofToken && !proofHash) throw new Error("--proof-token or --proof-hash is required.");
     const result = await apiRequest("PATCH", `/internal/evidence/${encodeURIComponent(id)}/redaction`, {
       redactedClipUrl,
+      ...(redactedPosterUrl ? { redactedPosterUrl } : {}),
       ...(proofToken ? { redactionProofToken: proofToken } : { redactionProofHash: proofHash })
     });
     console.log(JSON.stringify(result, null, 2));
@@ -154,7 +156,7 @@ function printUsage() {
   pnpm admin:claim <claim_id> -- --publish --reason "ready for public view"
   pnpm admin:claim <claim_id> -- --hold --reason "privacy review needed"
   pnpm admin:claim <claim_id> -- --statement "정정된 공개 문장" --reason "privacy wording"
-  pnpm admin:redaction <evidence_id> -- --url "/media/redacted/clip.webm" --proof-hash "sha256-..."
+  pnpm admin:redaction <evidence_id> -- --url "/media/redacted/clip.webm" --poster-url "/media/redacted/clip-poster.webp" --proof-hash "sha256-..."
 `);
 }
 
