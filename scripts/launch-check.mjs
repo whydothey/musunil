@@ -25,6 +25,7 @@ const userFacingDocs = [
 ].map((path) => `${path}\n${readFileSync(resolve(cwd, path), "utf8")}`).join("\n");
 const webConfigJs = readFileSync(resolve(cwd, "apps/web/config.js"), "utf8");
 const webServer = readFileSync(resolve(cwd, "scripts/serve-web.mjs"), "utf8");
+const webDeployCheck = readFileSync(resolve(cwd, "scripts/check-web-deploy.mjs"), "utf8");
 const gitignore = readFileSync(resolve(cwd, ".gitignore"), "utf8");
 const renderYaml = readFileSync(resolve(cwd, "render.yaml"), "utf8");
 const renderApi = renderServiceBlock(renderYaml, "musunil-api");
@@ -290,6 +291,9 @@ if (!/seoul_assembly_control/.test(publicSourceRegistry) || !/sejong_today_assem
 }
 if (!/MUSUNIL_WEB_CONFIG/.test(web)) failures.push("web runtime config hook is missing");
 if (!/build-info\.js/.test(web)) failures.push("web build-info hook is missing");
+if (!/generated-at-build/.test(webDeployCheck) || !/placeholder was deployed/.test(webDeployCheck)) {
+  failures.push("web deploy check must reject tracked build-info placeholders");
+}
 if (!/일정 확인/.test(web) || !/public-sources\/coverage/.test(web)) failures.push("web public source coverage status is missing");
 if (/const API = "http:\/\/localhost:4000"/.test(web)) failures.push("web API base is hardcoded to localhost");
 if (!/function safePublicApiBase/.test(web) || !/https:\/\/api\.musunil\.com/.test(web)) failures.push("web must ignore stale localhost config on production domains");

@@ -22,6 +22,9 @@ async function runChecks() {
   const checks = [];
   await check(checks, "web_build_info", async () => {
     const build = await getJson(`${webBaseUrl}/build-info.json`);
+    if (build.commitSha === "generated-at-build" || build.source === "placeholder") {
+      throw new Error("build-info placeholder deployed; web build command output not published");
+    }
     if (expectedCommitSha && build.commitSha !== expectedCommitSha) throw new Error(`commit ${build.commitSha} != ${expectedCommitSha}`);
     return { commitSha: build.commitSha, builtAt: build.builtAt };
   });
