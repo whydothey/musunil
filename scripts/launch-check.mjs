@@ -261,8 +261,13 @@ if (
 ) {
   failures.push("Commercial visual surface smoke must cover responsive viewports, dashboard regression, navigation overlap, map density, and report first action");
 }
-if (!/MUSUNIL_STRICT_WEB_HEADERS=1/.test(renderWebSettings) || !/Clear build cache & deploy/.test(renderWebSettings)) {
-  failures.push("Render Web settings helper must print strict header verification and clear-cache redeploy instructions");
+if (
+  !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(renderWebSettings) ||
+  !/Clear build cache & deploy/.test(renderWebSettings) ||
+  !/check:visual-surface:live/.test(renderWebSettings) ||
+  !/service:watch:visual/.test(renderWebSettings)
+) {
+  failures.push("Render Web settings helper must print strict header, live visual, integrated service watch, and clear-cache redeploy instructions");
 }
 if (!/"launch:cutover-plan"/.test(packageJson) || !/launch-cutover-plan\.mjs/.test(packageJson)) {
   failures.push("launch cutover plan helper command is missing");
@@ -274,9 +279,10 @@ if (
   !/render:web-settings/.test(launchCutoverPlan) ||
   !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(launchCutoverPlan) ||
   !/check:visual-surface:live/.test(launchCutoverPlan) ||
-  !/service:watch/.test(launchCutoverPlan)
+  !/service:watch:visual/.test(launchCutoverPlan) ||
+  !/serviceSyncState=live/.test(launchCutoverPlan)
 ) {
-  failures.push("launch cutover plan must cover API DNS, Cloudflare DNS, Render headers, live visual surface, and verification commands");
+  failures.push("launch cutover plan must cover API DNS, Cloudflare DNS, Render headers, live visual surface, live data sync state, and verification commands");
 }
 if (
   !/Launch Cutover Runbook/.test(launchCutoverRunbook) ||
