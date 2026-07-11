@@ -3,8 +3,8 @@
   "generatedBy": "scripts/write-web-static-manifest.mjs",
   "files": {
     "index.html": {
-      "sha256": "a3fa3a24a62b92d488698bad9d3d9539a202fc5dd190f30fe68374e081b8d108",
-      "bytes": 401114
+      "sha256": "f8f020cdb724c45bd48deb00c2c70ae65aa0f378fc4fe5e8c3e521319a8a0197",
+      "bytes": 401149
     },
     "config.js": {
       "sha256": "fe63a156079b5fe8754a476faaacef808bbd4aa41a2b0f19d85b9a3095876f3d",

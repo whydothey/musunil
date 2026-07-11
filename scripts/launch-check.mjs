@@ -81,6 +81,9 @@ if (
   failures.push("GitHub Actions CI must use Node 24-compatible checkout/setup-node actions");
 }
 if (!/pnpm check:release/.test(ciWorkflow)) failures.push("GitHub Actions CI must run pnpm check:release");
+if (!/fallback\.issueCards = fallback\.issueCards\.filter\(\(issue\) => !isPreviewIssue\(issue\.id\) && !isMetaPublicSourceIssue\(issue\)\)/.test(web)) {
+  failures.push("production Web fallback must not expose public source bundles as issue cards");
+}
 
 const publicResponseFiles = [
   "services/api/src/app.ts",

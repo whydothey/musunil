@@ -6370,7 +6370,7 @@
       };
       if (!isPreviewApiBase) {
         fallback.cards = fallback.cards.filter((card) => !isPreviewCard(card.id));
-        fallback.issueCards = fallback.issueCards.filter((issue) => !isPreviewIssue(issue.id));
+        fallback.issueCards = fallback.issueCards.filter((issue) => !isPreviewIssue(issue.id) && !isMetaPublicSourceIssue(issue));
         fallback.laws = fallback.laws.filter((law) => !isPreviewLaw(law.id));
       }
 
