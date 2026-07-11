@@ -76,7 +76,7 @@ function responseHeaders(type) {
   return {
     "cache-control": "no-store",
     "content-security-policy":
-      "default-src 'self'; connect-src 'self' http://localhost:* http://127.0.0.1:* https:; img-src 'self' data: blob: http://localhost:* http://127.0.0.1:* https:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.portone.io; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob:",
+      "default-src 'self'; connect-src 'self' http://localhost:* http://127.0.0.1:* https:; img-src 'self' data: blob: http://localhost:* http://127.0.0.1:* https:; media-src 'self' blob: http://localhost:* http://127.0.0.1:* https:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.portone.io; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob:",
     "content-type": type,
     "permissions-policy": "camera=(self), microphone=(), geolocation=(self)",
     "referrer-policy": "no-referrer",
@@ -91,8 +91,10 @@ function contentType(path) {
     ".html": "text/html; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
     ".json": "application/json; charset=utf-8",
+    ".mp4": "video/mp4",
     ".png": "image/png",
     ".svg": "image/svg+xml; charset=utf-8",
+    ".webm": "video/webm",
     ".webp": "image/webp"
   }[extname(path)] ?? "application/octet-stream";
 }

@@ -101,6 +101,7 @@ async function checkWeb(port) {
   assert(html.headers.get("permissions-policy")?.includes("camera=(self)"), "permissions-policy camera self grant missing");
   assert(html.headers.get("content-security-policy")?.includes("default-src 'self'"), "content-security-policy missing");
   assert(html.headers.get("content-security-policy")?.includes("https://cdn.portone.io"), "PortOne SDK CSP allowlist missing");
+  assert(html.headers.get("content-security-policy")?.includes("media-src 'self'"), "public media CSP allowlist missing");
   assert(index.includes("집회·시위 공개자료"), "commercial issue-file home title missing");
   assert(index.includes('id: "issue_real_public_sources"'), "official public-source fallback issue missing");
   assert(index.includes("전국 집회 신고·공개 일정"), "official public-source fallback issue title missing");
@@ -361,6 +362,12 @@ async function checkWeb(port) {
   assert(posterResponse.headers.get("content-type")?.startsWith("image/png"), "redacted preview poster content-type mismatch");
   const posterBytes = await posterResponse.arrayBuffer();
   assert(posterBytes.byteLength > 10_000, "redacted preview poster is unexpectedly small");
+
+  const clipResponse = await fetch(`${base}/media/redacted/preview-occ-live-1.webm`);
+  assert(clipResponse.status === 200, `redacted preview clip returned ${clipResponse.status}`);
+  assert(clipResponse.headers.get("content-type")?.startsWith("video/webm"), "redacted preview clip content-type mismatch");
+  const clipBytes = await clipResponse.arrayBuffer();
+  assert(clipBytes.byteLength > 5_000, "redacted preview clip is unexpectedly small");
 
   const forbidden = await fetch(`${base}/../package.json`);
   assert(forbidden.status === 403 || forbidden.status === 404, `path traversal should fail, got ${forbidden.status}`);

@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 11:10 KST
+Last updated: 2026-07-11 11:16 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -34,6 +34,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 10:49 패치로 지도 인증 영역은 일반 공개 근거 수가 아니라 공개 가능한 현장 인증 영상 Evidence가 있을 때만 생성되게 했다. 공식 자료 위치만 있는 대구 현장은 `공개 자료 위치만 확인됐습니다`로 표시되고, 서울 현장 인증 mock은 `1건의 현장 인증 자료로 공개 범위를 계산했습니다`로 표시된다. 지도 검색은 모바일에서 상세 시트를 자동으로 열지 않고 지도 맥락 안에서 결과를 선택하며, 인증 영역이 있는 현장은 근접 줌으로 반경이 읽히게 한다. 사용자 수락 전 S+는 아니다.
 - 11:04 패치로 `인증영상` 탭이 영상 근거가 있는 이슈를 기본으로 고르고, 공개 poster가 없는 LIVE Claim은 재생 가능한 영상처럼 보이지 않게 `검토 대기` 카드로 렌더한다. 390px에서 panel bottom 715px, 하단 내비 top 772px, `navOverlap=false`, `reviewSlots=0`, `posterImages=0`, 금지 문구 0을 확인했다. 실제 운영 제보 영상 품질과 사용자 수락 전 S+는 아니다.
 - 11:10 패치로 실제 공개 `redactedClipUrl`과 공개 poster가 모두 있는 LIVE Claim은 풀스크린 인증영상 탭에서 poster-only 이미지가 아니라 native video player로 열린다. sample poster는 계속 숨겨 검토 카드로 보이며, `check:web-smoke`가 `publicLiveVideoDisplaySrc`, `<video class="reel-video">`, controlslist, poster-only 회귀 금지를 검증한다. 실제 공개 영상 파일이 붙은 운영 캡처와 사용자 수락 전 S+는 아니다.
+- 11:16 패치로 seed/API가 참조하는 `/media/redacted/preview-*.webm` 공개 clip 파일을 추가하고, 정적 서버가 `.webm/.mp4`를 영상 MIME으로 서빙하며 `media-src` CSP를 허용하게 했다. `check:web-smoke`가 preview clip 200, `video/webm`, 5KB 이상, media CSP를 검증한다. sample media는 UI에서 실제 제보처럼 노출하지 않는다.
 
 ## Agent Feedback Summary
 
@@ -83,6 +84,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | PM Local Patch 16 | 10:49 인증 영역이 공식 자료 핀만 있는 현장에도 생기면 사용자가 GPS 현장 인증이 있다고 오해할 수 있다. | fallback `presenceAreas`를 공개 가능한 live Evidence 기준으로만 생성. 공식 자료 핀과 현장 인증 영역 문구를 분리하고, 지도 검색은 상세 자동 오픈 없이 지도 맥락에 남기며 인증 영역이 있는 현장은 14.4 줌으로 확대 |
 | PM Local Patch 17 | 11:04 인증영상 탭이 첫 진입에서 영상 없는 이슈의 빈 상태로 시작하거나 poster 없는 Claim을 거대한 빈 영상판처럼 보여 상업용 앱보다 데모 화면처럼 읽혔다. | 기본 영상 이슈 선택을 video-bearing Issue로 보정하고, poster 없는 LIVE Claim은 `검토 대기` 정보 카드로 낮춤. 모바일 겹침·가로 넘침·소셜 금지 문구 없음 확인 |
 | PM Local Patch 18 | 11:10 실제 공개 영상이 들어와도 풀스크린 탭이 poster 이미지만 보여주면 “영상 앱”이 아니라 증거 카드처럼 보인다. | 공개 clip+poster가 모두 있으면 `<video class="reel-video">`로 렌더하고 sample/fallback은 계속 검토 카드로 유지. web smoke가 poster-only 회귀를 차단 |
+| PM Local Patch 19 | 11:16 API seed가 공개 clip URL을 가리키지만 로컬/정적 미디어에는 poster만 있어 실제 video branch 검증이 약했다. | 참조 중인 preview webm 파일을 추가하고, 정적 서버 MIME/CSP를 보강. web smoke가 clip route와 media CSP를 검증 |
 
 ## Active Goal Board
 
@@ -129,6 +131,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 37 | GPS evidence 기반 지도 영역 분리 | 1차 완료 | 공식 자료 핀만 있는 현장은 `현장 인증 영역은 아직 없습니다`, 현장 인증 영상 Evidence가 있는 현장은 `현장 인증 자료로 공개 범위를 계산했습니다`와 근접 줌 영역으로 분리. 모바일 검색 `서울`은 `detailOpen=false`, `mapVisible=true`, `navOverlap=false`, `scrollWidth=390` |
 | 38 | 인증영상 검토 상태 상업용화 | 1차 완료 | 390px 인증영상 `anchorTitle=정보통신망법 개정 반대 집회`, `reviewPanel=true`, `reviewSlots=0`, `posterImages=0`, `navOverlap=false`, `overflowX=false`, 액션 `근거/위치/이슈`. 1440px도 같은 검토 카드와 우측 맥락 패널 유지 |
 | 39 | 실제 공개 영상 player 계약 | 1차 완료 | `renderFullScreenReels`가 display-safe 공개 clip+poster를 `<video class="reel-video">`로 렌더하고 sample poster는 검토 카드로 유지. `check:web-smoke`가 `controlslist`, `publicLiveVideoDisplaySrc`, poster-only 회귀 금지를 검증 |
+| 40 | 공개 영상 media route 계약 | 1차 완료 | seed/API가 참조하는 preview webm 파일 존재, 정적 서버 `.webm/.mp4` MIME, `media-src` CSP, `/media/redacted/preview-occ-live-1.webm` 200 `video/webm`을 `check:web-smoke`가 검증 |
 
 ## Current Evidence
 
@@ -171,6 +174,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 11:04 desktop reels review card | `docs/commercial-splus-surface33-reels-desktop-1440-2026-07-11.png` |
 | 11:04 reels metrics | 390px `panel=370x500`, `panel.bottom=715`, `navTop=772`, `navOverlap=false`, `reviewPanel=true`, `reviewSlots=0`, `posterImages=0`, actions `근거/위치/이슈`, 금지 문구 0. 1440px `panel=760x620`, `overflowX=false`, 금지 문구 0 |
 | 11:10 public video contract | `pnpm check:web-smoke` 통과. 풀스크린 공개 영상 branch가 `<video class="reel-video">`와 `controlslist="nodownload noplaybackrate"`를 포함하고, 기존 poster-only `<img class="reel-poster-image" src="${escapeHtml(poster)}">` 회귀를 차단 |
+| 11:16 public clip route | `pnpm check:web-smoke` 통과. `/media/redacted/preview-occ-live-1.webm` 200, `content-type: video/webm`, payload > 5KB, CSP `media-src 'self' ... https:` 포함 |
 | 390px mobile capture | `docs/commercial-splus-mobile-390-2026-07-11.png` |
 | 430px mobile capture | `docs/commercial-splus-mobile-430-2026-07-11.png` |
 | 768px tablet capture | `docs/commercial-splus-tablet-768-2026-07-11.png` |
