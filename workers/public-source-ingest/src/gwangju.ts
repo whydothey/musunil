@@ -26,7 +26,7 @@ export function toGwangjuPublicOccurrencePayload(row: GwangjuAssemblyRow, now = 
   const { startsAt, endsAt } = datesFromTitle(row.title, row.postedAt);
   return {
     id: `occ_gwangju_${startsAt.slice(0, 10).replaceAll("-", "_")}${endsAt ? `_${endsAt.slice(8, 10)}` : ""}_public`,
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_regional_schedule",
     type: "static_assembly",
     areaClusterId: "area_gwangju",
     regionLabel: "광주",

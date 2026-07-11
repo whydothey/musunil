@@ -110,8 +110,14 @@ async function checkWeb(port) {
   assert(html.headers.get("content-security-policy")?.includes("https://cdn.portone.io"), "PortOne SDK CSP allowlist missing");
   assert(html.headers.get("content-security-policy")?.includes("media-src 'self'"), "public media CSP allowlist missing");
   assert(index.includes("확인된 집회·시위"), "consumer issue-feed home title missing");
-  assert(index.includes('id: "issue_real_public_sources"'), "official public-source fallback issue missing");
-  assert(index.includes("전국 집회 신고·공개 일정"), "official public-source fallback issue title missing");
+  for (const [id, title] of [
+    ["issue_public_regional_schedule", "지역별 집회 공개 일정"],
+    ["issue_public_daegu_stats", "대구 집회 신고·개최 현황"],
+    ["issue_public_national_stats", "전국 집회 신고·개최 통계"]
+  ]) {
+    assert(index.includes(`id: "${id}"`), `official public-source fallback issue missing: ${id}`);
+    assert(index.includes(title), `official public-source fallback issue title missing: ${title}`);
+  }
   assert(index.includes("issue-card-actions"), "issue card action hub missing");
   assert(!index.includes("issue-card-secondary-actions"), "legacy issue card secondary action row present");
   assert(index.includes("issue-place-peek"), "issue card place preview missing");

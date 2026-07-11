@@ -1297,7 +1297,7 @@ assert.equal(issueTimeline.moments.some((moment) => moment.title.includes("현�
 assert.equal(issueTimeline.moments.some((moment) => moment.sourceProvenance && moment.evidenceStrength && moment.riskLevel), true);
 assert.equal(JSON.stringify(issue.body).includes("private/live/2026"), false);
 
-const sourceOnlyIssue = await app.handle({ method: "GET", path: "/issues/issue_real_public_sources" });
+const sourceOnlyIssue = await app.handle({ method: "GET", path: "/issues/issue_public_regional_schedule" });
 assert.equal((sourceOnlyIssue.body as { crowdEstimates: unknown[] }).crowdEstimates.length, 0);
 
 const qualityStore = createSeedStore({ includeMockData: false });
@@ -1478,7 +1478,7 @@ const ingested = await protectedApp.handle({
   headers: internalHeaders,
   body: {
     id: "occ_daegu_0710_public",
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_regional_schedule",
     type: "static_assembly",
     areaClusterId: "area_daegu",
     regionLabel: "대구",
@@ -1498,7 +1498,7 @@ const duplicateIngest = await protectedApp.handle({
   headers: internalHeaders,
   body: {
     id: "occ_daegu_0710_public",
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_regional_schedule",
     type: "static_assembly",
     areaClusterId: "area_daegu",
     regionLabel: "대구",
@@ -1594,7 +1594,7 @@ const seededPublicRefresh = await protectedApp.handle({
   headers: internalHeaders,
   body: {
     id: "occ_daegu_0704_0705_public",
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_regional_schedule",
     type: "static_assembly",
     areaClusterId: "area_daegu",
     regionLabel: "대구",

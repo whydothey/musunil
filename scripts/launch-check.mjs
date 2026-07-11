@@ -235,14 +235,22 @@ if (
 ) {
   failures.push("Commercial UX surface smoke must cover issue-first home, dashboard regression, reels, map, report, and forbidden social UI");
 }
-if (!/"check:visual-surface"/.test(packageJson) || !/ci-visual-surface-smoke\.mjs/.test(packageJson) || !/pnpm check:visual-surface/.test(JSON.parse(packageJson).scripts["check:release"] ?? "")) {
-  failures.push("Commercial visual surface smoke must be wired into release checks");
+if (
+  !/"check:visual-surface"/.test(packageJson) ||
+  !/"check:visual-surface:live"/.test(packageJson) ||
+  !/ci-visual-surface-smoke\.mjs/.test(packageJson) ||
+  !/--base-url https:\/\/musunil\.com/.test(packageJson) ||
+  !/pnpm check:visual-surface/.test(JSON.parse(packageJson).scripts["check:release"] ?? "")
+) {
+  failures.push("Commercial visual surface smoke must be wired into release checks and have a live URL verification command");
 }
 if (
   !/mobile_390/.test(visualSurfaceSmoke) ||
   !/mobile_430/.test(visualSurfaceSmoke) ||
   !/tablet_768/.test(visualSurfaceSmoke) ||
   !/desktop_1440/.test(visualSurfaceSmoke) ||
+  !/visualBaseUrlFromArgs/.test(visualSurfaceSmoke) ||
+  !/MUSUNIL_VISUAL_BASE_URL/.test(visualSurfaceSmoke) ||
   !/dashboardVisible/.test(visualSurfaceSmoke) ||
   !/navOverlap/.test(visualSurfaceSmoke) ||
   !/mapSheetHeight/.test(visualSurfaceSmoke) ||
@@ -262,15 +270,17 @@ if (
   !/render:api-settings/.test(launchCutoverPlan) ||
   !/render:web-settings/.test(launchCutoverPlan) ||
   !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(launchCutoverPlan) ||
+  !/check:visual-surface:live/.test(launchCutoverPlan) ||
   !/service:watch/.test(launchCutoverPlan)
 ) {
-  failures.push("launch cutover plan must cover API DNS, Cloudflare DNS, Render headers, and verification commands");
+  failures.push("launch cutover plan must cover API DNS, Cloudflare DNS, Render headers, live visual surface, and verification commands");
 }
 if (
   !/Launch Cutover Runbook/.test(launchCutoverRunbook) ||
   !/pnpm launch:cutover-plan/.test(launchCutoverRunbook) ||
   !/api\.musunil\.com/.test(launchCutoverRunbook) ||
   !/Cloudflare/.test(launchCutoverRunbook) ||
+  !/check:visual-surface:live/.test(launchCutoverRunbook) ||
   !/identity_required/.test(launchCutoverRunbook)
 ) {
   failures.push("launch cutover runbook must explain the final service cutover and identity boundary");

@@ -6041,21 +6041,55 @@
       const fallback = {
         issueCards: [
           {
-            id: "issue_real_public_sources",
+            id: "issue_public_regional_schedule",
             targetType: "issue",
-            title: "전국 집회 신고·공개 일정",
+            title: "지역별 집회 공개 일정",
             lifecycleState: "UPCOMING",
             status: "active",
-            topicTags: ["공개 일정", "신고 통계", "경찰청 자료"],
+            topicTags: ["지역별", "오늘의 집회시위", "공개 일정"],
             updatedAt: "2026-07-09T00:00:00.000+09:00",
-            targetCount: 6,
-            currentCount: 5,
-            regionCount: 2,
-            officialCount: 6,
+            targetCount: 4,
+            currentCount: 4,
+            regionCount: 1,
+            officialCount: 4,
             disputeCount: 0,
             needsVerificationCount: 0,
-            sourceSummary: { official: 6, media: 0, field: 0, estimate: 0 },
-            chips: ["공식 자료", "2개 권역", "일정·통계"]
+            sourceSummary: { official: 4, media: 0, field: 0, estimate: 0 },
+            chips: ["공식 자료", "지역별", "일정"]
+          },
+          {
+            id: "issue_public_daegu_stats",
+            targetType: "issue",
+            title: "대구 집회 신고·개최 현황",
+            lifecycleState: "ARCHIVED",
+            status: "active",
+            topicTags: ["대구", "신고 통계", "개최 현황"],
+            updatedAt: "2026-05-12T00:00:00.000Z",
+            targetCount: 1,
+            currentCount: 1,
+            regionCount: 1,
+            officialCount: 1,
+            disputeCount: 0,
+            needsVerificationCount: 0,
+            sourceSummary: { official: 1, media: 0, field: 0, estimate: 0 },
+            chips: ["공식 자료", "통계", "대구"]
+          },
+          {
+            id: "issue_public_national_stats",
+            targetType: "issue",
+            title: "전국 집회 신고·개최 통계",
+            lifecycleState: "ARCHIVED",
+            status: "active",
+            topicTags: ["전국", "신고 통계", "경찰청 자료"],
+            updatedAt: "2025-05-12T00:00:00.000Z",
+            targetCount: 1,
+            currentCount: 1,
+            regionCount: 1,
+            officialCount: 1,
+            disputeCount: 0,
+            needsVerificationCount: 0,
+            sourceSummary: { official: 1, media: 0, field: 0, estimate: 0 },
+            chips: ["공식 자료", "전국", "통계"]
           },
           {
             id: "issue_1",
@@ -6095,7 +6129,7 @@
         cards: [
           {
             id: "occ_police_national_stats_2023",
-            issueId: "issue_real_public_sources",
+            issueId: "issue_public_national_stats",
             targetType: "occurrence",
             title: "경찰청 2011~2023 집회 신고·개최 통계",
             regionLabel: "전국",
@@ -6109,7 +6143,7 @@
           },
           {
             id: "occ_daegu_0709_public",
-            issueId: "issue_real_public_sources",
+            issueId: "issue_public_regional_schedule",
             targetType: "occurrence",
 	            title: "대구 0709(목) 오늘의 집회 공개 일정",
 	            regionLabel: "대구",
@@ -6124,7 +6158,7 @@
           },
           {
             id: "occ_daegu_0707_public",
-            issueId: "issue_real_public_sources",
+            issueId: "issue_public_regional_schedule",
             targetType: "occurrence",
 	            title: "대구 0707(화) 오늘의 집회 공개 일정",
 	            regionLabel: "대구",
@@ -6139,7 +6173,7 @@
           },
           {
             id: "occ_daegu_stats_2025",
-            issueId: "issue_real_public_sources",
+            issueId: "issue_public_daegu_stats",
             targetType: "occurrence",
 	            title: "대구 2020~2025 집회 신고·개최 현황",
 	            regionLabel: "대구",
@@ -6154,7 +6188,7 @@
           },
           {
             id: "occ_daegu_0706_public",
-            issueId: "issue_real_public_sources",
+            issueId: "issue_public_regional_schedule",
             targetType: "occurrence",
 	            title: "대구 0706(월) 오늘의 집회 공개 일정",
 	            regionLabel: "대구",
@@ -6169,7 +6203,7 @@
           },
           {
             id: "occ_daegu_0704_0705_public",
-            issueId: "issue_real_public_sources",
+            issueId: "issue_public_regional_schedule",
             targetType: "occurrence",
 	            title: "대구 0704(토)~0705(일) 오늘의 집회 공개 일정",
 	            regionLabel: "대구",
@@ -7512,7 +7546,7 @@
 
       function isMetaPublicSourceIssue(issue) {
         const text = searchText(`${issue?.id || ""} ${issue?.title || ""} ${(issue?.topicTags || []).join(" ")}`);
-        return text.includes("issue_real_public_sources") || text.includes("신고공개일정") || text.includes("신고통계") || text.includes("공개일정");
+        return text.includes("issue_public_") || text.includes("신고공개일정") || text.includes("신고통계") || text.includes("공개일정");
       }
 
       function cardOrderScore(card) {

@@ -30,7 +30,7 @@ export function toUlsanPublicOccurrencePayload(row: UlsanAssemblyRow, now = new 
   const startsAt = `${row.scheduleDate}T00:00:00.000+09:00`;
   return {
     id: `occ_ulsan_${row.scheduleDate.replaceAll("-", "_")}_public`,
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_regional_schedule",
     type: "static_assembly",
     areaClusterId: "area_ulsan",
     regionLabel: "울산",

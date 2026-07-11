@@ -203,7 +203,7 @@ curl -X POST http://localhost:4000/internal/ingest/public-occurrence \
   -H 'x-musunil-internal-key: <internal_api_key>' \
   -d '{
     "id": "occ_daegu_0709_public",
-    "issueId": "issue_real_public_sources",
+    "issueId": "issue_public_regional_schedule",
     "type": "static_assembly",
     "areaClusterId": "area_daegu",
     "regionLabel": "대구",

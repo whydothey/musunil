@@ -208,10 +208,28 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
   );
   store.issues.push(
     {
-      id: "issue_real_public_sources",
-      title: "대구 7월 집회 신고 현황",
-      normalizedTopicKey: "real-public-assembly-sources",
-      topicTags: ["공개자료", "경찰청", "일정"],
+      id: "issue_public_regional_schedule",
+      title: "지역별 집회 공개 일정",
+      normalizedTopicKey: "topic:regional-public-assembly-schedules",
+      topicTags: ["지역별", "오늘의 집회시위", "공개 일정"],
+      status: "active",
+      firstSeenAt: now,
+      lastUpdatedAt: now
+    },
+    {
+      id: "issue_public_daegu_stats",
+      title: "대구 집회 신고·개최 현황",
+      normalizedTopicKey: "topic:daegu-public-assembly-statistics",
+      topicTags: ["대구", "신고 통계", "개최 현황"],
+      status: "active",
+      firstSeenAt: now,
+      lastUpdatedAt: now
+    },
+    {
+      id: "issue_public_national_stats",
+      title: "전국 집회 신고·개최 통계",
+      normalizedTopicKey: "topic:national-public-assembly-statistics",
+      topicTags: ["전국", "신고 통계", "경찰청 자료"],
       status: "active",
       firstSeenAt: now,
       lastUpdatedAt: now
@@ -279,7 +297,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
   );
   store.occurrences.push({
     id: "occ_police_national_stats_2023",
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_national_stats",
     type: "policy_site",
     areaClusterId: "area_national",
     regionLabel: "전국",
@@ -290,7 +308,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     evidenceIds: []
   }, {
     id: "occ_daegu_stats_2025",
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_daegu_stats",
     type: "policy_site",
     areaClusterId: "area_daegu",
     regionLabel: "대구",
@@ -301,7 +319,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     evidenceIds: []
   }, {
     id: "occ_daegu_0709_public",
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_regional_schedule",
     type: "static_assembly",
     areaClusterId: "area_daegu",
     regionLabel: "대구",
@@ -313,7 +331,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     evidenceIds: []
   }, {
     id: "occ_daegu_0707_public",
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_regional_schedule",
     type: "static_assembly",
     areaClusterId: "area_daegu",
     regionLabel: "대구",
@@ -325,7 +343,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     evidenceIds: []
   }, {
     id: "occ_daegu_0706_public",
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_regional_schedule",
     type: "static_assembly",
     areaClusterId: "area_daegu",
     regionLabel: "대구",
@@ -337,7 +355,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     evidenceIds: []
   }, {
     id: "occ_daegu_0704_0705_public",
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_regional_schedule",
     type: "static_assembly",
     areaClusterId: "area_daegu",
     regionLabel: "대구",
@@ -1336,7 +1354,7 @@ function homeCards(store: Store) {
     const publicEvidenceIds = new Set(claims.flatMap((claim) => claim.evidenceIds));
     const evidence = store.evidence.filter((item) => publicEvidenceIds.has(item.id));
     const sourceDiversity = new Set(claims.map((claim) => claim.sourceProvenance)).size;
-    const officialSourcePreviewBoost = occurrence.issueId === "issue_real_public_sources" ? 12 : 0;
+    const officialSourcePreviewBoost = occurrence.issueId?.startsWith("issue_public_") ? 12 : 0;
     const score = calculatePriorityScore({
       recency: 1,
       updateVelocity: claims.length,

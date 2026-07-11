@@ -28,7 +28,7 @@ export function toBusanPublicOccurrencePayload(row: BusanAssemblyRow, now = new 
   const { startsAt, endsAt } = datesFromTitle(row.title, row.postedAt);
   return {
     id: `occ_busan_${startsAt.slice(0, 10).replaceAll("-", "_")}${endsAt ? `_${endsAt.slice(8, 10)}` : ""}_public`,
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_regional_schedule",
     type: "static_assembly",
     areaClusterId: "area_busan",
     regionLabel: "부산",

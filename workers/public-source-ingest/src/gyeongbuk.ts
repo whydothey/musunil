@@ -28,7 +28,7 @@ export function toGyeongbukPublicOccurrencePayload(row: GyeongbukAssemblyRow, no
   const { startsAt, endsAt } = datesFromTitle(row.title, row.postedAt);
   return {
     id: `occ_gyeongbuk_${startsAt.slice(0, 10).replaceAll("-", "_")}${endsAt ? `_${endsAt.slice(8, 10)}` : ""}_public`,
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_regional_schedule",
     type: "static_assembly",
     areaClusterId: "area_gyeongbuk",
     regionLabel: "경북",

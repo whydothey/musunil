@@ -35,7 +35,7 @@ export function toGyeongnamPublicOccurrencePayload(row: GyeongnamAssemblyRow, no
   const startsAt = dateFromTitle(row.title, row.postedAt);
   return {
     id: `occ_gyeongnam_${startsAt.slice(0, 10).replaceAll("-", "_")}_public`,
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_regional_schedule",
     type: "static_assembly",
     areaClusterId: "area_gyeongnam",
     regionLabel: "경남",

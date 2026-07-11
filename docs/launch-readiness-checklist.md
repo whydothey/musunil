@@ -22,6 +22,7 @@
 - `pnpm check:web-flow` 통과.
 - `pnpm check:ux-surface` 통과.
 - `pnpm check:visual-surface` 통과. Chrome/CDP로 390px, 430px, 768px, 1440px에서 홈·상세·영상·탐색·제보의 가로 넘침, 하단 내비 겹침, 대시보드 숫자판 회귀, 지도 시트 과밀, 제보 첫 행동을 실제 렌더링 기준으로 확인한다.
+- 배포 후 `pnpm check:visual-surface:live` 통과. 같은 Chrome/CDP 검사를 `https://musunil.com`에 직접 실행해, 파일 해시는 최신이어도 실제 운영 도메인 렌더링이 빈약하거나 오래된 상태를 차단한다.
 - `pnpm check:build-info-clean` 통과.
 - `pnpm render:api-settings` 출력이 `render.yaml`의 `musunil-api` 설정, env source, `api.musunil.com` 검증 명령과 일치.
 - `pnpm launch:inputs`로 생성한 운영 YAML은 `CHANGE_ME_*` 값만 남기고 Render generated secret 필드는 비워 둔다.
@@ -101,6 +102,7 @@
 - 출시 컷오버는 `pnpm launch:cutover-plan`과 [launch-cutover-runbook.md](/Users/mk/Documents/Musunil/docs/launch-cutover-runbook.md)를 기준으로 API DNS, Cloudflare DNS, Render Static headers, 검증 순서를 한 번에 확인한다.
 - production Web은 가능하면 `build-info.json`의 `commitSha`가 배포 대상 Git SHA와 같아야 한다. Render 수동 Static Site가 build metadata를 반영하지 않는 경우에는 `/static-manifest.json`과 live HTML/config/media SHA-256이 현재 repo 산출물과 정확히 일치해야 한다.
 - Render Static Site는 repo root에서 `pnpm build:web-static`과 `pnpm check:web-smoke`를 실행하고 `apps/web`만 publish한다.
+- Render 배포 뒤에는 `pnpm check:visual-surface:live`로 실제 `musunil.com` 화면의 이슈 스토리, 이슈 카드, 상세, 인증영상 대기/영상, 지도, 제보 첫 행동이 390px, 430px, 768px, 1440px에서 모두 유지되는지 확인한다.
 - Render Static Site와 Cloudflare 경로는 `/`, `/config.js`, `/build-info.json`에 `Cache-Control: no-store`를 보내야 하며, 공개 영상 확인을 위해 CSP에 `media-src 'self' https: blob:`가 있어야 한다.
 - `/build-info.json` 또는 `/build-info.js`가 404면 Static Site build command가 실행되지 않았거나, repo root/Publish Directory/Blueprint 연결이 잘못됐거나, build-info 산출물이 ignore/미추적 처리된 상태로 본다.
 - `/static-manifest.json`과 live 파일 해시가 현재 repo 산출물과 일치하지만 `/build-info.json`이 `generated-at-build`이면 Static Site가 커밋된 `apps/web` 파일을 publish하고 build metadata만 반영하지 않는 상태다. 이 경우 최신 UI 배포 여부는 통과로 보되, `check:web-deploy`와 `service:watch`는 `web_build_info_placeholder` 경고를 남긴다.

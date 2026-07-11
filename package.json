@@ -29,6 +29,7 @@
     "check:web-flow": "node scripts/ci-web-flow-smoke.mjs",
     "check:ux-surface": "node scripts/ci-ux-surface-smoke.mjs",
     "check:visual-surface": "node scripts/ci-visual-surface-smoke.mjs",
+    "check:visual-surface:live": "node scripts/ci-visual-surface-smoke.mjs --base-url https://musunil.com",
     "check:build-info-clean": "node scripts/ci-build-info-clean.mjs",
     "smoke:api": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/runtime-smoke.mjs",
     "storage:smoke": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/storage-smoke.mjs",

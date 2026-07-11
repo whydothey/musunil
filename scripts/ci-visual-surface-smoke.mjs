@@ -8,34 +8,42 @@ import { tmpdir } from "node:os";
 const cwd = resolve(import.meta.dirname, "..");
 const failures = [];
 const scenarios = [];
+const args = process.argv.slice(2).filter((arg) => arg !== "--");
 let server;
 let chrome;
 
 async function main() {
+  const visualBaseUrl = visualBaseUrlFromArgs();
   const chromePath = findChrome();
   if (!chromePath) {
     console.error("Chrome executable not found. Set CHROME_PATH to run visual surface smoke.");
     process.exit(1);
   }
 
-  const webPort = await freePort();
   const debugPort = await freePort();
-  const deadApiPort = await freePort();
   const userDataDir = mkdtempSync(join(tmpdir(), "musunil-chrome-"));
-  const env = {
-    ...process.env,
-    PORT: String(webPort),
-    MUSUNIL_WEB_API_BASE_URL: `http://localhost:${deadApiPort}`
-  };
+  let appUrl = visualBaseUrl;
 
-  run("node", ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", "scripts/write-web-config.mjs", "--static"], env);
-  run("node", ["scripts/write-web-static-manifest.mjs"], env);
+  if (!appUrl) {
+    const webPort = await freePort();
+    const deadApiPort = await freePort();
+    const env = {
+      ...process.env,
+      PORT: String(webPort),
+      MUSUNIL_WEB_API_BASE_URL: `http://localhost:${deadApiPort}`
+    };
 
-  server = spawn(process.execPath, ["scripts/serve-web.mjs"], {
-    cwd,
-    env,
-    stdio: ["ignore", "ignore", "pipe"]
-  });
+    run("node", ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", "scripts/write-web-config.mjs", "--static"], env);
+    run("node", ["scripts/write-web-static-manifest.mjs"], env);
+
+    server = spawn(process.execPath, ["scripts/serve-web.mjs"], {
+      cwd,
+      env,
+      stdio: ["ignore", "ignore", "pipe"]
+    });
+    appUrl = `http://localhost:${webPort}/`;
+  }
+
   chrome = spawn(chromePath, [
     "--headless=new",
     "--disable-gpu",
@@ -55,7 +63,8 @@ async function main() {
 
   let exitCode = 0;
   try {
-    await waitForWeb(webPort);
+    if (server) await waitForWeb(appUrl);
+    else await waitForHttp(appUrl);
     const pageWsUrl = await waitForPageWebSocket(debugPort);
     const client = await CdpClient.connect(pageWsUrl);
     try {
@@ -67,7 +76,7 @@ async function main() {
         { id: "tablet_768", width: 768, height: 1024, mobile: true },
         { id: "desktop_1440", width: 1440, height: 960, mobile: false }
       ]) {
-        await runViewport(client, viewport, `http://localhost:${webPort}/`);
+        await runViewport(client, viewport, appUrl);
       }
     } finally {
       client.close();
@@ -76,11 +85,11 @@ async function main() {
     failures.push(error instanceof Error ? error.message : String(error));
   } finally {
     const chromeExitedBeforeCleanup = chrome.exitCode !== null;
-    const serverExitedBeforeCleanup = server.exitCode !== null;
+    const serverExitedBeforeCleanup = Boolean(server && server.exitCode !== null);
     chrome.kill("SIGTERM");
-    server.kill("SIGTERM");
+    if (server) server.kill("SIGTERM");
     const chromeCode = await waitForExit(chrome);
-    const serverCode = await waitForExit(server);
+    const serverCode = server ? await waitForExit(server) : 0;
     rmSync(userDataDir, { recursive: true, force: true });
     if (serverExitedBeforeCleanup && serverCode !== 0) failures.push(`web server exited with ${serverCode}`);
     if (chromeExitedBeforeCleanup && chromeCode !== 0) failures.push(`chrome exited with ${chromeCode}`);
@@ -90,7 +99,12 @@ async function main() {
     console.error(["Visual surface smoke failed:", ...failures.map((failure) => `- ${failure}`)].join("\n"));
     exitCode = 1;
   } else {
-    console.log(JSON.stringify({ checked: "commercial_visual_surface", scenarios }, null, 2));
+    console.log(JSON.stringify({
+      checked: "commercial_visual_surface",
+      mode: visualBaseUrl ? "live_url" : "local_static",
+      baseUrl: appUrl,
+      scenarios
+    }, null, 2));
   }
 
   process.exit(exitCode);
@@ -107,7 +121,11 @@ async function runViewport(client, viewport, url) {
   });
   await client.send("Emulation.setTouchEmulationEnabled", { enabled: viewport.mobile });
   await navigate(client, url);
-  await waitForExpression(client, "document.querySelectorAll('.issue-card').length >= 1 && document.querySelectorAll('.story-ring').length >= 1");
+  await waitForExpression(
+    client,
+    "document.querySelectorAll('.issue-card').length >= 3 && document.querySelectorAll('.story-ring').length >= 3",
+    20_000
+  );
   await sleep(260);
 
   const home = await evaluate(client, visualMetrics("home"));
@@ -145,7 +163,7 @@ async function runViewport(client, viewport, url) {
     () => assert(reels.scrollWidth <= viewport.width, `reels overflows horizontally: ${reels.scrollWidth} > ${viewport.width}`),
     () => assert(reels.forbidden.length === 0, `forbidden reels copy: ${reels.forbidden.join(", ")}`),
     () => assert(reels.reelActionLabels.includes("근거"), `reels evidence action missing: ${reels.reelActionLabels.join(", ")}`),
-    () => assert(reels.reelActionLabels.includes("위치"), `reels location action missing: ${reels.reelActionLabels.join(", ")}`),
+    () => assert(reels.reelActionLabels.some((label) => /위치|지도/.test(label)), `reels location action missing: ${reels.reelActionLabels.join(", ")}`),
     () => assert(reels.issueContextTitle.length >= 6, "reels issue context title is missing"),
     () => assert(!viewport.mobile || !reels.navOverlap, "mobile reels action surface overlaps bottom navigation")
   ]);
@@ -218,7 +236,7 @@ function visualMetrics(label) {
       detailTitle: document.querySelector("#detail-title")?.textContent?.trim() || "",
       detailTabs: [...document.querySelectorAll("#record-section .tabs button")].filter(visible).map((node) => node.textContent.trim()),
       detailActions: [...document.querySelectorAll(".detail-action-row button span")].filter(visible).map((node) => node.textContent.trim()),
-      reelActionLabels: [...document.querySelectorAll("[data-reel-action] span")].filter(visible).map((node) => node.textContent.trim()),
+      reelActionLabels: [...document.querySelectorAll("[data-reel-action] span, [data-reel-empty-action] span")].filter(visible).map((node) => node.textContent.trim()),
       issueContextTitle: document.querySelector("#reels-anchor-title")?.textContent?.trim() || "",
       mapRect: rect(".map-shell"),
       mapSheetHeight: rect(".map-sheet").height,
@@ -297,6 +315,30 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function visualBaseUrlFromArgs() {
+  const value = argValue("--base-url") ?? process.env.MUSUNIL_VISUAL_BASE_URL;
+  if (!value) return "";
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error(`Invalid visual surface base URL: ${value}`);
+  }
+  const isLocalHttp = parsed.protocol === "http:" && ["localhost", "127.0.0.1", "::1"].includes(parsed.hostname);
+  if (parsed.protocol !== "https:" && !isLocalHttp) {
+    throw new Error(`Visual surface base URL must be HTTPS or localhost HTTP: ${value}`);
+  }
+  return new URL("/", parsed).toString();
+}
+
+function argValue(name) {
+  const index = args.indexOf(name);
+  if (index === -1) return undefined;
+  const value = args[index + 1];
+  if (!value || value.startsWith("--")) throw new Error(`${name} requires a value`);
+  return value;
+}
+
 function run(command, args, runEnv) {
   const result = spawnSync(command === "node" ? process.execPath : command, args, {
     cwd,
@@ -317,18 +359,34 @@ function freePort() {
   });
 }
 
-async function waitForWeb(port) {
+async function waitForWeb(url) {
   const deadline = Date.now() + 8_000;
   while (Date.now() < deadline) {
     if (server.exitCode !== null) throw new Error(`web server exited early with ${server.exitCode}`);
     try {
-      const response = await fetch(`http://localhost:${port}/`);
+      const response = await fetch(url);
       if (response.ok) return;
     } catch {
       await sleep(150);
     }
   }
   throw new Error("web server did not become ready in time");
+}
+
+async function waitForHttp(url) {
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(url, {
+        redirect: "manual",
+        signal: AbortSignal.timeout(5_000)
+      });
+      if (response.status >= 200 && response.status < 400) return;
+    } catch {
+      await sleep(250);
+    }
+  }
+  throw new Error(`visual surface base URL did not become ready: ${url}`);
 }
 
 async function waitForPageWebSocket(port) {

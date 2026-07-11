@@ -32,7 +32,7 @@ export function toJeonbukPublicOccurrencePayload(row: JeonbukAssemblyRow, now = 
   const endsAt = schedule.end ? `${schedule.end}T23:59:59.000+09:00` : undefined;
   return {
     id: `occ_jeonbuk_${schedule.start.replaceAll("-", "_")}${schedule.end ? `_${schedule.end.slice(8, 10)}` : ""}_public`,
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_regional_schedule",
     type: "static_assembly",
     areaClusterId: "area_jeonbuk",
     regionLabel: "전북",

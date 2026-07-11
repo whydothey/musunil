@@ -54,7 +54,7 @@ export function toPublicOccurrencePayload(row: DaeguAssemblyRow, now = new Date(
   const normalizedTitle = `대구 ${row.title.replace(" 오늘의 집회", " 오늘의 집회 공개 일정")}`;
   return {
     id: `occ_daegu_${slugDate(row.title)}_public`,
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_regional_schedule",
     type: "static_assembly",
     areaClusterId: "area_daegu",
     regionLabel: "대구",

@@ -32,7 +32,7 @@ export function toSeoulPublicOccurrencePayload(row: SeoulAssemblyRow, now = new 
   const startsAt = `${dateFromTitle(row.title, row.updatedAt)}T00:00:00.000+09:00`;
   return {
     id: `occ_seoul_${startsAt.slice(0, 10).replaceAll("-", "_")}_public`,
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_regional_schedule",
     type: "static_assembly",
     areaClusterId: "area_seoul_public",
     regionLabel: "서울",

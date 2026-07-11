@@ -28,7 +28,7 @@ export function toJejuPublicOccurrencePayload(row: JejuAssemblyRow, now = new Da
   const startsAt = `${dateFromTitle(row.title, row.postedAt)}T00:00:00.000+09:00`;
   return {
     id: `occ_jeju_${startsAt.slice(0, 10).replaceAll("-", "_")}_public`,
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_regional_schedule",
     type: "static_assembly",
     areaClusterId: "area_jeju",
     regionLabel: "제주",

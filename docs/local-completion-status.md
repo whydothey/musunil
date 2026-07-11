@@ -60,6 +60,7 @@ Last updated: 2026-07-12 01:29 KST
   - 상태 변경 알림 구독
   - 운영 seed에서 프리뷰/mock 데이터 제거
   - 운영형 Web fallback에서 프리뷰/mock 카드와 핀 제거
+  - 운영형 Web fallback을 실제 공개자료 기준 3개 이슈 파일로 분리: 지역별 집회 공개 일정, 대구 집회 신고·개최 현황, 전국 집회 신고·개최 통계
   - Web API override를 localhost로 제한
   - 홈 카드 사용자 라벨에서 내부 enum 원문 제거
   - 데스크톱/모바일 실제 캡처 검증: overflow 0, clipped text 0, 지도 핀 겹침 0
@@ -93,6 +94,7 @@ Last updated: 2026-07-12 01:29 KST
   - `pnpm check:web-flow`
   - `pnpm check:ux-surface`
   - `pnpm check:visual-surface`
+  - `pnpm check:visual-surface:live` 배포 후 실제 `musunil.com` 렌더링 검증
   - `pnpm check:build-info-clean`
   - `pnpm check:splus`
   - `pnpm launch:ready`

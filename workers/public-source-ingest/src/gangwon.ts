@@ -31,7 +31,7 @@ export function toGangwonPublicOccurrencePayload(row: GangwonAssemblyRow, now = 
   const startsAt = `${date}T00:00:00.000+09:00`;
   return {
     id: `occ_gangwon_${date.replaceAll("-", "_")}_public`,
-    issueId: "issue_real_public_sources",
+    issueId: "issue_public_regional_schedule",
     type: "static_assembly",
     areaClusterId: "area_gangwon",
     regionLabel: "강원",
