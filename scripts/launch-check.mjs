@@ -422,6 +422,17 @@ if (
   failures.push("Commercial visual surface smoke must cover responsive viewports, dashboard regression, navigation overlap, map density, and report first action");
 }
 if (
+  !/firstIssueActionCount/.test(visualSurfaceSmoke) ||
+  !/firstIssuePrimaryActionCount/.test(visualSurfaceSmoke) ||
+  !/firstIssueInteractiveCount/.test(visualSurfaceSmoke) ||
+  !/firstIssueChipCount/.test(visualSurfaceSmoke) ||
+  !/firstIssueRect/.test(visualSurfaceSmoke) ||
+  !/first issue has too many visible action labels/.test(visualSurfaceSmoke) ||
+  !/first issue must not expose dashboard-like chips/.test(visualSurfaceSmoke)
+) {
+  failures.push("Commercial visual surface smoke must guard first issue card density, action count, primary action count, chip count, and card height");
+}
+if (
   !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(renderWebSettings) ||
   !/MUSUNIL_EXPECTED_API_BASE_URL/.test(renderWebSettings) ||
   !/Clear build cache & deploy/.test(renderWebSettings) ||
