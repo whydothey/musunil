@@ -538,8 +538,8 @@ function requiredActions(result) {
     actions.push({
       id: "apply_static_headers",
       owner: "operator",
-      action: "pnpm render:web-settings 출력의 Header application mode를 먼저 확인한다. 수동 Static Site이면 Render musunil-web Settings > Headers에 Cache-Control, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options를 그대로 입력하고 Clear build cache & deploy를 실행한다. Blueprint-managed이면 render.yaml headers가 sync됐는지 확인한다. Cloudflare proxy가 켜져 있으면 캐시 우회와 header override 규칙도 함께 확인한다.",
-      verify: "pnpm render:web-settings && pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy",
+      action: "pnpm render:web-settings 출력의 Header application mode를 먼저 확인한다. 수동 Static Site이면 Render musunil-web Settings > Headers에 Cache-Control, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options를 그대로 입력하고 Clear build cache & deploy를 실행한다. Render headers가 live 응답에 계속 반영되지 않거나 Cloudflare proxy가 켜져 있으면 pnpm cloudflare:headers로 생성되는 Web 전용 Response Header Transform Rule을 적용하고 /, /config.js, /build-info.json 캐시 우회도 확인한다.",
+      verify: "pnpm render:web-settings && pnpm cloudflare:headers && pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy",
       reference: "docs/launch-cutover-runbook.md#2-render-static-site"
     });
   }

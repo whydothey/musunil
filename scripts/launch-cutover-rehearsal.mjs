@@ -172,7 +172,7 @@ function nextOperatorCommand(stage, actions) {
   if (stage === "refresh_live_evidence") return "pnpm launch:cutover-rehearsal -- --refresh";
   if (stage === "connect_api_endpoint") return "pnpm render:api-settings && pnpm cloudflare:check";
   if (stage === "apply_static_headers") {
-    return "pnpm render:web-settings && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy";
+    return "pnpm render:web-settings && pnpm cloudflare:headers && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy";
   }
   if (stage === "publish_build_metadata") {
     return "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy";

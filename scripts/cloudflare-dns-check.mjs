@@ -168,8 +168,8 @@ function requiredActions(items) {
   if (failedIds.has("web_header_smoke")) {
     actions.push({
       id: "apply_static_headers",
-      action: "Render musunil-web Settings > Headers에 Cache-Control, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options를 적용한다.",
-      verify: "MUSUNIL_STRICT_WEB_HEADERS=1 pnpm check:web-deploy"
+      action: "Render musunil-web Settings > Headers에 Cache-Control, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options를 적용한다. Render Static headers가 live 응답에 계속 반영되지 않거나 Cloudflare proxy를 쓰는 경우 pnpm cloudflare:headers 출력의 Web 전용 Response Header Transform Rule을 적용하고 캐시 우회를 확인한다.",
+      verify: "pnpm render:web-settings && pnpm cloudflare:headers && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy"
     });
   }
   if (failedIds.has("api_health") || failedIds.has("api_ready")) {

@@ -25,8 +25,8 @@ const plan = {
     {
       id: "static_headers",
       owner: "operator",
-      action: "Check pnpm render:web-settings Header application mode. For a manual Static Site, copy every header into Render musunil-web Settings > Headers; for Blueprint-managed, sync render.yaml. Then Clear build cache & deploy.",
-      verify: "pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy"
+      action: "Check pnpm render:web-settings Header application mode. For a manual Static Site, copy every header into Render musunil-web Settings > Headers; for Blueprint-managed, sync render.yaml. If Render headers still do not appear on live responses or the Web record is proxied by Cloudflare, apply the pnpm cloudflare:headers Response Header Transform Rule for Web only. Then Clear build cache & deploy or purge the Web edge cache as applicable.",
+      verify: "pnpm cloudflare:headers && pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy"
     },
     {
       id: "build_metadata",
@@ -104,7 +104,8 @@ const plan = {
     "pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws",
     "pnpm render:api-settings",
     "pnpm render:web-settings",
-    "Apply Render custom domains, Cloudflare DNS, and Render Static headers.",
+    "pnpm cloudflare:headers",
+    "Apply Render custom domains, Cloudflare DNS, and Render Static headers or the Web-only Cloudflare response header fallback.",
     "pnpm cloudflare:check",
     "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
     "MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",

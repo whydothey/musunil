@@ -274,6 +274,7 @@ if (
   !/service:watch:visual/.test(launchNextActions) ||
   !/render:api-settings/.test(launchNextActions) ||
   !/render:web-settings/.test(launchNextActions) ||
+  !/cloudflare:headers/.test(launchNextActions) ||
   !/cloudflare:check/.test(launchNextActions) ||
   !/cloudflare:check:strict/.test(launchNextActions) ||
   !/launch:post-deploy-smoke -- --require-laws/.test(launchNextActions)
@@ -291,6 +292,7 @@ if (
   !/Ordered Operator Actions/.test(launchCutoverRehearsal) ||
   !/connect_api_endpoint/.test(launchCutoverRehearsal) ||
   !/apply_static_headers/.test(launchCutoverRehearsal) ||
+  !/cloudflare:headers/.test(launchCutoverRehearsal) ||
   !/restore_live_issue_sync/.test(launchCutoverRehearsal) ||
   !/--refresh/.test(launchCutoverRehearsal) ||
   !/--strict/.test(launchCutoverRehearsal) ||
@@ -314,6 +316,7 @@ if (
   !/Render Web Static Site/.test(launchOperatorBriefDoc) ||
   !/Render API Service/.test(launchOperatorBriefDoc) ||
   !/Cloudflare/.test(launchOperatorBriefDoc) ||
+  !/cloudflare:headers/.test(launchOperatorBriefDoc) ||
   !/User Inputs/.test(launchOperatorBriefDoc) ||
   !/pnpm launch:final-gate/.test(launchOperatorBriefDoc) ||
   !/api\.musunil\.com/.test(launchOperatorBriefDoc) ||
@@ -366,6 +369,7 @@ if (
   !/api_ready/.test(cloudflareDnsCheck) ||
   !/connect_api_dns/.test(cloudflareDnsCheck) ||
   !/apply_static_headers/.test(cloudflareDnsCheck) ||
+  !/cloudflare:headers/.test(cloudflareDnsCheck) ||
   !/--strict/.test(cloudflareDnsCheck)
 ) {
   failures.push("Cloudflare/DNS preflight helper must check Web/API DNS, Web config, headers, API health/ready, and strict mode");
@@ -500,6 +504,7 @@ if (
   !/Manual Static Site/.test(renderWebSettings) ||
   !/Blueprint-managed/.test(renderWebSettings) ||
   !/render\.com\/docs\/static-site-headers/.test(renderWebSettings) ||
+  !/cloudflare:headers/.test(renderWebSettings) ||
   !/cloudflare:check/.test(renderWebSettings)
 ) {
   failures.push("Render Web settings helper must print strict header, live visual, integrated service watch, manual/Blueprint header mode, and clear-cache redeploy instructions");
@@ -510,6 +515,7 @@ if (!/"launch:cutover-plan"/.test(packageJson) || !/launch-cutover-plan\.mjs/.te
 if (
   !/api\.musunil\.com/.test(launchCutoverPlan) ||
   !/Cloudflare DNS/.test(launchCutoverPlan) ||
+  !/cloudflare:headers/.test(launchCutoverPlan) ||
   !/cloudflare:check/.test(launchCutoverPlan) ||
   !/render:api-settings/.test(launchCutoverPlan) ||
   !/render:web-settings/.test(launchCutoverPlan) ||
@@ -534,6 +540,7 @@ if (
   !/pnpm launch:cutover-plan/.test(launchCutoverRunbook) ||
   !/api\.musunil\.com/.test(launchCutoverRunbook) ||
   !/Cloudflare/.test(launchCutoverRunbook) ||
+  !/cloudflare:headers/.test(launchCutoverRunbook) ||
   !/check:visual-surface:live/.test(launchCutoverRunbook) ||
   !/identity_required/.test(launchCutoverRunbook) ||
   !/Header 적용 방식/.test(launchCutoverRunbook) ||
@@ -582,6 +589,7 @@ if (
   !/pnpm launch:final-gate/.test(serviceWatch) ||
   !/render:api-settings/.test(serviceWatch) ||
   !/apply_static_headers/.test(serviceWatch) ||
+  !/cloudflare:headers/.test(serviceWatch) ||
   !/cloudflare:check/.test(serviceWatch) ||
   !/deploy_latest_static/.test(serviceWatch) ||
   !/publish_build_metadata/.test(serviceWatch) ||

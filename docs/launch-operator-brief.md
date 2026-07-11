@@ -4,11 +4,11 @@
 
 ## Current State
 
-- Generated: 2026-07-11T23:00:53.559Z
-- Git SHA: d47623a1e18131e53b52b4a078277d7200bf40df
+- Generated: 2026-07-11T23:55:17.065Z
+- Git SHA: c9114d7240312642949252aade9869487205788e
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-11T22:53:55.177Z (fresh)
+- Service watch: 2026-07-11T23:54:34.656Z (fresh)
 - Checks: 4 ok, 3 fail, 12 skip, 4 actions
 - Next command: `pnpm render:api-settings && pnpm cloudflare:check`
 
@@ -19,8 +19,8 @@
    - Verify: `pnpm render:api-settings && pnpm cloudflare:check && pnpm launch:final-gate`
    - Reference: docs/launch-cutover-runbook.md#3-render-api
 2. apply_static_headers (operator)
-   - Action: pnpm render:web-settings 출력의 Header application mode를 먼저 확인한다. 수동 Static Site이면 Render musunil-web Settings > Headers에 Cache-Control, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options를 그대로 입력하고 Clear build cache & deploy를 실행한다. Blueprint-managed이면 render.yaml headers가 sync됐는지 확인한다. Cloudflare proxy가 켜져 있으면 캐시 우회와 header override 규칙도 함께 확인한다.
-   - Verify: `pnpm render:web-settings && pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy`
+   - Action: pnpm render:web-settings 출력의 Header application mode를 먼저 확인한다. 수동 Static Site이면 Render musunil-web Settings > Headers에 Cache-Control, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options를 그대로 입력하고 Clear build cache & deploy를 실행한다. Render headers가 live 응답에 계속 반영되지 않거나 Cloudflare proxy가 켜져 있으면 pnpm cloudflare:headers로 생성되는 Web 전용 Response Header Transform Rule을 적용하고 /, /config.js, /build-info.json 캐시 우회도 확인한다.
+   - Verify: `pnpm render:web-settings && pnpm cloudflare:headers && pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy`
    - Reference: docs/launch-cutover-runbook.md#2-render-static-site
 3. publish_build_metadata (operator)
    - Action: Static manifest hash로 최신 UI는 확인됐지만 build-info가 placeholder다. Render musunil-web Build Command가 pnpm build:web-static:render인지 확인한다. 이 단일 명령은 MUSUNIL_WRITE_BUILD_INFO=1로 실제 Git SHA를 쓰며, 수정 후 Clear build cache & deploy를 실행한다.
@@ -153,7 +153,8 @@ Cache rules:
 - pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws
 - pnpm render:api-settings
 - pnpm render:web-settings
-- Apply Render custom domains, Cloudflare DNS, and Render Static headers.
+- pnpm cloudflare:headers
+- Apply Render custom domains, Cloudflare DNS, and Render Static headers or the Web-only Cloudflare response header fallback.
 - pnpm cloudflare:check
 - MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy
 - MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy
