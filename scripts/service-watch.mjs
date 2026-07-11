@@ -481,6 +481,8 @@ function requiredActions(result) {
   const visualSurface = byId.get("web_visual_surface");
   if (visualSurface && !visualSurface.ok && !visualSurface.skipped) {
     const nonLiveDataState = visualSurface.message?.includes("non-live data state");
+    const sourceBundleFirst = /sourceBundleFirst=([1-9]\d*)\/(\d+)/.test(visualSurface.message || "");
+    const firstIssues = visualSurface.message?.match(/firstIssues=([^;]+)/)?.[1]?.trim();
     actions.push({
       id: "stop_live_visual_surface_regression",
       owner: "lead",
@@ -490,6 +492,15 @@ function requiredActions(result) {
       verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm service:watch:visual",
       reference: nonLiveDataState ? "docs/launch-cutover-runbook.md#3-render-api" : "docs/commercial-splus-redesign.md"
     });
+    if (sourceBundleFirst) {
+      actions.push({
+        id: "restore_issue_first_live_data",
+        owner: "lead",
+        action: `현재 live 첫 카드가 구체 이슈가 아니라 공개자료 묶음(${firstIssues || "first issue unknown"})이다. API 연결 후 /home issueCards가 실제 주제형 Issue를 먼저 반환하는지 확인하고, 공식자료 묶음은 보조/자료 범위 맥락으로 내려야 한다.`,
+        verify: "pnpm check:visual-surface:live && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm service:watch:visual",
+        reference: "docs/commercial-splus-redesign.md"
+      });
+    }
   }
   return actions;
 }

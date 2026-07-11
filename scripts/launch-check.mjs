@@ -349,9 +349,12 @@ if (
   !/web_visual_surface/.test(serviceWatch) ||
   !/publicPayloadRoutes/.test(serviceWatch) ||
   !/serviceStates/.test(serviceWatch) ||
+  !/firstIssues/.test(serviceWatch) ||
+  !/sourceBundleFirst/.test(serviceWatch) ||
   !/non-live data state/.test(serviceWatch) ||
   !/withVisualSurface/.test(serviceWatch) ||
   !/stop_live_visual_surface_regression/.test(serviceWatch) ||
+  !/restore_issue_first_live_data/.test(serviceWatch) ||
   !/requiredActions/.test(serviceWatch) ||
   !/connect_api_endpoint/.test(serviceWatch) ||
   !/fix_web_runtime_config/.test(serviceWatch) ||

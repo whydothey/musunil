@@ -11,7 +11,7 @@ pnpm render:web-settings
 
 ## 1. 현재 차단 항목
 
-2026-07-12 03:26 KST live 감시 기준으로 최신 UI 정적 파일은 `musunil.com`에 반영됐다. `web_static_manifest`, `web_runtime_config`, `web_forbidden_ui_absent`는 통과했고, `config.js`도 `https://api.musunil.com`을 가리킨다.
+2026-07-12 03:40 KST live 감시 기준으로 최신 UI 정적 파일은 `musunil.com`에 반영됐다. `web_static_manifest`, `web_runtime_config`, `web_forbidden_ui_absent`는 통과했고, `config.js`도 `https://api.musunil.com`을 가리킨다.
 
 출시 직전 완료 전까지 남는 차단 항목은 아래 순서로 처리한다.
 
@@ -19,8 +19,9 @@ pnpm render:web-settings
 |---|---|---|---|---|
 | 1 | API DNS | `api_endpoint_preflight` 실패: `getaddrinfo ENOTFOUND api.musunil.com` | `pnpm render:api-settings` 출력대로 Render `musunil-api` 설정과 env source를 확인하고, `api.musunil.com` custom domain과 Cloudflare DNS를 연결한다. | `pnpm render:api-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm service:watch:visual` |
 | 2 | Static headers | `/`, `/config.js`, `/build-info.json`에 CSP, Permissions, Referrer, nosniff, X-Frame-Options가 없고 Cache-Control이 `no-store`가 아니다. | `pnpm render:web-settings` 출력의 `Cache-Control`, CSP, `Permissions-Policy`, `Referrer-Policy`, `nosniff`, `X-Frame-Options`를 Render Static Site에 입력하고 `Clear build cache & deploy`를 실행한다. Cloudflare proxy가 켜져 있으면 header override/cache rule도 확인한다. | `pnpm render:web-settings && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy` |
-| 3 | Live data sync | `web_visual_surface` 실패: live 화면이 `serviceSyncState=delayed` fallback 상태다. | API DNS, CORS, `/ready`, public payload가 연결되어 Web이 live 상태로 동기화되게 한다. static hash 최신성만으로 출시 승급하지 않는다. | `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm service:watch:visual` |
-| 4 | Build metadata | `build-info.json`이 `generated-at-build` placeholder다. 단, static manifest hash로 최신 UI 파일은 확인됐다. | Render가 build command output을 publish하는지 확인한다. 계속 수동 Static Site를 유지하면 static manifest 검증을 fallback 경고로 인정하되, 최신성 판정은 hash로 한다. | `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy` |
+| 3 | Live data sync | `web_visual_surface` 실패: live 화면이 `serviceSyncState=delayed` fallback 상태이고 첫 카드가 `지역별 집회 공개 일정`이다. | API DNS, CORS, `/ready`, public payload가 연결되어 Web이 live 상태로 동기화되게 한다. static hash 최신성만으로 출시 승급하지 않는다. | `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm service:watch:visual` |
+| 4 | Issue-first live data | `sourceBundleFirst=4/4`: 390/430/768/1440px 홈 첫 카드가 구체 주제가 아니라 공개자료 묶음이다. | `/home`의 첫 issueCard가 실제 주제형 Issue가 되게 하고, 공개자료 묶음은 자료 범위/지역 현황 맥락으로 낮춘다. | `pnpm check:visual-surface:live && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm service:watch:visual` |
+| 5 | Build metadata | `build-info.json`이 `generated-at-build` placeholder다. 단, static manifest hash로 최신 UI 파일은 확인됐다. | Render가 build command output을 publish하는지 확인한다. 계속 수동 Static Site를 유지하면 static manifest 검증을 fallback 경고로 인정하되, 최신성 판정은 hash로 한다. | `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy` |
 
 통합 감시 문서는 매번 아래 명령으로 갱신한다.
 
@@ -155,6 +156,7 @@ pnpm service:watch:visual
 - Live `config.js`의 `apiBaseUrl`이 `https://api.musunil.com`이다.
 - `pnpm check:visual-surface:live`가 실제 운영 도메인에서 통과한다.
 - `pnpm service:watch:visual`의 `web_runtime_config`와 `web_visual_surface`가 ok이고 detail 또는 scenarios의 `serviceSyncState`가 `live`다.
+- live 홈 첫 카드가 공개자료 묶음이 아니라 실제 주제형 Issue다.
 - Strict Web header check가 no-store, CSP, Permissions, Referrer, nosniff, frame 방어까지 통과한다.
 - `api.musunil.com`이 HTTPS로 resolve되고 `/ready`가 `ready=true`다.
 - 공개 payload에 사용자 원문, 정밀 GPS, storage key, identity hash가 없다.
