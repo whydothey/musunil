@@ -60,7 +60,7 @@ Last updated: 2026-07-12 02:55 KST
   - 상태 변경 알림 구독
   - 운영 seed에서 프리뷰/mock 데이터 제거
   - 운영형 Web fallback에서 프리뷰/mock 카드와 핀 제거
-  - 운영형 Web fallback을 실제 공개자료 기준 3개 이슈 파일로 분리: 지역별 집회 공개 일정, 대구 집회 신고·개최 현황, 전국 집회 신고·개최 통계
+  - 운영형 Web fallback의 공개자료 묶음 데이터는 유지하되, 지역별 공개 일정/신고 통계를 홈 이슈 카드로 대체 노출하지 않게 차단
   - Web API override를 localhost로 제한
   - 홈 카드 사용자 라벨에서 내부 enum 원문 제거
   - 데스크톱/모바일 실제 캡처 검증: overflow 0, clipped text 0, 지도 핀 겹침 0

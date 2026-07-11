@@ -533,18 +533,23 @@ function requiredActions(result) {
   }
   const visualSurface = byId.get("web_visual_surface");
   if (visualSurface && !visualSurface.ok && !visualSurface.skipped) {
-    const nonLiveDataState = visualSurface.message?.includes("non-live data state");
+    const visualMessage = visualSurface.message || "";
+    const nonLiveDataState =
+      visualMessage.includes("non-live data state") ||
+      /state=(?!live\b)[a-z_-]+/i.test(visualMessage) ||
+      /serviceSyncState=(?!live\b)[a-z_-]+/i.test(visualMessage);
+    const emptyLiveIssueFeed = /issues=0\b/.test(visualMessage) || /expected at least 3 issue cards, got 0/.test(visualMessage);
     const sourceBundleFirst = /sourceBundleFirst=([1-9]\d*)\/(\d+)/.test(visualSurface.message || "") || /public source bundle/.test(visualSurface.message || "");
     const firstIssues = visualSurface.message?.match(/firstIssues=([^;]+)/)?.[1]?.trim()
       || visualSurface.message?.match(/public source bundle[^:]*:\s*([^\n]+)/)?.[1]?.trim();
     actions.push({
       id: "stop_live_visual_surface_regression",
       owner: "lead",
-      action: nonLiveDataState
-        ? "실제 musunil.com이 저장된 공개자료 fallback 상태로 렌더링 중이다. API DNS/CORS/Web config 연결을 고쳐 `serviceSyncState=live`가 될 때까지 배포 승급을 중단한다."
+      action: nonLiveDataState || emptyLiveIssueFeed
+        ? "실제 musunil.com이 live issue feed를 받지 못하고 있다. API DNS/CORS/Web config와 `/home.issueCards` 연결을 고쳐 `serviceSyncState=live`이고 홈 이슈 3개 이상이 렌더링될 때까지 배포 승급을 중단한다."
         : "실제 musunil.com 렌더링 회귀다. 홈 이슈 수, 상세 전환, 인증영상/지도/제보 표면, 모바일 overflow와 하단 내비 겹침을 수정하기 전까지 배포 승급을 중단한다.",
       verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm service:watch:visual",
-      reference: nonLiveDataState ? "docs/launch-cutover-runbook.md#3-render-api" : "docs/commercial-splus-redesign.md"
+      reference: nonLiveDataState || emptyLiveIssueFeed ? "docs/launch-cutover-runbook.md#3-render-api" : "docs/commercial-splus-redesign.md"
     });
     if (sourceBundleFirst) {
       actions.push({

@@ -37,7 +37,7 @@ const plan = {
     {
       id: "live_data_sync",
       owner: "operator",
-      action: "After Web and API domains are connected, confirm the live browser surface is not rendering saved fallback data and reports serviceSyncState=live.",
+      action: "After Web and API domains are connected, confirm the live browser surface reports serviceSyncState=live and renders at least 3 topic issue cards from /home.issueCards.",
       verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm service:watch:visual"
     }
   ],
@@ -110,7 +110,7 @@ const plan = {
     "Live static manifest matches the current repo output.",
     "Live config.js apiBaseUrl matches https://api.musunil.com.",
     "Live visual surface smoke passes on musunil.com across 390px, 430px, 768px, and 1440px.",
-    "Integrated service watch passes with web_runtime_config ok, web_visual_surface ok, and serviceSyncState=live.",
+    "Integrated service watch passes with web_runtime_config ok, web_visual_surface ok, serviceSyncState=live, and at least 3 rendered topic issue cards.",
     "Strict Web header check passes with no-store, CSP, Permissions-Policy, Referrer-Policy, nosniff, and frame protection on /, /config.js, and /build-info.json.",
     "api.musunil.com resolves over HTTPS and /ready is ready=true.",
     "Public payloads expose no raw user text, private GPS, storage keys, identity hashes, or forbidden engagement surfaces.",

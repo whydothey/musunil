@@ -324,9 +324,11 @@ if (
   !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(launchCutoverPlan) ||
   !/check:visual-surface:live/.test(launchCutoverPlan) ||
   !/service:watch:visual/.test(launchCutoverPlan) ||
-  !/serviceSyncState=live/.test(launchCutoverPlan)
+  !/serviceSyncState=live/.test(launchCutoverPlan) ||
+  !/\/home\.issueCards/.test(launchCutoverPlan) ||
+  !/3 topic issue cards/.test(launchCutoverPlan)
 ) {
-  failures.push("launch cutover plan must cover API DNS, Cloudflare DNS, Render headers, live visual surface, live data sync state, and verification commands");
+  failures.push("launch cutover plan must cover API DNS, Cloudflare DNS, Render headers, live visual surface, live data sync state, topic issue cards, and verification commands");
 }
 if (
   !/Launch Cutover Runbook/.test(launchCutoverRunbook) ||
@@ -337,6 +339,9 @@ if (
   !/identity_required/.test(launchCutoverRunbook)
 ) {
   failures.push("launch cutover runbook must explain the final service cutover and identity boundary");
+}
+if (/sourceBundleFirst=4\/4/.test(launchCutoverRunbook) || /첫 카드가 `지역별 집회 공개 일정`/.test(launchCutoverRunbook)) {
+  failures.push("launch cutover runbook current blockers must reflect the latest live issue-feed state, not stale source-bundle-first evidence");
 }
 if (
   !/api_endpoint_preflight/.test(serviceWatch) ||
