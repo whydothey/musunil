@@ -6701,23 +6701,8 @@
             }
           }));
         const presenceAreas = occurrenceCards
-          .filter((card) => card.publicLocation && Number(card.proof || 0) > 0)
-          .map((card) => ({
-            type: "Feature",
-            geometry: { type: "Polygon", coordinates: [mapCircleCoordinates(card.publicLocation.lng, card.publicLocation.lat, card.publicRadiusM || 220)] },
-            properties: {
-              id: `presence_area_${card.id}`,
-              occurrenceUnitId: card.id,
-              targetType: card.targetType,
-              targetId: card.id,
-              issueId: card.issueId,
-              title: cardDisplayTitle(card),
-              regionLabel: card.regionLabel,
-              evidenceCount: Number(card.proof || 0),
-              publicRadiusM: card.publicRadiusM || 220,
-              source: "proof_of_presence_area"
-            }
-          }));
+          .map((card) => fallbackPresenceAreaFeatureForCard(card))
+          .filter(Boolean);
         return {
           issues,
           occurrenceUnits: occurrenceCards.map((card) => ({
@@ -6729,7 +6714,7 @@
             lifecycleState: card.lifecycleState,
             hasSourcePin: Boolean(card.publicLocation),
             hasPresenceArea: presenceAreas.some((feature) => feature.properties.occurrenceUnitId === card.id),
-            liveEvidenceCount: Number(card.proof || 0),
+            liveEvidenceCount: fallbackPresenceEvidenceCount(card),
             updatedAt: card.updatedAt
           })),
           geojson: {
@@ -6737,6 +6722,37 @@
             presenceAreas: { type: "FeatureCollection", features: presenceAreas }
           }
         };
+      }
+
+      function fallbackPresenceAreaFeatureForCard(card) {
+        const evidenceCount = fallbackPresenceEvidenceCount(card);
+        if (!card.publicLocation || !evidenceCount) return undefined;
+        const radiusM = fallbackPresenceRadiusM(card);
+        return {
+          type: "Feature",
+          geometry: { type: "Polygon", coordinates: [mapCircleCoordinates(card.publicLocation.lng, card.publicLocation.lat, radiusM)] },
+          properties: {
+            id: `presence_area_${card.id}`,
+            occurrenceUnitId: card.id,
+            targetType: card.targetType,
+            targetId: card.id,
+            issueId: card.issueId,
+            title: cardDisplayTitle(card),
+            regionLabel: card.regionLabel,
+            evidenceCount,
+            publicRadiusM: radiusM,
+            source: "proof_of_presence_area"
+          }
+        };
+      }
+
+      function mapPresenceAreaForCard(card) {
+        const targetId = card?.id;
+        return (latestMapData?.geojson?.presenceAreas?.features || []).find((feature) => feature.properties?.targetId === targetId || feature.properties?.occurrenceUnitId === targetId);
+      }
+
+      function mapPresenceEvidenceCount(card) {
+        return Number(mapPresenceAreaForCard(card)?.properties?.evidenceCount || fallbackPresenceEvidenceCount(card) || 0);
       }
 
       function mapCircleCoordinates(lng, lat, radiusM, steps = 40) {
@@ -7062,6 +7078,24 @@
 
       function firstPublishableLivePreview(items) {
         return (Array.isArray(items) ? items : []).find(hasPublicLiveMedia);
+      }
+
+      function fallbackLiveClaimsForCard(card) {
+        return (fallbackLiveClaimsByTarget[card?.id] || []).filter(hasPublicLiveMedia);
+      }
+
+      function fallbackPresenceEvidenceCount(card) {
+        return fallbackLiveClaimsForCard(card).length;
+      }
+
+      function fallbackPresenceRadiusM(card) {
+        const radii = fallbackLiveClaimsForCard(card)
+          .map((item) => Number(item.publicRadiusM))
+          .filter((value) => Number.isFinite(value) && value > 0);
+        const cardRadius = Number(card?.publicRadiusM);
+        if (Number.isFinite(cardRadius) && cardRadius > 0) radii.push(cardRadius);
+        const radius = radii.length ? Math.max(...radii) : 200;
+        return Math.max(200, Math.min(300, radius));
       }
 
       function renderIssueStoryVisual(issue) {
@@ -7802,7 +7836,9 @@
           showToast("검색 결과가 없습니다.");
           return;
         }
-        selectCard(match, { toast: "검색 결과를 열었습니다." });
+        selectCard(match, { openDetail: false, toast: "지도에서 검색 결과를 봅니다." });
+        focusPanel(document.querySelector(".map-sheet"));
+        refreshMapSurface();
       }
 
       function selectCard(card, options = {}) {
@@ -7840,16 +7876,24 @@
       function renderMapSelectionContext(card) {
         if (!card) return;
         const cardIssue = loadedIssueCards.find((issue) => issue.id === card.issueId);
+        const presenceArea = mapPresenceAreaForCard(card);
+        const presenceCount = mapPresenceEvidenceCount(card);
         $("map-state").textContent = labelState(card.lifecycleState);
         $("map-mode").textContent = "현장 위치";
         $("map-title").textContent = cardDisplayTitle(card);
-        $("map-summary").textContent = `${card.regionLabel || "전국"} · 공개 자료 위치와 현장 인증 범위만 표시합니다.`;
+        $("map-summary").textContent = presenceArea
+          ? `${card.regionLabel || "전국"} · 자료 위치와 현장 인증 범위를 함께 표시합니다.`
+          : `${card.regionLabel || "전국"} · 공개 자료 위치만 확인됐습니다.`;
         $("map-context").textContent = `${cardIssue?.title || "선택 이슈"}와 연결된 현장입니다.`;
         $("map-impact").textContent = `${card.regionLabel || "전국"}에서 확인된 자료 위치입니다.`;
-        $("map-proof").textContent = Number(card.proof || 0) > 0
-          ? `${Number(card.proof)}건의 공개 근거를 상세에서 출처별로 분리해 봅니다.`
-          : "공개 근거가 확인되면 상세에서 출처별로 분리해 봅니다.";
-        $("map-update").textContent = "최근 정리된 자료 기준이며, 정밀 제보 위치는 공개하지 않습니다.";
+        $("map-proof").textContent = presenceArea
+          ? `${presenceCount}건의 현장 인증 자료로 공개 범위를 계산했습니다.`
+          : Number(card.proof || 0) > 0
+            ? `${Number(card.proof)}건의 공개 근거가 있으며, 현장 인증 영역은 아직 없습니다.`
+            : "공개 근거가 확인되면 상세에서 출처별로 분리해 봅니다.";
+        $("map-update").textContent = presenceArea
+          ? "정밀 제보 위치는 공개하지 않고 반경으로 흐려 표시합니다."
+          : "현장 인증 영상이 공개되면 위치 범위를 별도로 표시합니다.";
         $("map-risk").textContent = needsVerification(card) ? "출처나 현장 자료를 더 확인해야 합니다." : "공개 근거가 있는 위치만 표시합니다.";
       }
 
@@ -8933,7 +8977,6 @@
       function drawFallbackPresence(ctx, project, pinFeatures, areaFeatures, dark) {
         const brand = semanticColor("--brand") || "#0f7886";
         const selectedId = selected?.id || "";
-        let drewArea = false;
         areaFeatures.forEach((feature) => {
           const coordinates = fallbackCoordinatePairs(feature.geometry);
           if (coordinates.length < 3) return;
@@ -8946,25 +8989,13 @@
             else ctx.lineTo(x, y);
           });
           ctx.closePath();
-          ctx.fillStyle = isSelected ? "rgba(15, 120, 134, .3)" : "rgba(15, 120, 134, .17)";
-          ctx.strokeStyle = isSelected ? brand : "rgba(15, 120, 134, .66)";
-          ctx.lineWidth = isSelected ? 3 : 1.8;
+          ctx.fillStyle = isSelected ? "rgba(15, 120, 134, .38)" : "rgba(15, 120, 134, .18)";
           ctx.fill();
+          ctx.strokeStyle = "rgba(255, 255, 255, .9)";
+          ctx.lineWidth = isSelected ? 7 : 4;
           ctx.stroke();
-          ctx.restore();
-          drewArea = true;
-        });
-        if (drewArea) return;
-        pinFeatures.forEach((feature) => {
-          const isSelected = feature.properties?.targetId === selectedId;
-          const [x, y] = project(feature.geometry.coordinates);
-          ctx.save();
-          ctx.beginPath();
-          ctx.ellipse(x, y, isSelected ? 74 : 58, isSelected ? 46 : 36, -0.18, 0, Math.PI * 2);
-          ctx.fillStyle = isSelected ? "rgba(15, 120, 134, .24)" : "rgba(15, 120, 134, .13)";
-          ctx.strokeStyle = isSelected ? brand : "rgba(15, 120, 134, .5)";
-          ctx.lineWidth = isSelected ? 2.4 : 1.4;
-          ctx.fill();
+          ctx.strokeStyle = isSelected ? brand : "rgba(15, 120, 134, .72)";
+          ctx.lineWidth = isSelected ? 3.6 : 2;
           ctx.stroke();
           ctx.restore();
         });
@@ -9094,7 +9125,7 @@
               source: "presence-areas",
               paint: {
                 "fill-color": semanticColor("--brand"),
-                "fill-opacity": ["case", ["boolean", ["feature-state", "selected"], false], 0.34, 0.18]
+                "fill-opacity": ["case", ["boolean", ["feature-state", "selected"], false], 0.42, 0.2]
               }
             });
           }
@@ -9105,8 +9136,8 @@
               source: "presence-areas",
               paint: {
                 "line-color": semanticColor("--brand"),
-                "line-opacity": 0.76,
-                "line-width": ["case", ["boolean", ["feature-state", "selected"], false], 3.2, 1.8]
+                "line-opacity": 0.88,
+                "line-width": ["case", ["boolean", ["feature-state", "selected"], false], 4, 2.2]
               }
             });
           }
@@ -9194,7 +9225,8 @@
           mapSafeFly(exact.center, exact.zoom);
           return;
         }
-        mapSafeFly(cardCenter(card));
+        const area = mapPresenceAreaForCard(card);
+        mapSafeFly(cardCenter(card), area ? 14.4 : 12);
       }
 
       function cardCenterOverride(card) {
@@ -9244,10 +9276,10 @@
             liveMap.setPaintProperty("occurrence-pin-halo", "circle-stroke-width", ["case", ["==", ["get", "targetId"], selectedId], 4, 2]);
           }
           if (liveMap.getLayer("presence-areas-fill")) {
-            liveMap.setPaintProperty("presence-areas-fill", "fill-opacity", ["case", ["==", ["get", "targetId"], selectedId], 0.34, 0.18]);
+            liveMap.setPaintProperty("presence-areas-fill", "fill-opacity", ["case", ["==", ["get", "targetId"], selectedId], 0.42, 0.2]);
           }
           if (liveMap.getLayer("presence-areas-line")) {
-            liveMap.setPaintProperty("presence-areas-line", "line-width", ["case", ["==", ["get", "targetId"], selectedId], 3.2, 1.8]);
+            liveMap.setPaintProperty("presence-areas-line", "line-width", ["case", ["==", ["get", "targetId"], selectedId], 4, 2.2]);
           }
         } catch {}
       }

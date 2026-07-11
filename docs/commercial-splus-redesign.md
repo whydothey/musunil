@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 10:32 KST
+Last updated: 2026-07-11 10:49 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -31,6 +31,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 10:04 패치로 static/운영 API 빈 응답 상태에서도 공식 공개자료 fallback 이슈가 보여 빈 홈 회귀를 막았다. 지도 `상세`는 선택 이슈가 아니라 선택 현장 `target` 상세로 열리며, 검색 실패는 지도 시트 안에 회복 문구를 표시한다. 390px CDP 캡처에서 `scrollWidth=390`, 하단 5탭, 지도 상세 `detailTitle=mapTitle`, `selectedTab=근거`, `toastCount=0`을 확인했다. 그래도 실제 운영 API와 사용자 수락 전 S+는 아니다.
 - 10:16 독립 Visual/IA 재검토에서 `카드 안의 카드`, `다음 행동 분산`, `영상/영상제보 오해`, `위치·규모 단위 불명확`이 P0/P1로 지적됐다. 30차 패치는 홈 카드 주행동을 `지도에서 확인` 1개로 올리고 보조 액션을 `근거/인증영상/반론`으로 낮췄으며, 탭 라벨을 `인증영상`과 `현장촬영`으로 분리했다. 390px CDP `scrollWidth=390`, scanline `위치 2곳 · 현장 5건 · 공식 자료 6건 · 인원 미확인`, forbidden `영상제보=[]`를 확인했다. 그래도 지도 placeholder감, 실제 제보 영상 품질, 사용자 수락 전 S+는 아니다.
 - 10:32 패치로 지도 fallback canvas를 와이어프레임 도로 그림에서 실제 지도 표면과 같은 톤의 데이터 보조 레이어로 바꿨다. MapLibre 타일 로드가 늦어도 `자료 위치 핀`과 `현장 인증 범위`를 다시 그리며, `styledata/idle`에서도 GeoJSON 레이어 동기화를 재시도한다. 390px/1440px 지도 캡처에서 `overflowX=false`, `navOverlap=false`, 금지 문구 0을 확인했다. 현장 인증 범위의 최종 시각 평가는 실제 공개 가능 GPS evidence가 붙은 운영 데이터로 다시 해야 한다.
+- 10:49 패치로 지도 인증 영역은 일반 공개 근거 수가 아니라 공개 가능한 현장 인증 영상 Evidence가 있을 때만 생성되게 했다. 공식 자료 위치만 있는 대구 현장은 `공개 자료 위치만 확인됐습니다`로 표시되고, 서울 현장 인증 mock은 `1건의 현장 인증 자료로 공개 범위를 계산했습니다`로 표시된다. 지도 검색은 모바일에서 상세 시트를 자동으로 열지 않고 지도 맥락 안에서 결과를 선택하며, 인증 영역이 있는 현장은 근접 줌으로 반경이 읽히게 한다. 사용자 수락 전 S+는 아니다.
 
 ## Agent Feedback Summary
 
@@ -77,6 +78,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | PM Local Patch 14 | 09:37 검색창·범례·탐색 타일이 각각 카드처럼 떠 있어 지도 화면이 패널 묶음으로 읽혔다. | 검색/범례를 54px 이하 도구막대로 합치고, 탐색 타일을 52px pill/화살표 액션으로 낮춤. 데스크톱 지도 선택 시트도 62px compact로 정리 |
 | Visual/IA Red-Team 12 | 10:16 홈 카드 4개 CTA가 기능 목록처럼 보이고, `영상/영상제보`가 공개 열람과 제보 작성으로 구분되지 않는다. 10초 위치·규모 단위도 문장 속에 묻힌다. | 홈 CTA를 `지도에서 확인` primary 1개로 통합, 보조 액션 `근거/인증영상/반론`으로 낮춤. 탭 라벨 `인증영상/현장촬영`, scanline `위치/현장/공식 자료/인원` 단위 고정 |
 | PM Local Patch 15 | 10:32 지도 fallback이 흐린 격자와 회색 선으로 보여 실제 상업용 지도보다 와이어프레임처럼 읽힌다. | fallback canvas를 지도 톤 베이스+자료 핀+인증 영역 렌더링으로 교체하고, MapLibre `styledata/idle`에서 source/layer 동기화를 재시도 |
+| PM Local Patch 16 | 10:49 인증 영역이 공식 자료 핀만 있는 현장에도 생기면 사용자가 GPS 현장 인증이 있다고 오해할 수 있다. | fallback `presenceAreas`를 공개 가능한 live Evidence 기준으로만 생성. 공식 자료 핀과 현장 인증 영역 문구를 분리하고, 지도 검색은 상세 자동 오픈 없이 지도 맥락에 남기며 인증 영역이 있는 현장은 14.4 줌으로 확대 |
 
 ## Active Goal Board
 
@@ -120,6 +122,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 34 | 지도 상세 흐름·모바일 overflow 회귀 방지 | 1차 완료 | 390px CDP `scrollWidth=390`, 하단 탭 `홈/영상/지도/법안/영상제보`, 카드 액션 2열, 지도 상세 `detailTitle=mapTitle`, `selectedTab=근거`, `toastCount=0`; web smoke에 선택 현장 상세·검색 실패·공식 fallback 이슈 가드 추가 |
 | 35 | 주행동 단일화·영상/촬영 분리 | 1차 완료 | 390px 홈 `primary=지도에서 확인`, secondary `근거/인증영상/반론`, 하단 탭 `홈/인증영상/지도/법안/현장촬영`, scanline `위치 2곳 · 현장 5건 · 공식 자료 6건 · 인원 미확인`, `overflowX=false`, `영상제보` 노출 0 |
 | 36 | 지도 표면·fallback 상업용화 | 1차 완료 | 390px 지도 `mapRect=370x460`, `navOverlap=false`, `scrollWidth=390`; 1440px 지도 `mapRect=1200x700`, `sheet=62px`, 금지 문구 0. 실제 GPS evidence 기반 영역 시각 평가는 운영 데이터 연결 후 재검증 |
+| 37 | GPS evidence 기반 지도 영역 분리 | 1차 완료 | 공식 자료 핀만 있는 현장은 `현장 인증 영역은 아직 없습니다`, 현장 인증 영상 Evidence가 있는 현장은 `현장 인증 자료로 공개 범위를 계산했습니다`와 근접 줌 영역으로 분리. 모바일 검색 `서울`은 `detailOpen=false`, `mapVisible=true`, `navOverlap=false`, `scrollWidth=390` |
 
 ## Current Evidence
 
@@ -155,6 +158,9 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 10:32 mobile map surface | `docs/commercial-splus-surface31-map-fallback-mobile-390-2026-07-11.png` |
 | 10:32 desktop map surface | `docs/commercial-splus-surface31-map-fallback-desktop-1440-2026-07-11.png` |
 | 10:32 map surface metrics | 390px `mapRect=370x460`, `navOverlap=false`, `scrollWidth=390`, forbidden 0. 1440px `mapRect=1200x700`, sheet 62px, forbidden 0 |
+| 10:49 official source pin | `docs/commercial-splus-surface32-map-official-pin-mobile-390-2026-07-11.png` |
+| 10:49 GPS evidence area | `docs/commercial-splus-surface32-map-gps-area-mobile-390-2026-07-11.png` |
+| 10:49 map truthfulness metrics | 공식 자료 핀: `detailOpen=false`, title `대구 7월 9일 집회 공개 일정`, summary `대구 · 공개 자료 위치만 확인됐습니다.`, proof `1건의 공개 근거가 있으며, 현장 인증 영역은 아직 없습니다.` 검색 `서울`: `detailOpen=false`, `mapVisible=true`, proof `1건의 현장 인증 자료로 공개 범위를 계산했습니다.`, 영역 근접 줌 표시, `navOverlap=false`, `scrollWidth=390` |
 | 390px mobile capture | `docs/commercial-splus-mobile-390-2026-07-11.png` |
 | 430px mobile capture | `docs/commercial-splus-mobile-430-2026-07-11.png` |
 | 768px tablet capture | `docs/commercial-splus-tablet-768-2026-07-11.png` |

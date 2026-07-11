@@ -189,6 +189,11 @@ async function checkWeb(port) {
   assert(index.includes("presence-areas"), "MapLibre presence area source missing");
   assert(index.includes("fallbackPinFeatures"), "map fallback data pin renderer missing");
   assert(index.includes("drawFallbackPresence"), "map fallback presence area renderer missing");
+  assert(index.includes("fallbackPresenceAreaFeatureForCard"), "map fallback presence area should be evidence-gated");
+  assert(index.includes("fallbackPresenceEvidenceCount"), "map fallback live evidence counter missing");
+  assert(!index.includes(".filter((card) => card.publicLocation && Number(card.proof || 0) > 0)"), "map fallback presence area must not use generic proof count");
+  assert(!index.includes("ctx.ellipse(x, y, isSelected ? 74 : 58"), "map fallback must not draw fake presence areas from pins");
+  assert(index.includes("mapSafeFly(cardCenter(card), area ? 14.4 : 12);"), "map should zoom closer when a presence area exists");
   assert(index.includes("refreshMapSurface"), "map refresh fallback helper missing");
   assert(index.includes('liveMap.on("styledata", () => syncOccurrenceMapLayers());'), "MapLibre styledata layer sync missing");
   assert(index.includes('liveMap.on("idle", () => syncOccurrenceMapLayers());'), "MapLibre idle layer sync missing");
@@ -199,6 +204,7 @@ async function checkWeb(port) {
   assert(index.includes("검색 결과 없음"), "map search miss title missing");
   assert(index.includes("지역·이슈·현장명을 다시 입력해 주세요."), "map search miss recovery copy missing");
   assert(index.includes("검색어와 맞는 공개 자료 위치가 아직 없습니다."), "map search miss sheet state missing");
+  assert(index.includes('selectCard(match, { openDetail: false, toast: "지도에서 검색 결과를 봅니다." });'), "map search should keep results in map context");
   assert(!index.includes("검색어와 맞는 공개 상황이 아직 없습니다."), "stale map search miss toast-only copy present");
   assert(index.indexOf('class="map-shell"') < index.indexOf('id="explore-grid"'), "map should render before explore grid");
   assert(!/좋아요|댓글|찬반|추천|비추천|팔로우/u.test(index), "forbidden social mechanic copy present");
