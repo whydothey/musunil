@@ -29,6 +29,7 @@ const webServer = readFileSync(resolve(cwd, "scripts/serve-web.mjs"), "utf8");
 const webDeployCheck = readFileSync(resolve(cwd, "scripts/check-web-deploy.mjs"), "utf8");
 const renderWebSettings = readFileSync(resolve(cwd, "scripts/render-web-settings.mjs"), "utf8");
 const launchCutoverPlan = readFileSync(resolve(cwd, "scripts/launch-cutover-plan.mjs"), "utf8");
+const launchNextActions = readFileSync(resolve(cwd, "scripts/launch-next-actions.mjs"), "utf8");
 const launchReady = readFileSync(resolve(cwd, "scripts/launch-ready.mjs"), "utf8");
 const launchCutoverRunbook = readFileSync(resolve(cwd, "docs/launch-cutover-runbook.md"), "utf8");
 const webFlowSmoke = readFileSync(resolve(cwd, "scripts/ci-web-flow-smoke.mjs"), "utf8");
@@ -226,6 +227,18 @@ if (!/"render:web-settings"/.test(packageJson) || !/render-web-settings\.mjs/.te
 }
 if (!/"render:api-settings"/.test(packageJson) || !/render-api-settings\.mjs/.test(packageJson)) {
   failures.push("Render API settings helper command is missing");
+}
+if (
+  !/"launch:blockers"/.test(packageJson) ||
+  !/launch-next-actions\.mjs/.test(packageJson) ||
+  !/docs\/splus-service-watch\.md/.test(launchNextActions) ||
+  !/Required Actions/.test(launchNextActions) ||
+  !/--refresh/.test(launchNextActions) ||
+  !/service:watch:visual/.test(launchNextActions) ||
+  !/render:api-settings/.test(launchNextActions) ||
+  !/render:web-settings/.test(launchNextActions)
+) {
+  failures.push("Launch blockers helper must summarize service watch required actions and verification commands");
 }
 if (
   !/api\.musunil\.com/.test(renderApiSettings) ||

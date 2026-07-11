@@ -3,6 +3,7 @@
 이 문서는 `musunil.com`을 실제 공개 서비스로 넘길 때 마지막에 사람이 입력해야 하는 값을 한곳에 모은다. 세부 값은 `render.yaml`과 `config/musunil.user-inputs.local.yaml`을 기준으로 하며, 복사 가능한 최신 출력은 항상 아래 명령을 먼저 본다.
 
 ```bash
+pnpm launch:blockers
 pnpm launch:cutover-plan
 pnpm render:api-settings
 pnpm render:web-settings
@@ -24,6 +25,8 @@ pnpm render:web-settings
 통합 감시 문서는 매번 아래 명령으로 갱신한다.
 
 ```bash
+pnpm launch:blockers -- --refresh
+
 MUSUNIL_WEB_BASE_URL=https://musunil.com \
 MUSUNIL_API_BASE_URL=https://api.musunil.com \
 MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com \
