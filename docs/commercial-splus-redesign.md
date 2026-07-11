@@ -298,6 +298,9 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 12:10 mobile report single flow | `docs/commercial-splus-surface38-report-mobile-390-2026-07-11.png` |
 | 12:10 desktop report single flow | `docs/commercial-splus-surface38-report-desktop-1440-2026-07-11.png` |
 | 12:10 report metrics | 모바일 390px `현장촬영` 첫 화면은 `empty-state=false`, 단계표 hidden, CTA `근처 현장 찾기`, 보호 pill `정밀 위치 비공개/제출 전 현장 확인`, `navOverlap=false`, `scrollWidth=390`. 데스크톱 1440px locate 단계는 오른쪽 맥락 패널 hidden, 중앙 단일 흐름 680px, CTA와 headline gap 12px. 실제 본인확인/위치권한/운영 GPS 리허설 전 S+는 아니다. |
+| 12:22 mobile reels pending full | `docs/commercial-splus-surface39-reels-mobile-390-2026-07-11.png` |
+| 12:22 desktop reels pending full | `docs/commercial-splus-surface39-reels-desktop-1440-2026-07-11.png` |
+| 12:22 reels metrics | poster 없는 LIVE Claim은 legacy `reels-review-panel` 대신 `reel-card reel-full reel-pending`으로 표시된다. 모바일 390px 카드 526px, review slot visible, 액션 `근거/위치/이슈`, `navOverlap=false`, `scrollWidth=390`. 데스크톱 1440px 카드 700px, 액션 bottom 892px로 첫 viewport 안에 표시. 실제 공개 영상 품질과 사용자 수락 전 S+는 아니다. |
 
 ## Non-Negotiable Gates
 
