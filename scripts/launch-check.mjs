@@ -245,12 +245,15 @@ if (
   !/docs\/splus-service-watch\.md/.test(launchNextActions) ||
   !/Required Actions/.test(launchNextActions) ||
   !/--refresh/.test(launchNextActions) ||
+  !/Report freshness/.test(launchNextActions) ||
+  !/MUSUNIL_LAUNCH_BLOCKERS_STALE_AFTER_MINUTES/.test(launchNextActions) ||
+  !/refreshRequired/.test(launchNextActions) ||
   !/service:watch:visual/.test(launchNextActions) ||
   !/render:api-settings/.test(launchNextActions) ||
   !/render:web-settings/.test(launchNextActions) ||
   !/launch:post-deploy-smoke -- --require-laws/.test(launchNextActions)
 ) {
-  failures.push("Launch blockers helper must summarize service watch required actions and Web/API/laws verification commands");
+  failures.push("Launch blockers helper must summarize service watch freshness, required actions, and Web/API/laws verification commands");
 }
 if (
   !/api\.musunil\.com/.test(renderApiSettings) ||

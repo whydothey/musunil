@@ -102,7 +102,7 @@
 - `pnpm service:watch:visual`은 위 감시에 live visual surface와 Web `serviceSyncState` 확인까지 포함한다. 운영 도메인이 저장된 공개자료 fallback 상태인 `delayed`로 렌더링되면 실패해야 한다.
 - `pnpm service:watch:visual`은 live 홈 첫 카드가 공개자료 묶음인지도 기록한다. `sourceBundleFirst`가 1개 이상이면 구체 이슈 우선 UX가 미달이므로 출시 승급하지 않는다.
 - 운영 API 미연결이나 `/home.issueCards` 공백으로 홈 이슈가 0개일 때도 빈 화면처럼 보이면 안 된다. 홈에는 `이슈를 불러오지 못했습니다`, `다시 확인`, `탐색 보기` 회복 경로가 표시되어야 하며, visual smoke는 이 controlled empty state를 실패 detail에 기록해야 한다.
-- `pnpm launch:blockers`가 최신 `docs/splus-service-watch.md`의 실패 checks, skipped checks, Required Actions, Render/API/Web 검증 명령을 한 화면에 요약한다. 최신 live 상태로 갱신하려면 `pnpm launch:blockers -- --refresh`를 사용한다.
+- `pnpm launch:blockers`가 `docs/splus-service-watch.md`의 실패 checks, skipped checks, Required Actions, Render/API/Web 검증 명령을 한 화면에 요약한다. 출력에는 `Report freshness`가 포함되어야 하며, 기본 15분보다 오래된 보고서는 stale로 표시하고 출시 판단에 쓰지 않는다. 최신 live 상태로 갱신하려면 `pnpm launch:blockers -- --refresh`를 사용한다.
 - production Web fallback에도 프리뷰/mock 카드와 프리뷰 전용 지도 핀이 보이지 않는다.
 - production Web fallback은 API가 끊긴 상태에서도 지역별 공개 일정/신고 통계 같은 공개자료 묶음을 홈 이슈 카드로 대체하지 않는다. 주제형 이슈가 없으면 빈 이슈 상태로 남겨야 한다.
 - production Web은 `config.js`의 `apiBaseUrl`을 기준으로 하며, `?api=`와 localStorage API override는 localhost에서만 허용된다.

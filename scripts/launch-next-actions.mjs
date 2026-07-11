@@ -53,6 +53,7 @@ if (json) {
 
 function parseReport(source) {
   const lastChecked = source.match(/^Last checked:\s*(.+)$/m)?.[1]?.trim() || null;
+  const freshness = reportFreshness(lastChecked);
   const status = source.match(/^Status:\s*(.+)$/m)?.[1]?.trim() || "unknown";
   const checks = parseTable(source, "Check", "Required Actions").map((row) => ({
     id: row[0] || "",
@@ -72,8 +73,12 @@ function parseReport(source) {
   return {
     checked: "launch_next_actions",
     lastChecked,
+    reportAgeMinutes: freshness.ageMinutes,
+    staleAfterMinutes: freshness.staleAfterMinutes,
+    stale: freshness.stale,
+    refreshRequired: freshness.stale,
     status,
-    releaseBlocked: status !== "S+ Guard" || failed.length > 0 || skipped.length > 0 || actions.length > 0,
+    releaseBlocked: freshness.stale || status !== "S+ Guard" || failed.length > 0 || skipped.length > 0 || actions.length > 0,
     passCount: ok.length,
     failCount: failed.length,
     skipCount: skipped.length,
@@ -136,9 +141,18 @@ function printMarkdown(summary) {
   console.log("# Launch Next Actions");
   console.log("");
   console.log(`Last checked: ${summary.lastChecked || "unknown"}`);
+  if (typeof summary.reportAgeMinutes === "number") {
+    console.log(`Report freshness: ${summary.stale ? "stale" : "fresh"} (${summary.reportAgeMinutes}m old, refresh after ${summary.staleAfterMinutes}m)`);
+  } else {
+    console.log(`Report freshness: unknown (run pnpm launch:blockers -- --refresh)`);
+  }
   console.log(`Status: ${summary.status}`);
   console.log(`Checks: ${summary.passCount} ok, ${summary.failCount} fail, ${summary.skipCount} skip`);
   console.log("");
+  if (summary.stale) {
+    console.log("> This blocker summary is based on stale live evidence. Run `pnpm launch:blockers -- --refresh` before making a launch decision.");
+    console.log("");
+  }
   if (!summary.releaseBlocked) {
     console.log("No launch blockers are recorded in the latest service watch report.");
     return;
@@ -173,4 +187,13 @@ function compact(value, maxLength = 240) {
   const text = String(value || "").replace(/\s+/g, " ").trim();
   if (text.length <= maxLength) return text;
   return `${text.slice(0, maxLength - 1)}...`;
+}
+
+function reportFreshness(lastChecked) {
+  const staleAfterMinutes = Number(process.env.MUSUNIL_LAUNCH_BLOCKERS_STALE_AFTER_MINUTES ?? 15);
+  if (!lastChecked) return { ageMinutes: null, staleAfterMinutes, stale: true };
+  const timestamp = Date.parse(lastChecked);
+  if (!Number.isFinite(timestamp)) return { ageMinutes: null, staleAfterMinutes, stale: true };
+  const ageMinutes = Math.max(0, Math.round((Date.now() - timestamp) / 60_000));
+  return { ageMinutes, staleAfterMinutes, stale: ageMinutes > staleAfterMinutes };
 }
