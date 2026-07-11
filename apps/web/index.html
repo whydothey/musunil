@@ -1196,9 +1196,9 @@
 
       .issue-stories {
         display: flex;
-        gap: 7px;
+        gap: 12px;
         overflow-x: auto;
-        padding: 0 2px 6px;
+        padding: 0 2px 8px;
         scrollbar-width: none;
       }
 
@@ -1207,44 +1207,63 @@
       }
 
       .story-ring {
-        display: inline-flex;
+        display: grid;
         flex: 0 0 auto;
-        align-items: center;
-        gap: 7px;
-        max-width: 168px;
-        min-height: 36px;
-        padding: 0 11px 0 10px;
-        border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
-        border-radius: 14px;
-        background: color-mix(in srgb, var(--surface) 98%, transparent);
+        justify-items: center;
+        gap: 6px;
+        width: 88px;
+        min-height: 84px;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
         color: var(--ink);
-        text-align: left;
+        text-align: center;
         cursor: pointer;
-        box-shadow: 0 1px 0 rgb(255 255 255 / 80%) inset;
+        box-shadow: none;
       }
 
       .story-ring::before {
         content: "";
-        width: 7px;
-        height: 7px;
-        flex: 0 0 auto;
-        border-radius: 999px;
-        background: var(--story-color, var(--brand));
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--story-color, var(--brand)) 13%, transparent);
+        display: none;
       }
 
       .story-orb {
-        display: none;
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 52px;
+        height: 52px;
+        overflow: hidden;
+        padding: 3px;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        background:
+          linear-gradient(var(--surface), var(--surface)) padding-box,
+          conic-gradient(var(--story-color, var(--brand)), color-mix(in srgb, var(--story-color, var(--brand)) 40%, #fff), var(--story-color, var(--brand))) border-box;
+        box-shadow: 0 7px 18px rgb(22 36 46 / 9%);
+        transition:
+          transform var(--motion-fast) var(--ease-out),
+          box-shadow var(--motion-fast) var(--ease-out);
       }
 
       .story-ring:hover .story-orb,
       .story-ring[aria-selected="true"] .story-orb {
-        transform: none;
-        box-shadow: none;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgb(22 36 46 / 13%);
       }
 
-      .story-orb strong {
-        font-size: 16px;
+      .story-orb::after {
+        content: "";
+        position: absolute;
+        right: 4px;
+        bottom: 4px;
+        z-index: 3;
+        width: 10px;
+        height: 10px;
+        border: 2px solid var(--surface);
+        border-radius: 999px;
+        background: var(--story-color, var(--brand));
       }
 
       .story-visual,
@@ -1304,25 +1323,27 @@
         overflow: hidden;
       }
 
-      .story-ring span {
-        width: auto;
+      .story-label {
+        display: -webkit-box;
+        width: 88px;
+        min-height: 25px;
         overflow: hidden;
         color: var(--muted);
-        font-size: 11px;
+        font-size: 10.5px;
         font-weight: 820;
-        line-height: 1.25;
-        display: block;
-        white-space: nowrap;
+        line-height: 1.18;
         text-overflow: ellipsis;
+        white-space: normal;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
       }
 
-      .story-ring[aria-selected="true"] span {
+      .story-ring[aria-selected="true"] .story-label {
         color: var(--ink);
       }
 
       .story-ring[aria-selected="true"] {
-        border-color: color-mix(in srgb, var(--brand) 44%, var(--line));
-        background: color-mix(in srgb, var(--brand) 7%, var(--surface));
+        background: transparent;
       }
 
       .story-ring[data-state="official"] {
@@ -8131,7 +8152,10 @@
           button.dataset.state = issueStoryState(issue);
           button.setAttribute("aria-selected", String(issue.id === selectedIssue?.id));
           button.setAttribute("aria-label", `${issue.title} 상세 보기`);
-          button.innerHTML = `<span>${escapeHtml(compactIssueTitle(issue.title))}</span>`;
+          button.innerHTML = `
+            <span class="story-orb" aria-hidden="true">${renderIssueStoryVisual(issue)}</span>
+            <span class="story-label">${escapeHtml(compactIssueTitle(issue.title))}</span>
+          `;
           button.addEventListener("click", () => selectIssue(issue, { openDetail: true, scrollToCards: false }));
           root.append(button);
         }

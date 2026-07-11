@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 14:14 KST
+Last updated: 2026-07-11 14:24 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -54,6 +54,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 13:56 surface49 패치로 홈 카드 요약을 `장소·일시·위치` 1차 정보와 `공식·영상·반론` 근거 상태로 분리했다. 390px/1440px 첫 카드 place line은 `서울 · 일시 확인 중 · 위치 1곳`, evidence line은 `공식 확인 중 · 영상 1건 · 반론 1건`, footer는 `근거·영상·지도 자세히`, forbidden 0, `scrollWidth=390/1440`이다. 다음 개선은 데스크톱 지도 비중과 카드 썸네일의 시각 완성도다.
 - 14:05 surface50 패치로 데스크톱 홈 기본 레이아웃에서 이슈 피드를 520px로 키우고 지도 맥락을 648x403px로 낮췄다. 1440px 홈은 지도보다 이슈 목록이 먼저 읽히고, 390px 홈은 지도 미노출·이슈 피드 중심을 유지한다. `overflowX=false`, forbidden 0, rejected 0을 확인했지만 실제 운영 공개 영상/GPS와 사용자 수락 전 S+는 아니다.
 - 14:14 surface51 패치로 홈 카드에서 공개 poster 없는 LIVE 영상을 `영상 검토 중` 썸네일처럼 표시하지 않고 위치 타일로 대체했다. 카드 우측 타일은 조작된 영상 프리뷰가 아니라 공개 위치 맥락만 보여주며, 390px/1440px 모두 `reviewOnlyCards=0`, `placePeekCards=3`, forbidden 0, rejected 0이다.
+- 14:24 surface53 패치로 주요 이슈 레일을 필터칩형 pill에서 원형 이슈 story ring으로 전환했다. 사람 계정처럼 보이지 않고 이슈 단위 대표 비주얼과 2줄 주제 라벨만 보여주며, 390px/1440px 모두 `storyCount=3`, `storyOrbCount=3`, `overflowX=false`, forbidden 0, rejected 0이다. 사용자 수락 전 S+는 아니다.
 
 ## Agent Feedback Summary
 
@@ -168,11 +169,15 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 50 | 공통 이슈 요약 바와 반응형 상태 보존 | 1차 완료 | 영상·탐색·제보에 같은 상태/이슈명/위치·현장·근거 요약이 보이고, 모바일→데스크톱 전환 시 선택 레일이 유지됨 |
 | 51 | 소비자형 확인 요약·상세 진입 안정화 | 1차 완료 | 390px 홈 첫 카드 `primaryAction=summary`, `primaryLabel=상세 보기`, 확인 요약 `대구 · 전국 · 7월 9일 공개자료 · 위치 2곳 · 공식자료 6건 · 현장 영상 확인 중 · 반론/정정 없음`, 상세 `selectedDetailTab=개요`, 모바일/데스크톱 탭 `홈/영상/탐색/법안/제보`, `scrollWidth=390/1440`, forbidden 0 |
 | 52 | 구체 이슈 우선·요약 압축 | 1차 완료 | 390px/1440px 첫 카드가 `정보통신망법 개정 반대 집회`로 시작. 요약 `서울 · 일시 확인 중 · 기준 2026.07.11 · 위치 1곳 · 공식 확인 중 · 영상 1건 · 반론 1건`, 카드 action 1개 `상세 보기`, source/summary label visible false, 지도 CTA `근거·영상 보기`, forbidden 0 |
+| 53 | 주요 이슈 레일 앱형 전환 | 1차 완료 | pill/filter chip처럼 보이던 레일을 원형 이슈 story ring으로 바꿈. 390px/1440px `storyCount=3`, `storyLabels=정보통신망법 개정 반대/대통령 탄핵 요구 행진/전국 집회 공개 일정`, `overflowX=false`, forbidden 0, rejected 0 |
 
 ## Current Evidence
 
 | 증거 | 결과 |
 |---|---|
+| 14:24 surface53 mobile story ring | `docs/commercial-splus-surface53-story-ring-home-mobile-390-2026-07-11.png` |
+| 14:24 surface53 desktop story ring | `docs/commercial-splus-surface53-story-ring-home-desktop-1440-2026-07-11.png` |
+| 14:24 surface53 metrics | 390px 홈 `storyCount=3`, `storyOrbCount=3`, `storyLabels=정보통신망법 개정 반대/대통령 탄핵 요구 행진/전국 집회 공개 일정`, `overflowX=false`, forbidden 0, rejected 0 |
 | 06:00 desktop home region map | `docs/commercial-splus-surface24-home-map-desktop-1440-2026-07-11.png` |
 | 06:00 mobile home 390 | `docs/commercial-splus-surface24-home-map-mobile-390-2026-07-11.png` |
 | 06:00 mobile home 430 | `docs/commercial-splus-surface24-home-map-mobile-430-2026-07-11.png` |
