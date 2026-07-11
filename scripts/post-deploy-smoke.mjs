@@ -3,7 +3,7 @@ import { publicPayloadRoutes } from "./public-api-routes.mjs";
 
 const config = safeConfig();
 const apiBaseUrl = (process.env.MUSUNIL_API_BASE_URL ?? readString(config, "api.public_base_url") ?? "").replace(/\/$/, "");
-const webBaseUrl = (readString(config, "app.public_base_url") ?? "").replace(/\/$/, "");
+const webBaseUrl = (process.env.MUSUNIL_WEB_BASE_URL ?? readString(config, "app.public_base_url") ?? "").replace(/\/$/, "");
 const requireLaws = process.argv.includes("--require-laws");
 const requestTimeoutMs = 10_000;
 const checks = [];
@@ -12,6 +12,21 @@ if (!isDeployedHttpsUrl(apiBaseUrl)) {
   console.error("Set MUSUNIL_API_BASE_URL or api.public_base_url to the deployed HTTPS API URL.");
   process.exit(1);
 }
+if (!isDeployedHttpsUrl(webBaseUrl)) {
+  console.error("Set MUSUNIL_WEB_BASE_URL or app.public_base_url to the deployed HTTPS web URL.");
+  process.exit(1);
+}
+
+await check("web_runtime_config_alignment", async () => {
+  const source = await webText("/config.js");
+  assert(source.includes("MUSUNIL_WEB_CONFIG"), "Web config.js missing MUSUNIL_WEB_CONFIG");
+  assert(!/localhost:4000|MUSUNIL_USER_INPUTS|postgres|redis|database|secret|jwt/i.test(source), "Web config.js leaked internal config pattern");
+  const webConfig = parseWebConfig(source);
+  const publicKeys = Object.keys(webConfig).sort();
+  assert(JSON.stringify(publicKeys) === JSON.stringify(["apiBaseUrl", "mapStyleUrl"]), `Web config public keys changed: ${publicKeys.join(", ") || "(none)"}`);
+  assert(webConfig.apiBaseUrl === apiBaseUrl, `Web config apiBaseUrl ${webConfig.apiBaseUrl} does not match deployed API ${apiBaseUrl}`);
+  assert(isDeployedHttpsUrl(webConfig.mapStyleUrl), `Web config mapStyleUrl must be deployed HTTPS, got ${webConfig.mapStyleUrl || "(missing)"}`);
+});
 
 await check("health", async () => {
   const response = await raw("GET", "/health");
@@ -50,11 +65,9 @@ await check("cors_boundary", async () => {
   const disallowedOrigin = "https://not-allowed.musunil.invalid";
   const disallowed = await raw("GET", "/health", { origin: disallowedOrigin });
   assert(disallowed.headers["access-control-allow-origin"] !== disallowedOrigin, "disallowed CORS origin was echoed");
-  if (isDeployedHttpsUrl(webBaseUrl)) {
-    const allowed = await raw("GET", "/health", { origin: webBaseUrl });
-    assert(allowed.headers["access-control-allow-origin"] === webBaseUrl, "configured web origin was not CORS-allowed");
-    assert(allowed.headers["vary"] === "Origin", "Vary: Origin header missing");
-  }
+  const allowed = await raw("GET", "/health", { origin: webBaseUrl });
+  assert(allowed.headers["access-control-allow-origin"] === webBaseUrl, "configured web origin was not CORS-allowed");
+  assert(allowed.headers["vary"] === "Origin", "Vary: Origin header missing");
 });
 
 await check("ready", async () => {
@@ -125,7 +138,7 @@ await check("forbidden_engagement_surface_absent", async () => {
   }
 });
 
-console.log(JSON.stringify({ checked: "post_deploy_smoke", apiBaseUrl, checks }, null, 2));
+console.log(JSON.stringify({ checked: "post_deploy_smoke", apiBaseUrl, webBaseUrl, checks }, null, 2));
 
 async function raw(method, path, headers = {}) {
   const response = await fetch(`${apiBaseUrl}${path}`, {
@@ -144,13 +157,36 @@ async function raw(method, path, headers = {}) {
   return { status: response.status, headers: Object.fromEntries(response.headers.entries()), body };
 }
 
+async function webText(path) {
+  const response = await fetch(`${webBaseUrl}${path}`, {
+    redirect: "manual",
+    signal: AbortSignal.timeout(requestTimeoutMs)
+  });
+  assert(response.status === 200, `Web ${path} returned ${response.status}`);
+  return response.text();
+}
+
 async function check(id, run) {
-  await run();
-  checks.push({ id, ok: true });
+  try {
+    await run();
+    checks.push({ id, ok: true });
+  } catch (error) {
+    checks.push({ id, ok: false, message: errorMessage(error) });
+    console.error(JSON.stringify({ checked: "post_deploy_smoke", apiBaseUrl, webBaseUrl, checks }, null, 2));
+    process.exit(1);
+  }
 }
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function errorMessage(error) {
+  if (error instanceof Error) {
+    const cause = error.cause instanceof Error ? `: ${error.cause.message}` : "";
+    return `${error.message}${cause}`;
+  }
+  return String(error);
 }
 
 function assertApiSecurityHeaders(headers) {
@@ -237,5 +273,15 @@ function isDeployedHttpsUrl(value) {
     return url.protocol === "https:" && !["localhost", "127.0.0.1", "::1"].includes(url.hostname) && !url.hostname.endsWith(".local");
   } catch {
     return false;
+  }
+}
+
+function parseWebConfig(source) {
+  const match = source.match(/window\.MUSUNIL_WEB_CONFIG\s*=\s*({[\s\S]*?})\s*;?\s*$/);
+  assert(match, "Web config.js could not be parsed");
+  try {
+    return JSON.parse(match[1]);
+  } catch (error) {
+    throw new Error(`Web config.js contains invalid JSON: ${error instanceof Error ? error.message : String(error)}`);
   }
 }

@@ -102,15 +102,15 @@ const plan = {
     "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
     "MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
     "pnpm check:visual-surface:live",
-    "MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws",
+    "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws",
     "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm service:watch:visual"
   ],
   successCriteria: [
     "Live static manifest matches the current repo output.",
     "Live config.js apiBaseUrl matches https://api.musunil.com.",
     "Live visual surface smoke passes on musunil.com across 390px, 430px, 768px, and 1440px.",
-    "Integrated service watch passes with web_visual_surface ok and serviceSyncState=live.",
-    "Strict Web header check passes with no-store on /, /config.js, and /build-info.json.",
+    "Integrated service watch passes with web_runtime_config ok, web_visual_surface ok, and serviceSyncState=live.",
+    "Strict Web header check passes with no-store, CSP, Permissions-Policy, Referrer-Policy, nosniff, and frame protection on /, /config.js, and /build-info.json.",
     "api.musunil.com resolves over HTTPS and /ready is ready=true.",
     "Public payloads expose no raw user text, private GPS, storage keys, identity hashes, or forbidden engagement surfaces.",
     "Write endpoints return identity_required without a verified identity session.",

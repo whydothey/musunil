@@ -37,7 +37,7 @@
     "mobile:integrity-smoke": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/mobile-integrity-smoke.mjs",
     "launch:external-smoke": "node scripts/external-smoke.mjs",
     "launch:ready": "node scripts/launch-ready.mjs",
-    "launch:post-deploy-smoke": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/post-deploy-smoke.mjs && pnpm check:web-deploy",
+    "launch:post-deploy-smoke": "node scripts/post-deploy-smoke-runner.mjs",
     "service:watch": "node scripts/service-watch.mjs",
     "service:watch:visual": "node scripts/service-watch.mjs -- --once --with-visual",
     "check:web-deploy": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/check-web-deploy.mjs",

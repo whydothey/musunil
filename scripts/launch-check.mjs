@@ -36,6 +36,7 @@ const uxSurfaceSmoke = readFileSync(resolve(cwd, "scripts/ci-ux-surface-smoke.mj
 const visualSurfaceSmoke = readFileSync(resolve(cwd, "scripts/ci-visual-surface-smoke.mjs"), "utf8");
 const publicApiRoutes = readFileSync(resolve(cwd, "scripts/public-api-routes.mjs"), "utf8");
 const webStaticManifestScript = readFileSync(resolve(cwd, "scripts/write-web-static-manifest.mjs"), "utf8");
+const postDeploySmokeRunner = readFileSync(resolve(cwd, "scripts/post-deploy-smoke-runner.mjs"), "utf8");
 const rootPackageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
 const gitignore = readFileSync(resolve(cwd, ".gitignore"), "utf8");
 const renderYaml = readFileSync(resolve(cwd, "render.yaml"), "utf8");
@@ -162,8 +163,17 @@ if (/access_key_id/.test(operationalDiagnostics) || /secret_access_key/.test(ope
 }
 if (
   !/"launch:post-deploy-smoke"/.test(packageJson) ||
+  !/post-deploy-smoke-runner\.mjs/.test(packageJson) ||
+  /"launch:post-deploy-smoke"\s*:\s*"[^"]*&&/.test(packageJson) ||
+  !/process\.argv\.slice\(2\)/.test(postDeploySmokeRunner) ||
+  !/scripts\/post-deploy-smoke\.mjs/.test(postDeploySmokeRunner) ||
+  !/"check:web-deploy"/.test(postDeploySmokeRunner) ||
+  !/MUSUNIL_WEB_BASE_URL/.test(postDeploySmoke) ||
   !/isDeployedHttpsUrl/.test(postDeploySmoke) ||
   !/url\.protocol === "https:"/.test(postDeploySmoke) ||
+  !/web_runtime_config_alignment/.test(postDeploySmoke) ||
+  !/parseWebConfig/.test(postDeploySmoke) ||
+  !/mapStyleUrl/.test(postDeploySmoke) ||
   !/AbortSignal\.timeout\(requestTimeoutMs\)/.test(postDeploySmoke) ||
   !/redirect:\s*"manual"/.test(postDeploySmoke) ||
   !/assertApiSecurityHeaders/.test(postDeploySmoke) ||
@@ -194,7 +204,7 @@ if (
   !/hazard_area/.test(postDeploySmoke) ||
   !/service_disruption/.test(postDeploySmoke)
 ) {
-  failures.push("post-deploy API smoke command must verify deployed readiness, coverage, laws, and admin auth boundary");
+  failures.push("post-deploy smoke command must verify deployed Web/API alignment, readiness, coverage, laws, and admin auth boundary");
 }
 if (!/"render:web-settings"/.test(packageJson) || !/render-web-settings\.mjs/.test(packageJson)) {
   failures.push("Render Web settings helper command is missing");
@@ -208,6 +218,7 @@ if (
   !/MUSUNIL_USER_INPUTS_B64/.test(renderApiSettings) ||
   !/Render generated/.test(renderApiSettings) ||
   !/Cloudflare DNS/.test(renderApiSettings) ||
+  !/MUSUNIL_WEB_BASE_URL=https:\/\/musunil\.com MUSUNIL_API_BASE_URL=https:\/\/api\.musunil\.com pnpm launch:post-deploy-smoke/.test(renderApiSettings) ||
   !/launch:post-deploy-smoke/.test(renderApiSettings) ||
   !/service:watch/.test(renderApiSettings)
 ) {

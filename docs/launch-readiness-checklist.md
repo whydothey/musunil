@@ -41,7 +41,7 @@
 - `/health` 200.
 - `/ready` 200, `config_source`, `postgres`, `redis` check가 모두 ok.
 - `/ready` 응답은 `summary.failedIds`, `summary.blockingGroups`, `requiredActions`를 포함한다. 실패 시 이 값으로 DB/Redis/스토리지/본인확인/법 원천/모바일 무결성 등 막힌 묶음을 바로 식별해야 한다.
-- 배포 후 `MUSUNIL_API_BASE_URL=https://... pnpm launch:post-deploy-smoke -- --require-laws` 통과. 이 값은 localhost나 HTTP가 아닌 실제 배포 HTTPS API URL이어야 하며, 요청 timeout과 redirect 수동 처리, API 보안 헤더, CORS 경계, `/home`, `/issues`, 첫 이슈 상세, 첫 이슈 live-claims, `/area-clusters`, `/map`, `/public-sources/coverage`, `/laws`, 첫 법안 상세 공개 응답 안전성을 함께 확인한다.
+- 배포 후 `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws` 통과. 두 값은 localhost나 HTTP가 아닌 실제 배포 HTTPS URL이어야 하며, Web `config.js`가 같은 API를 가리키는지, 요청 timeout과 redirect 수동 처리, API 보안 헤더, CORS 경계, `/home`, `/issues`, 첫 이슈 상세, 첫 이슈 live-claims, `/area-clusters`, `/map`, `/public-sources/coverage`, `/laws`, 첫 법안 상세 공개 응답 안전성을 함께 확인한다.
 - 배포 후 `pnpm launch:post-deploy-smoke`는 API `/media/redacted/preview-occ-live-1-poster.png`가 200 `image/png`, `/media/redacted/preview-occ-live-1.webm`이 200 `video/webm`으로 열리고 encoded traversal가 차단되는지 확인한다.
 - Render API health check path가 `/ready`다.
 - Render API build에서 `pnpm check`, `pnpm build:web-config`, `pnpm launch:check`가 실행된다.
@@ -113,7 +113,7 @@
 - `apps/web/build-info.js`와 `apps/web/build-info.json`은 placeholder로 repo에 추적하고, Render build command가 실제 Git SHA로 덮어써야 한다.
 - 로컬 `check:release`와 smoke 명령은 tracked build-info placeholder를 변경하지 않아야 한다. 실제 build metadata 작성은 Render 또는 `MUSUNIL_WRITE_BUILD_INFO=1`에서만 허용한다.
 - `apps/web/static-manifest.json`은 `index.html`, `config.js`, 공개 poster/clip의 SHA-256과 byte size를 담는다. 배포 후 `pnpm check:web-deploy`는 live 파일 해시가 manifest와 같은지 확인한다.
-- 배포 후 `MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm launch:post-deploy-smoke`가 live Web static hash와 API smoke를 함께 통과해야 한다. build-info placeholder fallback은 경고이며, static hash 불일치는 실패다.
+- 배포 후 `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm launch:post-deploy-smoke`가 live Web config 정합성과 API smoke를 함께 통과해야 한다. build-info placeholder fallback과 static hash 검증은 이어지는 `check:web-deploy`에서 처리하며, static hash 불일치는 실패다.
 - 헤더까지 strict하게 닫으려면 `MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy`가 통과해야 한다. 이때 live `config.js`의 `apiBaseUrl`도 `https://api.musunil.com`과 일치해야 한다.
 - 공개 홈 카드에는 `WEAKLY_OBSERVED`, `traffic_control` 같은 내부 enum 원문이 보이지 않는다.
 - 내부/admin 라우트는 `x-musunil-internal-key` 없이는 막히고 constant-time 비교를 사용한다.
