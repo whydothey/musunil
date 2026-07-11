@@ -104,6 +104,7 @@ GET /ready -> 200
 - 2026-07-11 21:26 deploy checker와 service watch를 static hash 우선 판정으로 수정했다. `/static-manifest.json`과 live HTML/config/media SHA-256이 현재 repo 산출물과 같으면 최신 UI 배포는 통과하고, `/build-info.json` placeholder와 no-store header 미적용은 경고로 남긴다. static hash가 다르면 계속 실패한다.
 - 2026-07-11 23:23 API 미연결 상태를 공개 화면에서 숨기지 않도록 `실시간 동기화 지연` 서비스 배너를 추가했다. 390px/1440px 캡처에서 저장된 공개자료 기준 안내, `다시 확인`, forbidden 0, `overflowX=false`를 확인했지만 실제 API 도메인 연결 전 운영 배포 준비는 완료가 아니다.
 - 2026-07-11 23:33 Render 수동 Static Site 설정값을 `render.yaml`에서 추출하는 `pnpm render:web-settings` helper를 추가했다. helper 출력은 Branch, Root Directory, Build Command, Publish Directory, Headers, strict header 검증 명령을 포함하지만, Render Dashboard에서 헤더가 실제 반영되고 `MUSUNIL_STRICT_WEB_HEADERS=1 pnpm check:web-deploy`가 통과하기 전 운영 배포 준비는 완료가 아니다.
+- 2026-07-11 23:38 `service:watch`가 API endpoint preflight를 먼저 실행하고, DNS/HTTPS preflight 실패 시 하위 API 검사들을 `skip`으로 기록하게 했다. 현재 live 감시는 `api_endpoint_preflight`만 실패하며 `getaddrinfo ENOTFOUND api.musunil.com`을 보여주지만, API DNS와 Render API 서비스 연결 전 운영 배포 준비는 완료가 아니다.
 
 ## Next Active Goal Order
 

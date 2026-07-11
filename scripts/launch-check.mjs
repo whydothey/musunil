@@ -85,6 +85,7 @@ const storageSmoke = readFileSync(resolve(cwd, "scripts/storage-smoke.mjs"), "ut
 const redactionSmoke = readFileSync(resolve(cwd, "scripts/redaction-smoke.mjs"), "utf8");
 const mobileIntegritySmoke = readFileSync(resolve(cwd, "scripts/mobile-integrity-smoke.mjs"), "utf8");
 const postDeploySmoke = readFileSync(resolve(cwd, "scripts/post-deploy-smoke.mjs"), "utf8");
+const serviceWatch = readFileSync(resolve(cwd, "scripts/service-watch.mjs"), "utf8");
 const adminReview = readFileSync(resolve(cwd, "scripts/admin-review.mjs"), "utf8");
 const postgresStore = readFileSync(resolve(cwd, "services/api/src/postgres-store.ts"), "utf8");
 const packageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
@@ -155,6 +156,14 @@ if (!/"render:web-settings"/.test(packageJson) || !/render-web-settings\.mjs/.te
 }
 if (!/MUSUNIL_STRICT_WEB_HEADERS=1/.test(renderWebSettings) || !/Clear build cache & deploy/.test(renderWebSettings)) {
   failures.push("Render Web settings helper must print strict header verification and clear-cache redeploy instructions");
+}
+if (
+  !/api_endpoint_preflight/.test(serviceWatch) ||
+  !/deployedHttpsUrl/.test(serviceWatch) ||
+  !/skipIfApiUnreachable/.test(serviceWatch) ||
+  !/skipped:\s*true/.test(serviceWatch)
+) {
+  failures.push("service-watch must separate API endpoint preflight failure from downstream skipped API checks");
 }
 if (
   !/redaction_engine_smoke/.test(redactionSmoke) ||

@@ -1,4 +1,5 @@
 import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { lookup } from "node:dns/promises";
 import { resolve } from "node:path";
 
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
@@ -9,6 +10,9 @@ const apiBaseUrl = (process.env.MUSUNIL_API_BASE_URL ?? "https://api.musunil.com
 const expectedCommitSha = process.env.MUSUNIL_EXPECTED_COMMIT_SHA;
 const reportPath = resolve(process.cwd(), "docs/splus-service-watch.md");
 let webStaticManifestVerified = false;
+let apiEndpointReachable = false;
+
+class SkipCheck extends Error {}
 
 do {
   const result = await runChecks();
@@ -21,6 +25,7 @@ do {
 
 async function runChecks() {
   webStaticManifestVerified = false;
+  apiEndpointReachable = false;
   const checks = [];
   await check(checks, "web_static_manifest", async () => {
     const manifest = await getJson(`${webBaseUrl}/static-manifest.json`);
@@ -46,7 +51,22 @@ async function runChecks() {
     assertAbsent(html, ["좋아요", "댓글", "찬반", "추천", "비추천", "팔로우", "localhost:4000", "traffic_control", "WEAKLY_OBSERVED"]);
     return { bytes: html.length };
   });
+  await check(checks, "api_endpoint_preflight", async () => {
+    const url = deployedHttpsUrl(apiBaseUrl);
+    const addresses = await lookup(url.hostname, { all: true });
+    const health = await fetch(`${apiBaseUrl}/health`, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(12_000)
+    });
+    apiEndpointReachable = true;
+    return {
+      hostname: url.hostname,
+      addressFamilies: [...new Set(addresses.map((address) => `IPv${address.family}`))],
+      healthStatus: health.status
+    };
+  });
   await check(checks, "api_health_ready", async () => {
+    skipIfApiUnreachable();
     const health = await getJson(`${apiBaseUrl}/health`);
     const ready = await getJson(`${apiBaseUrl}/ready`, { allowNotOk: true });
     if (health.ok !== true) throw new Error("health not ok");
@@ -54,6 +74,7 @@ async function runChecks() {
     return { ready: ready.ready, checks: ready.checks?.map((item) => item.id) ?? [] };
   });
   await check(checks, "public_redacted_media", async () => {
+    skipIfApiUnreachable();
     const poster = await fetch(`${apiBaseUrl}/media/redacted/preview-occ-live-1-poster.png`, {
       redirect: "manual",
       signal: AbortSignal.timeout(12_000)
@@ -78,12 +99,14 @@ async function runChecks() {
   });
   for (const path of ["/home", "/issues", "/map", "/laws", "/public-sources/coverage"]) {
     await check(checks, `public_payload_${path.slice(1).replaceAll("/", "_")}`, async () => {
+      skipIfApiUnreachable();
       const body = await getJson(`${apiBaseUrl}${path}`);
       assertPublicPayloadSafe(body);
       return summaryFor(path, body);
     });
   }
   await check(checks, "identity_public_read_write_boundary", async () => {
+    skipIfApiUnreachable();
     const read = await getJson(`${apiBaseUrl}/me`);
     if (read.authenticated !== false) throw new Error("/me without auth should be unauthenticated");
     const response = await fetch(`${apiBaseUrl}/reports/material`, {
@@ -99,7 +122,7 @@ async function runChecks() {
     checkedAt: new Date().toISOString(),
     webBaseUrl,
     apiBaseUrl,
-    ok: checks.every((item) => item.ok),
+    ok: checks.every((item) => item.ok || item.skipped),
     checks
   };
 }
@@ -116,8 +139,30 @@ async function check(checks, id, action) {
   try {
     checks.push({ id, ok: true, detail: await action() });
   } catch (error) {
+    if (error instanceof SkipCheck) {
+      checks.push({ id, ok: false, skipped: true, message: error.message });
+      return;
+    }
     checks.push({ id, ok: false, message: error instanceof Error ? error.message : String(error) });
   }
+}
+
+function skipIfApiUnreachable() {
+  if (!apiEndpointReachable) throw new SkipCheck("skipped: API endpoint preflight failed");
+}
+
+function deployedHttpsUrl(value) {
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error(`invalid deployed API URL: ${value || "(empty)"}`);
+  }
+  if (url.protocol !== "https:") throw new Error(`API URL must be HTTPS: ${value}`);
+  if (["localhost", "127.0.0.1", "::1"].includes(url.hostname) || url.hostname.endsWith(".local")) {
+    throw new Error(`API URL must be deployed, got ${url.hostname}`);
+  }
+  return url;
 }
 
 async function getJson(url, options = {}) {
@@ -186,13 +231,13 @@ function summaryFor(path, body) {
 function recordResult(result) {
   mkdirSync(resolve(process.cwd(), "docs"), { recursive: true });
   const status = result.ok ? "S+ Guard" : "Active";
-  const rows = result.checks.map((item) => `| ${item.id} | ${item.ok ? "ok" : "fail"} | ${item.message ?? JSON.stringify(item.detail ?? {})} |`).join("\n");
+  const rows = result.checks.map((item) => `| ${item.id} | ${item.ok ? "ok" : item.skipped ? "skip" : "fail"} | ${item.message ?? JSON.stringify(item.detail ?? {})} |`).join("\n");
   writeFileSync(
     reportPath,
     `# S+ Service Watch\n\nLast checked: ${result.checkedAt}\n\nStatus: ${status}\n\n| Check | Result | Detail |\n|---|---|---|\n${rows}\n\n## History\n`
   );
   const historyPath = resolve(process.cwd(), "docs/splus-service-watch.history.md");
   if (!existsSync(historyPath)) writeFileSync(historyPath, "# S+ Service Watch History\n\n| Checked At | Status | Failed Checks |\n|---|---|---|\n");
-  const failed = result.checks.filter((item) => !item.ok).map((item) => item.id).join(", ") || "-";
+  const failed = result.checks.filter((item) => !item.ok && !item.skipped).map((item) => item.id).join(", ") || "-";
   appendFileSync(historyPath, `| ${result.checkedAt} | ${status} | ${failed} |\n`);
 }
