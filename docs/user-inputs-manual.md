@@ -59,6 +59,8 @@ web:
     - "https://musunil.com"
 ```
 
+`web.allowed_origins`는 브라우저 CORS Origin과 정확히 같은 값이어야 한다. 운영에서는 `https://musunil.com`처럼 scheme과 host만 쓰고, 마지막 `/`, path, query, localhost를 넣지 않는다. 이 값에는 `app.public_base_url`의 origin이 반드시 포함되어야 한다. `identity.session_cookie_domain`은 Web과 API를 모두 덮는 `.musunil.com`처럼 설정한다.
+
 국내 한정 운영 기본값은 아래 상태로 둔다.
 
 ```yaml

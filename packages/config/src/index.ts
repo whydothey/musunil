@@ -77,6 +77,14 @@ export function validateLaunchConfig(config: Record<string, unknown>, env: NodeJ
   requireRealValue(config, issues, "app.public_base_url", ["https://example.com"]);
   requireRealValue(config, issues, "app.support_email", ["support@example.com"]);
   requireRealValue(config, issues, "api.public_base_url", production ? forbiddenLocalApiUrls : []);
+  const appPublicUrl = deployedHttpsUrl(read(config, "app.public_base_url"));
+  const apiPublicUrl = deployedHttpsUrl(read(config, "api.public_base_url"));
+  if (production && !appPublicUrl) {
+    issues.push({ path: "app.public_base_url", message: "production app public_base_url must be a deployed HTTPS URL." });
+  }
+  if (production && !apiPublicUrl) {
+    issues.push({ path: "api.public_base_url", message: "production api public_base_url must be a deployed HTTPS URL." });
+  }
   requireRealValue(config, issues, "organization.legal_name");
   requireRealValue(config, issues, "organization.operator_name");
   requireRealValue(config, issues, "organization.privacy_officer_name");
@@ -146,6 +154,15 @@ export function validateLaunchConfig(config: Record<string, unknown>, env: NodeJ
     requireRealValueOrEnv(config, env, issues, "identity.portone_identity_channel_key", "MUSUNIL_PORTONE_IDENTITY_CHANNEL_KEY");
     requireSecretOrEnv(config, env, issues, "identity.portone_api_secret", "MUSUNIL_PORTONE_API_SECRET", 24);
     requireRealValue(config, issues, "identity.session_cookie_domain");
+    const cookieDomain = read(config, "identity.session_cookie_domain");
+    if (
+      typeof cookieDomain === "string" &&
+      appPublicUrl &&
+      apiPublicUrl &&
+      (!cookieDomainMatchesHost(cookieDomain, appPublicUrl.hostname) || !cookieDomainMatchesHost(cookieDomain, apiPublicUrl.hostname))
+    ) {
+      issues.push({ path: "identity.session_cookie_domain", message: "session cookie domain must cover both app.public_base_url and api.public_base_url hosts." });
+    }
   }
 
   const mapProvider = read(config, "map.provider");
@@ -163,6 +180,16 @@ export function validateLaunchConfig(config: Record<string, unknown>, env: NodeJ
   }
   if (Array.isArray(origins) && production && origins.some((origin) => typeof origin !== "string" || !hasRealString(origin))) {
     issues.push({ path: "web.allowed_origins", message: "production origins must be real launch URLs." });
+  }
+  if (Array.isArray(origins) && production) {
+    const invalidOrigins = origins.filter((origin) => typeof origin !== "string" || origin !== deployedOrigin(origin));
+    if (invalidOrigins.length > 0) {
+      issues.push({ path: "web.allowed_origins", message: "production origins must be exact deployed HTTPS origins without path, query, or trailing slash." });
+    }
+    const appOrigin = appPublicUrl?.origin;
+    if (appOrigin && !origins.includes(appOrigin)) {
+      issues.push({ path: "web.allowed_origins", message: "web.allowed_origins must include app.public_base_url origin for CORS and identity flows." });
+    }
   }
 
   if (production && read(config, "domestic_operation.service_country") !== "KR") {
@@ -310,6 +337,28 @@ function hasRealString(value: unknown, forbidden: string[] = []): value is strin
 
 function providerEnabled(value: unknown): value is string {
   return hasRealString(value) && value !== "mock" && value !== "disabled";
+}
+
+function deployedOrigin(value: unknown): string | undefined {
+  return deployedHttpsUrl(value)?.origin;
+}
+
+function deployedHttpsUrl(value: unknown): URL | undefined {
+  if (typeof value !== "string" || !hasRealString(value)) return undefined;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:") return undefined;
+    if (["localhost", "127.0.0.1", "::1"].includes(url.hostname) || url.hostname.endsWith(".local")) return undefined;
+    return url;
+  } catch {
+    return undefined;
+  }
+}
+
+function cookieDomainMatchesHost(domain: string, host: string): boolean {
+  const normalizedDomain = domain.trim().toLowerCase().replace(/^\./, "");
+  const normalizedHost = host.trim().toLowerCase();
+  return normalizedHost === normalizedDomain || normalizedHost.endsWith(`.${normalizedDomain}`);
 }
 
 function read(config: Record<string, unknown>, path: string): unknown {

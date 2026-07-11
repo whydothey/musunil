@@ -59,6 +59,23 @@ assert.equal(validateLaunchConfig(productionConfig, {}).some((issue) => issue.pa
 productionConfig.web.allowed_origins = ["CHANGE_ME_PUBLIC_WEB_URL"];
 assert.equal(validateLaunchConfig(productionConfig, {}).some((issue) => issue.path === "web.allowed_origins"), true);
 
+const corsMismatchProductionConfig = JSON.parse(JSON.stringify(loaded.config));
+corsMismatchProductionConfig.render.environment = "production";
+corsMismatchProductionConfig.web.allowed_origins = ["https://www.musunil.com"];
+assert.equal(validateLaunchConfig(corsMismatchProductionConfig, {}).some((issue) => issue.path === "web.allowed_origins"), true);
+corsMismatchProductionConfig.web.allowed_origins = ["https://musunil.com/"];
+assert.equal(validateLaunchConfig(corsMismatchProductionConfig, {}).some((issue) => issue.path === "web.allowed_origins"), true);
+
+const unsafePublicUrlProductionConfig = JSON.parse(JSON.stringify(loaded.config));
+unsafePublicUrlProductionConfig.render.environment = "production";
+unsafePublicUrlProductionConfig.api.public_base_url = "http://api.musunil.com";
+assert.equal(validateLaunchConfig(unsafePublicUrlProductionConfig, {}).some((issue) => issue.path === "api.public_base_url"), true);
+
+const cookieDomainMismatchProductionConfig = JSON.parse(JSON.stringify(loaded.config));
+cookieDomainMismatchProductionConfig.render.environment = "production";
+cookieDomainMismatchProductionConfig.identity.session_cookie_domain = ".example.com";
+assert.equal(validateLaunchConfig(cookieDomainMismatchProductionConfig, {}).some((issue) => issue.path === "identity.session_cookie_domain"), true);
+
 const noMobileIntegrityProductionConfig = JSON.parse(JSON.stringify(loaded.config));
 noMobileIntegrityProductionConfig.render.environment = "production";
 noMobileIntegrityProductionConfig.mobile.android_play_integrity_enabled = false;
