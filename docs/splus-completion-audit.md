@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-12 01:14 KST
+Last updated: 2026-07-12 01:29 KST
 
 Status: 완료 아님.
 
@@ -29,7 +29,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 | 규모 실시간 추정 | A+ Active | AI 추정 Claim 메타, 공개 근거 없는 추정 차단, 독립 시점 과대 산정 차단 | 실제 운영 영상/현장 인증 결과를 추정 confidence에 연결 |
 | 조작 방어 | S+ Guard | 반복 해시, GPS 품질, 사용자/기기 bucket, 지역 편중, risk dashboard | 운영 실측 임계값 튜닝 |
 | 개인정보/권리 보호 | A+ Active | private key/raw GPS 비노출, 공개 반경, poster 없는 clip 공개 차단, purge 전 외부 delete gate | 실제 storage 권한, redaction smoke, purge 검증 |
-| 알권리 중심 UX | A 후보 Active | 상업용 UI/UX 재설계 문서, 이슈 First 28차 구현, 표형 row 제거, 데스크톱 홈 도구 동시노출 제거 캡처, 우측 맥락 패널 1차 재정렬, 제보 첫 행동 단순화, 지도 숫자판 제거, 상세 `시간 흐름` 탭 정정, 홈/지도 `오늘` 날짜 혼선 제거, `현장 파일/현장 판단/GPS 인증` 운영자 언어 제거, 릴스 액션 축소와 하단 근거 도구막대, 샘플 poster 검토 대기 슬롯 전환, 홈 compact review row 전환, stale config 빈 화면 회귀 방어, 홈 scanline clipped false, 데스크톱 홈 `지역 현황` 지도 연결, 데스크톱 기본 홈 `detailVisible=false` 2축 구조, 행동 후 `desktop-detail-open` 상세 패널, 지도 선택 시트 경량화, 지도 검색/범례/탐색 타일 경량화, 모바일/태블릿 홈 이슈 피드 유지 캡처, 영상 0건 직접 노출 제거, 홈 `근거/영상/지역/반론` 액션 허브, 법안·탐색·상세·영상 0-count 공개 문구 완화, 모바일 액션 플로우 `근거→상세 근거`, `영상→영상 탭`, `지역→지도`, `반론→반론·정정`, 영상/지도/제보 선택 이슈 문맥 라인, `공개된 주장`→`출처별 자료`, `다른 주장`→`반론·정정`, `영상제보` 라벨, 홈 주행동 `지도에서 확인`, 보조 액션 `근거/인증영상/반론`, 탭 라벨 `인증영상/현장촬영`, 공식 자료 핀과 GPS 인증 영역·줌 분리, 인증영상 기본 이슈 선택과 poster 없는 검토 카드, 공개 clip+poster의 풀스크린 video player 계약, 공개 media route/MIME/CSP 계약, 배포 후 공개 clip route 감시, surface50 데스크톱 홈 지도 비중 완화, surface51 poster 없는 홈 영상 썸네일 제거, surface53 주요 이슈 story ring 전환, 금지 문구 web smoke | 14:24 surface53에서 홈 `storyCount=3`, `storyOrbCount=3`, `overflowX=false`, 390px/1440px forbidden 0, rejected 0을 확인했다. 그래도 실제 운영 GPS evidence, 실제 운영 공개 영상 캡처, 독립 재검증, 사용자 수락 전 S+ 아님 |
+| 알권리 중심 UX | A 후보 Active | 상업용 UI/UX 재설계 문서, 이슈 First 28차 구현, 표형 row 제거, 데스크톱 홈 도구 동시노출 제거 캡처, 우측 맥락 패널 1차 재정렬, 제보 첫 행동 단순화, 지도 숫자판 제거, 상세 `시간 흐름` 탭 정정, 홈/지도 `오늘` 날짜 혼선 제거, `현장 파일/현장 판단/GPS 인증` 운영자 언어 제거, 릴스 액션 축소와 하단 근거 도구막대, 샘플 poster 검토 대기 슬롯 전환, 홈 compact review row 전환, stale config 빈 화면 회귀 방어, 홈 scanline clipped false, 데스크톱 홈 `지역 현황` 지도 연결, 데스크톱 기본 홈 `detailVisible=false` 2축 구조, 행동 후 `desktop-detail-open` 상세 패널, 지도 선택 시트 경량화, 지도 검색/범례/탐색 타일 경량화, 모바일/태블릿 홈 이슈 피드 유지 캡처, 영상 0건 직접 노출 제거, 홈 `근거/영상/지역/반론` 액션 허브, 법안·탐색·상세·영상 0-count 공개 문구 완화, 모바일 액션 플로우 `근거→상세 근거`, `영상→영상 탭`, `지역→지도`, `반론→반론·정정`, 영상/지도/제보 선택 이슈 문맥 라인, `공개된 주장`→`출처별 자료`, `다른 주장`→`반론·정정`, `영상제보` 라벨, 홈 주행동 `지도에서 확인`, 보조 액션 `근거/인증영상/반론`, 탭 라벨 `인증영상/현장촬영`, 공식 자료 핀과 GPS 인증 영역·줌 분리, 인증영상 기본 이슈 선택과 poster 없는 검토 카드, 공개 clip+poster의 풀스크린 video player 계약, 공개 media route/MIME/CSP 계약, 배포 후 공개 clip route 감시, surface50 데스크톱 홈 지도 비중 완화, surface51 poster 없는 홈 영상 썸네일 제거, surface53 주요 이슈 story ring 전환, 상단 숫자판 DOM/로직 제거, `pnpm check:visual-surface`, 금지 문구 web smoke | 01:29 visual surface gate에서 390/430/768/1440px 홈·상세·영상·탐색·제보 20개 상태가 통과했다. 그래도 실제 운영 GPS evidence, 실제 운영 공개 영상 캡처, 독립 재검증, 사용자 수락 전 S+ 아님 |
 | 지도·지역 UX | A+ 후보 Active | 공개 지도는 자료 위치 핀과 현장 인증 범위만 유지, 지도 탭 숫자 타일 0개, 중복 지도 버튼 hidden, 지도-first 재배치, 데스크톱 홈 `지역 현황` 지도 visible, 모바일 홈 지도 미노출, 모바일 map top 215px/height 460px, 데스크톱 map top 211px/height 700px, 데스크톱 map width 1200px/viewport share 83%, 홈/전용 지도 시트 62px, 모바일 지도 시트 114px, `sheetMapRatio=0.09~0.25`, toolbar 52~54px, 탐색 tile 52px, summary hidden, 하단 내비 겹침 없음, 지도·상세 제목 동기화, 31차 fallback 지도 표면 개선, MapLibre `styledata/idle` layer sync, 32차 Evidence-gated presence area와 근접 줌, 공식 자료 핀 `현장 인증 영역은 아직 없습니다`, 검색 후 지도 맥락 `detailOpen=false`, `visibleRejected=[]`, surface50 홈 지도 648x403px 맥락화 | 사용자 수락, 독립 비평 재검증, 실제 GPS evidence 기반 영역 시각 검증 |
 | 법안·개정안 연결 | A+ Active | parser mock self-check, `/laws`, production preview 비노출, 0건 dry-run 실패 가드 | 실제 법 API 키로 dry-run 1건 이상과 post 검증 |
 | 본인확인 기반 쓰기 경계 | A+ Active | 포트원 provider 설정, identity start/complete, write endpoint `identity_required` 경계 | 실제 포트원 채널 키와 운영 SDK 결제 전 인증 리허설 |
@@ -41,6 +41,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - `pnpm check:splus`
 - `pnpm check:web-flow`
 - `pnpm check:ux-surface`
+- `pnpm check:visual-surface`
 - `pnpm check:build-info-clean`
 - `pnpm check:source-diagnostics`
 - `pnpm check:law-diagnostics`
@@ -128,6 +129,7 @@ GET /ready -> 200
 - 2026-07-12 01:01 `pnpm check:ux-surface`를 release gate에 추가했다. 홈 이슈 우선 구조, 대시보드 회귀, 5개 탭, 인증 영상 액션, 지도 맥락 도구, 제보 초보자 흐름, 본인확인 경계, 금지 소셜 UI를 9개 시나리오로 검사하며 현재 모두 통과한다. 다만 이 검사는 정적 표면 회귀 방어이며 실제 모바일/데스크톱 캡처, 실제 운영 영상/GPS, 사용자 수락을 대체하지 않는다.
 - 2026-07-12 01:08 `pnpm render:api-settings`를 추가했다. Render `musunil-api`의 build/pre-deploy/start/health/env source/custom domain/Cloudflare/검증 명령을 secret 원문 없이 출력하고, `launch-check`, `launch-cutover-plan`, `service:watch` Required Actions와 연결했다. 실제 `api.musunil.com` DNS와 운영 `/ready=true` 전에는 운영 준비 완료가 아니다.
 - 2026-07-12 01:14 `write-web-config`가 로컬 검증 중 tracked build-info placeholder를 덮어쓰지 않게 하고, Render Web build에는 `MUSUNIL_WRITE_BUILD_INFO=1`을 명시했다. `pnpm check:build-info-clean`을 release gate에 추가해 로컬 `check:release`가 build-info를 더럽히면 실패한다.
+- 2026-07-12 01:29 숨겨진 상단 숫자판 DOM과 갱신 로직을 제거하고 `pnpm check:visual-surface`를 release gate에 추가했다. Chrome/CDP로 390px, 430px, 768px, 1440px 홈·상세·영상·탐색·제보 20개 상태를 실제 렌더링해 overflow, nav overlap, dashboard visible, map sheet, report first action을 검사하지만, 실제 운영 공개 영상/GPS와 사용자 수락 전에는 S+로 승급하지 않는다.
 
 ## Next Active Goal Order
 

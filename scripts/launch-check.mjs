@@ -33,6 +33,7 @@ const launchReady = readFileSync(resolve(cwd, "scripts/launch-ready.mjs"), "utf8
 const launchCutoverRunbook = readFileSync(resolve(cwd, "docs/launch-cutover-runbook.md"), "utf8");
 const webFlowSmoke = readFileSync(resolve(cwd, "scripts/ci-web-flow-smoke.mjs"), "utf8");
 const uxSurfaceSmoke = readFileSync(resolve(cwd, "scripts/ci-ux-surface-smoke.mjs"), "utf8");
+const visualSurfaceSmoke = readFileSync(resolve(cwd, "scripts/ci-visual-surface-smoke.mjs"), "utf8");
 const webStaticManifestScript = readFileSync(resolve(cwd, "scripts/write-web-static-manifest.mjs"), "utf8");
 const rootPackageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
 const gitignore = readFileSync(resolve(cwd, ".gitignore"), "utf8");
@@ -233,6 +234,21 @@ if (
   !/forbidden_social_surface/.test(uxSurfaceSmoke)
 ) {
   failures.push("Commercial UX surface smoke must cover issue-first home, dashboard regression, reels, map, report, and forbidden social UI");
+}
+if (!/"check:visual-surface"/.test(packageJson) || !/ci-visual-surface-smoke\.mjs/.test(packageJson) || !/pnpm check:visual-surface/.test(JSON.parse(packageJson).scripts["check:release"] ?? "")) {
+  failures.push("Commercial visual surface smoke must be wired into release checks");
+}
+if (
+  !/mobile_390/.test(visualSurfaceSmoke) ||
+  !/mobile_430/.test(visualSurfaceSmoke) ||
+  !/tablet_768/.test(visualSurfaceSmoke) ||
+  !/desktop_1440/.test(visualSurfaceSmoke) ||
+  !/dashboardVisible/.test(visualSurfaceSmoke) ||
+  !/navOverlap/.test(visualSurfaceSmoke) ||
+  !/mapSheetHeight/.test(visualSurfaceSmoke) ||
+  !/reportPrimaryAction/.test(visualSurfaceSmoke)
+) {
+  failures.push("Commercial visual surface smoke must cover responsive viewports, dashboard regression, navigation overlap, map density, and report first action");
 }
 if (!/MUSUNIL_STRICT_WEB_HEADERS=1/.test(renderWebSettings) || !/Clear build cache & deploy/.test(renderWebSettings)) {
   failures.push("Render Web settings helper must print strict header verification and clear-cache redeploy instructions");

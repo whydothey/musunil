@@ -24,6 +24,9 @@ scenario("home_issue_first", [
 ]);
 
 scenario("no_dashboard_regression", [
+  absent("global-strip"),
+  absent('class="metric"'),
+  absent("metric-live"),
   absent(".mini-stat"),
   absent("stat-grid"),
   absent("KPI"),

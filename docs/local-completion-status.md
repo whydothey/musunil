@@ -2,7 +2,7 @@
 
 외부 연결이 필요 없는 범위에서 완료한 항목이다.
 
-Last updated: 2026-07-12 01:14 KST
+Last updated: 2026-07-12 01:29 KST
 
 ## 완료
 
@@ -63,6 +63,8 @@ Last updated: 2026-07-12 01:14 KST
   - Web API override를 localhost로 제한
   - 홈 카드 사용자 라벨에서 내부 enum 원문 제거
   - 데스크톱/모바일 실제 캡처 검증: overflow 0, clipped text 0, 지도 핀 겹침 0
+  - 상단 대시보드 숫자판 DOM/갱신 로직 제거
+  - `pnpm check:visual-surface` Chrome/CDP 실제 렌더링 검증: 390px, 430px, 768px, 1440px 홈·상세·영상·탐색·제보 20개 상태, overflow/nav overlap/dashboard visible/map sheet/report first action 확인
 - 공개 원천 및 법 연결 준비
   - 경찰청 2011~2023 집회 신고·개최 통계
   - 대구경찰청 2020~2025 집회 신고·개최 현황
@@ -90,6 +92,7 @@ Last updated: 2026-07-12 01:14 KST
   - `pnpm check:web-smoke`
   - `pnpm check:web-flow`
   - `pnpm check:ux-surface`
+  - `pnpm check:visual-surface`
   - `pnpm check:build-info-clean`
   - `pnpm check:splus`
   - `pnpm launch:ready`

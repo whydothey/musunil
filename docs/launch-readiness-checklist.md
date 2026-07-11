@@ -21,6 +21,7 @@
 - `pnpm check:web-smoke` 통과.
 - `pnpm check:web-flow` 통과.
 - `pnpm check:ux-surface` 통과.
+- `pnpm check:visual-surface` 통과. Chrome/CDP로 390px, 430px, 768px, 1440px에서 홈·상세·영상·탐색·제보의 가로 넘침, 하단 내비 겹침, 대시보드 숫자판 회귀, 지도 시트 과밀, 제보 첫 행동을 실제 렌더링 기준으로 확인한다.
 - `pnpm check:build-info-clean` 통과.
 - `pnpm render:api-settings` 출력이 `render.yaml`의 `musunil-api` 설정, env source, `api.musunil.com` 검증 명령과 일치.
 - `pnpm launch:inputs`로 생성한 운영 YAML은 `CHANGE_ME_*` 값만 남기고 Render generated secret 필드는 비워 둔다.

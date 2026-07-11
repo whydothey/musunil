@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 23:33 KST
+Last updated: 2026-07-12 01:29 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -16,6 +16,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 공개 가능한 `redactedClipUrl`과 `redactedPosterUrl`이 모두 있는 이슈는 홈 카드 안에 16:9 `비식별 공개본` 프리뷰를 붙인다. 공개본이 없으면 장식 이미지나 가짜 썸네일을 만들지 않는다.
 - 홈 첫 화면에는 지도 화면과 제보 도구를 기본 노출하지 않는다. 지도는 `탐색` 탭/카드 보조 버튼/상세 빠른 버튼에서 위치 맥락으로 열고, 공개 열람은 `영상` 탭에서, 제보 작성은 `제보` 탭에서 독립 화면처럼 연다.
 - 제보는 일반 업로드가 아니라 `현장 영상 제보`로 제한한다. 첫 화면은 후보/조건 목록보다 `근처 현장 찾기` 단일 주행동을 먼저 보여준다.
+- 2026-07-12 01:29 패치로 숨겨져 있던 상단 숫자판 DOM과 갱신 로직까지 제거했다. `pnpm check:visual-surface`는 Chrome/CDP로 390px, 430px, 768px, 1440px에서 홈·상세·영상·탐색·제보 20개 상태를 실제 렌더링으로 검사하고, 가로 넘침·하단 내비 겹침·대시보드 숫자판 회귀·지도 시트 과밀·제보 첫 행동 회귀를 막는다. 그래도 실제 운영 GPS evidence, 실제 공개 영상 품질, 독립 재검증, 사용자 수락 전 S+는 아니다.
 - 04:43 독립 비평 기준 현재 화면은 S+가 아니다. Visual critique는 A- 공공서비스 프로토타입, IA red-team은 B-로 평가했다. 이번 패치는 `영상/지도/제보`가 선택 이슈 맥락으로 읽히게 하는 1차 보정이며, 상업용 S+ 승급 근거가 아니다.
 - 05:02 패치로 현장 영상 poster를 어두운 야간 placeholder 톤에서 밝은 비식별 공공 현장 프레임으로 재생성했고, 데스크톱 제보 화면에 연결 이슈·선택 현장·공개 위치·현재 단계 상태 패널을 추가했다. 그래도 사용자 수락 전 S+는 아니다.
 - 05:14 독립 비평 기준 Visual Design은 홈 모바일 6/10, 영상 모바일 5/10, 지도 데스크톱 4/10, 제보 데스크톱 4.5/10이고 IA Red-Team은 전체 B-다. 이번 19차 패치는 지도-first 재배치, 이슈 카드의 지역·기준일·공개 현장·영상 근거 한 줄, `영상제보` 탭 라벨을 반영했지만, 사용자 수락 전 S+는 아니다.
@@ -180,6 +181,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 56 | Render Dashboard 설정 helper | 1차 완료 | `pnpm render:web-settings`가 `render.yaml`의 `musunil-web` 설정과 Headers를 복사 가능한 형태로 출력. `launch-check`가 helper와 strict header 검증 안내를 감시 |
 | 57 | 홈 10초 이해·반론 진입 보강 | 1차 완료 | 홈 요약을 `지역/현장/위치/영상/인원` 고정 문장으로 바꾸고, 데스크톱 이슈 카드를 1열로 정리. 반론 있는 이슈/영상에서 `다른 주장/반론` 직접 진입 제공 |
 | 58 | 상세·지도 대시보드화 감소 | 1차 완료 | 상세 개요를 answer row 구조로 바꾸고 overview cards를 제거. 상세 열린 상태의 지도 시트를 compact로 낮춰 지도-상세 경쟁을 줄임 |
+| 59 | 실제 브라우저 시각 게이트 | 1차 완료 | 상단 숫자판 DOM/로직 제거. `pnpm check:visual-surface`가 390/430/768/1440px 홈·상세·영상·탐색·제보 20개 상태에서 overflow, nav overlap, dashboard visible, map sheet, report first action을 검사 |
 
 ## Current Evidence
 
@@ -398,6 +400,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 14:14 surface51 metrics | 공개 poster 없는 LIVE 영상은 홈 카드 썸네일로 노출하지 않음. 390px/1440px first visual `issue-place-peek`, first visual text `서울 위치 1곳`, `reviewOnlyCards=0`, `fieldPreviewCards=0`, `placePeekCards=3`, forbidden 0, rejected 0, `scrollWidth=390/1440`. 실제 공개 영상/GPS와 사용자 수락 전 S+는 아니다. |
 | 00:14 launch cutover plan | `pnpm launch:cutover-plan -- --json`, `pnpm check:launch-sample`, `pnpm check:render-runtime-config`, `pnpm check:web-smoke` 통과. API DNS, Cloudflare DNS, Render Static headers, build metadata, 운영 입력 우선순위가 `docs/launch-cutover-runbook.md`와 helper로 고정됐다. 실제 Render/Cloudflare/API 반영 전 완료는 아니다. |
 | 00:28 user flow gate | `pnpm check:web-flow` 통과. 11개 시나리오, 106개 assertion으로 홈 이슈 선택, 상세, 근거, 지도, 영상, 법안, 제보, 본인확인 경계가 서로 연결되는지 검사한다. 실제 브라우저 사용자 수락 전 S+는 아니다. |
+| 01:29 visual surface gate | `pnpm check:visual-surface` 통과. 390px, 430px, 768px, 1440px에서 홈·상세·영상·탐색·제보 20개 상태, 118개 assertion이 통과했다. 대시보드 숫자판 visible 0, forbidden 0, 하단 내비 겹침 0, 지도 시트 과밀 없음, 제보 첫 행동 `근처 현장 찾기` 유지 |
 
 ## Non-Negotiable Gates
 
