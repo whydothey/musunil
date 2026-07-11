@@ -59,7 +59,7 @@
 - Render Web Static Site headers가 `render.yaml`에 선언되어 있다.
 - `pnpm build:web-static`은 `render.yaml`의 Web headers에서 `apps/web/_headers`를 생성하고, `static-manifest.json`은 `_headers` hash를 포함한다. Render 수동 Static Site는 여전히 Dashboard Headers 실제 반영을 별도 검증한다.
 - Render Web build에서 `pnpm build:web-config` 후 `pnpm launch:check`가 실행된다.
-- `pnpm db:migrate -- --check`가 Claim/Evidence/Occurrence와 장기 현장/교통/인파/경로/제보 테이블 계약을 확인한다.
+- `pnpm db:migrate -- --check`가 Claim/Evidence/Issue/Occurrence/ContinuousPresence, live report, redacted media 저장 계약을 확인한다.
 - Render API는 SIGTERM에서 서버를 닫고 snapshot 저장 후 종료한다.
 - 로컬 Web 정적 서버는 실제 HTTP 응답에서 CSP, `nosniff`, `DENY`, `no-referrer`, `Permissions-Policy` 헤더를 보낸다.
 - Render cron `musunil-public-source-ingest`, `musunil-law-source-ingest`, `musunil-notification-dispatch`가 있다.

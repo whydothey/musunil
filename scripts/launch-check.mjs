@@ -69,6 +69,9 @@ for (const pattern of forbiddenPatterns) {
 for (const term of ["공식 원천", "일정 수집", "데이터 커버리지", "상충/반론", "원천 미확정"]) {
   if ((web + "\n" + userFacingDocs).includes(term)) failures.push(`legacy user-facing term found: ${term}`);
 }
+for (const phrase of ["장기 현장/교통/인파/경로/제보", "교통 통제/도로 소통 공개 API", "지하철/버스 운행 영향 공개 API"]) {
+  if (userFacingDocs.includes(phrase)) failures.push(`non-protest source/domain wording must not reappear in launch docs: ${phrase}`);
+}
 for (const pattern of ["config/*.local.yaml", "config/*.secret.yaml", ".env", ".env.*", "*.pem", "*.key"]) {
   if (!gitignore.split("\n").includes(pattern)) failures.push(`.gitignore must block local secret pattern: ${pattern}`);
 }

@@ -226,8 +226,8 @@ curl -X POST http://localhost:4000/internal/ingest/public-occurrence \
 
 - 경찰/지자체의 집회 관련 공개 안내
 - 온라인 집회신고 시스템 또는 공개 가능한 집회 일정 자료
-- 교통 통제/도로 소통 공개 API
-- 지하철/버스 운행 영향 공개 API
+- 경찰청 교통정보센터처럼 기관명이나 게시판명이 교통을 포함하더라도 수집 대상은 집회·시위 공개 일정과 관련 공지로 제한한다.
+- 위치가 확인된 공개 자료는 Occurrence 또는 ContinuousPresence의 자료 위치 핀으로만 연결한다.
 - 언론/주최 측 공개 자료 링크
 
 실제 자료도 자동 진실이 아니다. 무슨일은 수집 결과를 Claim으로 저장하고, Source provenance와 Evidence strength를 분리해 표시한다.
