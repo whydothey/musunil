@@ -51,6 +51,7 @@ const settings = {
   rootDirectory: "",
   buildCommand,
   publishDirectory,
+  portableHeadersFile: "apps/web/_headers",
   envVars,
   headers,
   officialDocs: {
@@ -79,6 +80,7 @@ if (process.argv.includes("--json")) {
   console.log("Root Directory: (blank)");
   console.log(`Build Command: ${settings.buildCommand}`);
   console.log(`Publish Directory: ${settings.publishDirectory}`);
+  console.log(`Portable Headers File: ${settings.portableHeadersFile}`);
   console.log("");
   console.log("Header application mode:");
   for (const mode of settings.headerApplicationModes) console.log(`- ${mode}`);

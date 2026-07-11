@@ -55,6 +55,7 @@
 - Render cron worker는 API 서비스의 `MUSUNIL_INTERNAL_API_KEY`를 참조한다.
 - Render cron worker는 `MUSUNIL_USER_INPUTS_B64`를 요구하지 않는다.
 - Render Web Static Site headers가 `render.yaml`에 선언되어 있다.
+- `pnpm build:web-static`은 `render.yaml`의 Web headers에서 `apps/web/_headers`를 생성하고, `static-manifest.json`은 `_headers` hash를 포함한다. Render 수동 Static Site는 여전히 Dashboard Headers 실제 반영을 별도 검증한다.
 - Render Web build에서 `pnpm build:web-config` 후 `pnpm launch:check`가 실행된다.
 - `pnpm db:migrate -- --check`가 Claim/Evidence/Occurrence와 장기 현장/교통/인파/경로/제보 테이블 계약을 확인한다.
 - Render API는 SIGTERM에서 서버를 닫고 snapshot 저장 후 종료한다.

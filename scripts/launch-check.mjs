@@ -25,6 +25,7 @@ const userFacingDocs = [
 ].map((path) => `${path}\n${readFileSync(resolve(cwd, path), "utf8")}`).join("\n");
 const webConfigJs = readFileSync(resolve(cwd, "apps/web/config.js"), "utf8");
 const webConfigWriter = readFileSync(resolve(cwd, "scripts/write-web-config.mjs"), "utf8");
+const webHeaderWriter = readFileSync(resolve(cwd, "scripts/write-web-headers.mjs"), "utf8");
 const webServer = readFileSync(resolve(cwd, "scripts/serve-web.mjs"), "utf8");
 const webDeployCheck = readFileSync(resolve(cwd, "scripts/check-web-deploy.mjs"), "utf8");
 const renderWebSettings = readFileSync(resolve(cwd, "scripts/render-web-settings.mjs"), "utf8");
@@ -230,6 +231,9 @@ if (
 }
 if (!/"render:web-settings"/.test(packageJson) || !/render-web-settings\.mjs/.test(packageJson)) {
   failures.push("Render Web settings helper command is missing");
+}
+if (!/"build:web-headers"/.test(packageJson) || !/write-web-headers\.mjs/.test(packageJson) || !/pnpm build:web-headers/.test(JSON.parse(packageJson).scripts["build:web-static"] ?? "")) {
+  failures.push("static Web build must generate portable _headers from render.yaml");
 }
 if (!/"render:api-settings"/.test(packageJson) || !/render-api-settings\.mjs/.test(packageJson)) {
   failures.push("Render API settings helper command is missing");
@@ -643,6 +647,9 @@ for (const header of ["Cache-Control", "Content-Security-Policy", "Permissions-P
 }
 if (!/Content-Security-Policy[\s\S]*media-src\s+'self'\s+https:\s+blob:/.test(renderWeb)) {
   failures.push("Render Web static CSP must allow public redacted video via media-src");
+}
+if (!/render\.yaml/.test(webHeaderWriter) || !/apps\/web\/_headers/.test(webHeaderWriter) || !/Content-Security-Policy/.test(webHeaderWriter)) {
+  failures.push("static Web _headers writer must mirror render.yaml security headers");
 }
 if (!/databases:\s*[\s\S]*-\s+name:\s*musunil-postgres\b[\s\S]*databaseName:\s*musunil\b[\s\S]*ipAllowList:\s*\[\]/.test(renderYaml)) {
   failures.push("Render managed Postgres must be declared with private-network-only access");

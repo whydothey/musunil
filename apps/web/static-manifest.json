@@ -10,6 +10,10 @@
       "sha256": "fe63a156079b5fe8754a476faaacef808bbd4aa41a2b0f19d85b9a3095876f3d",
       "bytes": 141
     },
+    "_headers": {
+      "sha256": "6868d3b4a2941a6a081d5953ccac3af9be3fa56a1246fb1ba725534abd914400",
+      "bytes": 667
+    },
     "media/redacted/preview-occ-live-1-poster.png": {
       "sha256": "272feaa3df7470c6af44b5c0f67c61bf2707c462ad33419190e889a5cf2bb1cd",
       "bytes": 487794

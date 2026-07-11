@@ -1,0 +1,9 @@
+# Generated from render.yaml by scripts/write-web-headers.mjs.
+# Render manual Static Sites still require Dashboard Headers; this file keeps portable static hosts aligned.
+/*
+  Cache-Control: no-store
+  Content-Security-Policy: default-src 'self'; connect-src 'self' https:; img-src 'self' data: blob: https:; media-src 'self' https: blob:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.portone.io; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob:
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(self)
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY

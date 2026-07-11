@@ -431,17 +431,28 @@ async function checkWeb(port) {
 
   const packageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
   const webConfigWriter = readFileSync(resolve(cwd, "scripts/write-web-config.mjs"), "utf8");
+  const webHeaderWriter = readFileSync(resolve(cwd, "scripts/write-web-headers.mjs"), "utf8");
   const webServer = readFileSync(resolve(cwd, "scripts/serve-web.mjs"), "utf8");
   assert(packageJson.includes('"build:web-static"'), "static web build script missing");
+  assert(packageJson.includes('"build:web-headers"'), "static web header build script missing");
+  assert(packageJson.includes("pnpm build:web-headers"), "static web build does not generate _headers");
   assert(packageJson.includes('"build:web-manifest"'), "static web manifest build script missing");
   assert(packageJson.includes('"check:web-manifest"'), "static web manifest check script missing");
   assert(packageJson.includes('"check:web-deploy"'), "web deploy version smoke script missing");
   assert(webConfigWriter.includes("MUSUNIL_WEB_API_BASE_URL"), "static web API env override missing");
   assert(webConfigWriter.includes("MUSUNIL_WEB_MAP_STYLE_URL"), "static web map env override missing");
+  assert(webHeaderWriter.includes("render.yaml"), "web header writer must use render.yaml as source");
+  assert(webHeaderWriter.includes("Content-Security-Policy"), "web header writer CSP guard missing");
   assert(webServer.includes("MUSUNIL_WEB_API_BASE_URL"), "serve-web runtime API env override missing");
   assert(webServer.includes("allowLocal: true"), "serve-web local API env override guard missing");
   assert(webConfigWriter.includes("build-info.json"), "web build-info artifact missing");
   assert(packageJson.includes('"assets:redacted-preview"'), "redacted preview asset generator script missing");
+  const staticHeadersResponse = await fetch(`${base}/_headers`);
+  assert(staticHeadersResponse.status === 200, `_headers returned ${staticHeadersResponse.status}`);
+  const staticHeaders = await staticHeadersResponse.text();
+  for (const headerName of ["Cache-Control", "Content-Security-Policy", "Permissions-Policy", "Referrer-Policy", "X-Content-Type-Options", "X-Frame-Options"]) {
+    assert(staticHeaders.includes(headerName), `_headers missing ${headerName}`);
+  }
 
   const posterResponse = await fetch(`${base}/media/redacted/preview-occ-live-1-poster.png`);
   assert(posterResponse.status === 200, `redacted preview poster returned ${posterResponse.status}`);

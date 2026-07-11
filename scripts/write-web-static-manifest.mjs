@@ -8,6 +8,7 @@ const manifestPath = resolve(webRoot, "static-manifest.json");
 const files = [
   "index.html",
   "config.js",
+  "_headers",
   "media/redacted/preview-occ-live-1-poster.png",
   "media/redacted/preview-occ-live-1.webm"
 ];
