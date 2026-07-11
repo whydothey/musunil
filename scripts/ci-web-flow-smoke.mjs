@@ -135,6 +135,8 @@ scenario("identity_write_boundary_for_user_actions", [
   has('id="identity-start-action"'),
   has('api("/auth/identity/start"'),
   has('api("/auth/identity/complete"'),
+  has('credentials: "include"'),
+  has("restoreCookieSession"),
   functionHas("getUserSession", "openIdentitySheet(purpose)"),
   functionHas("completeIdentity", "window.PortOne?.requestIdentityVerification"),
   functionHas("sessionHeaders", '"x-musunil-user-id"'),

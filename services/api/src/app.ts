@@ -1173,9 +1173,7 @@ function getMe(store: Store, request: ApiRequest, options: AppOptions): ApiRespo
 function postLogout(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
   const verified = verifiedUserFromRequest(store, request, options);
   if (verified) verified.session.revokedAt = new Date();
-  return json(200, { status: "logged_out" }, {
-    "set-cookie": "musunil_session=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax"
-  });
+  return json(200, { status: "logged_out" }, clearIdentityCookieHeaders(options.identity?.sessionCookieDomain));
 }
 
 function constantTimeStringEqual(candidate: string | undefined, expected: string): boolean {
@@ -1221,8 +1219,9 @@ type VerifiedRequestUser = {
 };
 
 function verifiedUserFromRequest(store: Store, request: ApiRequest, options: AppOptions): VerifiedRequestUser | undefined {
-  const userId = request.headers?.["x-musunil-user-id"];
-  const token = request.headers?.["x-musunil-user-token"];
+  const credentials = verifiedCredentialsFromRequest(request);
+  const userId = credentials?.userId;
+  const token = credentials?.token;
   if (!userId || !token || !verifyUserToken(token, userId, options.userTokenSecret)) return undefined;
   const session = store.userSessions.find(
     (item) =>
@@ -1238,6 +1237,35 @@ function verifiedUserFromRequest(store: Store, request: ApiRequest, options: App
   session.lastSeenAt = now;
   user.lastSeenAt = now;
   return { user, session };
+}
+
+function verifiedCredentialsFromRequest(request: ApiRequest): { userId: string; token: string } | undefined {
+  const headerUserId = request.headers?.["x-musunil-user-id"];
+  const headerToken = request.headers?.["x-musunil-user-token"];
+  if (headerUserId && headerToken) return { userId: headerUserId, token: headerToken };
+
+  const cookieValue = cookieValueFromHeader(request.headers?.cookie, "musunil_session");
+  if (!cookieValue) return undefined;
+  const separatorIndex = cookieValue.indexOf(":");
+  if (separatorIndex <= 0 || separatorIndex === cookieValue.length - 1) return undefined;
+  return {
+    userId: cookieValue.slice(0, separatorIndex),
+    token: cookieValue.slice(separatorIndex + 1)
+  };
+}
+
+function cookieValueFromHeader(cookieHeader: string | undefined, name: string): string | undefined {
+  if (!cookieHeader) return undefined;
+  for (const part of cookieHeader.split(";")) {
+    const [rawName, ...rawValue] = part.trim().split("=");
+    if (rawName !== name || rawValue.length === 0) continue;
+    try {
+      return decodeURIComponent(rawValue.join("="));
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
 }
 
 function tokenHash(token: string): string {
@@ -1263,6 +1291,19 @@ function identityCookieHeaders(userId: string, token: string, expiresAt: Date, d
     `musunil_session=${encodeURIComponent(`${userId}:${token}`)}`,
     "Path=/",
     `Expires=${expiresAt.toUTCString()}`,
+    "HttpOnly",
+    "Secure",
+    "SameSite=Lax"
+  ];
+  if (domain) parts.splice(2, 0, `Domain=${domain}`);
+  return { "set-cookie": parts.join("; ") };
+}
+
+function clearIdentityCookieHeaders(domain: string | undefined): Record<string, string> {
+  const parts = [
+    "musunil_session=",
+    "Path=/",
+    "Max-Age=0",
     "HttpOnly",
     "Secure",
     "SameSite=Lax"

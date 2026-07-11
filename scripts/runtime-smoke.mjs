@@ -114,6 +114,19 @@ await check("user_scope_allowed", async () => {
   assert(Array.isArray(response.body?.reports), "scoped reports response is missing reports array");
 });
 
+await check("identity_cookie_scope_allowed", async () => {
+  const session = await verifiedIdentitySession();
+  const me = await rawRequest("GET", "/me", undefined, cookieHeaders(session));
+  assert(me.ok, `/me with identity cookie returned ${me.status}`);
+  assert(me.body?.authenticated === true, "identity cookie did not authenticate /me");
+  assert(me.body?.userId === session.userId, "identity cookie /me userId mismatch");
+  const reports = await rawRequest("GET", `/me/reports?userId=${session.userId}`, undefined, cookieHeaders(session));
+  assert(reports.ok, `/me reports with identity cookie returned ${reports.status}`);
+  const logout = await rawRequest("POST", "/auth/logout", "{}", cookieHeaders(session));
+  assert(logout.ok, `logout with identity cookie returned ${logout.status}`);
+  assert(String(logout.headers["set-cookie"] || "").includes("Max-Age=0"), "logout did not clear identity cookie");
+});
+
 await check("subscription_user_scope_mismatch", async () => {
   const session = await verifiedIdentitySession();
   const response = await rawRequest(
@@ -395,13 +408,21 @@ async function verifiedIdentitySession() {
   assert(typeof response.body?.token === "string", "verified identity session missing token");
   assert(response.body?.authLevel === "identity_verified", "identity session authLevel mismatch");
   assert(Date.parse(response.body?.expiresAt) > Date.now(), "verified identity session expiresAt is missing or expired");
-  return response.body;
+  const setCookie = response.headers["set-cookie"];
+  assert(String(setCookie || "").includes("musunil_session="), "identity complete did not set session cookie");
+  return { ...response.body, cookie: String(setCookie).split(";")[0] };
 }
 
 function userHeaders(session) {
   return {
     "x-musunil-user-id": session.userId,
     "x-musunil-user-token": session.token
+  };
+}
+
+function cookieHeaders(session) {
+  return {
+    cookie: session.cookie
   };
 }
 

@@ -6474,18 +6474,51 @@
 
       async function getUserSession(purpose = "general") {
         const cached = JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
-        if (cached?.userId && cached?.token && cached?.authLevel === "identity_verified" && Date.parse(cached.expiresAt) > Date.now() + 60_000) {
+        if (isUsableIdentitySession(cached)) {
           try {
             const me = await api("/me", { headers: sessionHeaders(cached) });
-            if (me.authenticated) return cached;
+            if (me.authenticated) {
+              const refreshed = sessionFromMe(me, cached);
+              localStorage.setItem(SESSION_KEY, JSON.stringify(refreshed));
+              updateIdentityStatus(refreshed);
+              return refreshed;
+            }
           } catch {
             localStorage.removeItem(SESSION_KEY);
           }
         }
+        const restored = await restoreCookieSession();
+        if (restored) return restored;
         const session = await openIdentitySheet(purpose);
         localStorage.setItem(SESSION_KEY, JSON.stringify(session));
         updateIdentityStatus(session);
         return session;
+      }
+
+      function isUsableIdentitySession(session) {
+        return session?.userId && session?.authLevel === "identity_verified" && Date.parse(session.expiresAt || "") > Date.now() + 60_000;
+      }
+
+      async function restoreCookieSession() {
+        try {
+          const me = await api("/me");
+          if (!me.authenticated) return null;
+          const session = sessionFromMe(me);
+          localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+          updateIdentityStatus(session);
+          return session;
+        } catch {
+          return null;
+        }
+      }
+
+      function sessionFromMe(me, previous = {}) {
+        return {
+          userId: me.userId,
+          token: previous.token || "",
+          authLevel: me.authLevel || "identity_verified",
+          expiresAt: me.expiresAt
+        };
       }
 
       function openIdentitySheet(purpose = "general") {
@@ -6590,6 +6623,7 @@
       }
 
       function sessionHeaders(session) {
+        if (!session?.userId || !session?.token) return {};
         return {
           "x-musunil-user-id": session.userId,
           "x-musunil-user-token": session.token

@@ -64,6 +64,7 @@ const user1Headers = userHeaders(user1Session);
 const routeOnlySession = await verifiedIdentitySession(app);
 const mutedSession = await verifiedIdentitySession(app);
 const attackerSession = await verifiedIdentitySession(app);
+const cookieOnlySession = await verifiedIdentitySession(app);
 
 assert.equal((await app.handle({ method: "GET", path: "/health" })).status, 200);
 const sourceCoverage = await app.handle({ method: "GET", path: "/public-sources/coverage" });
@@ -1126,6 +1127,19 @@ const mine = await app.handle({ method: "GET", path: `/me/reports?userId=${user1
 assert.equal(mine.status, 200);
 assert.equal(JSON.stringify(mine.body).includes("이 원문은 공개 응답에 나오면 안 된다"), false);
 
+const cookieMe = await app.handle({ method: "GET", path: "/me", headers: identityCookieHeader(cookieOnlySession) });
+assert.equal(cookieMe.status, 200);
+assert.equal((cookieMe.body as { authenticated: boolean; userId: string }).authenticated, true);
+assert.equal((cookieMe.body as { authenticated: boolean; userId: string }).userId, cookieOnlySession.userId);
+const cookieMine = await app.handle({ method: "GET", path: `/me/reports?userId=${cookieOnlySession.userId}`, headers: identityCookieHeader(cookieOnlySession) });
+assert.equal(cookieMine.status, 200);
+const cookieLogout = await app.handle({ method: "POST", path: "/auth/logout", headers: identityCookieHeader(cookieOnlySession) });
+assert.equal(cookieLogout.status, 200);
+assert.equal(String(cookieLogout.headers?.["set-cookie"]).includes("Domain=.musunil.test"), true);
+assert.equal(String(cookieLogout.headers?.["set-cookie"]).includes("Max-Age=0"), true);
+const cookieAfterLogout = await app.handle({ method: "GET", path: "/me", headers: identityCookieHeader(cookieOnlySession) });
+assert.equal((cookieAfterLogout.body as { authenticated: boolean }).authenticated, false);
+
 const reconcile = await app.handle({
   method: "POST",
   path: "/internal/agents/reconcile-lifecycle",
@@ -1756,5 +1770,11 @@ function userHeaders(session: { userId: string; token: string }): Record<string,
   return {
     "x-musunil-user-id": session.userId,
     "x-musunil-user-token": session.token
+  };
+}
+
+function identityCookieHeader(session: { userId: string; token: string }): Record<string, string> {
+  return {
+    cookie: `musunil_session=${encodeURIComponent(`${session.userId}:${session.token}`)}`
   };
 }
