@@ -90,6 +90,7 @@ GET /ready -> 200
 - 2026-07-11 12:24 상세 시트의 긴 라벨을 `영상/흐름/반론`으로 줄이고 접근성 라벨에 전체 의미를 유지했다. 모바일 390px 상세는 `tabs.height=50`, `navOverlap=false`, `scrollWidth=390`을 확인했지만 독립 비평 재검증, 실제 운영 공개 영상/GPS, 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-11 12:34 독립 Visual Critique의 P0인 모바일 상세 가독성 문제를 반영해 제목·요약·핵심 문장 숨김 클램프를 자연 줄바꿈으로 바꿨다. 390px 상세는 title/summary/row horizontal overflow false, panel fit true, `navOverlap=false`, `scrollWidth=390`을 확인했지만 공통 이슈 요약 바, 액션 위계 재정렬, 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-11 12:40 독립 Visual Critique의 P1인 동등한 카드 액션 위계를 반영해 홈 카드 primary를 `근거 보기`로 올리고 `지도/영상/반론`을 secondary로 낮췄다. 390px 첫 카드 primary action evidence, visible cards 3, `scrollWidth=390`, forbidden 0을 확인했지만 공통 이슈 요약 바, 실제 운영 공개 영상/GPS, 사용자 수락 전에는 S+로 승급하지 않는다.
+- 2026-07-11 12:48 `인증영상/지도/현장촬영`에 공통 이슈 요약 바를 붙이고, 모바일→데스크톱 전환 시 현재 화면과 레일 선택 상태가 유지되게 했다. 390px 세 화면과 1440px 지도 캡처에서 같은 이슈명/상태/요약, `navOverlap=false`, forbidden 0, desktop `activeRail=explore`를 확인했지만 실제 운영 공개 영상/GPS, 독립 재검증, 사용자 수락 전에는 S+로 승급하지 않는다.
 
 ## Next Active Goal Order
 

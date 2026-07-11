@@ -251,6 +251,15 @@ async function checkWeb(port) {
   assert(index.includes('id="reels-issue-anchor"'), "reels issue context anchor missing");
   assert(index.includes('id="map-issue-anchor"'), "map issue context anchor missing");
   assert(index.includes('id="report-issue-anchor"'), "report issue context anchor missing");
+  assert(index.includes('id="reels-anchor-status"'), "reels issue context status missing");
+  assert(index.includes('id="map-anchor-status"'), "map issue context status missing");
+  assert(index.includes('id="report-anchor-status"'), "report issue context status missing");
+  assert(index.includes("issueContextStatusText"), "issue context status helper missing");
+  assert(index.includes("statusNode.dataset.state = statusState"), "issue context status tone sync missing");
+  assert(index.includes('let currentPrimaryView = "home"'), "primary view state memory missing");
+  assert(index.includes("currentPrimaryView = view"), "primary view state should update on tab switches");
+  assert(index.includes('currentPrimaryView = mobileClass.replace("mobile-tab-", "")'), "mobile-to-desktop view sync missing");
+  assert(index.includes("setRailCurrent(currentPrimaryView)"), "desktop rail should sync to preserved view");
   assert(index.includes("report-context-panel"), "desktop report context panel missing");
   assert(index.includes('id="report-context-title"'), "report context issue title missing");
   assert(index.includes('id="report-context-target"'), "report context target state missing");

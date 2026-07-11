@@ -768,8 +768,44 @@
 
       .issue-context-copy {
         display: grid;
-        gap: 2px;
+        gap: 4px;
         min-width: 0;
+      }
+
+      .issue-context-meta {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+      }
+
+      .issue-context-status {
+        display: inline-flex;
+        align-items: center;
+        flex: 0 0 auto;
+        min-height: 22px;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--brand) 12%, transparent);
+        color: var(--brand-strong);
+        font-size: 11px;
+        font-weight: 840;
+        line-height: 1;
+      }
+
+      .issue-context-status[data-state="official"] {
+        background: color-mix(in srgb, var(--official) 12%, transparent);
+        color: var(--official);
+      }
+
+      .issue-context-status[data-state="pending"] {
+        background: color-mix(in srgb, var(--pending) 14%, transparent);
+        color: var(--pending);
+      }
+
+      .issue-context-status[data-state="dispute"] {
+        background: color-mix(in srgb, var(--dispute) 13%, transparent);
+        color: var(--dispute);
       }
 
       .issue-context-kicker {
@@ -4193,6 +4229,16 @@
           font-size: 13px;
         }
 
+        .issue-context-meta {
+          gap: 5px;
+        }
+
+        .issue-context-status {
+          min-height: 20px;
+          padding: 0 7px;
+          font-size: 10px;
+        }
+
         .issue-context-line {
           white-space: normal;
         }
@@ -5333,7 +5379,10 @@
           </div>
           <div class="issue-context-strip" id="reels-issue-anchor" aria-label="영상 이슈 맥락">
             <div class="issue-context-copy">
-              <span class="issue-context-kicker">보고 있는 이슈</span>
+              <span class="issue-context-meta">
+                <span class="issue-context-status" id="reels-anchor-status" data-state="pending">확인 중</span>
+                <span class="issue-context-kicker">선택 이슈</span>
+              </span>
               <strong class="issue-context-title" id="reels-anchor-title">이슈를 선택해 주세요</strong>
               <span class="issue-context-line" id="reels-anchor-line">영상은 선택 이슈의 공개 근거로만 봅니다.</span>
             </div>
@@ -5355,7 +5404,10 @@
           </div>
           <div class="issue-context-strip" id="map-issue-anchor" aria-label="지도 이슈 맥락">
             <div class="issue-context-copy">
-              <span class="issue-context-kicker">보고 있는 이슈</span>
+              <span class="issue-context-meta">
+                <span class="issue-context-status" id="map-anchor-status" data-state="pending">확인 중</span>
+                <span class="issue-context-kicker">선택 이슈</span>
+              </span>
               <strong class="issue-context-title" id="map-anchor-title">이슈를 선택해 주세요</strong>
               <span class="issue-context-line" id="map-anchor-line">지도는 선택 이슈의 위치 맥락만 보조합니다.</span>
             </div>
@@ -5457,7 +5509,10 @@
 	            </div>
             <div class="issue-context-strip" id="report-issue-anchor" aria-label="영상 제보 이슈 맥락">
               <div class="issue-context-copy">
-                <span class="issue-context-kicker">선택 이슈 우선</span>
+                <span class="issue-context-meta">
+                  <span class="issue-context-status" id="report-anchor-status" data-state="pending">확인 중</span>
+                  <span class="issue-context-kicker">선택 이슈</span>
+                </span>
                 <strong class="issue-context-title" id="report-anchor-title">이슈를 선택해 주세요</strong>
                 <span class="issue-context-line" id="report-anchor-line">근처 현장을 찾으면 선택 이슈와 현재 위치를 우선합니다.</span>
               </div>
@@ -5644,6 +5699,7 @@
       const MAP_STYLE_URL = webConfig.mapStyleUrl || "https://tiles.openfreemap.org/styles/positron";
       const SESSION_KEY = "musunilUserSession";
       let liveMap;
+      let currentPrimaryView = "home";
 
       function safePublicApiBase(value) {
         if (typeof value !== "string" || !value.trim()) return undefined;
@@ -6304,17 +6360,29 @@
         return facts;
       }
 
+      function issueContextStatusText(issue) {
+        if (!issue) return "이슈 선택";
+        return issueCardStatusText(issue);
+      }
+
       function updateIssueContextStrips() {
         const issue = selectedIssue || loadedIssueCards[0];
         const title = issue?.title || "이슈를 선택해 주세요";
         const facts = issue ? issueContextFacts(issue) : "위치를 확인하면 가까운 공개 현장을 이슈와 함께 보여줍니다.";
+        const statusText = issueContextStatusText(issue);
+        const statusState = issue ? issueStoryState(issue) : "pending";
         [
           ["reels", "영상은 선택 이슈의 공개 근거로만 봅니다."],
           ["map", "지도는 선택 이슈의 위치 맥락만 보조합니다."],
           ["report", "근처 현장을 찾으면 선택 이슈와 현재 위치를 우선합니다."]
         ].forEach(([mode, fallbackLine]) => {
+          const statusNode = $(`${mode}-anchor-status`);
           const titleNode = $(`${mode}-anchor-title`);
           const lineNode = $(`${mode}-anchor-line`);
+          if (statusNode) {
+            statusNode.textContent = statusText;
+            statusNode.dataset.state = statusState;
+          }
           if (titleNode) titleNode.textContent = title;
           if (lineNode) lineNode.textContent = issue ? issueContextLine(issue, mode) : fallbackLine;
         });
@@ -6338,6 +6406,7 @@
       }
 
 	      function setMobileTab(view, activeButton) {
+        currentPrimaryView = view;
         withViewTransition(() => {
           document.querySelectorAll(".mobile-nav button").forEach((item) => item.removeAttribute("aria-current"));
           (activeButton || document.querySelector(`.mobile-nav button[data-tab-view="${view}"]`))?.setAttribute("aria-current", "page");
@@ -9922,14 +9991,24 @@
 
       function syncResponsiveMode() {
         const layout = document.querySelector(".layout");
-        if (innerWidth <= 780 && ![...layout.classList].some((name) => name.startsWith("mobile-tab-"))) {
-          layout.classList.add("mobile-tab-home");
-        }
+        const mobileClass = [...layout.classList].find((name) => name.startsWith("mobile-tab-"));
+        if (mobileClass) currentPrimaryView = mobileClass.replace("mobile-tab-", "");
         if (innerWidth <= 780) {
+          if (!mobileClass) layout.classList.add(`mobile-tab-${currentPrimaryView}`);
           layout.classList.remove("desktop-law", "desktop-reels", "desktop-explore", "desktop-report", "desktop-detail-open");
+          document.querySelectorAll(".mobile-nav button").forEach((item) => {
+            if (item.dataset.tabView === currentPrimaryView) item.setAttribute("aria-current", "page");
+            else item.removeAttribute("aria-current");
+          });
         }
         if (innerWidth > 780) {
           layout.classList.remove("mobile-tab-home", "mobile-tab-reels", "mobile-tab-explore", "mobile-tab-laws", "mobile-tab-report", "mobile-detail-open");
+          layout.classList.remove("desktop-law", "desktop-reels", "desktop-explore", "desktop-report", "desktop-detail-open");
+          if (currentPrimaryView === "laws") layout.classList.add("desktop-law");
+          if (currentPrimaryView === "reels") layout.classList.add("desktop-reels");
+          if (currentPrimaryView === "explore") layout.classList.add("desktop-explore");
+          if (currentPrimaryView === "report") layout.classList.add("desktop-report");
+          setRailCurrent(currentPrimaryView);
         }
       }
 
@@ -9941,6 +10020,7 @@
       }
 
       function setPrimaryView(view) {
+        currentPrimaryView = view;
         if (innerWidth <= 780) {
           setMobileTab(view, document.querySelector(`.mobile-nav button[data-tab-view="${view}"]`));
           return;
@@ -9975,6 +10055,7 @@
 
       function setDesktopLawPanel(open) {
         const layout = document.querySelector(".layout");
+        currentPrimaryView = open ? "laws" : "home";
         withViewTransition(() => {
           layout.classList.toggle("desktop-law", open);
           layout.classList.remove("desktop-reels", "desktop-explore", "desktop-report");

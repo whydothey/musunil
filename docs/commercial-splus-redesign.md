@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 12:40 KST
+Last updated: 2026-07-11 12:48 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -44,6 +44,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 12:24 패치로 상세 시트의 긴 `인증 영상/시간 흐름/반론·정정` 탭 라벨을 화면에서는 `영상/흐름/반론`으로 줄이고 접근성 라벨에 전체 의미를 남겼다. 모바일 상세 시트는 내부 스크롤과 탭 최소 높이를 고정해 390px에서 하단 내비 겹침 없이 `근거/영상/지도`, `개요/근거/영상/흐름/반론`이 보인다. 사용자 수락 전 S+는 아니다.
 - 12:34 독립 Visual Critique가 모바일 상세를 P0로 지적했다. `-webkit-line-clamp` 기반 숨김을 제거하고 제목·요약·핵심 문장이 자연 줄바꿈되게 바꿨다. 390px 상세에서 title/summary/row horizontal overflow false, panel fit true, `navOverlap=false`, `scrollWidth=390`을 확인했다. 사용자 수락 전 S+는 아니다.
 - 12:40 패치로 홈 카드 액션을 4개 동등 버튼에서 `근거 보기` primary와 `지도/영상/반론` secondary로 재정렬했다. 모바일 390px 첫 카드 primary action은 evidence, secondary는 map/video/dispute, visible cards 3, `scrollWidth=390`, forbidden 0을 확인했다. 사용자 수락 전 S+는 아니다.
+- 12:48 패치로 `인증영상/지도/현장촬영` 상단에 같은 이슈 요약 바를 붙였다. 상태, 이슈명, 지역·일정·위치 수·현장 수·공식 근거·영상 상태가 화면마다 같은 구조로 유지되고, 모바일에서 데스크톱으로 확장해도 현재 화면과 좌측 레일 선택 상태가 보존된다. 사용자 수락 전 S+는 아니다.
 
 ## Agent Feedback Summary
 
@@ -96,6 +97,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | PM Local Patch 19 | 11:16 API seed가 공개 clip URL을 가리키지만 로컬/정적 미디어에는 poster만 있어 실제 video branch 검증이 약했다. | 참조 중인 preview webm 파일을 추가하고, 정적 서버 MIME/CSP를 보강. web smoke가 clip route와 media CSP를 검증 |
 | Visual Design Critique 13 | 12:31 현재 UI는 원칙 위반은 적지만 정보가 많은 내부 운영 도구처럼 읽힌다. P0는 모바일 상세 가독성/레이아웃 파손, P1은 첫 5초 주제 인지 약함과 동등한 근거/영상/지도/반론 버튼 위계다. | 이번 패치에서 상세 제목/요약/bullet 숨김 클램프를 제거하고 줄바꿈 안정화. 다음 패치 후보는 공통 이슈 요약 바와 액션 위계 재정렬 |
 | PM Local Patch 20 | 12:40 홈 카드의 `지도/근거/영상/반론` 4개 버튼이 같은 무게라 기능 목록처럼 보였다. | `근거 보기`를 full-width primary로 올리고 `지도/영상/반론`을 3개 secondary로 낮춤. 지도는 별도 위치 미리보기와 보조 버튼으로 유지 |
+| PM Local Patch 21 | 12:48 영상·지도·현장촬영 화면이 각각 따로 노는 화면처럼 읽힐 수 있었다. | 공통 이슈 요약 바에 상태 pill, 이슈명, 지역·현장·근거 요약을 통일하고, 모바일→데스크톱 전환 시 선택 화면과 레일 상태를 유지 |
 
 ## Active Goal Board
 
@@ -152,6 +154,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 47 | 상세 시트 짧은 라벨·모바일 시트 보정 | 1차 완료 | 390px 상세 `actionLabels=근거/영상/지도`, `tabLabels=개요/근거/영상/흐름/반론`, `tabs.height=50`, `navOverlap=false`, `scrollWidth=390`. 1440px도 같은 라벨과 `navOverlap=false` |
 | 48 | 모바일 상세 텍스트 줄바꿈 안정화 | 1차 완료 | 독립 critique P0 반영. 390px 상세 title/summary/row horizontal overflow false, all fit panel true, `navOverlap=false`, `scrollWidth=390`. 숨김 클램프 대신 자연 줄바꿈 |
 | 49 | 홈 카드 액션 위계 재정렬 | 1차 완료 | 390px 첫 카드 `primaryAction=evidence`, `primaryLabel=근거 보기`, secondary `지도/영상/반론`, visible cards 3, `scrollWidth=390`, forbidden 0. 1440px도 같은 액션 위계 |
+| 50 | 공통 이슈 요약 바와 반응형 상태 보존 | 1차 완료 | 인증영상·지도·현장촬영에 같은 상태/이슈명/위치·현장·근거 요약이 보이고, 모바일→데스크톱 전환 시 선택 레일이 유지됨 |
 
 ## Current Evidence
 
@@ -318,6 +321,11 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 12:40 mobile home action hierarchy | `docs/commercial-splus-surface42-home-action-hierarchy-mobile-390-2026-07-11.png` |
 | 12:40 desktop home action hierarchy | `docs/commercial-splus-surface42-home-action-hierarchy-desktop-1440-2026-07-11.png` |
 | 12:40 home action metrics | 모바일 390px 첫 카드 `primaryAction=evidence`, `primaryLabel=근거 보기`, secondary `지도/영상/반론`, `firstCard.height=257`, visible cards 3, `navOverlap=false`, `scrollWidth=390`, forbidden 0. 데스크톱 1440px도 primary evidence, secondary map/video/dispute, `scrollWidth=1440`. 사용자 수락 전 S+는 아니다. |
+| 12:48 mobile reels issue summary | `docs/commercial-splus-surface43-issue-summary-reels-mobile-390-2026-07-11.png` |
+| 12:48 mobile map issue summary | `docs/commercial-splus-surface43-issue-summary-map-mobile-390-2026-07-11.png` |
+| 12:48 mobile report issue summary | `docs/commercial-splus-surface43-issue-summary-report-mobile-390-2026-07-11.png` |
+| 12:48 desktop map issue summary | `docs/commercial-splus-surface43-issue-summary-map-desktop-1440-2026-07-11.png` |
+| 12:48 issue summary metrics | 모바일 390px 인증영상/지도/현장촬영 모두 status `반론 함께 표시`, title `정보통신망법 개정 반대 집회`, line `서울 · 일정 확인 중 · 위치 1곳 · 현장 2건 · 공식 확인 중 · 현장 영상 1건`, `navOverlap=false`, `scrollWidth=390`, forbidden 0. 데스크톱 1440px 지도 확장 후 `activeRail=explore`, `activeRailText=지도`, map 1198x698, `scrollWidth=1440`. 사용자 수락 전 S+는 아니다. |
 
 ## Non-Negotiable Gates
 
