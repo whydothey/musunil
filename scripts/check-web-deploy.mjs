@@ -9,6 +9,11 @@ const config = safeConfig();
 const webBaseUrl = deployedUrl(process.env.MUSUNIL_WEB_BASE_URL ?? positionalArg() ?? readString(config, "app.public_base_url"));
 const expectedCommitSha = process.env.MUSUNIL_EXPECTED_COMMIT_SHA || process.env.RENDER_GIT_COMMIT || gitHead();
 const checks = [];
+const renderStaticHint =
+  "Expected Render Static Site settings: Branch=main, Root Directory blank, " +
+  "Build Command=\"corepack enable && pnpm install --frozen-lockfile && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com pnpm build:web-static && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com pnpm check:web-smoke\", " +
+  "Publish Directory=apps/web, headers copied from render.yaml musunil-web. " +
+  "If static-manifest matches but build-info is placeholder, Render is publishing committed apps/web files without the build command output.";
 
 if (!webBaseUrl) {
   console.error("Set MUSUNIL_WEB_BASE_URL or app.public_base_url to the deployed HTTPS web URL.");
@@ -30,8 +35,14 @@ await check("web_build_info", async () => {
   assert(response.status === 200, `/build-info.json returned ${response.status}`);
   assert(typeof response.body?.commitSha === "string" && response.body.commitSha.length >= 7, "build-info commitSha missing");
   assert(typeof response.body?.builtAt === "string" && response.body.builtAt.includes("T"), "build-info builtAt missing");
-  assert(response.body.commitSha !== "generated-at-build", "build-info placeholder was deployed; Render build command output was not published");
-  assert(response.body.source !== "placeholder", "build-info placeholder source was deployed; Render build command output was not published");
+  assert(
+    response.body.commitSha !== "generated-at-build",
+    `build-info placeholder was deployed; Render build command output was not published. body=${shortJson(response.body)}. ${renderStaticHint}`
+  );
+  assert(
+    response.body.source !== "placeholder",
+    `build-info placeholder source was deployed; Render build command output was not published. body=${shortJson(response.body)}. ${renderStaticHint}`
+  );
   assertWebNoStore(response.headers, "/build-info.json");
   if (expectedCommitSha) {
     assert(response.body.commitSha === expectedCommitSha, `deployed web commit ${response.body.commitSha} does not match expected ${expectedCommitSha}`);
@@ -106,7 +117,11 @@ function assert(condition, message) {
 
 function assertWebNoStore(headers, path) {
   const cacheControl = String(headers["cache-control"] || "").toLowerCase();
-  assert(cacheControl.includes("no-store"), `${path} must send Cache-Control: no-store, got ${cacheControl || "missing"}`);
+  assert(cacheControl.includes("no-store"), `${path} must send Cache-Control: no-store, got ${cacheControl || "missing"}. ${renderStaticHint}`);
+}
+
+function shortJson(value) {
+  return JSON.stringify(value).slice(0, 500);
 }
 
 function withCacheBuster(url) {

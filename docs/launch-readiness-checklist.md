@@ -87,6 +87,7 @@
 - Render Static Site는 repo root에서 `pnpm build:web-static`과 `pnpm check:web-smoke`를 실행하고 `apps/web`만 publish한다.
 - Render Static Site와 Cloudflare 경로는 `/`, `/config.js`, `/build-info.json`에 `Cache-Control: no-store`를 보내야 하며, 공개 영상 확인을 위해 CSP에 `media-src 'self' https: blob:`가 있어야 한다.
 - `/build-info.json` 또는 `/build-info.js`가 404면 Static Site build command가 실행되지 않았거나, repo root/Publish Directory/Blueprint 연결이 잘못됐거나, build-info 산출물이 ignore/미추적 처리된 상태로 본다.
+- `/static-manifest.json`은 현재 커밋의 해시와 일치하지만 `/build-info.json`이 `generated-at-build`이면 Static Site가 커밋된 `apps/web` 파일만 publish하고 빌드 중 생성된 파일을 반영하지 않는 상태다. Render 수동 Static Site의 Branch, Root Directory, Build Command, Publish Directory, headers를 `README.md`와 `render.yaml` 기준으로 고친 뒤 `Clear build cache & deploy`를 실행한다.
 - `apps/web/build-info.js`와 `apps/web/build-info.json`은 placeholder로 repo에 추적하고, Render build command가 실제 Git SHA로 덮어써야 한다.
 - `apps/web/static-manifest.json`은 `index.html`, `config.js`, 공개 poster/clip의 SHA-256과 byte size를 담는다. 배포 후 `pnpm check:web-deploy`는 live 파일 해시가 manifest와 같은지 확인한다.
 - 배포 후 `MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm launch:post-deploy-smoke`가 live Web SHA와 API smoke를 함께 통과해야 한다.
