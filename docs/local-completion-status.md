@@ -2,7 +2,7 @@
 
 외부 연결이 필요 없는 범위에서 완료한 항목이다.
 
-Last updated: 2026-07-12 02:50 KST
+Last updated: 2026-07-12 02:55 KST
 
 ## 완료
 
@@ -165,7 +165,7 @@ Last updated: 2026-07-12 02:50 KST
   - `pnpm launch:verify-inputs` 로컬 검증: Render 관리형 DB/Redis를 모의 주입해 사용자 YAML만 검증
   - `pnpm config:encode` launch 검증 후 `MUSUNIL_USER_INPUTS_B64` 생성, placeholder YAML 인코딩 차단
   - 기본 템플릿과 `pnpm launch:inputs` 모두 운영 입력값만 `CHANGE_ME_*`로 남김
-  - GitHub Actions `pnpm check:release` CI
+  - GitHub Actions `pnpm check:release` CI는 Node 24 호환 action 버전 사용
 
 ## 외부 연결 필요
 

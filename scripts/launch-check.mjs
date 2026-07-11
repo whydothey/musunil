@@ -38,6 +38,7 @@ const publicApiRoutes = readFileSync(resolve(cwd, "scripts/public-api-routes.mjs
 const webStaticManifestScript = readFileSync(resolve(cwd, "scripts/write-web-static-manifest.mjs"), "utf8");
 const postDeploySmokeRunner = readFileSync(resolve(cwd, "scripts/post-deploy-smoke-runner.mjs"), "utf8");
 const rootPackageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
+const ciWorkflow = readFileSync(resolve(cwd, ".github/workflows/ci.yml"), "utf8");
 const gitignore = readFileSync(resolve(cwd, ".gitignore"), "utf8");
 const renderYaml = readFileSync(resolve(cwd, "render.yaml"), "utf8");
 const renderApi = renderServiceBlock(renderYaml, "musunil-api");
@@ -70,6 +71,10 @@ for (const pattern of ["apps/web/build-info.js", "apps/web/build-info.json"]) {
   if (gitignore.split("\n").includes(pattern)) failures.push(`web deploy build-info artifact must not be ignored: ${pattern}`);
   if (!trackedFiles.has(pattern)) failures.push(`web deploy build-info artifact must be tracked: ${pattern}`);
 }
+if (!/actions\/checkout@v5/.test(ciWorkflow) || !/actions\/setup-node@v5/.test(ciWorkflow) || !/node-version:\s*24/.test(ciWorkflow)) {
+  failures.push("GitHub Actions CI must use Node 24-compatible checkout/setup-node actions");
+}
+if (!/pnpm check:release/.test(ciWorkflow)) failures.push("GitHub Actions CI must run pnpm check:release");
 
 const publicResponseFiles = [
   "services/api/src/app.ts",
