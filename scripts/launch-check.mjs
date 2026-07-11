@@ -23,6 +23,7 @@ const userFacingDocs = [
   "docs/local-completion-status.md",
   "docs/launch-readiness-checklist.md"
 ].map((path) => `${path}\n${readFileSync(resolve(cwd, path), "utf8")}`).join("\n");
+const localCompletionStatus = readFileSync(resolve(cwd, "docs/local-completion-status.md"), "utf8");
 const completionAudit = readFileSync(resolve(cwd, "docs/splus-completion-audit.md"), "utf8");
 const webConfigJs = readFileSync(resolve(cwd, "apps/web/config.js"), "utf8");
 const webConfigWriter = readFileSync(resolve(cwd, "scripts/write-web-config.mjs"), "utf8");
@@ -338,6 +339,17 @@ if (
   !/pnpm launch:final-gate/.test(completionAudit)
 ) {
   failures.push("completion audit must document current live blockers and require Cloudflare strict, live sync, and final gate evidence");
+}
+const localCompletedSection = markdownSection(localCompletionStatus, "## 완료", "## 외부 연결 필요");
+const localExternalSection = markdownSection(localCompletionStatus, "## 외부 연결 필요", "\n## ");
+if (
+  !/check:visual-surface:live` 명령 준비 완료/.test(localCompletedSection) ||
+  !/service:watch:visual` 명령 준비 완료/.test(localCompletedSection) ||
+  !/cloudflare:check:strict/.test(localExternalSection) ||
+  !/serviceSyncState=live/.test(localExternalSection) ||
+  !/Render Static headers/.test(localExternalSection)
+) {
+  failures.push("local completion status must separate prepared live verification commands from external live completion evidence");
 }
 if (!/"check:web-flow"/.test(packageJson) || !/ci-web-flow-smoke\.mjs/.test(packageJson) || !/pnpm check:web-flow/.test(packageJson)) {
   failures.push("Web user-flow smoke must be wired into release checks");

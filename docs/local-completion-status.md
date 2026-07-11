@@ -2,7 +2,7 @@
 
 외부 연결이 필요 없는 범위에서 완료한 항목이다.
 
-Last updated: 2026-07-12 07:25 KST
+Last updated: 2026-07-12 07:59 KST
 
 ## 완료
 
@@ -94,7 +94,7 @@ Last updated: 2026-07-12 07:25 KST
   - `pnpm check:web-flow`
   - `pnpm check:ux-surface`
   - `pnpm check:visual-surface`
-  - `pnpm check:visual-surface:live` 배포 후 실제 `musunil.com` 렌더링 검증
+  - `pnpm check:visual-surface:live` 명령 준비 완료. 실제 `musunil.com` 통과 증거는 외부 연결 필요 항목으로 본다.
   - `pnpm check:build-info-clean`
   - `pnpm check:splus`
   - `pnpm launch:ready`
@@ -103,6 +103,8 @@ Last updated: 2026-07-12 07:25 KST
   - `pnpm launch:external-smoke`
   - `pnpm render:api-settings`
   - `pnpm cloudflare:check`
+  - `pnpm cloudflare:check:strict` 명령 준비 완료. 실제 통과 증거는 외부 연결 필요 항목으로 본다.
+  - `pnpm service:watch:visual` 명령 준비 완료. 실제 `serviceSyncState=live` 증거는 외부 연결 필요 항목으로 본다.
   - `pnpm storage:smoke`
   - `pnpm redaction:smoke`
   - `pnpm mobile:integrity-smoke`
@@ -178,6 +180,8 @@ Last updated: 2026-07-12 07:25 KST
 - 실제 법 원천 키로 `pnpm sources:laws` 1건 이상 dry-run과 `--post` 검증.
 - Render Dashboard에서 Blueprint 생성과 `MUSUNIL_USER_INPUTS_B64` 1회 입력.
 - 운영 DB/Redis 연결 상태에서 `/ready` 200 확인.
+- Render Static headers 적용 뒤 `pnpm cloudflare:check:strict` 통과.
+- API DNS와 운영 API 연결 뒤 `pnpm service:watch:visual`에서 `serviceSyncState=live`, `web_visual_surface=ok`, 남은 skipped/fail check 0 확인.
 - 실제 Web/API URL 기준 `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws` 통과.
 - 실제 Web/API URL 기준 `pnpm launch:final-gate` 통과.
 - Render cron 실제 실행과 실패 알림 확인.
