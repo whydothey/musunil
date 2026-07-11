@@ -1,20 +1,20 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 09:37 KST
+Last updated: 2026-07-11 10:16 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
 ## Current Decision
 
-현재 구현 가설은 `집회·시위 공개자료 First`다. `이슈 파일`이나 `오늘`처럼 내부/시간 오해를 만드는 표현은 운영 화면에서 낮추고, 사용자가 바로 묻는 `무슨 일`, `어디서 확인`, `무엇으로 확인`, `근거/영상/지역/반론` 흐름으로 전환한다.
+현재 구현 가설은 `집회·시위 공개자료 First`다. `이슈 파일`이나 `오늘`처럼 내부/시간 오해를 만드는 표현은 운영 화면에서 낮추고, 사용자가 바로 묻는 `무슨 일`, `어디서 확인`, `무엇으로 확인`, `지도/근거/인증영상/반론` 흐름으로 전환한다.
 
 - 홈은 `집회·시위 공개자료` 이슈 목록이다.
 - 지도, 영상, 법안은 별도 대시보드가 아니라 선택 이슈의 근거와 맥락으로 들어간다.
-- 첫 화면은 KPI, 내부 모델, 숫자판보다 `무슨 일`, 공개 위치 문장, 근거 문장, 불확실성 문장, `근거/영상/지역/반론` 액션을 먼저 보여준다.
+- 첫 화면은 KPI, 내부 모델, 숫자판보다 `무슨 일`, 공개 위치 문장, 근거 문장, 불확실성 문장, `지도에서 확인` 주행동과 `근거/인증영상/반론` 보조 액션을 먼저 보여준다.
 - `아직 확인할 점`은 홈 카드마다 큰 박스로 반복하지 않고 상세의 개요·근거에서 확인하게 한다.
-- 상세 첫 화면은 `영상`, `지도`, `근거` 빠른 버튼과 3줄 개요를 먼저 보여주고, 전국 현황·주제 묶음·규모·검증 신호는 접힌 세부 정보로 낮춘다.
+- 상세 첫 화면은 `인증 영상`, `지도`, `근거` 빠른 버튼과 3줄 개요를 먼저 보여주고, 전국 현황·주제 묶음·규모·검증 신호는 접힌 세부 정보로 낮춘다.
 - 공개 가능한 `redactedClipUrl`과 `redactedPosterUrl`이 모두 있는 이슈는 홈 카드 안에 16:9 `비식별 공개본` 프리뷰를 붙인다. 공개본이 없으면 장식 이미지나 가짜 썸네일을 만들지 않는다.
-- 홈 첫 화면에는 지도와 영상제보 도구를 기본 노출하지 않는다. 지도는 `지도` 탭/상세 빠른 버튼에서, 영상제보는 `영상제보` 탭에서 독립 화면처럼 연다.
+- 홈 첫 화면에는 지도 화면과 현장촬영 도구를 기본 노출하지 않는다. 지도는 `지도` 탭/카드 주행동/상세 빠른 버튼에서, 공개 열람은 `인증영상` 탭에서, 제보 작성은 `현장촬영` 탭에서 독립 화면처럼 연다.
 - 제보는 일반 업로드가 아니라 `현장 영상 제보`로 제한한다. 첫 화면은 후보/조건 목록보다 `근처 현장 찾기` 단일 주행동을 먼저 보여준다.
 - 04:43 독립 비평 기준 현재 화면은 S+가 아니다. Visual critique는 A- 공공서비스 프로토타입, IA red-team은 B-로 평가했다. 이번 패치는 `영상/지도/제보`가 선택 이슈 맥락으로 읽히게 하는 1차 보정이며, 상업용 S+ 승급 근거가 아니다.
 - 05:02 패치로 현장 영상 poster를 어두운 야간 placeholder 톤에서 밝은 비식별 공공 현장 프레임으로 재생성했고, 데스크톱 제보 화면에 연결 이슈·선택 현장·공개 위치·현재 단계 상태 패널을 추가했다. 그래도 사용자 수락 전 S+는 아니다.
@@ -29,6 +29,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 06:32 패치로 지도 위 선택 시트를 홈에서는 62px 선택 요약, 모바일 지도에서는 114px 요약으로 낮췄다. `상세 보기`는 `상세`로 줄이고, `상세 패널에 반영` 같은 내부 표현을 운영 화면에서 제거했다. 1440px 홈 `sheetMapRatio=0.13`, 390px 지도 `sheetMapRatio=0.25`, `navOverlap=false`, `rejected=[]`를 확인했다. 그래도 사용자 수락 전 S+는 아니다.
 - 09:37 패치로 지도 검색·범례를 하나의 얇은 지도 도구막대로 합치고, 탐색 타일을 52px 선택 pill로 낮췄다. 데스크톱 지도 시트도 62px로 낮아졌고, 1440px 지도 `toolbarMapRatio=0.08`, `sheetMapRatio=0.09`, 390px 지도 `toolbarMapRatio=0.11`, `firstTile.height=52`, `navOverlap=false`, `rejected=[]`를 확인했다. 사용자 수락 전 S+는 아니다.
 - 10:04 패치로 static/운영 API 빈 응답 상태에서도 공식 공개자료 fallback 이슈가 보여 빈 홈 회귀를 막았다. 지도 `상세`는 선택 이슈가 아니라 선택 현장 `target` 상세로 열리며, 검색 실패는 지도 시트 안에 회복 문구를 표시한다. 390px CDP 캡처에서 `scrollWidth=390`, 하단 5탭, 지도 상세 `detailTitle=mapTitle`, `selectedTab=근거`, `toastCount=0`을 확인했다. 그래도 실제 운영 API와 사용자 수락 전 S+는 아니다.
+- 10:16 독립 Visual/IA 재검토에서 `카드 안의 카드`, `다음 행동 분산`, `영상/영상제보 오해`, `위치·규모 단위 불명확`이 P0/P1로 지적됐다. 30차 패치는 홈 카드 주행동을 `지도에서 확인` 1개로 올리고 보조 액션을 `근거/인증영상/반론`으로 낮췄으며, 탭 라벨을 `인증영상`과 `현장촬영`으로 분리했다. 390px CDP `scrollWidth=390`, scanline `위치 2곳 · 현장 5건 · 공식 자료 6건 · 인원 미확인`, forbidden `영상제보=[]`를 확인했다. 그래도 지도 placeholder감, 실제 제보 영상 품질, 사용자 수락 전 S+는 아니다.
 
 ## Agent Feedback Summary
 
@@ -73,6 +74,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | PM Local Patch 13 | 06:23 데스크톱 홈의 우측 상세가 첫 화면에서 지도와 경쟁했다. | 기본 홈은 상세 패널을 닫고, 사용자가 `근거/반론/카드 상세`를 누를 때만 상세 패널을 여는 `desktop-detail-open` 상태로 전환 |
 | Visual Design Critique 11 | 06:32 지도는 홈에서 맥락 도구로 보이기 시작했지만, 지도 시트와 검색/범례/탐색 타일이 아직 패널 스택처럼 보일 수 있다. | 지도 시트 h3/summary line clamp, 홈 지도 시트 62px compact, 모바일 지도 시트 114px compact, 내부 토스트/맥락 문구 제거 |
 | PM Local Patch 14 | 09:37 검색창·범례·탐색 타일이 각각 카드처럼 떠 있어 지도 화면이 패널 묶음으로 읽혔다. | 검색/범례를 54px 이하 도구막대로 합치고, 탐색 타일을 52px pill/화살표 액션으로 낮춤. 데스크톱 지도 선택 시트도 62px compact로 정리 |
+| Visual/IA Red-Team 12 | 10:16 홈 카드 4개 CTA가 기능 목록처럼 보이고, `영상/영상제보`가 공개 열람과 제보 작성으로 구분되지 않는다. 10초 위치·규모 단위도 문장 속에 묻힌다. | 홈 CTA를 `지도에서 확인` primary 1개로 통합, 보조 액션 `근거/인증영상/반론`으로 낮춤. 탭 라벨 `인증영상/현장촬영`, scanline `위치/현장/공식 자료/인원` 단위 고정 |
 
 ## Active Goal Board
 
@@ -99,7 +101,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 17 | 데스크톱 제보 빈 공간 완화 | 1차 완료 | 1440px 제보 화면에서 context panel visible, panel width 980px, start/action gap 12px, `overflowX=false` |
 | 18 | 지도-first 재배치 | 1차 완료 | 지도 탭에서 map shell이 explore grid보다 먼저 렌더되고, 1440px top 211px/height 700px, 390px top 215px/height 460px로 첫 화면에 보임 |
 | 19 | 10초 위치·시간·규모 보강 | 1차 완료 | 홈 이슈 카드에 `서울·대전 · 7월 7일 기준 · 공개 현장 3건 · 영상 근거 1건` 형식의 빠른 상황 줄이 보임 |
-| 20 | 영상제보 라벨 명확화 | 완료 | 모바일 하단 탭과 데스크톱 레일의 `제보`를 `영상제보`로 바꿔 자유 제보/의견 제출 오해를 낮춤 |
+| 20 | 영상제보 라벨 명확화 | 완료 | 모바일 하단 탭과 데스크톱 레일의 `제보`를 1차로 `영상제보`로 바꿔 자유 제보/의견 제출 오해를 낮췄고, 30차에서 공개 열람 `인증영상`과 작성 `현장촬영`으로 다시 분리 |
 | 21 | 지도 시트 과밀 완화 | 1차 완료 | 모바일 지도 시트 223px, 데스크톱 지도 시트 178px, summary visible rows 2, 지도와 시트가 같은 현장 문맥 유지 |
 | 22 | 영상 액션 소셜 affordance 완화 | 1차 완료 | 모바일 영상 액션을 오른쪽 세로 반응 레일에서 하단 근거 도구막대로 변경, 하단 내비와 겹침 없음, 오버레이와 액션 분리 |
 | 23 | 샘플 영상 비주얼의 AI 데모감 제거 | 1차 완료 | 샘플 poster는 화면에 실제 현장 이미지처럼 렌더하지 않음. 모바일 릴스 `posterImages=0`, `reviewSlots=3`, badge `검토 대기`, 금지 문구 0 |
@@ -114,6 +116,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 32 | 지도 선택 시트 경량화 | 1차 완료 | 1440px 홈 지도 sheet 62px, `sheetMapRatio=0.13`, chips/context/summary hidden. 390px 지도 sheet 114px, `sheetMapRatio=0.25`, `navOverlap=false`, `rejected=[]` |
 | 33 | 지도 도구·탐색 타일 밀도 완화 | 1차 완료 | 1440px 지도 toolbar 54px, `toolbarMapRatio=0.08`, sheet 62px, `sheetMapRatio=0.09`. 390px 지도 toolbar 52px, first tile 52px, `navOverlap=false`, `overflowX=false`, `rejected=[]` |
 | 34 | 지도 상세 흐름·모바일 overflow 회귀 방지 | 1차 완료 | 390px CDP `scrollWidth=390`, 하단 탭 `홈/영상/지도/법안/영상제보`, 카드 액션 2열, 지도 상세 `detailTitle=mapTitle`, `selectedTab=근거`, `toastCount=0`; web smoke에 선택 현장 상세·검색 실패·공식 fallback 이슈 가드 추가 |
+| 35 | 주행동 단일화·영상/촬영 분리 | 1차 완료 | 390px 홈 `primary=지도에서 확인`, secondary `근거/인증영상/반론`, 하단 탭 `홈/인증영상/지도/법안/현장촬영`, scanline `위치 2곳 · 현장 5건 · 공식 자료 6건 · 인원 미확인`, `overflowX=false`, `영상제보` 노출 0 |
 
 ## Current Evidence
 
@@ -139,6 +142,13 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 09:37 desktop map tools | `docs/commercial-splus-surface28-map-tools-desktop-v2-1440-2026-07-11.png` |
 | 09:37 mobile map tools | `docs/commercial-splus-surface28-map-tools-mobile-v2-390-2026-07-11.png` |
 | 09:37 map tools metrics | 1440px 지도 toolbar 54px, `toolbarMapRatio=0.08`, sheet 62px, `sheetMapRatio=0.09`, tile 52px, repeated `보기` removed. 390px 지도 toolbar 52px, tile 52px, `navOverlap=false`, `overflowX=false`, `rejected=[]` |
+| 10:04 mobile map detail | `docs/commercial-splus-surface29-map-detail-mobile-390-2026-07-11.png` |
+| 10:04 desktop map detail | `docs/commercial-splus-surface29-map-detail-desktop-1440-2026-07-11.png` |
+| 10:04 map detail metrics | 390px `scrollWidth=390`, 하단 5탭, 지도 상세 `detailTitle=mapTitle`, `selectedTab=근거`, `toastCount=0`. 1440px도 지도 시트와 우측 상세 제목 동기화 |
+| 10:16 mobile home primary CTA | `docs/commercial-splus-surface30-home-mobile-390-2026-07-11.png` |
+| 10:16 mobile verified video | `docs/commercial-splus-surface30-reels-mobile-390-2026-07-11.png` |
+| 10:16 desktop home primary CTA | `docs/commercial-splus-surface30-home-desktop-1440-2026-07-11.png` |
+| 10:16 primary CTA metrics | 390px `primary=지도에서 확인`, secondary `근거/인증영상/반론`, nav `홈/인증영상/지도/법안/현장촬영`, scanline `위치 2곳 · 현장 5건 · 공식 자료 6건 · 인원 미확인`, `overflowX=false`, `영상제보` 노출 0 |
 | 390px mobile capture | `docs/commercial-splus-mobile-390-2026-07-11.png` |
 | 430px mobile capture | `docs/commercial-splus-mobile-430-2026-07-11.png` |
 | 768px tablet capture | `docs/commercial-splus-tablet-768-2026-07-11.png` |

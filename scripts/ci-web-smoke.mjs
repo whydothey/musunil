@@ -105,10 +105,16 @@ async function checkWeb(port) {
   assert(index.includes('id: "issue_real_public_sources"'), "official public-source fallback issue missing");
   assert(index.includes("전국 집회 신고·공개 일정"), "official public-source fallback issue title missing");
   assert(index.includes("issue-card-actions"), "issue card action hub missing");
+  assert(index.includes("issue-card-secondary-actions"), "issue card secondary action row missing");
+  assert(index.includes("primary-action"), "issue card primary action styling missing");
   assert(index.includes('issueCardActionButton("evidence"'), "issue card evidence action missing");
   assert(index.includes('issueCardActionButton("video"'), "issue card video action missing");
   assert(index.includes('issueCardActionButton("map"'), "issue card region/map action missing");
   assert(index.includes('issueCardActionButton("dispute"'), "issue card rebuttal action missing");
+  assert(index.includes("지도에서 확인"), "issue card primary map CTA missing");
+  assert(index.includes("인증영상"), "verified video navigation label missing");
+  assert(index.includes("현장촬영"), "field capture navigation label missing");
+  assert(!index.includes("<span>영상제보</span>"), "ambiguous video report nav label present");
   assert(index.includes("openIssueCardAction"), "issue card action router missing");
   assert(index.includes("desktop-detail-open"), "desktop detail-open state missing");
   assert(index.includes("homeStatusText"), "plain home status copy helper missing");
@@ -122,8 +128,9 @@ async function checkWeb(port) {
   assert(index.includes("시민 5초 요약"), "citizen five-second issue summary missing");
   assert(index.includes("issuePlainSummaryText"), "plain-language issue summary missing");
   assert(index.includes("issueCardScanlineText"), "issue card scanline helper missing");
-  assert(index.includes("${place} 현장 ${count}곳"), "issue confirmed occurrence scanline missing");
-  assert(index.includes("issueVideoReviewText"), "issue video review scanline missing");
+  assert(index.includes("위치 ${regionCount}곳"), "issue location-count scanline missing");
+  assert(index.includes("현장 ${count}건"), "issue occurrence-count scanline missing");
+  assert(index.includes("공식 자료 ${official}건"), "issue official-source scanline missing");
   assert(index.includes("issueScaleStatusText"), "issue scale status line missing");
   assert(index.includes("issueDisputeStatusText"), "issue dispute status line missing");
   assert(index.includes("publicLocationCountText"), "public location count helper missing");
@@ -145,7 +152,7 @@ async function checkWeb(port) {
   assert(index.includes('data-tab-view="explore"'), "explore mobile tab missing");
   assert(index.includes('data-tab-view="laws"'), "laws mobile tab missing");
   assert(index.includes('data-tab-view="report"'), "report mobile tab missing");
-  assert(index.includes("<span>영상제보</span>"), "video-only report tab label missing");
+  assert(index.includes("<span>현장촬영</span>"), "field capture tab label missing");
   assert(!index.includes('data-icon="'), "stale text-icon mobile nav present");
   assert(index.includes('href="#icon-home"'), "home line icon missing");
   assert(index.includes('href="#icon-video"'), "video line icon missing");
@@ -223,7 +230,8 @@ async function checkWeb(port) {
   assert(!index.includes("현장 영상 없음"), "zero-count public video empty copy present");
   assert(index.includes("fieldVerificationRatioText"), "field verification ratio copy helper missing");
   assert(index.includes("반론·정정"), "rebuttal/correction label missing");
-  assert(index.includes("현장 영상</button>"), "detail live video tab label missing");
+  assert(index.includes("인증 영상</button>"), "detail verified video tab label missing");
+  assert(!index.includes(">현장 영상</button>"), "ambiguous detail video tab label present");
   assert(index.includes("시간 흐름</button>"), "detail timeline tab label missing");
   assert(index.includes("제보 기준"), "report criteria disclosure missing");
   assert(index.includes("검토로 제출"), "report submit review copy missing");
@@ -298,6 +306,7 @@ async function checkWeb(port) {
   assert(!index.includes("storage_upload_unavailable"), "client-side storage gate present");
   assert(!index.includes("웹은 확인 전용입니다"), "stale report handoff copy present");
   assert(!index.includes("제출 버튼은 모바일 앱"), "stale blocked-submit copy present");
+  assert(!index.includes("공개 자료 연결 대기"), "stale empty-state top status copy present");
 
   const config = await (await fetch(`${base}/config.js`)).text();
   assert(config.includes("MUSUNIL_WEB_CONFIG"), "web config hook missing");

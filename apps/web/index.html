@@ -1638,7 +1638,13 @@
 
       .issue-card-actions {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: minmax(0, 1fr);
+        gap: 7px;
+      }
+
+      .issue-card-secondary-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 6px;
       }
 
@@ -1679,6 +1685,21 @@
         border-color: color-mix(in srgb, var(--brand) 34%, var(--line));
         background: color-mix(in srgb, var(--brand) 9%, var(--surface));
         color: var(--brand);
+      }
+
+      .issue-card-action.primary-action {
+        min-height: 42px;
+        border-color: color-mix(in srgb, var(--brand) 78%, var(--line));
+        background: var(--brand);
+        color: #fff;
+        font-size: 13px;
+        box-shadow: 0 12px 28px color-mix(in srgb, var(--brand) 20%, transparent);
+      }
+
+      .issue-card-action.primary-action:hover {
+        border-color: color-mix(in srgb, var(--brand-strong) 84%, var(--line));
+        background: var(--brand-strong);
+        color: #fff;
       }
 
       .issue-card-action .button-symbol {
@@ -4406,7 +4427,11 @@
         }
 
         .issue-card-actions {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .issue-card-secondary-actions {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
         .issue-feed-title .title {
@@ -4852,10 +4877,10 @@
       <main class="layout">
         <nav class="desktop-rail" aria-label="주요 화면">
           <button class="rail-item" type="button" aria-current="page" data-rail-view="home"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-home"></use></svg></span><span>홈</span></button>
-          <button class="rail-item" type="button" data-rail-view="reels"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-video"></use></svg></span><span>영상</span></button>
+          <button class="rail-item" type="button" data-rail-view="reels"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-video"></use></svg></span><span>인증영상</span></button>
           <button class="rail-item" type="button" data-rail-view="explore"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-search"></use></svg></span><span>지도</span></button>
           <button class="rail-item" type="button" data-rail-view="laws"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-law"></use></svg></span><span>법안</span></button>
-          <button class="rail-item" type="button" data-rail-view="report"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-report"></use></svg></span><span>영상제보</span></button>
+          <button class="rail-item" type="button" data-rail-view="report"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-report"></use></svg></span><span>현장촬영</span></button>
         </nav>
 
         <section class="column stack" id="home-section" aria-label="이슈와 상황 목록">
@@ -4912,11 +4937,11 @@
           <div class="law-list" id="laws" aria-label="법령과 의안"></div>
         </section>
 
-        <section class="column stack" id="reels-section" aria-label="현장 영상">
+        <section class="column stack" id="reels-section" aria-label="인증 영상">
           <div class="section-title">
             <div>
-              <h2>현장 영상</h2>
-              <p class="fine" id="reels-context">선택한 이슈의 공개 영상을 봅니다.</p>
+              <h2>인증 영상</h2>
+              <p class="fine" id="reels-context">위치 확인과 비식별 검토를 거친 공개본만 봅니다.</p>
             </div>
             <button class="button ghost" id="reels-issue-action">이슈 보기</button>
           </div>
@@ -5015,7 +5040,7 @@
               </div>
               <div class="detail-action-row" aria-label="상세 빠른 보기">
                 <button type="button" data-detail-jump="evidence"><svg class="button-symbol" aria-hidden="true"><use href="#icon-stats"></use></svg><span>근거</span></button>
-                <button type="button" data-detail-jump="video"><svg class="button-symbol" aria-hidden="true"><use href="#icon-video"></use></svg><span>영상</span></button>
+                <button type="button" data-detail-jump="video"><svg class="button-symbol" aria-hidden="true"><use href="#icon-video"></use></svg><span>인증 영상</span></button>
                 <button type="button" data-detail-jump="map"><svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg><span>지도</span></button>
               </div>
             </div>
@@ -5023,7 +5048,7 @@
             <div class="tabs" role="tablist" aria-label="상세 보기">
               <button role="tab" aria-selected="true" data-tab="summary">개요</button>
               <button role="tab" aria-selected="false" data-tab="evidence">근거</button>
-              <button role="tab" aria-selected="false" data-tab="video">현장 영상</button>
+              <button role="tab" aria-selected="false" data-tab="video">인증 영상</button>
               <button role="tab" aria-selected="false" data-tab="timeline">시간 흐름</button>
               <button role="tab" aria-selected="false" data-tab="dispute">반론·정정</button>
             </div>
@@ -5195,10 +5220,10 @@
 
       <nav class="mobile-nav" aria-label="하단 탭">
         <button aria-current="page" data-tab-view="home"><svg class="nav-symbol"><use href="#icon-home"></use></svg><span>홈</span></button>
-        <button data-tab-view="reels"><svg class="nav-symbol"><use href="#icon-video"></use></svg><span>영상</span></button>
+        <button data-tab-view="reels"><svg class="nav-symbol"><use href="#icon-video"></use></svg><span>인증영상</span></button>
         <button data-tab-view="explore"><svg class="nav-symbol"><use href="#icon-search"></use></svg><span>지도</span></button>
         <button data-tab-view="laws"><svg class="nav-symbol"><use href="#icon-law"></use></svg><span>법안</span></button>
-        <button data-tab-view="report"><svg class="nav-symbol"><use href="#icon-report"></use></svg><span>영상제보</span></button>
+        <button data-tab-view="report"><svg class="nav-symbol"><use href="#icon-report"></use></svg><span>현장촬영</span></button>
       </nav>
       <div class="identity-sheet" id="identity-sheet" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="identity-title">
         <section class="identity-card">
@@ -6595,7 +6620,7 @@
 	          selectedLaw = loadedLaws.find((law) => law.id === selectedLaw?.id) || loadedLaws[0];
 	          selected = visibleCards(loadedCards).find((card) => card.id === selected?.id) || visibleCards(loadedCards)[0] || loadedCards[0];
 	          latestCoverage = undefined;
-	          setStatus(isPreviewApiBase ? "공개 자료 기준" : "공개 자료 연결 대기", { toast: false });
+	          setStatus(isPreviewApiBase ? "공개 자료 기준" : "일부 자료 확인 중", { toast: false });
 	        }
 
 	        renderCoverage(latestCoverage);
@@ -7306,16 +7331,22 @@
         return "인원 규모 확인 중";
       }
 
-	      function issueCardScanlineText(issue) {
-	        const cards = issueRelatedCards(issue);
-	        const regions = [...new Set(cards.map((card) => card.regionLabel).filter(Boolean))].slice(0, 2);
-	        const place = regions.length ? regions.join("·") : "지역 확인 중";
-	        const updatedAt = cards.map((card) => card.updatedAt).filter(Boolean).sort().at(-1);
-	        const time = updatedAt ? `${relative(updatedAt)} 공개자료 기준` : "기준일 확인 중";
-	        const count = Number(issue.currentCount || cards.length || 0);
-	        const confirmed = count ? `${place} 현장 ${count}곳` : `${place} 확인 중`;
-	        return [confirmed, time, issueScaleStatusText(issue), issueVideoReviewText(issue), issuePendingScanText(issue), issueDisputeStatusText(issue)].filter(Boolean).join(" · ");
-	      }
+      function issueCardScanlineText(issue) {
+        const cards = issueRelatedCards(issue);
+        const regions = [...new Set(cards.map((card) => card.regionLabel).filter(Boolean))];
+        const place = regions.length ? regions.slice(0, 2).join("·") : "지역 확인 중";
+        const regionCount = Number(issue.regionCount || regions.length || 0);
+        const count = Number(issue.currentCount || cards.length || 0);
+        const official = Number(issue.officialCount || 0);
+        const scale = issueScaleStatusText(issue).replace("규모 추정 검토 중", "인원 추정 검토").replace("인원 규모 확인 중", "인원 미확인");
+        return [
+          place,
+          regionCount ? `위치 ${regionCount}곳` : "위치 확인 중",
+          count ? `현장 ${count}건` : "현장 확인 중",
+          official ? `공식 자료 ${official}건` : "공식 확인 중",
+          scale
+        ].filter(Boolean).join(" · ");
+      }
 
       function issueEvidenceText(issue) {
         const official = Number(issue.officialCount || 0);
@@ -7343,17 +7374,19 @@
         const title = issue?.title || "선택 이슈";
         return `
           <div class="issue-card-actions" aria-label="${escapeHtml(title)} 확인 도구">
-            ${issueCardActionButton("evidence", "icon-stats", "근거", `${title} 근거 보기`)}
-            ${issueCardActionButton("video", "icon-video", "영상", `${title} 현장 영상 보기`)}
-            ${issueCardActionButton("map", "icon-search", "지역", `${title} 지역 현황 보기`)}
-            ${issueCardActionButton("dispute", "icon-assembly", "반론", `${title} 다른 주장 보기`)}
+            ${issueCardActionButton("map", "icon-search", "지도에서 확인", `${title} 지도에서 위치 확인`, "primary")}
+            <div class="issue-card-secondary-actions" aria-label="${escapeHtml(title)} 보조 확인">
+              ${issueCardActionButton("evidence", "icon-stats", "근거", `${title} 근거 보기`)}
+              ${issueCardActionButton("video", "icon-video", "인증영상", `${title} 인증 영상 보기`)}
+              ${issueCardActionButton("dispute", "icon-assembly", "반론", `${title} 반론·정정 보기`)}
+            </div>
           </div>
         `;
       }
 
-      function issueCardActionButton(action, icon, label, ariaLabel) {
+      function issueCardActionButton(action, icon, label, ariaLabel, variant = "") {
         return `
-          <button class="issue-card-action" type="button" data-issue-card-action="${escapeHtml(action)}" aria-label="${escapeHtml(ariaLabel)}">
+          <button class="issue-card-action${variant === "primary" ? " primary-action" : ""}" type="button" data-issue-card-action="${escapeHtml(action)}" aria-label="${escapeHtml(ariaLabel)}">
             <svg class="button-symbol" aria-hidden="true"><use href="#${escapeHtml(icon)}"></use></svg>
             <span>${escapeHtml(label)}</span>
           </button>
