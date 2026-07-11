@@ -15,6 +15,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - `pnpm launch:ready -- <운영 user-inputs.yaml>`가 실제 운영 입력값으로 통과한다.
 - `pnpm cloudflare:check:strict`가 실제 `musunil.com`/`api.musunil.com` 기준으로 통과한다.
 - `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws`가 실제 배포 Web/API URL로 통과한다.
+- `pnpm launch:cutover-rehearsal -- --strict`가 최신 blocker report 기준으로 통과한다.
 - `pnpm launch:final-gate`가 실제 배포 Web/API URL로 통과한다.
 - `pnpm service:watch -- --once`가 실제 Web/API URL 기준으로 통과한다.
 - `pnpm check:visual-surface:live`가 실제 `https://musunil.com` 기준으로 통과한다.
@@ -55,6 +56,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - `pnpm ops:diagnose`
 - `pnpm launch:ready -- --list`로 actual input 단계와 sample gate 단계를 구분
 - `pnpm launch:external-smoke -- --list`
+- `pnpm launch:cutover-rehearsal`로 현재 stage, 다음 operator 명령, final gate 순서를 한 화면에 확인
 - `pnpm render:api-settings`
 - API/runtime/web smoke 경계 검증
 
@@ -75,6 +77,7 @@ pnpm launch:ready -- config/musunil.user-inputs.local.yaml
 pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws
 pnpm cloudflare:check:strict
 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws
+pnpm launch:cutover-rehearsal -- --strict
 pnpm launch:final-gate
 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once
 pnpm check:visual-surface:live
@@ -96,6 +99,7 @@ GET /ready -> 200
 - 실제 법 원천 `pnpm sources:laws` 1건 이상 dry-run/post 결과가 아직 없다.
 - 실제 포트원 본인확인 채널로 인증 완료 리허설 결과가 아직 없다.
 - 운영 DB/Redis/Render `/ready` 결과가 아직 없다.
+- `pnpm launch:cutover-rehearsal -- --strict`는 현재 API DNS, Web headers, live issue sync blocker 때문에 실패해야 정상이다.
 - `pnpm ops:diagnose`는 metadata 준비와 누락 그룹을 보여주는 사전 진단이며, 실제 storage/redaction/mobile identity provider smoke를 대체하지 않는다.
 - `check:render-runtime-config`는 Render generated secret fallback의 sample gate이며, 실제 배포 `/ready` 증거를 대체하지 않는다.
 - 2026-07-11 06:11 독립 평가 기준 UI/UX는 S+가 아니다. 28차 패치로 지도-first, 10초 상황 줄, `영상제보` 라벨, 지도 시트 과밀, 지도 도구 밀도, 영상 소셜 레일, 샘플 poster의 AI 데모감, 홈 대형 검토 썸네일, dev stale config 회귀, 데스크톱 지도 인스펙터 경쟁, scanline 혼선, 데스크톱 홈 빈 공간과 패널 경쟁은 개선됐지만, 독립 비평 재검증, 실제 제보 영상 품질, 사용자 수락이 남아 있다.

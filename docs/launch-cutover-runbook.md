@@ -3,6 +3,7 @@
 이 문서는 `musunil.com`을 실제 공개 서비스로 넘길 때 마지막에 사람이 입력해야 하는 값을 한곳에 모은다. 세부 값은 `render.yaml`과 `config/musunil.user-inputs.local.yaml`을 기준으로 하며, 복사 가능한 최신 출력은 항상 아래 명령을 먼저 본다.
 
 ```bash
+pnpm launch:cutover-rehearsal
 pnpm launch:blockers
 pnpm launch:cutover-plan
 pnpm render:api-settings
@@ -26,6 +27,7 @@ pnpm cloudflare:check
 통합 감시 문서는 매번 아래 명령으로 갱신한다.
 
 ```bash
+pnpm launch:cutover-rehearsal -- --refresh
 pnpm launch:blockers -- --refresh
 
 MUSUNIL_WEB_BASE_URL=https://musunil.com \
@@ -117,6 +119,7 @@ Cloudflare에는 Render Dashboard가 보여주는 custom-domain target을 그대
 ## 6. 검증 순서
 
 ```bash
+pnpm launch:cutover-rehearsal
 pnpm ops:diagnose
 pnpm launch:verify-inputs config/musunil.user-inputs.local.yaml
 pnpm config:encode -- --check config/musunil.user-inputs.local.yaml
@@ -166,9 +169,10 @@ MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) \
 pnpm launch:final-gate
 ```
 
-Production `musunil.com` 기준 최종 판정은 아래 한 줄로 충분하다. 위처럼 환경변수를 쓰는 형태는 staging/preview 도메인이나 특정 commit 검증을 override할 때만 사용한다.
+Production `musunil.com` 기준 최종 판정 전에는 strict 리허설로 현재 blocker stage를 확인하고, 최종 판정은 `pnpm launch:final-gate`로 한다. 위처럼 환경변수를 쓰는 형태는 staging/preview 도메인이나 특정 commit 검증을 override할 때만 사용한다.
 
 ```bash
+pnpm launch:cutover-rehearsal -- --strict
 pnpm launch:final-gate
 ```
 

@@ -36,6 +36,7 @@ const cloudflareDnsCheck = readFileSync(resolve(cwd, "scripts/cloudflare-dns-che
 const launchNextActions = readFileSync(resolve(cwd, "scripts/launch-next-actions.mjs"), "utf8");
 const launchReady = readFileSync(resolve(cwd, "scripts/launch-ready.mjs"), "utf8");
 const launchFinalGate = readFileSync(resolve(cwd, "scripts/launch-final-gate.mjs"), "utf8");
+const launchCutoverRehearsal = readFileSync(resolve(cwd, "scripts/launch-cutover-rehearsal.mjs"), "utf8");
 const launchCutoverRunbook = readFileSync(resolve(cwd, "docs/launch-cutover-runbook.md"), "utf8");
 const webFlowSmoke = readFileSync(resolve(cwd, "scripts/ci-web-flow-smoke.mjs"), "utf8");
 const uxSurfaceSmoke = readFileSync(resolve(cwd, "scripts/ci-ux-surface-smoke.mjs"), "utf8");
@@ -273,6 +274,25 @@ if (
   !/launch:post-deploy-smoke -- --require-laws/.test(launchNextActions)
 ) {
   failures.push("Launch blockers helper must summarize service watch freshness, required actions, and Web/API/laws verification commands");
+}
+if (
+  !/"launch:cutover-rehearsal"/.test(packageJson) ||
+  !/launch-cutover-rehearsal\.mjs/.test(packageJson) ||
+  !/launch:blockers/.test(launchCutoverRehearsal) ||
+  !/launch:cutover-plan/.test(launchCutoverRehearsal) ||
+  !/launch:final-gate --list/.test(launchCutoverRehearsal) ||
+  !/releaseBlocked/.test(launchCutoverRehearsal) ||
+  !/nextOperatorCommand/.test(launchCutoverRehearsal) ||
+  !/Ordered Operator Actions/.test(launchCutoverRehearsal) ||
+  !/connect_api_endpoint/.test(launchCutoverRehearsal) ||
+  !/apply_static_headers/.test(launchCutoverRehearsal) ||
+  !/restore_live_issue_sync/.test(launchCutoverRehearsal) ||
+  !/--refresh/.test(launchCutoverRehearsal) ||
+  !/--strict/.test(launchCutoverRehearsal) ||
+  !/pnpm launch:cutover-rehearsal/.test(launchCutoverRunbook) ||
+  !/launch:cutover-rehearsal/.test(userFacingDocs)
+) {
+  failures.push("Launch cutover rehearsal helper must combine blockers, cutover plan, final gate plan, ordered operator actions, refresh, and strict modes");
 }
 if (
   !/"launch:final-gate"/.test(packageJson) ||
