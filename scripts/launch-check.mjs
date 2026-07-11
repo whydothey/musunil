@@ -298,6 +298,9 @@ if (
 }
 if (
   !/api_endpoint_preflight/.test(serviceWatch) ||
+  !/web_runtime_config/.test(serviceWatch) ||
+  !/parseWebConfig/.test(serviceWatch) ||
+  !/MUSUNIL_EXPECTED_API_BASE_URL/.test(serviceWatch) ||
   !/web_header_contract/.test(serviceWatch) ||
   !/Content-Security-Policy/.test(serviceWatch) ||
   !/Permissions-Policy/.test(serviceWatch) ||
@@ -312,6 +315,7 @@ if (
   !/stop_live_visual_surface_regression/.test(serviceWatch) ||
   !/requiredActions/.test(serviceWatch) ||
   !/connect_api_endpoint/.test(serviceWatch) ||
+  !/fix_web_runtime_config/.test(serviceWatch) ||
   !/render:api-settings/.test(serviceWatch) ||
   !/apply_static_headers/.test(serviceWatch) ||
   !/deploy_latest_static/.test(serviceWatch) ||

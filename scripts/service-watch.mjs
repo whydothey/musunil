@@ -10,6 +10,7 @@ const withVisualSurface = args.includes("--with-visual") || process.env.MUSUNIL_
 const intervalMs = Number(process.env.MUSUNIL_SERVICE_WATCH_INTERVAL_MS ?? 5 * 60_000);
 const webBaseUrl = (process.env.MUSUNIL_WEB_BASE_URL ?? "https://musunil.com").replace(/\/$/, "");
 const apiBaseUrl = (process.env.MUSUNIL_API_BASE_URL ?? "https://api.musunil.com").replace(/\/$/, "");
+const expectedApiBaseUrl = deployedHttpsUrlString(process.env.MUSUNIL_EXPECTED_API_BASE_URL ?? apiBaseUrl);
 const expectedCommitSha = process.env.MUSUNIL_EXPECTED_COMMIT_SHA;
 const reportPath = resolve(process.cwd(), "docs/splus-service-watch.md");
 let webStaticManifestVerified = false;
@@ -85,6 +86,23 @@ async function runChecks() {
     }
     webStaticManifestVerified = true;
     return { files: Object.keys(manifest.files).length, mode: localManifest ? "matches_local" : "live_shape_only" };
+  });
+  await check(checks, "web_runtime_config", async () => {
+    const source = await getText(`${webBaseUrl}/config.js`);
+    assertAbsent(source, ["localhost:4000", "MUSUNIL_USER_INPUTS", "postgres", "redis", "database", "secret", "jwt"]);
+    const config = parseWebConfig(source);
+    const publicKeys = Object.keys(config).sort();
+    const expectedKeys = ["apiBaseUrl", "mapStyleUrl"];
+    if (JSON.stringify(publicKeys) !== JSON.stringify(expectedKeys)) {
+      throw new Error(`config.js public keys changed: ${publicKeys.join(", ") || "(none)"}`);
+    }
+    const apiUrl = deployedHttpsUrlString(config.apiBaseUrl);
+    if (apiUrl !== expectedApiBaseUrl) {
+      throw new Error(`config.js apiBaseUrl ${apiUrl || "(invalid)"} != expected ${expectedApiBaseUrl}`);
+    }
+    const mapStyleUrl = deployedHttpsUrlString(config.mapStyleUrl);
+    if (!mapStyleUrl) throw new Error(`config.js mapStyleUrl must be deployed HTTPS, got ${config.mapStyleUrl || "(missing)"}`);
+    return { apiBaseUrl: apiUrl, expectedApiBaseUrl, mapStyleHost: new URL(mapStyleUrl).hostname, publicKeys };
   });
   await check(checks, "web_build_info", async () => {
     const build = await getJson(`${webBaseUrl}/build-info.json`);
@@ -250,18 +268,36 @@ function skipIfApiUnreachable() {
   if (!apiEndpointReachable) throw new SkipCheck("skipped: API endpoint preflight failed");
 }
 
-function deployedHttpsUrl(value) {
+function deployedHttpsUrl(value, label = "URL") {
   let url;
   try {
     url = new URL(value);
   } catch {
-    throw new Error(`invalid deployed API URL: ${value || "(empty)"}`);
+    throw new Error(`invalid deployed ${label}: ${value || "(empty)"}`);
   }
-  if (url.protocol !== "https:") throw new Error(`API URL must be HTTPS: ${value}`);
+  if (url.protocol !== "https:") throw new Error(`${label} must be HTTPS: ${value}`);
   if (["localhost", "127.0.0.1", "::1"].includes(url.hostname) || url.hostname.endsWith(".local")) {
-    throw new Error(`API URL must be deployed, got ${url.hostname}`);
+    throw new Error(`${label} must be deployed, got ${url.hostname}`);
   }
   return url;
+}
+
+function deployedHttpsUrlString(value) {
+  try {
+    return deployedHttpsUrl(value).toString().replace(/\/$/, "");
+  } catch {
+    return undefined;
+  }
+}
+
+function parseWebConfig(source) {
+  const match = source.match(/window\.MUSUNIL_WEB_CONFIG\s*=\s*({[\s\S]*?})\s*;?\s*$/);
+  if (!match) throw new Error("config.js could not be parsed");
+  try {
+    return JSON.parse(match[1]);
+  } catch (error) {
+    throw new Error(`config.js contains invalid JSON: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 async function getJson(url, options = {}) {
@@ -368,6 +404,16 @@ function requiredActions(result) {
       id: "deploy_latest_static",
       owner: "operator",
       action: "Render musunil-web의 Branch, Root Directory, Build Command, Publish Directory가 pnpm render:web-settings 출력과 같은지 맞춘 뒤 Clear build cache & deploy를 실행한다.",
+      verify: "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
+      reference: "docs/launch-cutover-runbook.md#2-render-static-site"
+    });
+  }
+  const webRuntimeConfig = byId.get("web_runtime_config");
+  if (webRuntimeConfig && !webRuntimeConfig.ok) {
+    actions.push({
+      id: "fix_web_runtime_config",
+      owner: "operator",
+      action: "Render musunil-web Build Command가 pnpm render:web-settings 출력처럼 MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com으로 config.js를 생성하는지 확인한다. config.js에는 apiBaseUrl/mapStyleUrl 외 공개 필드가 있으면 안 되며, 수정 후 Clear build cache & deploy를 실행한다.",
       verify: "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
       reference: "docs/launch-cutover-runbook.md#2-render-static-site"
     });
