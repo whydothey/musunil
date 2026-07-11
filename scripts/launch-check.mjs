@@ -271,6 +271,8 @@ if (
   !/launch:post-deploy-smoke/.test(launchFinalGate) ||
   !/--require-laws/.test(launchFinalGate) ||
   !/launch:blockers:refresh-strict/.test(launchFinalGate) ||
+  !/scope:\s*step\.scope/.test(launchFinalGate) ||
+  !/command:\s*stepCommands\.get\(step\.id\)/.test(launchFinalGate) ||
   !/post_deploy_smoke[\s\S]*live_blocker_refresh_strict/.test(launchFinalGate)
 ) {
   failures.push("Launch final gate must run post-deploy smoke with laws and refresh-strict blockers in one ordered command");

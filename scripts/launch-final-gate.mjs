@@ -16,6 +16,7 @@ const steps = [
     args: ["launch:blockers:refresh-strict"]
   }
 ];
+const stepCommands = new Map(steps.map((step) => [step.id, [pnpm, ...step.args].join(" ")]));
 
 if (listOnly) {
   console.log(JSON.stringify({
@@ -54,6 +55,8 @@ function run(step) {
     console.error(`Failed to run ${step.id}: ${result.error.message}`);
     return {
       id: step.id,
+      scope: step.scope,
+      command: stepCommands.get(step.id),
       ok: false,
       status: 1,
       error: result.error.message
@@ -63,6 +66,8 @@ function run(step) {
     console.error(`${step.id} exited via signal ${result.signal}`);
     return {
       id: step.id,
+      scope: step.scope,
+      command: stepCommands.get(step.id),
       ok: false,
       status: 1,
       signal: result.signal
@@ -70,6 +75,8 @@ function run(step) {
   }
   return {
     id: step.id,
+    scope: step.scope,
+    command: stepCommands.get(step.id),
     ok: result.status === 0,
     status: result.status ?? 1
   };

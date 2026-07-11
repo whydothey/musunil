@@ -498,6 +498,7 @@ function recordResult(result) {
 function requiredActions(result) {
   const actions = [];
   const byId = new Map(result.checks.map((item) => [item.id, item]));
+  const finalGateVerify = "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm launch:final-gate";
   const staticManifest = byId.get("web_static_manifest");
   if (staticManifest && !staticManifest.ok) {
     actions.push({
@@ -527,7 +528,7 @@ function requiredActions(result) {
         ? "pnpm render:api-settings 출력대로 Render musunil-api 설정과 환경변수를 확인한다. Custom Domains에 api.musunil.com을 추가하고, Render가 표시한 target을 Cloudflare DNS의 api 레코드에 DNS only로 연결한다."
         : "api.musunil.com의 TLS 인증서, Render musunil-api 서비스 상태, /health 응답을 확인한다.",
       verify: withVisualSurface
-        ? "pnpm render:api-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm service:watch:visual"
+        ? `pnpm render:api-settings && ${finalGateVerify}`
         : "pnpm render:api-settings && MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once",
       reference: "docs/launch-cutover-runbook.md#3-render-api"
     });
@@ -558,7 +559,7 @@ function requiredActions(result) {
       id: "fix_api_readiness",
       owner: "operator",
       action: "/ready가 ready=true가 아니다. 응답의 summary.blockingGroups와 requiredActions를 보고 DB, Redis, storage, identity, public source, mobile integrity 설정을 채운 뒤 API를 재배포한다.",
-      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm launch:final-gate",
+      verify: finalGateVerify,
       reference: "docs/user-inputs-manual.md#15-운영-전-최종-확인"
     });
   }
@@ -578,7 +579,7 @@ function requiredActions(result) {
       id: "stop_public_payload_regression",
       owner: "lead",
       action: "공개 payload 안전성 회귀다. 사용자 원문, 정밀 GPS, storage key, identity hash, private media field 노출 여부를 먼저 막고 배포를 중단한다.",
-      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm launch:final-gate",
+      verify: finalGateVerify,
       reference: "AGENTS.md"
     });
   }
@@ -587,8 +588,8 @@ function requiredActions(result) {
     actions.push({
       id: "run_live_visual_surface_check",
       owner: "lead",
-      action: "이번 service watch 실행은 live 화면 캡처 검증을 생략했다. 출시 판단에는 모바일/데스크톱 live visual surface 증거가 필요하므로 `service:watch:visual`로 다시 실행한다.",
-      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm service:watch:visual",
+      action: "이번 service watch 실행은 live 화면 캡처 검증을 생략했다. 출시 판단에는 모바일/데스크톱 live visual surface 증거가 필요하므로 final gate로 다시 실행한다.",
+      verify: finalGateVerify,
       reference: "docs/commercial-splus-redesign.md"
     });
   }
@@ -608,7 +609,7 @@ function requiredActions(result) {
       action: nonLiveDataState || emptyLiveIssueFeed
         ? "실제 musunil.com이 live issue feed를 받지 못하고 있다. API DNS/CORS/Web config와 `/home.issueCards` 연결을 고쳐 `serviceSyncState=live`이고 홈 이슈 3개 이상이 렌더링될 때까지 배포 승급을 중단한다."
         : "실제 musunil.com 렌더링 회귀다. 홈 이슈 수, 상세 전환, 인증영상/지도/제보 표면, 모바일 overflow와 하단 내비 겹침을 수정하기 전까지 배포 승급을 중단한다.",
-      verify: "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm service:watch:visual",
+      verify: finalGateVerify,
       reference: nonLiveDataState || emptyLiveIssueFeed ? "docs/launch-cutover-runbook.md#3-render-api" : "docs/commercial-splus-redesign.md"
     });
     if (sourceBundleFirst) {
@@ -616,7 +617,7 @@ function requiredActions(result) {
         id: "restore_issue_first_live_data",
         owner: "lead",
         action: `현재 live 첫 카드가 구체 이슈가 아니라 공개자료 묶음(${firstIssues || "first issue unknown"})이다. API 연결 후 /home issueCards가 실제 주제형 Issue를 먼저 반환하는지 확인하고, 공식자료 묶음은 보조/자료 범위 맥락으로 내려야 한다.`,
-        verify: "pnpm check:visual-surface:live && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm service:watch:visual",
+        verify: `pnpm check:visual-surface:live && ${finalGateVerify}`,
         reference: "docs/commercial-splus-redesign.md"
       });
     }
