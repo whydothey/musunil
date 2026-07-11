@@ -95,19 +95,24 @@ async function main() {
     if (chromeExitedBeforeCleanup && chromeCode !== 0) failures.push(`chrome exited with ${chromeCode}`);
   }
 
+  const serviceStates = [...new Set(scenarios.map((item) => item.detail?.serviceSyncState).filter(Boolean))];
+  const payload = {
+    checked: "commercial_visual_surface",
+    ok: failures.length === 0,
+    mode: visualBaseUrl ? "live_url" : "local_static",
+    baseUrl: appUrl,
+    serviceStates,
+    serviceBannerVisibleCount: scenarios.filter((item) => item.detail?.serviceBannerVisible).length,
+    scenarios,
+    failures
+  };
+
   if (failures.length > 0) {
     console.error(["Visual surface smoke failed:", ...failures.map((failure) => `- ${failure}`)].join("\n"));
+    console.log(JSON.stringify(payload, null, 2));
     exitCode = 1;
   } else {
-    const serviceStates = [...new Set(scenarios.map((item) => item.detail?.serviceSyncState).filter(Boolean))];
-    console.log(JSON.stringify({
-      checked: "commercial_visual_surface",
-      mode: visualBaseUrl ? "live_url" : "local_static",
-      baseUrl: appUrl,
-      serviceStates,
-      serviceBannerVisibleCount: scenarios.filter((item) => item.detail?.serviceBannerVisible).length,
-      scenarios
-    }, null, 2));
+    console.log(JSON.stringify(payload, null, 2));
   }
 
   process.exit(exitCode);
@@ -234,7 +239,12 @@ function serviceDetail(metrics) {
     serviceBannerTitle: metrics.serviceBannerTitle,
     firstIssueTitle: metrics.firstIssueTitle,
     sourceBundleFirst: metrics.sourceBundleFirst,
-    issueCount: metrics.issueCount
+    issueCount: metrics.issueCount,
+    storyCount: metrics.storyCount,
+    issueEmptyStateVisible: metrics.issueEmptyStateVisible,
+    issueEmptyTitle: metrics.issueEmptyTitle,
+    issueEmptyBody: metrics.issueEmptyBody,
+    issueEmptyActions: metrics.issueEmptyActions
   };
 }
 

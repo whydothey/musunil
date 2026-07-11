@@ -514,6 +514,10 @@ if (
   !/at least 3 topic Issues/.test(serviceWatch) ||
   !/public source bundle/.test(serviceWatch) ||
   !/serviceStates/.test(serviceWatch) ||
+  !/summarizeVisualSmokeFailure/.test(serviceWatch) ||
+  !/homeSummaries/.test(serviceWatch) ||
+  !/emptyTitle/.test(serviceWatch) ||
+  !/emptyActions/.test(serviceWatch) ||
   !/firstIssues/.test(serviceWatch) ||
   !/sourceBundleFirst/.test(serviceWatch) ||
   !/non-live data state/.test(serviceWatch) ||

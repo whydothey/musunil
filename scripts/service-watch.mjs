@@ -152,7 +152,7 @@ async function runChecks() {
       maxBuffer: 20 * 1024 * 1024
     });
     if (result.status !== 0) {
-      throw new Error(clip([result.stderr, result.stdout].filter(Boolean).join("\n"), 2400));
+      throw new Error(clip(summarizeVisualSmokeFailure(result.stdout, result.stderr), 2400));
     }
     const parsed = JSON.parse(result.stdout);
     const serviceStates = Array.isArray(parsed.serviceStates)
@@ -633,4 +633,51 @@ function clip(value, maxLength) {
   const text = String(value || "").trim();
   if (text.length <= maxLength) return text;
   return `${text.slice(0, maxLength)}...`;
+}
+
+function summarizeVisualSmokeFailure(stdout, stderr) {
+  const parsed = parseJsonOutput(stdout);
+  if (!parsed) return [stderr, stdout].filter(Boolean).join("\n");
+
+  const serviceStates = Array.isArray(parsed.serviceStates) && parsed.serviceStates.length
+    ? parsed.serviceStates.join(",")
+    : "unknown";
+  const homeScenarios = Array.isArray(parsed.scenarios)
+    ? parsed.scenarios.filter((item) => /_home$/.test(String(item.id || "")))
+    : [];
+  const homes = homeScenarios.map((item) => {
+    const detail = item.detail || {};
+    const pieces = [
+      `${item.id}:issues=${detail.issueCount ?? "?"}`,
+      `stories=${detail.storyCount ?? "?"}`,
+      `state=${detail.serviceSyncState || "unknown"}`,
+      `banner=${detail.serviceBannerTitle || "none"}`,
+      `first=${detail.firstIssueTitle || "none"}`,
+      `empty=${detail.issueEmptyStateVisible ? "controlled" : "missing"}`,
+      `emptyTitle=${detail.issueEmptyTitle || "none"}`,
+      `emptyBody=${detail.issueEmptyBody || "none"}`,
+      `emptyActions=${Array.isArray(detail.issueEmptyActions) ? detail.issueEmptyActions.join("/") : "none"}`
+    ];
+    return pieces.join(" ");
+  });
+  const failures = Array.isArray(parsed.failures) ? parsed.failures : [];
+  const visibleFailures = failures.slice(0, 12);
+  const failureSummary = visibleFailures.length
+    ? `${visibleFailures.join(" | ")}${failures.length > visibleFailures.length ? ` | +${failures.length - visibleFailures.length} more` : ""}`
+    : "";
+  return [
+    `Visual surface smoke failed: serviceStates=${serviceStates}`,
+    homes.length ? `homeSummaries=${homes.join(" ; ")}` : "",
+    failureSummary ? `failures=${failureSummary}` : ""
+  ].filter(Boolean).join(" ; ");
+}
+
+function parseJsonOutput(source) {
+  const text = String(source || "").trim();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
 }
