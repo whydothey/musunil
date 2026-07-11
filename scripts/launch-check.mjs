@@ -299,6 +299,11 @@ if (
 if (
   !/api_endpoint_preflight/.test(serviceWatch) ||
   !/web_header_contract/.test(serviceWatch) ||
+  !/Content-Security-Policy/.test(serviceWatch) ||
+  !/Permissions-Policy/.test(serviceWatch) ||
+  !/Referrer-Policy/.test(serviceWatch) ||
+  !/X-Content-Type-Options/.test(serviceWatch) ||
+  !/X-Frame-Options/.test(serviceWatch) ||
   !/web_visual_surface/.test(serviceWatch) ||
   !/publicPayloadRoutes/.test(serviceWatch) ||
   !/serviceStates/.test(serviceWatch) ||
@@ -493,9 +498,12 @@ if (
   !/staticManifestVerified/.test(webDeployCheck) ||
   !/web_build_info_placeholder/.test(webDeployCheck) ||
   !/MUSUNIL_EXPECTED_API_BASE_URL/.test(webDeployCheck) ||
-  !/parseWebConfig/.test(webDeployCheck)
+  !/parseWebConfig/.test(webDeployCheck) ||
+  !/Content-Security-Policy/.test(webDeployCheck) ||
+  !/Permissions-Policy/.test(webDeployCheck) ||
+  !/X-Frame-Options/.test(webDeployCheck)
 ) {
-  failures.push("web deploy check must verify static manifest freshness and deployed apiBaseUrl before tolerating tracked build-info placeholders");
+  failures.push("web deploy check must verify static manifest freshness, deployed apiBaseUrl, and live security headers before tolerating tracked build-info placeholders");
 }
 if (!/static-manifest\.json/.test(webDeployCheck) || !/assertLiveFileHash/.test(webDeployCheck) || !/createHash\("sha256"\)/.test(webStaticManifestScript)) {
   failures.push("web deploy check must verify static manifest content hashes");

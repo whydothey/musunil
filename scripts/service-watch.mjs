@@ -14,6 +14,52 @@ const expectedCommitSha = process.env.MUSUNIL_EXPECTED_COMMIT_SHA;
 const reportPath = resolve(process.cwd(), "docs/splus-service-watch.md");
 let webStaticManifestVerified = false;
 let apiEndpointReachable = false;
+const webHeaderContract = [
+  {
+    id: "cache-control",
+    label: "Cache-Control",
+    ok: (value) => value.toLowerCase().includes("no-store"),
+    expected: "no-store"
+  },
+  {
+    id: "content-security-policy",
+    label: "Content-Security-Policy",
+    ok: (value) => [
+      "default-src 'self'",
+      "connect-src 'self' https:",
+      "img-src 'self' data: blob: https:",
+      "media-src 'self' https: blob:",
+      "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.portone.io",
+      "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+      "worker-src 'self' blob:"
+    ].every((token) => value.includes(token)),
+    expected: "CSP with self, https API/map, public media, PortOne, and blob worker/media allowances"
+  },
+  {
+    id: "permissions-policy",
+    label: "Permissions-Policy",
+    ok: (value) => ["camera=(self)", "microphone=()", "geolocation=(self)"].every((token) => value.includes(token)),
+    expected: "camera=(self), microphone=(), geolocation=(self)"
+  },
+  {
+    id: "referrer-policy",
+    label: "Referrer-Policy",
+    ok: (value) => value.toLowerCase() === "no-referrer",
+    expected: "no-referrer"
+  },
+  {
+    id: "x-content-type-options",
+    label: "X-Content-Type-Options",
+    ok: (value) => value.toLowerCase() === "nosniff",
+    expected: "nosniff"
+  },
+  {
+    id: "x-frame-options",
+    label: "X-Frame-Options",
+    ok: (value) => value.toUpperCase() === "DENY",
+    expected: "DENY"
+  }
+];
 
 class SkipCheck extends Error {}
 
@@ -51,18 +97,22 @@ async function runChecks() {
   });
   await check(checks, "web_header_contract", async () => {
     const checked = [];
+    const failures = [];
     for (const path of ["/", "/config.js", "/build-info.json"]) {
       const response = await fetch(withCacheBuster(`${webBaseUrl}${path}`), {
         headers: noCacheHeaders(),
         redirect: "manual",
         signal: AbortSignal.timeout(12_000)
       });
-      checked.push({ path, cacheControl: response.headers.get("cache-control") || "" });
+      const headers = {};
+      for (const rule of webHeaderContract) {
+        const value = response.headers.get(rule.id) || "";
+        headers[rule.id] = value;
+        if (!rule.ok(value)) failures.push(`${path} ${rule.label} expected ${rule.expected}, got ${value || "missing"}`);
+      }
+      checked.push({ path, headers });
     }
-    const missingNoStore = checked.filter((item) => !item.cacheControl.toLowerCase().includes("no-store"));
-    if (missingNoStore.length > 0) {
-      throw new Error(`no-store missing: ${missingNoStore.map((item) => `${item.path}=${item.cacheControl || "missing"}`).join(", ")}`);
-    }
+    if (failures.length > 0) throw new Error(`invalid Web headers: ${failures.join("; ")}`);
     return { checked };
   });
   await check(checks, "web_forbidden_ui_absent", async () => {
@@ -341,7 +391,7 @@ function requiredActions(result) {
     actions.push({
       id: "apply_static_headers",
       owner: "operator",
-      action: "pnpm render:web-settings 출력의 Headers를 Render musunil-web Static Site Dashboard에 그대로 입력하고 Clear build cache & deploy를 실행한다. Cloudflare proxy가 켜져 있으면 캐시 우회 규칙도 함께 확인한다.",
+      action: "pnpm render:web-settings 출력의 Cache-Control, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options Headers를 Render musunil-web Static Site Dashboard에 그대로 입력하고 Clear build cache & deploy를 실행한다. Cloudflare proxy가 켜져 있으면 캐시 우회와 header override 규칙도 함께 확인한다.",
       verify: "pnpm render:web-settings && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy",
       reference: "docs/launch-cutover-runbook.md#2-render-static-site"
     });

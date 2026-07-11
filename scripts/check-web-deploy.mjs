@@ -19,6 +19,52 @@ const renderStaticHint =
   "Build Command=\"corepack enable && pnpm install --frozen-lockfile && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com MUSUNIL_WRITE_BUILD_INFO=1 pnpm build:web-static && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com pnpm check:web-smoke\", " +
   "Publish Directory=apps/web, headers copied from render.yaml musunil-web. " +
   "If static-manifest and live file hashes match but build-info is placeholder, the latest committed static files are deployed but Render did not publish build metadata.";
+const webHeaderContract = [
+  {
+    id: "cache-control",
+    label: "Cache-Control",
+    ok: (value) => value.toLowerCase().includes("no-store"),
+    expected: "no-store"
+  },
+  {
+    id: "content-security-policy",
+    label: "Content-Security-Policy",
+    ok: (value) => [
+      "default-src 'self'",
+      "connect-src 'self' https:",
+      "img-src 'self' data: blob: https:",
+      "media-src 'self' https: blob:",
+      "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.portone.io",
+      "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+      "worker-src 'self' blob:"
+    ].every((token) => value.includes(token)),
+    expected: "CSP with self, https API/map, public media, PortOne, and blob worker/media allowances"
+  },
+  {
+    id: "permissions-policy",
+    label: "Permissions-Policy",
+    ok: (value) => ["camera=(self)", "microphone=()", "geolocation=(self)"].every((token) => value.includes(token)),
+    expected: "camera=(self), microphone=(), geolocation=(self)"
+  },
+  {
+    id: "referrer-policy",
+    label: "Referrer-Policy",
+    ok: (value) => value.toLowerCase() === "no-referrer",
+    expected: "no-referrer"
+  },
+  {
+    id: "x-content-type-options",
+    label: "X-Content-Type-Options",
+    ok: (value) => value.toLowerCase() === "nosniff",
+    expected: "nosniff"
+  },
+  {
+    id: "x-frame-options",
+    label: "X-Frame-Options",
+    ok: (value) => value.toUpperCase() === "DENY",
+    expected: "DENY"
+  }
+];
 
 if (!webBaseUrl) {
   console.error("Set MUSUNIL_WEB_BASE_URL or app.public_base_url to the deployed HTTPS web URL.");
@@ -52,7 +98,7 @@ await check("web_build_info", async () => {
       `build-info is placeholder, but static-manifest and live file hashes match local output. ${renderStaticHint}`
     );
   }
-  checkWebNoStore(response.headers, "/build-info.json");
+  checkWebHeaders(response.headers, "/build-info.json");
   if (expectedCommitSha && !placeholderBuildInfo) {
     assert(response.body.commitSha === expectedCommitSha, `deployed web commit ${response.body.commitSha} does not match expected ${expectedCommitSha}`);
   }
@@ -61,7 +107,7 @@ await check("web_build_info", async () => {
 await check("web_html_current", async () => {
   const response = await text(`${webBaseUrl}/`);
   assert(response.status === 200, `/ returned ${response.status}`);
-  checkWebNoStore(response.headers, "/");
+  checkWebHeaders(response.headers, "/");
   assert(response.body.includes("build-info.js"), "HTML is missing build-info.js");
   assert(response.body.includes('data-tab-view="explore"'), "HTML is missing current explore tab");
   assert(response.body.includes("occurrence-pins"), "HTML is missing current MapLibre occurrence layer");
@@ -73,7 +119,7 @@ await check("web_html_current", async () => {
 await check("web_config_current", async () => {
   const response = await text(`${webBaseUrl}/config.js`);
   assert(response.status === 200, `/config.js returned ${response.status}`);
-  checkWebNoStore(response.headers, "/config.js");
+  checkWebHeaders(response.headers, "/config.js");
   assert(response.body.includes("MUSUNIL_WEB_CONFIG"), "config.js missing MUSUNIL_WEB_CONFIG");
   assert(response.body.includes("apiBaseUrl"), "config.js missing apiBaseUrl");
   assert(!response.body.includes("localhost:4000"), "config.js still points to localhost API");
@@ -133,13 +179,18 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-function checkWebNoStore(headers, path) {
-  const cacheControl = String(headers["cache-control"] || "").toLowerCase();
-  if (cacheControl.includes("no-store")) return;
-  if (process.env.MUSUNIL_STRICT_WEB_HEADERS === "1") {
-    assert(false, `${path} must send Cache-Control: no-store, got ${cacheControl || "missing"}. ${renderStaticHint}`);
+function checkWebHeaders(headers, path) {
+  const failures = [];
+  for (const rule of webHeaderContract) {
+    const value = String(headers[rule.id] || "");
+    if (!rule.ok(value)) failures.push(`${rule.label} expected ${rule.expected}, got ${value || "missing"}`);
   }
-  warn("web_cache_header_not_strict", `${path} should send Cache-Control: no-store, got ${cacheControl || "missing"}. ${renderStaticHint}`);
+  if (failures.length === 0) return;
+  const message = `${path} has invalid Web headers: ${failures.join("; ")}. ${renderStaticHint}`;
+  if (process.env.MUSUNIL_STRICT_WEB_HEADERS === "1") {
+    assert(false, message);
+  }
+  warn("web_headers_not_strict", message);
 }
 
 function warn(id, message) {
