@@ -1523,6 +1523,27 @@ const duplicateIngest = await protectedApp.handle({
   }
 });
 assert.equal(duplicateIngest.status, 200);
+const publicBundleTopicOverride = await protectedApp.handle({
+  method: "POST",
+  path: "/internal/ingest/public-occurrence",
+  headers: internalHeaders,
+  body: {
+    id: "occ_public_bundle_topic_override",
+    issueId: "issue_public_regional_schedule",
+    type: "static_assembly",
+    areaClusterId: "area_seoul",
+    regionLabel: "서울",
+    title: "서울 부정선거 의혹 제기 집회 공개 일정",
+    startsAt: "2026-07-11T11:00:00.000+09:00",
+    lifecycleState: "UPCOMING",
+    claimantLabel: "공개 집회 자료",
+    normalizedStatement: "공개 자료에 부정선거 의혹 제기 집회 목적이 포함되었습니다."
+  }
+});
+assert.equal(publicBundleTopicOverride.status, 201);
+const publicBundleTopicIssueId = (publicBundleTopicOverride.body as { occurrence: { issueId?: string } }).occurrence.issueId;
+assert.equal(typeof publicBundleTopicIssueId, "string");
+assert.notEqual(publicBundleTopicIssueId, "issue_public_regional_schedule");
 const topicIngest = await protectedApp.handle({
   method: "POST",
   path: "/internal/ingest/public-occurrence",
@@ -1545,6 +1566,7 @@ assert.equal(topicIngest.status, 201);
 const topicIssueId = (topicIngest.body as { occurrence: { issueId?: string } }).occurrence.issueId;
 assert.equal(typeof topicIssueId, "string");
 if (!topicIssueId) throw new Error("topic issue id missing");
+assert.equal(topicIssueId, publicBundleTopicIssueId);
 const topicIngestAgain = await protectedApp.handle({
   method: "POST",
   path: "/internal/ingest/public-occurrence",
@@ -1570,7 +1592,7 @@ assert.equal(JSON.stringify((topicHome.body as { issueCards: unknown }).issueCar
 const topicIssue = await protectedApp.handle({ method: "GET", path: `/issues/${topicIssueId}` });
 assert.equal(topicIssue.status, 200);
 assert.equal((topicIssue.body as { nationalSummary: { regionCount: number; targetCount: number } }).nationalSummary.regionCount, 2);
-assert.equal((topicIssue.body as { nationalSummary: { regionCount: number; targetCount: number } }).nationalSummary.targetCount, 2);
+assert.equal((topicIssue.body as { nationalSummary: { regionCount: number; targetCount: number } }).nationalSummary.targetCount, 3);
 assert.equal((topicIssue.body as { regionalSignals: Array<{ statusLabels: string[] }> }).regionalSignals.every((signal) => signal.statusLabels.length === 4), true);
 assert.equal((topicIssue.body as { topicGrouping: { topicTitle: string; basis: string[]; regions: string[] } }).topicGrouping.topicTitle, "부정선거 의혹 제기 집회");
 assert.equal((topicIssue.body as { topicGrouping: { basis: string[]; regions: string[] } }).topicGrouping.basis.some((item) => item.includes("공통 주제어")), true);

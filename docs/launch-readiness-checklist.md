@@ -64,6 +64,7 @@
 - 공개 원천 cron은 ingest POST 실패 시 non-zero로 종료한다.
 - 공개 원천 cron은 원천 fetch 실패나 0건 파싱도 non-zero로 종료한다.
 - 공개 원천 Claim/Occurrence ingest는 같은 payload 반복 실행 시 중복 Claim을 만들지 않는다.
+- 공개 일정 payload가 `issue_public_regional_schedule`로 들어와도 제목/정규화 문장에 `부정선거`, `선거 검증`, `정보통신망법`, `탄핵` 같은 구체 주제가 있으면 API ingest가 공개자료 묶음이 아니라 주제형 Issue로 재배치한다.
 - `pnpm sources:coverage`에서 18개 시도경찰청 권역이 모두 표시된다.
 - `pnpm sources:coverage`에서 각 권역의 `refreshCadenceHours`, `lastCheckedAt`, `nextRefreshAt`, `gapReason`이 빠지지 않는다.
 - `pnpm sources:diagnose -- --require-operational-readiness`에서 active schedule 18개가 모두 `ingestable`이고 `blockedSourceIds`, `parserMissingSourceIds`, `urlMissingSourceIds`, `postBodyMissingSourceIds`가 비어 있다.

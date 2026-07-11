@@ -2597,10 +2597,12 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
   const normalizedStatement = readString(data, "normalizedStatement");
   let occurrence = store.occurrences.find((item) => item.id === id);
   const created = !occurrence;
+  const topicIssueId = resolveIssueIdForIngest(store, data);
 
   if (!store.areaClusters.some((item) => item.id === areaClusterId)) throw new ApiError(404, "area_cluster_not_found");
+  if (issueId && isPublicSourceBundleIssueId(issueId) && topicIssueId) issueId = topicIssueId;
   if (issueId && !store.issues.some((item) => item.id === issueId)) throw new ApiError(404, "issue_not_found");
-  issueId ??= resolveIssueIdForIngest(store, data);
+  issueId ??= topicIssueId;
 
   if (!occurrence) {
     occurrence = {
@@ -2703,6 +2705,10 @@ function resolveIssueIdForIngest(store: Store, data: Record<string, unknown>): s
     title: inferredTopic.title,
     topicTags: topicTags.length ? topicTags : inferredTopic.topicTags
   }).id;
+}
+
+function isPublicSourceBundleIssueId(issueId: string): boolean {
+  return issueId.startsWith("issue_public_");
 }
 
 function ensureIssue(store: Store, input: IssueTopicInput): Issue {

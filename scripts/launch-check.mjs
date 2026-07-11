@@ -506,6 +506,9 @@ if (!/targets: targets\.map/.test(apiApp) || !/\/issues\//.test(apiApp)) failure
 if (!/resolveIssueIdForIngest/.test(apiApp) || !/topicTitle/.test(apiApp) || !/부정선거 의혹 제기 집회/.test(apiApp)) {
   failures.push("public occurrence ingest must group explicit assembly topics into claim-safe Issues");
 }
+if (!/isPublicSourceBundleIssueId/.test(apiApp) || !/topicIssueId/.test(apiApp) || !/issue_public_/.test(apiApp)) {
+  failures.push("public occurrence ingest must move public source bundle payloads into concrete topic Issues when a topic is detected");
+}
 const publicCrowdEstimate = apiApp.match(/function toPublicCrowdEstimate[\s\S]*?function crowdEstimateEvidenceStrength/);
 if (!publicCrowdEstimate || !/sourceProvenance:\s*"musunil_ai_estimate"/.test(publicCrowdEstimate[0]) || !/evidenceStrength/.test(publicCrowdEstimate[0]) || !/riskLevel:\s*"misleading_possible"/.test(publicCrowdEstimate[0])) {
   failures.push("public CrowdEstimate must expose AI estimate as Claim provenance/evidence/risk");
