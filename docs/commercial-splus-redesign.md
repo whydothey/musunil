@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 14:05 KST
+Last updated: 2026-07-11 14:14 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -53,6 +53,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 13:50 surface48 패치로 반복되는 큰 청록 CTA를 제거했다. 홈 카드는 전체 탭 가능한 피드 카드로 유지하고, 하단은 `근거·영상·지도 / 자세히`의 가벼운 경로 footer로 낮췄다. 390px/1440px 캡처에서 action background는 transparent, action height는 30/32px, forbidden 0, `scrollWidth=390/1440`이다. 아직 카드 요약 줄과 하단 경로의 중복, 데스크톱 지도 비중은 다음 개선 대상으로 남긴다.
 - 13:56 surface49 패치로 홈 카드 요약을 `장소·일시·위치` 1차 정보와 `공식·영상·반론` 근거 상태로 분리했다. 390px/1440px 첫 카드 place line은 `서울 · 일시 확인 중 · 위치 1곳`, evidence line은 `공식 확인 중 · 영상 1건 · 반론 1건`, footer는 `근거·영상·지도 자세히`, forbidden 0, `scrollWidth=390/1440`이다. 다음 개선은 데스크톱 지도 비중과 카드 썸네일의 시각 완성도다.
 - 14:05 surface50 패치로 데스크톱 홈 기본 레이아웃에서 이슈 피드를 520px로 키우고 지도 맥락을 648x403px로 낮췄다. 1440px 홈은 지도보다 이슈 목록이 먼저 읽히고, 390px 홈은 지도 미노출·이슈 피드 중심을 유지한다. `overflowX=false`, forbidden 0, rejected 0을 확인했지만 실제 운영 공개 영상/GPS와 사용자 수락 전 S+는 아니다.
+- 14:14 surface51 패치로 홈 카드에서 공개 poster 없는 LIVE 영상을 `영상 검토 중` 썸네일처럼 표시하지 않고 위치 타일로 대체했다. 카드 우측 타일은 조작된 영상 프리뷰가 아니라 공개 위치 맥락만 보여주며, 390px/1440px 모두 `reviewOnlyCards=0`, `placePeekCards=3`, forbidden 0, rejected 0이다.
 
 ## Agent Feedback Summary
 
@@ -362,6 +363,9 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 14:05 mobile home surface50 | `docs/commercial-splus-surface50-compact-map-home-mobile-390-2026-07-11.png` |
 | 14:05 desktop home surface50 | `docs/commercial-splus-surface50-compact-map-home-desktop-1440-2026-07-11.png` |
 | 14:05 surface50 metrics | 1440px home width 520px, map shell 648x403px, first issue `정보통신망법 개정 반대 집회`, summary `서울 · 일시 확인 중 · 위치 1곳 / 공식 확인 중 · 영상 1건 · 반론 1건`, forbidden 0, rejected 0, `scrollWidth=1440`. 390px mobile keeps map hidden, home width 370px, forbidden 0, `scrollWidth=390`. 사용자 수락 전 S+는 아니다. |
+| 14:14 mobile home surface51 | `docs/commercial-splus-surface51-card-visual-home-mobile-390-2026-07-11.png` |
+| 14:14 desktop home surface51 | `docs/commercial-splus-surface51-card-visual-home-desktop-1440-2026-07-11.png` |
+| 14:14 surface51 metrics | 공개 poster 없는 LIVE 영상은 홈 카드 썸네일로 노출하지 않음. 390px/1440px first visual `issue-place-peek`, first visual text `서울 위치 1곳`, `reviewOnlyCards=0`, `fieldPreviewCards=0`, `placePeekCards=3`, forbidden 0, rejected 0, `scrollWidth=390/1440`. 실제 공개 영상/GPS와 사용자 수락 전 S+는 아니다. |
 
 ## Non-Negotiable Gates
 

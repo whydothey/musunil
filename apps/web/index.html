@@ -1769,25 +1769,29 @@
         display: grid;
         min-height: 112px;
         overflow: hidden;
-        padding: 10px;
-        border: 1px solid color-mix(in srgb, var(--brand) 16%, var(--line));
+        padding: 12px;
+        border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
         border-radius: 14px;
         background:
-          radial-gradient(circle at 68% 34%, color-mix(in srgb, var(--story-color, var(--brand)) 19%, transparent) 0 20px, transparent 21px),
-          linear-gradient(135deg, color-mix(in srgb, var(--surface-3) 88%, #fff), color-mix(in srgb, var(--brand) 7%, var(--surface)));
+          radial-gradient(circle at 72% 42%, color-mix(in srgb, var(--story-color, var(--brand)) 18%, transparent) 0 34px, transparent 35px),
+          linear-gradient(145deg, color-mix(in srgb, var(--surface-3) 92%, #fff), color-mix(in srgb, var(--surface) 86%, var(--story-color, var(--brand)) 7%));
         color: var(--ink);
         text-align: left;
         cursor: pointer;
+        box-shadow: inset 0 0 0 1px rgb(255 255 255 / 58%);
       }
 
       .issue-place-peek::before {
         content: "";
         position: absolute;
-        inset: 30px 14px 22px 18px;
+        right: 14px;
+        top: 20px;
+        width: 62px;
+        height: 62px;
         border: 1px solid color-mix(in srgb, var(--story-color, var(--brand)) 32%, transparent);
-        border-radius: 999px 999px 999px 42px;
-        background: color-mix(in srgb, var(--story-color, var(--brand)) 10%, transparent);
-        transform: rotate(-12deg);
+        border-radius: 999px;
+        background:
+          radial-gradient(circle, color-mix(in srgb, var(--story-color, var(--brand)) 16%, transparent) 0 18px, transparent 19px);
       }
 
       .issue-place-peek::after {
@@ -1795,22 +1799,23 @@
         position: absolute;
         inset: 0;
         background:
-          linear-gradient(90deg, transparent 0 27%, rgb(255 255 255 / 42%) 27% 28%, transparent 28% 61%, rgb(255 255 255 / 36%) 61% 62%, transparent 62%),
-          linear-gradient(0deg, transparent 0 32%, rgb(255 255 255 / 38%) 32% 33%, transparent 33% 70%, rgb(255 255 255 / 30%) 70% 71%, transparent 71%);
-        opacity: .62;
+          linear-gradient(135deg, transparent 0 48%, rgb(255 255 255 / 38%) 48% 49%, transparent 49%),
+          linear-gradient(0deg, transparent 0 67%, rgb(255 255 255 / 42%) 67% 68%, transparent 68%);
+        opacity: .58;
       }
 
       .issue-place-pin {
         position: absolute;
-        right: 28px;
-        top: 33px;
-        width: 24px;
-        height: 24px;
-        border: 3px solid #fff;
-        border-radius: 999px 999px 999px 4px;
+        right: 34px;
+        top: 38px;
+        width: 22px;
+        height: 22px;
+        border: 4px solid #fff;
+        border-radius: 999px;
         background: var(--story-color, var(--brand));
-        box-shadow: 0 8px 18px rgb(15 34 42 / 18%);
-        transform: rotate(-45deg);
+        box-shadow:
+          0 9px 18px rgb(15 34 42 / 16%),
+          0 0 0 7px color-mix(in srgb, var(--story-color, var(--brand)) 12%, transparent);
       }
 
       .issue-place-pin::after {
@@ -7663,28 +7668,13 @@
         const preview = publicLivePreviewForIssue(issue);
         const url = publicLiveMediaSrc(preview);
         const poster = publicLivePosterDisplaySrc(preview);
-        if (!url) return "";
+        if (!url || !poster) return "";
         const targetTitle = publicDisplayTitle(preview.targetTitle || issue.title || "공개 현장");
         const region = preview.regionLabel || "지역 확인 중";
         const duration = formatDuration(preview.durationMs);
         const radius = preview.publicRadiusM ? `반경 ${preview.publicRadiusM}m` : "공개 위치 흐림";
         const status = publicFieldStatusLabel(preview.fieldVerification?.statusLabel);
-        if (!poster) {
-          return `
-            <div class="issue-field-preview is-review-only" aria-label="현장 영상 검토 상태">
-              <span class="issue-field-review-mark" aria-hidden="true"><svg class="button-symbol"><use href="#icon-video"></use></svg></span>
-              <div class="issue-field-preview-body">
-                <span>영상 검토 중</span>
-                <strong class="issue-field-preview-title">${escapeHtml(targetTitle)}</strong>
-                <em>${escapeHtml(region)} · ${escapeHtml(duration)} · ${escapeHtml(radius)}</em>
-                <small>${escapeHtml(status)}</small>
-              </div>
-            </div>
-          `;
-        }
-        const media = poster
-          ? `<video class="issue-field-preview-video" src="${escapeHtml(url)}" poster="${escapeHtml(poster)}" muted playsinline preload="metadata" aria-hidden="true"></video>`
-          : renderPublicVideoReviewSlot("field");
+        const media = `<video class="issue-field-preview-video" src="${escapeHtml(url)}" poster="${escapeHtml(poster)}" muted playsinline preload="metadata" aria-hidden="true"></video>`;
         return `
           <div class="issue-field-preview" aria-label="비식별 공개 현장 영상">
             <div class="issue-field-preview-media">
