@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
 const json = args.includes("--json");
 const refresh = args.includes("--refresh");
+const failOnBlockers = args.includes("--fail-on-blockers") || args.includes("--strict");
 const cwd = resolve(import.meta.dirname, "..");
 const reportPath = resolve(cwd, "docs/splus-service-watch.md");
 
@@ -50,6 +51,10 @@ if (json) {
 } else {
   printMarkdown(summary);
 }
+if (failOnBlockers && summary.releaseBlocked) {
+  console.error("Launch blockers are active. Refresh live evidence and clear all failed/skipped checks before launch.");
+  process.exitCode = 1;
+}
 
 function parseReport(source) {
   const lastChecked = source.match(/^Last checked:\s*(.+)$/m)?.[1]?.trim() || null;
@@ -87,6 +92,7 @@ function parseReport(source) {
     requiredActions: actions,
     helperCommands: [
       "pnpm launch:blockers -- --refresh",
+      "pnpm launch:blockers:strict",
       "pnpm render:api-settings",
       "pnpm render:web-settings",
       "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",

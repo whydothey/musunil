@@ -47,6 +47,7 @@
     "render:web-settings": "node scripts/render-web-settings.mjs",
     "launch:cutover-plan": "node scripts/launch-cutover-plan.mjs",
     "launch:blockers": "node scripts/launch-next-actions.mjs",
+    "launch:blockers:strict": "node scripts/launch-next-actions.mjs -- --fail-on-blockers",
     "launch:inputs": "node scripts/create-launch-inputs.mjs",
     "launch:verify-inputs": "node scripts/check-launch-inputs.mjs",
     "sources:coverage": "pnpm --filter @musunil/public-source-ingest dev -- --coverage",
