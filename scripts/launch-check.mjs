@@ -252,6 +252,9 @@ if (
   !/Report freshness/.test(launchNextActions) ||
   !/MUSUNIL_LAUNCH_BLOCKERS_STALE_AFTER_MINUTES/.test(launchNextActions) ||
   !/refreshRequired/.test(launchNextActions) ||
+  !/refreshServiceWatch/.test(launchNextActions) ||
+  !/beforeLastChecked/.test(launchNextActions) ||
+  !/reportUpdated/.test(launchNextActions) ||
   !/failOnBlockers/.test(launchNextActions) ||
   !/service:watch:visual/.test(launchNextActions) ||
   !/render:api-settings/.test(launchNextActions) ||

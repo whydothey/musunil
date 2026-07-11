@@ -8,22 +8,10 @@ const refresh = args.includes("--refresh");
 const failOnBlockers = args.includes("--fail-on-blockers") || args.includes("--strict");
 const cwd = resolve(import.meta.dirname, "..");
 const reportPath = resolve(cwd, "docs/splus-service-watch.md");
+let refreshResult = { attempted: false };
 
 if (refresh) {
-  const result = spawnSync("pnpm", ["service:watch:visual"], {
-    cwd,
-    env: {
-      ...process.env,
-      MUSUNIL_WEB_BASE_URL: process.env.MUSUNIL_WEB_BASE_URL || "https://musunil.com",
-      MUSUNIL_API_BASE_URL: process.env.MUSUNIL_API_BASE_URL || "https://api.musunil.com",
-      MUSUNIL_EXPECTED_API_BASE_URL: process.env.MUSUNIL_EXPECTED_API_BASE_URL || "https://api.musunil.com"
-    },
-    encoding: "utf8",
-    maxBuffer: 30 * 1024 * 1024
-  });
-  if (result.error) {
-    console.error(`Could not refresh service watch: ${result.error.message}`);
-  }
+  refreshResult = refreshServiceWatch();
 }
 
 if (!existsSync(reportPath)) {
@@ -44,7 +32,7 @@ if (!existsSync(reportPath)) {
 }
 
 const report = readFileSync(reportPath, "utf8");
-const summary = parseReport(report);
+const summary = parseReport(report, refreshResult);
 
 if (json) {
   console.log(JSON.stringify(summary, null, 2));
@@ -56,8 +44,10 @@ if (failOnBlockers && summary.releaseBlocked) {
   process.exitCode = 1;
 }
 
-function parseReport(source) {
+function parseReport(source, refreshMetadata = { attempted: false }) {
   const lastChecked = source.match(/^Last checked:\s*(.+)$/m)?.[1]?.trim() || null;
+  const refreshReportUpdated = refreshMetadata.attempted ? Boolean(lastChecked && lastChecked !== refreshMetadata.beforeLastChecked) : null;
+  const refreshFailed = refreshMetadata.attempted && (!refreshReportUpdated || Boolean(refreshMetadata.error));
   const freshness = reportFreshness(lastChecked);
   const status = source.match(/^Status:\s*(.+)$/m)?.[1]?.trim() || "unknown";
   const checks = parseTable(source, "Check", "Required Actions").map((row) => ({
@@ -82,8 +72,20 @@ function parseReport(source) {
     staleAfterMinutes: freshness.staleAfterMinutes,
     stale: freshness.stale,
     refreshRequired: freshness.stale,
+    refresh: refreshMetadata.attempted
+      ? {
+          attempted: true,
+          command: refreshMetadata.command,
+          exitStatus: refreshMetadata.exitStatus,
+          signal: refreshMetadata.signal,
+          error: refreshMetadata.error,
+          beforeLastChecked: refreshMetadata.beforeLastChecked,
+          afterLastChecked: lastChecked,
+          reportUpdated: refreshReportUpdated
+        }
+      : { attempted: false },
     status,
-    releaseBlocked: freshness.stale || status !== "S+ Guard" || failed.length > 0 || skipped.length > 0 || actions.length > 0,
+    releaseBlocked: refreshFailed || freshness.stale || status !== "S+ Guard" || failed.length > 0 || skipped.length > 0 || actions.length > 0,
     passCount: ok.length,
     failCount: failed.length,
     skipCount: skipped.length,
@@ -160,6 +162,10 @@ function printMarkdown(summary) {
     console.log("> This blocker summary is based on stale live evidence. Run `pnpm launch:blockers -- --refresh` before making a launch decision.");
     console.log("");
   }
+  if (summary.refresh.attempted && !summary.refresh.reportUpdated) {
+    console.log("> Live evidence refresh did not update `docs/splus-service-watch.md`; treat this as blocked until the refresh command writes a new report.");
+    console.log("");
+  }
   if (!summary.releaseBlocked) {
     console.log("No launch blockers are recorded in the latest service watch report.");
     return;
@@ -194,6 +200,36 @@ function compact(value, maxLength = 240) {
   const text = String(value || "").replace(/\s+/g, " ").trim();
   if (text.length <= maxLength) return text;
   return `${text.slice(0, maxLength - 1)}...`;
+}
+
+function refreshServiceWatch() {
+  const beforeLastChecked = existsSync(reportPath) ? parseLastChecked(readFileSync(reportPath, "utf8")) : null;
+  const result = spawnSync("pnpm", ["service:watch:visual"], {
+    cwd,
+    env: {
+      ...process.env,
+      MUSUNIL_WEB_BASE_URL: process.env.MUSUNIL_WEB_BASE_URL || "https://musunil.com",
+      MUSUNIL_API_BASE_URL: process.env.MUSUNIL_API_BASE_URL || "https://api.musunil.com",
+      MUSUNIL_EXPECTED_API_BASE_URL: process.env.MUSUNIL_EXPECTED_API_BASE_URL || "https://api.musunil.com"
+    },
+    encoding: "utf8",
+    maxBuffer: 30 * 1024 * 1024
+  });
+  if (result.error) {
+    console.error(`Could not refresh service watch: ${result.error.message}`);
+  }
+  return {
+    attempted: true,
+    command: "pnpm service:watch:visual",
+    exitStatus: typeof result.status === "number" ? result.status : null,
+    signal: result.signal ?? null,
+    error: result.error?.message ?? null,
+    beforeLastChecked
+  };
+}
+
+function parseLastChecked(source) {
+  return source.match(/^Last checked:\s*(.+)$/m)?.[1]?.trim() || null;
 }
 
 function reportFreshness(lastChecked) {
