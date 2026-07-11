@@ -460,14 +460,14 @@
       }
 
       @media (min-width: 781px) {
-        .layout:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) {
-          grid-template-columns: 76px minmax(420px, 520px) minmax(520px, 680px);
-          max-width: 1300px;
+        .layout:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report):not(.desktop-detail-open) {
+          grid-template-columns: 76px minmax(560px, 700px) minmax(300px, 380px);
+          max-width: 1210px;
           margin: 0 auto;
         }
 
         .layout.desktop-detail-open:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) {
-          grid-template-columns: 76px minmax(320px, 360px) minmax(440px, 540px) minmax(320px, 380px);
+          grid-template-columns: 76px minmax(320px, 360px) minmax(420px, 500px) minmax(320px, 380px);
           max-width: 1440px;
         }
 
@@ -505,14 +505,43 @@
           padding: 6px 0;
         }
 
-        .layout:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) .map-shell {
-          min-height: 330px;
-          height: min(42vh, 410px);
-          max-height: 410px;
+        .layout:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report):not(.desktop-detail-open) .map-shell {
+          min-height: 260px;
+          height: min(30vh, 300px);
+          max-height: 300px;
+          border-radius: 12px;
+          box-shadow:
+            0 0 0 1px rgb(255 255 255 / 68%) inset,
+            0 8px 18px rgb(23 35 45 / 7%);
+        }
+
+        .layout.desktop-detail-open:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report) .map-shell {
+          min-height: 300px;
+          height: min(36vh, 360px);
+          max-height: 360px;
           border-radius: 14px;
           box-shadow:
             0 0 0 1px rgb(255 255 255 / 68%) inset,
             0 10px 24px rgb(23 35 45 / 8%);
+        }
+
+        .layout:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report):not(.desktop-detail-open) .map-toolbar {
+          top: 10px;
+          left: 10px;
+          width: auto;
+          max-width: calc(100% - 20px);
+          padding: 5px 8px;
+          border-radius: 999px;
+        }
+
+        .layout:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report):not(.desktop-detail-open) .map-search {
+          display: none;
+        }
+
+        .layout:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report):not(.desktop-detail-open) .map-key {
+          gap: 8px;
+          padding: 0;
+          border-left: 0;
         }
 
         .layout:not(.desktop-law):not(.desktop-reels):not(.desktop-explore):not(.desktop-report):not(.desktop-detail-open) .map-sheet {

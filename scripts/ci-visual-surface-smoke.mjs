@@ -140,6 +140,8 @@ async function runViewport(client, viewport, url) {
     () => assert(home.issueCount >= 3, `expected at least 3 issue cards, got ${home.issueCount}`),
     () => assert(home.firstIssueTitle.length >= 6, "first issue title is missing"),
     () => assert(/상세 보기/.test(home.firstIssueActions.join(" ")), `first issue primary path missing: ${home.firstIssueActions.join(", ")}`),
+    () => assert(viewport.mobile || home.homeRect.width >= Math.round(home.mapRect.width * 1.35), `desktop home issue feed should dominate map context: home=${home.homeRect.width}, map=${home.mapRect.width}`),
+    () => assert(viewport.mobile || home.mapRect.height <= 310, `desktop home map should be context-sized, got ${home.mapRect.height}`),
     () => assert(home.placePeekCount === 0 || home.placePeekMapCount === home.placePeekCount, `issue place previews must use mini-map surfaces: ${home.placePeekMapCount}/${home.placePeekCount}`),
     () => assert(home.placePeekCount === 0 || home.placePeekAreaCount === home.placePeekCount, `issue place previews must show public area context: ${home.placePeekAreaCount}/${home.placePeekCount}`),
     () => assert(!/KPI|진행\/예정/.test(home.visibleText), "top-level dashboard metric copy is visible")
@@ -250,6 +252,7 @@ function visualMetrics(label) {
       navOverlap,
       storyCount: [...document.querySelectorAll(".story-ring")].filter(visible).length,
       issueCount: [...document.querySelectorAll(".issue-card")].filter(visible).length,
+      homeRect: rect("#home-section"),
       placePeekCount: [...document.querySelectorAll(".issue-place-peek")].filter(visible).length,
       placePeekMapCount: [...document.querySelectorAll(".issue-place-peek .issue-place-map")]
         .filter((node) => visible(node.closest(".issue-place-peek"))).length,

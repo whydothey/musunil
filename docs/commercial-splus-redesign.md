@@ -218,6 +218,9 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 03:14 surface64 mobile card flow | `docs/commercial-splus-surface64-home-card-flow-mobile-390-2026-07-12.png` |
 | 03:14 surface64 desktop card flow | `docs/commercial-splus-surface64-home-card-flow-desktop-1440-2026-07-12.png` |
 | 03:14 surface64 metrics | 390px 첫 카드 `deck=서울 · 현장 2건 · 위치 1곳`, `main=영상 1건 · 인원 추정 검토`, `evidence=공식 확인 중 · 다른 주장 1건`, height 206px. 1440px 같은 흐름, height 216px, `scrollWidth=viewport` |
+| 03:21 surface65 mobile home context | `docs/commercial-splus-surface65-home-context-mobile-390-2026-07-12.png` |
+| 03:21 surface65 desktop home context | `docs/commercial-splus-surface65-home-context-desktop-1440-2026-07-12.png` |
+| 03:21 surface65 metrics | 데스크톱 홈 지도 과점을 낮춰 이슈 피드 698px, 지도 380x288px로 재배치. 홈 지도 검색은 숨기고 탐색 탭 큰 지도에만 유지. 모바일 390px은 `mapVisible=false`, `scrollWidth=390`; 데스크톱 `scrollWidth=1440`, forbidden 0. `pnpm check:visual-surface` 통과 |
 | 06:00 desktop home region map | `docs/commercial-splus-surface24-home-map-desktop-1440-2026-07-11.png` |
 | 06:00 mobile home 390 | `docs/commercial-splus-surface24-home-map-mobile-390-2026-07-11.png` |
 | 06:00 mobile home 430 | `docs/commercial-splus-surface24-home-map-mobile-430-2026-07-11.png` |
