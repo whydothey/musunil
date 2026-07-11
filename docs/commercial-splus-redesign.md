@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 12:24 KST
+Last updated: 2026-07-11 12:34 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -42,6 +42,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 11:38 라이브 점검에서 build-info 파일은 200으로 바뀌었지만 값이 `generated-at-build` placeholder 그대로였다. 즉 Render가 build command 산출물을 publish하지 않는 상태다. `check-web-deploy`와 `service-watch`가 placeholder build-info를 배포 실패로 처리하도록 강화했다.
 - 11:45 패치로 `static-manifest.json`을 추가했다. manifest는 `index.html`, `config.js`, 공개 poster/clip의 SHA-256과 byte size를 담고, `check-web-deploy`가 live 파일 해시를 비교한다. Render build output이 placeholder인 상태에서도 실제 UI 정적 파일이 현재 산출물인지 별도 증거를 확보한다.
 - 12:24 패치로 상세 시트의 긴 `인증 영상/시간 흐름/반론·정정` 탭 라벨을 화면에서는 `영상/흐름/반론`으로 줄이고 접근성 라벨에 전체 의미를 남겼다. 모바일 상세 시트는 내부 스크롤과 탭 최소 높이를 고정해 390px에서 하단 내비 겹침 없이 `근거/영상/지도`, `개요/근거/영상/흐름/반론`이 보인다. 사용자 수락 전 S+는 아니다.
+- 12:34 독립 Visual Critique가 모바일 상세를 P0로 지적했다. `-webkit-line-clamp` 기반 숨김을 제거하고 제목·요약·핵심 문장이 자연 줄바꿈되게 바꿨다. 390px 상세에서 title/summary/row horizontal overflow false, panel fit true, `navOverlap=false`, `scrollWidth=390`을 확인했다. 사용자 수락 전 S+는 아니다.
 
 ## Agent Feedback Summary
 
@@ -92,6 +93,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | PM Local Patch 17 | 11:04 인증영상 탭이 첫 진입에서 영상 없는 이슈의 빈 상태로 시작하거나 poster 없는 Claim을 거대한 빈 영상판처럼 보여 상업용 앱보다 데모 화면처럼 읽혔다. | 기본 영상 이슈 선택을 video-bearing Issue로 보정하고, poster 없는 LIVE Claim은 `검토 대기` 정보 카드로 낮춤. 모바일 겹침·가로 넘침·소셜 금지 문구 없음 확인 |
 | PM Local Patch 18 | 11:10 실제 공개 영상이 들어와도 풀스크린 탭이 poster 이미지만 보여주면 “영상 앱”이 아니라 증거 카드처럼 보인다. | 공개 clip+poster가 모두 있으면 `<video class="reel-video">`로 렌더하고 sample/fallback은 계속 검토 카드로 유지. web smoke가 poster-only 회귀를 차단 |
 | PM Local Patch 19 | 11:16 API seed가 공개 clip URL을 가리키지만 로컬/정적 미디어에는 poster만 있어 실제 video branch 검증이 약했다. | 참조 중인 preview webm 파일을 추가하고, 정적 서버 MIME/CSP를 보강. web smoke가 clip route와 media CSP를 검증 |
+| Visual Design Critique 13 | 12:31 현재 UI는 원칙 위반은 적지만 정보가 많은 내부 운영 도구처럼 읽힌다. P0는 모바일 상세 가독성/레이아웃 파손, P1은 첫 5초 주제 인지 약함과 동등한 근거/영상/지도/반론 버튼 위계다. | 이번 패치에서 상세 제목/요약/bullet 숨김 클램프를 제거하고 줄바꿈 안정화. 다음 패치 후보는 공통 이슈 요약 바와 액션 위계 재정렬 |
 
 ## Active Goal Board
 
@@ -146,6 +148,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 45 | placeholder 배포 실패 처리 | 1차 완료 | live build-info 200이더라도 `generated-at-build` 또는 `source: placeholder`면 `check-web-deploy`와 `service-watch` 실패. Render build output 미반영을 정상 배포로 인정하지 않음 |
 | 46 | static manifest content hash | 1차 완료 | `apps/web/static-manifest.json` tracked. `build:web-static`과 `check:web-smoke`가 manifest를 생성/검증하고, `check:web-deploy`가 live HTML/config/media 해시를 비교 |
 | 47 | 상세 시트 짧은 라벨·모바일 시트 보정 | 1차 완료 | 390px 상세 `actionLabels=근거/영상/지도`, `tabLabels=개요/근거/영상/흐름/반론`, `tabs.height=50`, `navOverlap=false`, `scrollWidth=390`. 1440px도 같은 라벨과 `navOverlap=false` |
+| 48 | 모바일 상세 텍스트 줄바꿈 안정화 | 1차 완료 | 독립 critique P0 반영. 390px 상세 title/summary/row horizontal overflow false, all fit panel true, `navOverlap=false`, `scrollWidth=390`. 숨김 클램프 대신 자연 줄바꿈 |
 
 ## Current Evidence
 
@@ -306,6 +309,9 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 12:24 mobile detail short labels | `docs/commercial-splus-surface40-detail-mobile-390-2026-07-11.png` |
 | 12:24 desktop detail short labels | `docs/commercial-splus-surface40-detail-desktop-1440-2026-07-11.png` |
 | 12:24 detail metrics | 모바일 390px 상세 `actionLabels=근거/영상/지도`, 탭 `개요/근거/영상/흐름/반론`, `tabs.height=50`, `navOverlap=false`, `scrollWidth=390`. 데스크톱 1440px도 같은 짧은 라벨, `navOverlap=false`, `scrollWidth=1440`. 사용자 수락 전 S+는 아니다. |
+| 12:34 mobile detail readability | `docs/commercial-splus-surface41-detail-readability-mobile-390-2026-07-11.png` |
+| 12:34 desktop detail readability | `docs/commercial-splus-surface41-detail-readability-desktop-1440-2026-07-11.png` |
+| 12:34 detail readability metrics | 독립 Visual Critique P0 반영. 모바일 390px `titleHorizontalOverflow=false`, `summaryHorizontalOverflow=false`, `rowHorizontalOverflow=false/false/false`, `titleFitsPanel=true`, `summaryFitsPanel=true`, `rowsFitPanel=true`, `navOverlap=false`, `scrollWidth=390`. 데스크톱도 같은 overflow false와 panel fit true. 사용자 수락 전 S+는 아니다. |
 
 ## Non-Negotiable Gates
 

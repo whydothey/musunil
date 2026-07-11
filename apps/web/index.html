@@ -2067,6 +2067,8 @@
         font-size: 12px;
         font-weight: 620;
         line-height: 1.45;
+        overflow-wrap: anywhere;
+        white-space: normal;
       }
 
       .hero-status .plain-summary-row:first-child span {
@@ -2126,6 +2128,13 @@
 
       .detail-action-row button:active {
         transform: translateY(1px) scale(.99);
+      }
+
+      .detail-action-row button span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .detail-overview {
@@ -2860,6 +2869,7 @@
 
       .status-title .stack {
         gap: 9px;
+        min-width: 0;
       }
 
       #detail-title {
@@ -2869,6 +2879,8 @@
         font-weight: 830;
         letter-spacing: 0;
         line-height: 1.25;
+        overflow-wrap: anywhere;
+        white-space: normal;
       }
 
       #detail-summary {
@@ -2876,6 +2888,8 @@
         color: color-mix(in srgb, var(--muted) 90%, var(--ink));
         font-size: 13px;
         line-height: 1.5;
+        overflow-wrap: anywhere;
+        white-space: normal;
       }
 
       #close-detail {
@@ -4610,6 +4624,31 @@
         .layout.mobile-detail-open #record-section {
           max-height: calc(100vh - 112px);
           overflow: auto;
+        }
+
+        .layout.mobile-detail-open .hero-status {
+          gap: 10px;
+          padding: 18px 15px 13px;
+        }
+
+        .layout.mobile-detail-open #detail-title {
+          font-size: 19px;
+          line-height: 1.28;
+        }
+
+        .layout.mobile-detail-open #detail-summary {
+          font-size: 13px;
+          line-height: 1.48;
+        }
+
+        .layout.mobile-detail-open .hero-status .plain-summary-grid {
+          gap: 6px;
+          padding-top: 9px;
+        }
+
+        .layout.mobile-detail-open .hero-status .plain-summary-row span {
+          font-size: 12px;
+          line-height: 1.42;
         }
 
         .layout.mobile-detail-open #close-detail {
