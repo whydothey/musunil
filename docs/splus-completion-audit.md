@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-11 11:29 KST
+Last updated: 2026-07-11 11:34 KST
 
 Status: 완료 아님.
 
@@ -81,6 +81,7 @@ GET /ready -> 200
 - 2026-07-11 11:21 36차 패치로 배포 후 smoke, runtime smoke, service watch까지 공개 preview clip route를 검사한다. poster만 살아 있고 실제 영상 route가 깨지는 배포 회귀는 차단하지만, 실제 운영 공개 영상 캡처와 사용자 수락 전에는 S+로 승급하지 않는다.
 - 2026-07-11 11:26 라이브 점검에서 `musunil.com` HTML과 공개 preview clip은 최신으로 보였지만 build-info 404와 정적 no-store 헤더 미적용이 확인됐다. Render Dashboard/Blueprint가 새 build command와 headers를 적용하기 전에는 운영 배포 준비를 S+로 승급하지 않는다.
 - 2026-07-11 11:29 build-info 산출물이 `.gitignore`에 막혀 publish에서 빠지는 회귀를 제거했다. 다음 Render 배포에서 `/build-info.json` 200과 현재 Git SHA 일치가 확인되기 전에는 운영 배포 준비를 S+로 승급하지 않는다.
+- 2026-07-11 11:34 build-info placeholder를 repo에 추적시켜 Render Static publish 경로를 고정했다. build command가 실제 Git SHA로 덮어쓰는지 live에서 확인되기 전에는 운영 배포 준비를 S+로 승급하지 않는다.
 
 ## Next Active Goal Order
 

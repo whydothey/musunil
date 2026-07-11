@@ -1,0 +1,7 @@
+window.MUSUNIL_BUILD_INFO = {
+  "commitSha": "generated-at-build",
+  "branch": "generated-at-build",
+  "builtAt": "1970-01-01T00:00:00.000Z",
+  "staticMode": true,
+  "source": "placeholder"
+};

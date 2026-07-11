@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadUserInputs, validateLaunchConfig } from "../packages/config/src/index.ts";
@@ -14,6 +15,7 @@ try {
 }
 
 const web = readFileSync(resolve(cwd, "apps/web/index.html"), "utf8");
+const trackedFiles = gitTrackedFiles();
 const userFacingDocs = [
   "docs/product-principles.md",
   "docs/data-fixtures-and-real-sources.md",
@@ -48,6 +50,7 @@ for (const pattern of ["config/*.local.yaml", "config/*.secret.yaml", ".env", ".
 }
 for (const pattern of ["apps/web/build-info.js", "apps/web/build-info.json"]) {
   if (gitignore.split("\n").includes(pattern)) failures.push(`web deploy build-info artifact must not be ignored: ${pattern}`);
+  if (!trackedFiles.has(pattern)) failures.push(`web deploy build-info artifact must be tracked: ${pattern}`);
 }
 
 const publicResponseFiles = [
@@ -542,4 +545,12 @@ function hasRenderHeader(block, name) {
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function gitTrackedFiles() {
+  try {
+    return new Set(execFileSync("git", ["ls-files"], { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).split("\n").filter(Boolean));
+  } catch {
+    return new Set();
+  }
 }

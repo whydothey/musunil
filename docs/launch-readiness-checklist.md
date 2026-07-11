@@ -86,7 +86,8 @@
 - production Web은 `build-info.json`의 `commitSha`가 배포 대상 Git SHA와 같아야 한다.
 - Render Static Site는 repo root에서 `pnpm build:web-static`과 `pnpm check:web-smoke`를 실행하고 `apps/web`만 publish한다.
 - Render Static Site와 Cloudflare 경로는 `/`, `/config.js`, `/build-info.json`에 `Cache-Control: no-store`를 보내야 하며, 공개 영상 확인을 위해 CSP에 `media-src 'self' https: blob:`가 있어야 한다.
-- `/build-info.json` 또는 `/build-info.js`가 404면 Static Site build command가 실행되지 않았거나, repo root/Publish Directory/Blueprint 연결이 잘못됐거나, build-info 산출물이 ignore 처리된 상태로 본다.
+- `/build-info.json` 또는 `/build-info.js`가 404면 Static Site build command가 실행되지 않았거나, repo root/Publish Directory/Blueprint 연결이 잘못됐거나, build-info 산출물이 ignore/미추적 처리된 상태로 본다.
+- `apps/web/build-info.js`와 `apps/web/build-info.json`은 placeholder로 repo에 추적하고, Render build command가 실제 Git SHA로 덮어써야 한다.
 - 배포 후 `MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm launch:post-deploy-smoke`가 live Web SHA와 API smoke를 함께 통과해야 한다.
 - 공개 홈 카드에는 `WEAKLY_OBSERVED`, `traffic_control` 같은 내부 enum 원문이 보이지 않는다.
 - 내부/admin 라우트는 `x-musunil-internal-key` 없이는 막히고 constant-time 비교를 사용한다.
