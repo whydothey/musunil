@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-11 12:48 KST
+Last updated: 2026-07-11 13:11 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -10,11 +10,11 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 
 - 홈은 `집회·시위 공개자료` 이슈 목록이다.
 - 지도, 영상, 법안은 별도 대시보드가 아니라 선택 이슈의 근거와 맥락으로 들어간다.
-- 첫 화면은 KPI, 내부 모델, 숫자판보다 `무슨 일`, 공개 위치 문장, 근거 문장, 불확실성 문장을 먼저 보여준다. 홈 카드의 주행동은 `근거 보기`이고, `지도/영상/반론`은 같은 이슈의 보조 확인 경로로 낮춘다.
+- 첫 화면은 KPI, 내부 모델, 숫자판보다 `무슨 일`, 공개 위치 문장, 근거 문장, 불확실성 문장을 먼저 보여준다. 홈 카드의 주행동은 `상세 보기`이고, `지도/영상/반론`은 같은 이슈의 보조 확인 경로로 낮춘다.
 - `아직 확인할 점`은 홈 카드마다 큰 박스로 반복하지 않고 상세의 개요·근거에서 확인하게 한다.
 - 상세 첫 화면은 `근거`, `영상`, `지도` 빠른 버튼과 3줄 개요를 먼저 보여주고, 탭도 `개요/근거/영상/흐름/반론`처럼 짧게 유지한다. 전국 현황·주제 묶음·규모·검증 신호는 접힌 세부 정보로 낮춘다.
 - 공개 가능한 `redactedClipUrl`과 `redactedPosterUrl`이 모두 있는 이슈는 홈 카드 안에 16:9 `비식별 공개본` 프리뷰를 붙인다. 공개본이 없으면 장식 이미지나 가짜 썸네일을 만들지 않는다.
-- 홈 첫 화면에는 지도 화면과 현장촬영 도구를 기본 노출하지 않는다. 지도는 `지도` 탭/카드 주행동/상세 빠른 버튼에서, 공개 열람은 `인증영상` 탭에서, 제보 작성은 `현장촬영` 탭에서 독립 화면처럼 연다.
+- 홈 첫 화면에는 지도 화면과 제보 도구를 기본 노출하지 않는다. 지도는 `탐색` 탭/카드 보조 버튼/상세 빠른 버튼에서 위치 맥락으로 열고, 공개 열람은 `영상` 탭에서, 제보 작성은 `제보` 탭에서 독립 화면처럼 연다.
 - 제보는 일반 업로드가 아니라 `현장 영상 제보`로 제한한다. 첫 화면은 후보/조건 목록보다 `근처 현장 찾기` 단일 주행동을 먼저 보여준다.
 - 04:43 독립 비평 기준 현재 화면은 S+가 아니다. Visual critique는 A- 공공서비스 프로토타입, IA red-team은 B-로 평가했다. 이번 패치는 `영상/지도/제보`가 선택 이슈 맥락으로 읽히게 하는 1차 보정이며, 상업용 S+ 승급 근거가 아니다.
 - 05:02 패치로 현장 영상 poster를 어두운 야간 placeholder 톤에서 밝은 비식별 공공 현장 프레임으로 재생성했고, 데스크톱 제보 화면에 연결 이슈·선택 현장·공개 위치·현재 단계 상태 패널을 추가했다. 그래도 사용자 수락 전 S+는 아니다.
@@ -45,6 +45,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 12:34 독립 Visual Critique가 모바일 상세를 P0로 지적했다. `-webkit-line-clamp` 기반 숨김을 제거하고 제목·요약·핵심 문장이 자연 줄바꿈되게 바꿨다. 390px 상세에서 title/summary/row horizontal overflow false, panel fit true, `navOverlap=false`, `scrollWidth=390`을 확인했다. 사용자 수락 전 S+는 아니다.
 - 12:40 패치로 홈 카드 액션을 4개 동등 버튼에서 `근거 보기` primary와 `지도/영상/반론` secondary로 재정렬했다. 모바일 390px 첫 카드 primary action은 evidence, secondary는 map/video/dispute, visible cards 3, `scrollWidth=390`, forbidden 0을 확인했다. 사용자 수락 전 S+는 아니다.
 - 12:48 패치로 `인증영상/지도/현장촬영` 상단에 같은 이슈 요약 바를 붙였다. 상태, 이슈명, 지역·일정·위치 수·현장 수·공식 근거·영상 상태가 화면마다 같은 구조로 유지되고, 모바일에서 데스크톱으로 확장해도 현재 화면과 좌측 레일 선택 상태가 보존된다. 사용자 수락 전 S+는 아니다.
+- 13:11 패치로 독립 Visual Critique/IA Red-Team의 surface44 지적을 반영해 홈 primary를 `상세 보기`로 바꾸고, 카드/상세/지도에 공통 `확인 요약` 문장을 붙였다. 상세 진입은 비동기 로딩과 무관하게 `개요` 탭으로 안정화했고, 최상위 탭은 `홈/영상/탐색/법안/제보`로 고정했다. 그래도 실제 운영 공개 영상/GPS와 사용자 수락 전 S+는 아니다.
 
 ## Agent Feedback Summary
 
@@ -52,7 +53,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 |---|---|---|
 | Visual Design Critique | 정보 정리는 좋아졌지만 카드/박스/칩 반복 때문에 아직 상업용 앱보다 정리된 공공 대시보드처럼 보인다. | 상단 KPI 숨김, 카드 숫자판 제거, 장식 커버 제거, 홈 카드의 반복 불확실성 박스 제거, 우측 상세 세부 정보 접힘 |
 | Reference Mapping | Instagram/Citizen/PulsePoint/Naver/KakaoMap/Toss/GOV.UK의 겉모양이 아니라 익숙한 조작 문법만 차용해야 한다. | 홈은 가벼운 이슈 피드, 상세는 정확한 근거, 지도는 위치 확인 도구, 영상은 검증 중심 릴스 문법으로 분리 |
-| IA Redesign | 현재 5탭은 정답이 아니며 `이슈 First`를 먼저 검증해야 한다. | 홈을 오늘의 이슈 목록으로 재정의하고, 보이는 `탐색` 탭명을 `지도`로 낮춤 |
+| IA Redesign | 현재 5탭은 정답이 아니며 `이슈 First`를 먼저 검증해야 한다. | 홈을 이슈 목록으로 재정의하고, 최상위 탭은 `탐색`으로 유지하되 지도는 위치 맥락 도구로 낮춤 |
 | 국평오 Red-Team | 5초 정체성은 가능하지만 `관련 법안`, `이슈 파일 보기`, `장소·시간` 분류명이 첫 행동을 흐린다. | 홈의 `관련 법안` CTA 제거, 카드 CTA를 `어디서 확인됐나`로 변경, `어디서/근거` 질문형 문구 적용 |
 | Visual Design Critique 2 | 02:17 캡처 기준 A-. 시민용 앱보다 운영 대시보드에 가깝고, 5초 요약과 현장 영상 프리뷰 품질이 약하다. | 카드 첫 화면을 `공개 위치/확인 수준/현재 상태` 시민 5초 요약으로 재구성, CTA를 `확인 근거 보기`로 좁힘 |
 | Reference Mapping 2 | PulsePoint/GOV.UK 방향은 맞지만 Toss식 한 행동과 Naver/KakaoMap식 위치 인지가 약하다. | 카드에 공개 위치 반경/정밀 위치 비공개 표현을 추가하고, 상태와 검증 상태를 분리 |
@@ -98,6 +99,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | Visual Design Critique 13 | 12:31 현재 UI는 원칙 위반은 적지만 정보가 많은 내부 운영 도구처럼 읽힌다. P0는 모바일 상세 가독성/레이아웃 파손, P1은 첫 5초 주제 인지 약함과 동등한 근거/영상/지도/반론 버튼 위계다. | 이번 패치에서 상세 제목/요약/bullet 숨김 클램프를 제거하고 줄바꿈 안정화. 다음 패치 후보는 공통 이슈 요약 바와 액션 위계 재정렬 |
 | PM Local Patch 20 | 12:40 홈 카드의 `지도/근거/영상/반론` 4개 버튼이 같은 무게라 기능 목록처럼 보였다. | `근거 보기`를 full-width primary로 올리고 `지도/영상/반론`을 3개 secondary로 낮춤. 지도는 별도 위치 미리보기와 보조 버튼으로 유지 |
 | PM Local Patch 21 | 12:48 영상·지도·현장촬영 화면이 각각 따로 노는 화면처럼 읽힐 수 있었다. | 공통 이슈 요약 바에 상태 pill, 이슈명, 지역·현장·근거 요약을 통일하고, 모바일→데스크톱 전환 시 선택 화면과 레일 상태를 유지 |
+| Visual/IA Surface44 | 홈은 B+, 상세 B, 지도 B+, 데스크톱 B+ 후보. 가장 큰 문제는 감사 라벨과 반복 버튼이 여전히 대시보드처럼 읽히고, 10초 안에 `언제/어디/근거/반론`을 한 줄로 파악하기 어렵다는 점이다. | 홈 primary를 `상세 보기`로 바꾸고, 모든 주요 표면에 `확인 요약` 문장을 공유. 상세 탭은 즉시 `개요`로 열리게 하고, 탭 라벨은 `홈/영상/탐색/법안/제보`로 단순화 |
 
 ## Active Goal Board
 
@@ -153,8 +155,9 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 46 | static manifest content hash | 1차 완료 | `apps/web/static-manifest.json` tracked. `build:web-static`과 `check:web-smoke`가 manifest를 생성/검증하고, `check:web-deploy`가 live HTML/config/media 해시를 비교 |
 | 47 | 상세 시트 짧은 라벨·모바일 시트 보정 | 1차 완료 | 390px 상세 `actionLabels=근거/영상/지도`, `tabLabels=개요/근거/영상/흐름/반론`, `tabs.height=50`, `navOverlap=false`, `scrollWidth=390`. 1440px도 같은 라벨과 `navOverlap=false` |
 | 48 | 모바일 상세 텍스트 줄바꿈 안정화 | 1차 완료 | 독립 critique P0 반영. 390px 상세 title/summary/row horizontal overflow false, all fit panel true, `navOverlap=false`, `scrollWidth=390`. 숨김 클램프 대신 자연 줄바꿈 |
-| 49 | 홈 카드 액션 위계 재정렬 | 1차 완료 | 390px 첫 카드 `primaryAction=evidence`, `primaryLabel=근거 보기`, secondary `지도/영상/반론`, visible cards 3, `scrollWidth=390`, forbidden 0. 1440px도 같은 액션 위계 |
-| 50 | 공통 이슈 요약 바와 반응형 상태 보존 | 1차 완료 | 인증영상·지도·현장촬영에 같은 상태/이슈명/위치·현장·근거 요약이 보이고, 모바일→데스크톱 전환 시 선택 레일이 유지됨 |
+| 49 | 홈 카드 액션 위계 재정렬 | 재수정 완료 | surface44 비평 이후 `근거 보기` primary는 근거 탭 직행으로 좁아 10초 이해에는 좋지만 첫 방문 CTA로 강했다. surface45에서 `상세 보기` primary와 `지도/영상/반론` secondary로 바꿈 |
+| 50 | 공통 이슈 요약 바와 반응형 상태 보존 | 1차 완료 | 영상·탐색·제보에 같은 상태/이슈명/위치·현장·근거 요약이 보이고, 모바일→데스크톱 전환 시 선택 레일이 유지됨 |
+| 51 | 소비자형 확인 요약·상세 진입 안정화 | 1차 완료 | 390px 홈 첫 카드 `primaryAction=summary`, `primaryLabel=상세 보기`, 확인 요약 `대구 · 전국 · 7월 9일 공개자료 · 위치 2곳 · 공식자료 6건 · 현장 영상 확인 중 · 반론/정정 없음`, 상세 `selectedDetailTab=개요`, 모바일/데스크톱 탭 `홈/영상/탐색/법안/제보`, `scrollWidth=390/1440`, forbidden 0 |
 
 ## Current Evidence
 
@@ -326,6 +329,11 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 12:48 mobile report issue summary | `docs/commercial-splus-surface43-issue-summary-report-mobile-390-2026-07-11.png` |
 | 12:48 desktop map issue summary | `docs/commercial-splus-surface43-issue-summary-map-desktop-1440-2026-07-11.png` |
 | 12:48 issue summary metrics | 모바일 390px 인증영상/지도/현장촬영 모두 status `반론 함께 표시`, title `정보통신망법 개정 반대 집회`, line `서울 · 일정 확인 중 · 위치 1곳 · 현장 2건 · 공식 확인 중 · 현장 영상 1건`, `navOverlap=false`, `scrollWidth=390`, forbidden 0. 데스크톱 1440px 지도 확장 후 `activeRail=explore`, `activeRailText=지도`, map 1198x698, `scrollWidth=1440`. 사용자 수락 전 S+는 아니다. |
+| 13:11 mobile home confirm summary | `docs/commercial-splus-surface45-confirm-summary-home-mobile-390-2026-07-11.png` |
+| 13:11 mobile detail confirm summary | `docs/commercial-splus-surface45-confirm-summary-detail-mobile-390-2026-07-11.png` |
+| 13:11 mobile map confirm summary | `docs/commercial-splus-surface45-confirm-summary-map-mobile-390-2026-07-11.png` |
+| 13:11 desktop home confirm summary | `docs/commercial-splus-surface45-confirm-summary-home-desktop-1440-2026-07-11.png` |
+| 13:11 confirm summary metrics | 모바일 390px 홈 하단 탭 `홈/영상/탐색/법안/제보`, 첫 카드 `primaryAction=summary`, `primaryLabel=상세 보기`, 확인 요약 표시, `scrollWidth=390`, forbidden 0. 상세는 `selectedDetailTab=개요`, 확인 요약 유지, `scrollWidth=390`. 지도는 current tab `탐색`, `visibleMap=true`, 지도 요약 `서울 · 자료 위치와 현장 인증 범위를 함께 표시합니다.`. 데스크톱 1440px 레일 `홈/영상/탐색/법안/제보`, primary summary, `scrollWidth=1440`. 사용자 수락 전 S+는 아니다. |
 
 ## Non-Negotiable Gates
 

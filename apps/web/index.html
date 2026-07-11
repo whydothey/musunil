@@ -1729,6 +1729,31 @@
         -webkit-line-clamp: 2;
       }
 
+      .issue-confirm-summary {
+        display: grid;
+        gap: 3px;
+        min-width: 0;
+        padding-top: 1px;
+      }
+
+      .issue-confirm-summary span {
+        color: var(--faint);
+        font-size: 10px;
+        font-weight: 820;
+        line-height: 1.2;
+      }
+
+      .issue-confirm-summary strong {
+        display: -webkit-box;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 760;
+        line-height: 1.4;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+      }
+
       .issue-place-peek {
         position: relative;
         display: grid;
@@ -1881,16 +1906,16 @@
         justify-content: center;
         gap: 5px;
         min-width: 0;
-        min-height: 36px;
+        min-height: 34px;
         padding: 0 9px;
-        border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+        border: 0;
         border-radius: 999px;
-        background: color-mix(in srgb, var(--surface) 92%, transparent);
-        color: var(--ink);
+        background: color-mix(in srgb, var(--surface-2) 74%, transparent);
+        color: var(--muted);
         font-size: 12px;
         font-weight: 800;
         white-space: nowrap;
-        box-shadow: 0 1px 0 rgb(255 255 255 / 68%) inset;
+        box-shadow: none;
         transition:
           border-color var(--motion-fast) var(--ease-out),
           background-color var(--motion-fast) var(--ease-out),
@@ -1899,17 +1924,12 @@
       }
 
       .issue-card-action:hover {
-        border-color: color-mix(in srgb, var(--brand) 34%, var(--line));
-        background: color-mix(in srgb, var(--brand) 6%, var(--surface));
+        background: color-mix(in srgb, var(--brand) 8%, var(--surface));
         color: var(--brand);
       }
 
       .issue-card-action:active {
         transform: translateY(1px) scale(.99);
-      }
-
-      .issue-card-action[data-issue-card-action="evidence"] {
-        border-color: color-mix(in srgb, var(--brand) 38%, var(--line));
       }
 
       .issue-card-action.primary-action {
@@ -1931,6 +1951,14 @@
         width: 15px;
         height: 15px;
         flex: 0 0 auto;
+      }
+
+      .confirm-summary-line {
+        margin: 3px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 720;
+        line-height: 1.45;
       }
 
       .issue-quick-line {
@@ -4861,7 +4889,7 @@
         }
 
         .issue-card-action {
-          min-height: 36px;
+          min-height: 34px;
           padding: 0 5px;
           font-size: 11px;
         }
@@ -4869,6 +4897,15 @@
         .issue-card-action .button-symbol {
           width: 14px;
           height: 14px;
+        }
+
+        .issue-card-action.primary-action {
+          min-height: 39px;
+        }
+
+        .issue-confirm-summary strong {
+          font-size: 11px;
+          line-height: 1.36;
         }
 
         .issue-card > .chips {
@@ -5309,10 +5346,10 @@
       <main class="layout">
         <nav class="desktop-rail" aria-label="주요 화면">
           <button class="rail-item" type="button" aria-current="page" data-rail-view="home"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-home"></use></svg></span><span>홈</span></button>
-          <button class="rail-item" type="button" data-rail-view="reels"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-video"></use></svg></span><span>인증영상</span></button>
-          <button class="rail-item" type="button" data-rail-view="explore"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-search"></use></svg></span><span>지도</span></button>
+          <button class="rail-item" type="button" data-rail-view="reels"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-video"></use></svg></span><span>영상</span></button>
+          <button class="rail-item" type="button" data-rail-view="explore"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-search"></use></svg></span><span>탐색</span></button>
           <button class="rail-item" type="button" data-rail-view="laws"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-law"></use></svg></span><span>법안</span></button>
-          <button class="rail-item" type="button" data-rail-view="report"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-report"></use></svg></span><span>현장촬영</span></button>
+          <button class="rail-item" type="button" data-rail-view="report"><span class="rail-icon"><svg class="nav-symbol"><use href="#icon-report"></use></svg></span><span>제보</span></button>
         </nav>
 
         <section class="column stack" id="home-section" aria-label="이슈와 상황 목록">
@@ -5466,6 +5503,7 @@
                   </div>
 	                  <h2 id="detail-title">서울 인근 집회성 모임</h2>
 	                  <p class="muted" id="detail-summary">공개 자료와 현장 인증 기준으로 확인합니다.</p>
+                    <p class="confirm-summary-line" id="detail-confirm-summary">확인 요약을 불러오고 있습니다.</p>
 	                  <div class="source-badges" id="detail-source-badges" aria-label="출처 요약"></div>
                 </div>
                 <button class="icon-btn" id="close-detail" title="닫기" aria-label="상세 닫기">×</button>
@@ -5661,10 +5699,10 @@
 
       <nav class="mobile-nav" aria-label="하단 탭">
         <button aria-current="page" data-tab-view="home"><svg class="nav-symbol"><use href="#icon-home"></use></svg><span>홈</span></button>
-        <button data-tab-view="reels"><svg class="nav-symbol"><use href="#icon-video"></use></svg><span>인증영상</span></button>
-        <button data-tab-view="explore"><svg class="nav-symbol"><use href="#icon-search"></use></svg><span>지도</span></button>
+        <button data-tab-view="reels"><svg class="nav-symbol"><use href="#icon-video"></use></svg><span>영상</span></button>
+        <button data-tab-view="explore"><svg class="nav-symbol"><use href="#icon-search"></use></svg><span>탐색</span></button>
         <button data-tab-view="laws"><svg class="nav-symbol"><use href="#icon-law"></use></svg><span>법안</span></button>
-        <button data-tab-view="report"><svg class="nav-symbol"><use href="#icon-report"></use></svg><span>현장촬영</span></button>
+        <button data-tab-view="report"><svg class="nav-symbol"><use href="#icon-report"></use></svg><span>제보</span></button>
       </nav>
       <div class="identity-sheet" id="identity-sheet" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="identity-title">
         <section class="identity-card">
@@ -6335,20 +6373,7 @@
 
       function issueContextFacts(issue) {
         if (!issue) return "홈에서 이슈를 고르면 영상, 지도, 제보가 같은 이슈 기준으로 정리됩니다.";
-        const cards = issueRelatedCards(issue);
-        const regions = issueRegions(issue, cards);
-        const regionText = regions.length ? regions.slice(0, 2).join(", ") : "지역 확인 중";
-        const locationCount = Number(issue.regionCount || regions.length || 0);
-        const targetCount = Number(issue.currentCount || issue.targetCount || cards.length || 0);
-        const official = Number(issue.officialCount || 0);
-        return [
-          regionText,
-          issueDateText(issue, cards),
-          locationCount ? `위치 ${locationCount}곳` : "위치 확인 중",
-          targetCount ? `현장 ${targetCount}건` : "현장 확인 중",
-          official ? `공식 ${official}건` : "공식 확인 중",
-          issueVideoStatusText(issue)
-        ].join(" · ");
+        return issueConfirmedSummaryLine(issue);
       }
 
       function issueContextLine(issue, mode) {
@@ -6450,7 +6475,9 @@
           updatePinSelection();
           updateIssueContextStrips();
           renderMapSelectionContext(target);
-          renderDetail(target).then(() => document.querySelector('.tabs button[data-tab="summary"]')?.click());
+          const detailRender = renderDetail(target);
+          selectDetailTab("summary", { pulse: false, transition: false });
+          Promise.resolve(detailRender).finally(() => selectDetailTab("summary", { pulse: false, transition: false }));
         }
         const layout = document.querySelector(".layout");
         if (innerWidth > 780 && layout?.classList.contains("desktop-explore")) {
@@ -7859,6 +7886,26 @@
         ].filter(Boolean).join(" · ");
       }
 
+      function issueConfirmedSummaryLine(issue) {
+        const cards = issueRelatedCards(issue);
+        const regions = issueRegions(issue, cards);
+        const place = regions.length ? regions.slice(0, 2).join(" · ") : "지역 확인 중";
+        const date = issueDateText(issue, cards);
+        const locationCount = Number(issue.regionCount || regions.length || 0);
+        const official = Number(issue.officialCount || 0);
+        const video = issueVideoCount(issue);
+        const dispute = Number(issue.disputeCount || 0);
+        const dateLabel = /확인 중|예정|진행/.test(date) ? date : `${date} 공개자료`;
+        return [
+          place,
+          dateLabel,
+          locationCount ? `위치 ${locationCount}곳` : "위치 확인 중",
+          official ? `공식자료 ${official}건` : "공식자료 확인 중",
+          video ? `현장영상 ${video}건` : issueVideoReviewText(issue),
+          dispute ? `반론/정정 ${dispute}건` : "반론/정정 없음"
+        ].join(" · ");
+      }
+
       function issueCardStatusText(issue) {
         const state = issueStoryState(issue);
         if (state === "dispute") return "반론 함께 표시";
@@ -7938,8 +7985,8 @@
       function issueCardActionMarkup(issue) {
         const title = issue?.title || "선택 이슈";
         return `
-          <div class="issue-card-actions" aria-label="${escapeHtml(title)} 확인 도구">
-            ${issueCardActionButton("evidence", "icon-stats", "근거 보기", `${title} 근거 보기`, "primary")}
+          <div class="issue-card-actions" aria-label="${escapeHtml(title)} 확인 경로">
+            ${issueCardActionButton("summary", "icon-stats", "상세 보기", `${title} 상세 보기`, "primary")}
             ${issueCardActionButton("map", "icon-locate", "지도", `${title} 지도에서 위치 확인`)}
             ${issueCardActionButton("video", "icon-video", "영상", `${title} 인증 영상 보기`)}
             ${issueCardActionButton("dispute", "icon-assembly", "반론", `${title} 반론·정정 보기`)}
@@ -7973,6 +8020,10 @@
             liveMap?.resize();
             focusPanel(document.querySelector(".map-shell"));
           }, 140);
+          return;
+        }
+        if (action === "summary") {
+          selectIssue(issue, { openDetail: true, scrollToCards: false, initialTab: "summary" });
           return;
         }
         const initialTab = action === "dispute" ? "dispute" : "evidence";
@@ -8069,9 +8120,9 @@
                     <div class="title">${escapeHtml(issue.title)}</div>
                   </div>
                   <p class="issue-card-deck">${escapeHtml(issueCardDeckText(issue))}</p>
-                  <div class="issue-card-proof-row" aria-label="근거와 공개 범위">
-                    <span>${escapeHtml(issueCardProofText(issue))}</span>
-                    <span>${escapeHtml(issueCardSafetyText(issue))}</span>
+                  <div class="issue-confirm-summary" aria-label="확인 요약">
+                    <span>확인 요약</span>
+                    <strong>${escapeHtml(issueConfirmedSummaryLine(issue))}</strong>
                   </div>
                 </div>
 	              ${visualPreviewHtml}
@@ -8220,7 +8271,8 @@
         activateReportFlow({ requestPosition: false });
 	        const detailRender = renderIssueDetail(issue);
         if (options.initialTab) {
-          Promise.resolve(detailRender).then(() => document.querySelector(`.tabs button[data-tab="${options.initialTab}"]`)?.click());
+          selectDetailTab(options.initialTab, { pulse: false, transition: false });
+          Promise.resolve(detailRender).finally(() => selectDetailTab(options.initialTab, { pulse: false, transition: false }));
         }
         if (options.openDetail) {
           openDetailPanel();
@@ -8436,6 +8488,7 @@
 	        renderMapSelectionContext(card);
 	        $("detail-title").textContent = cardDisplayTitle(card);
 	        $("updated-at").textContent = "최근 정리됨";
+	        $("detail-confirm-summary").textContent = `${card.regionLabel || "전국"} · ${cardPlaceTimeText(card)} · ${cardEvidenceText(card)}`;
 	        $("stat-current").textContent = objectiveFact(card);
 	        $("stat-peak").textContent = cardPlaceTimeText(card);
 	        $("stat-proof").textContent = cardEvidenceText(card);
@@ -8463,6 +8516,7 @@
           $("map-mode").textContent = "위치 맥락";
 	        $("detail-title").textContent = issue.title;
 	        $("updated-at").textContent = "최근 정리됨";
+	        $("detail-confirm-summary").textContent = issueConfirmedSummaryLine(issue);
 	        $("stat-current").textContent = issuePlaceTimeText(issue);
 	        $("stat-peak").textContent = issueEvidenceText(issue);
 	        $("stat-proof").textContent = issueUncertaintyText(issue);
@@ -8501,6 +8555,7 @@
           $("map-mode").textContent = "연결 이슈";
 	        $("detail-title").textContent = law.billTitle || law.lawName;
 	        $("updated-at").textContent = relative(law.lastUpdatedAt || law.statusDate || law.effectiveDate);
+	        $("detail-confirm-summary").textContent = lawConnectionMetaText(law);
 	        $("stat-current").textContent = Number(law.linkedIssueCount || issues.length || 0)
 	          ? `${Number(law.linkedIssueCount || issues.length)}건의 이슈와 연결됩니다.`
 	          : "연결 이슈를 확인 중입니다.";
@@ -10071,14 +10126,29 @@
         refreshMapSurface();
       }
 
-      document.querySelectorAll(".tabs button").forEach((button) => {
-        button.addEventListener("click", () => {
-          withViewTransition(() => {
-            document.querySelectorAll(".tabs button").forEach((item) => item.setAttribute("aria-selected", String(item === button)));
-            for (const id of ["summary", "video", "timeline", "evidence", "dispute"]) $(`${id}-tab`).hidden = button.dataset.tab !== id;
+      function normalizedDetailTab(tab) {
+        return ["summary", "video", "timeline", "evidence", "dispute"].includes(tab) ? tab : "summary";
+      }
+
+      function selectDetailTab(tab, options = {}) {
+        const targetTab = normalizedDetailTab(tab);
+        const targetButton = document.querySelector(`#record-section .tabs button[data-tab="${targetTab}"]`);
+        if (!targetButton) return;
+        const update = () => {
+          document.querySelectorAll("#record-section .tabs button").forEach((item) => {
+            item.setAttribute("aria-selected", String(item === targetButton));
           });
-          pulseElement($(`${button.dataset.tab}-tab`));
-        });
+          for (const id of ["summary", "video", "timeline", "evidence", "dispute"]) {
+            $(`${id}-tab`).hidden = targetTab !== id;
+          }
+        };
+        if (options.transition === false) update();
+        else withViewTransition(update);
+        if (options.pulse !== false) pulseElement($(`${targetTab}-tab`));
+      }
+
+      document.querySelectorAll("#record-section .tabs button").forEach((button) => {
+        button.addEventListener("click", () => selectDetailTab(button.dataset.tab));
       });
 
       document.querySelectorAll(".segmented button").forEach((button) => {
@@ -10108,7 +10178,7 @@
             return;
           }
           const targetTab = { video: "video", evidence: "evidence", region: "timeline", dispute: "dispute" }[jump] || "summary";
-          document.querySelector(`.tabs button[data-tab="${targetTab}"]`)?.click();
+          selectDetailTab(targetTab);
           return;
         }
         const sourceButton = event.target instanceof Element ? event.target.closest("[data-issue-timeline-source]") : null;
@@ -10116,7 +10186,11 @@
         if (sourceButton || regionButton) {
           if (sourceButton) issueTimelineSourceFilter = sourceButton.dataset.issueTimelineSource || "all";
           if (regionButton) issueTimelineRegionFilter = regionButton.dataset.issueTimelineRegion || "all";
-          if (selectedIssue) renderIssueDetail(selectedIssue).then(() => document.querySelector('.tabs button[data-tab="timeline"]')?.click());
+          if (selectedIssue) {
+            const detailRender = renderIssueDetail(selectedIssue);
+            selectDetailTab("timeline", { pulse: false, transition: false });
+            Promise.resolve(detailRender).finally(() => selectDetailTab("timeline", { pulse: false, transition: false }));
+          }
           return;
         }
         const videoRegionButton = event.target instanceof Element ? event.target.closest("[data-issue-video-region]") : null;
@@ -10124,7 +10198,11 @@
         if (videoRegionButton || videoStatusButton) {
           if (videoRegionButton) issueVideoRegionFilter = videoRegionButton.dataset.issueVideoRegion || "all";
           if (videoStatusButton) issueVideoStatusFilter = videoStatusButton.dataset.issueVideoStatus || "all";
-          if (selectedIssue) renderIssueDetail(selectedIssue).then(() => document.querySelector('.tabs button[data-tab="video"]')?.click());
+          if (selectedIssue) {
+            const detailRender = renderIssueDetail(selectedIssue);
+            selectDetailTab("video", { pulse: false, transition: false });
+            Promise.resolve(detailRender).finally(() => selectDetailTab("video", { pulse: false, transition: false }));
+          }
           return;
         }
         const issueButton = event.target instanceof Element ? event.target.closest("[data-law-issue-id]") : null;
@@ -10183,7 +10261,7 @@
           evidence: "evidence",
           dispute: "dispute"
         }[action.dataset.reelAction] || "summary";
-        document.querySelector(`.tabs button[data-tab="${tab}"]`)?.click();
+        selectDetailTab(tab);
         openDetailPanel();
       });
 
