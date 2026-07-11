@@ -71,7 +71,12 @@ for (const pattern of ["apps/web/build-info.js", "apps/web/build-info.json"]) {
   if (gitignore.split("\n").includes(pattern)) failures.push(`web deploy build-info artifact must not be ignored: ${pattern}`);
   if (!trackedFiles.has(pattern)) failures.push(`web deploy build-info artifact must be tracked: ${pattern}`);
 }
-if (!/actions\/checkout@v5/.test(ciWorkflow) || !/actions\/setup-node@v5/.test(ciWorkflow) || !/node-version:\s*24/.test(ciWorkflow)) {
+if (
+  !/actions\/checkout@v5/.test(ciWorkflow) ||
+  !/actions\/setup-node@v5/.test(ciWorkflow) ||
+  !/node-version:\s*24/.test(ciWorkflow) ||
+  !/package-manager-cache:\s*false/.test(ciWorkflow)
+) {
   failures.push("GitHub Actions CI must use Node 24-compatible checkout/setup-node actions");
 }
 if (!/pnpm check:release/.test(ciWorkflow)) failures.push("GitHub Actions CI must run pnpm check:release");
