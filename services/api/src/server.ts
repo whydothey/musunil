@@ -184,6 +184,8 @@ function loadRuntime() {
     const redisUrl = readString(loaded.config, "redis.url") || process.env.REDIS_URL;
     const liveMediaStorage = createLiveMediaStorage(loaded.config);
     const liveMediaEncryptionKey = readString(loaded.config, "security.media_encryption_key");
+    const production = readString(loaded.config, "render.environment") === "production";
+    const identityTestModeRequested = process.env.MUSUNIL_IDENTITY_TEST_MODE === "true";
     const identity = {
       provider: "portone" as const,
       storeId: process.env.MUSUNIL_PORTONE_STORE_ID || readString(loaded.config, "identity.portone_store_id"),
@@ -191,7 +193,7 @@ function loadRuntime() {
       apiSecret: process.env.MUSUNIL_PORTONE_API_SECRET || readString(loaded.config, "identity.portone_api_secret"),
       apiBaseUrl: process.env.MUSUNIL_PORTONE_API_BASE_URL || readString(loaded.config, "identity.portone_api_base_url"),
       sessionCookieDomain: readString(loaded.config, "identity.session_cookie_domain"),
-      testMode: process.env.MUSUNIL_IDENTITY_TEST_MODE === "true"
+      testMode: identityTestModeRequested && !production
     };
     const retention = {
       rawClaimStatementDays: readNumber(loaded.config, "retention.raw_claim_statement_days", 30),
@@ -200,7 +202,6 @@ function loadRuntime() {
       preciseLocationDays: readNumber(loaded.config, "retention.precise_location_days", 30),
       auditLogDays: readNumber(loaded.config, "retention.audit_log_days", 3650)
     };
-    const production = readString(loaded.config, "render.environment") === "production";
     return {
       allowedOrigins,
       allowLocalDevOrigins: process.env.MUSUNIL_RUNTIME_ENV !== "production",
@@ -220,7 +221,8 @@ function loadRuntime() {
       readiness: async () => {
         const checks = [
           { id: "config_source", ok: loaded.source !== "template_file", message: `config source: ${loaded.source}` },
-          ...issues.map((issue) => ({ id: issue.path, ok: false, message: issue.message }))
+          ...issues.map((issue) => ({ id: issue.path, ok: false, message: issue.message })),
+          ...(production && identityTestModeRequested ? [{ id: "identity.test_mode", ok: false, message: "MUSUNIL_IDENTITY_TEST_MODE is not allowed in production." }] : [])
         ];
         if (databaseUrl) checks.push(await postgresReadyCheck(databaseUrl));
         if (redisUrl) checks.push(await tcpUrlReadyCheck("redis", redisUrl));
@@ -241,7 +243,7 @@ function loadRuntime() {
         apiSecret: process.env.MUSUNIL_PORTONE_API_SECRET,
         apiBaseUrl: process.env.MUSUNIL_PORTONE_API_BASE_URL,
         sessionCookieDomain: ".musunil.com",
-        testMode: process.env.MUSUNIL_IDENTITY_TEST_MODE === "true"
+        testMode: process.env.MUSUNIL_IDENTITY_TEST_MODE === "true" && !productionRuntime
       },
       encryptionKey: process.env.MUSUNIL_ENCRYPTION_KEY,
       databaseUrl: process.env.DATABASE_URL,

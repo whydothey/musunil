@@ -102,6 +102,7 @@
 - `pnpm check:ops-diagnostics`는 외부 연결 없이 storage, redaction, mobile integrity, identity metadata 구조를 확인하고 secret 값이나 provider raw output을 출력하지 않는다.
 - production에서 포트원 본인확인 `identity.portone_store_id`, `identity.portone_identity_channel_key`, `identity.portone_api_secret`이 없으면 launch validation이 실패한다.
 - 로그인 없이 공개 읽기 API는 접근 가능하지만, 제보·현장 판단·반론·권리침해 신고·알림 설정·`/me/*`는 본인확인 완료 세션 없이는 `identity_required`로 실패한다.
+- `MUSUNIL_IDENTITY_TEST_MODE=true`는 production 런타임에서 본인확인 우회로 작동하지 않아야 하며, `/ready`는 `identity.test_mode` 실패를 보고해야 한다.
 - `pnpm service:watch -- --once`가 Web static hash/build metadata, live `config.js` 공개 필드와 `apiBaseUrl`, Web header contract, API DNS/HTTPS endpoint preflight, API readiness, 공개 payload 안전성, `/transparency/logs`, 법안/coverage, 인증 write boundary를 검증하고 `docs/splus-service-watch.md`를 갱신한다. API endpoint preflight가 실패하면 하위 API checks는 `skip`이어야 하며, 실패 원인은 `api_endpoint_preflight`에 남아야 한다. 실패 시 `Required Actions` 섹션이 다음 운영 조치와 검증 명령을 표시해야 한다.
 - `public_payload_home`은 `/home.issueCards`가 실제 주제형 Issue를 3개 이상 포함하고, 첫 항목이 지역별 공개 일정/신고 통계 같은 공개자료 묶음이 아니어야 통과한다.
 - `pnpm service:watch:visual`은 위 감시에 live visual surface와 Web `serviceSyncState` 확인까지 포함한다. 운영 도메인이 저장된 공개자료 fallback 상태인 `delayed`로 렌더링되면 실패해야 한다.

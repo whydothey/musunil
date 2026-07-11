@@ -687,6 +687,9 @@ if (!/verifiedBodyUserId/.test(apiApp) || !/requireVerifiedBodyUserId/.test(apiA
 if (!/allowAnonymousSession\?: boolean/.test(apiApp) || !/allowAnonymousSession:\s*!production/.test(apiServer) || !/allowAnonymousSession:\s*!productionRuntime/.test(apiServer) || !/options\.allowAnonymousSession === false/.test(apiApp)) {
   failures.push("production anonymous session fallback must stay disabled");
 }
+if (!/identityTestModeRequested/.test(apiServer) || !/testMode:\s*identityTestModeRequested && !production/.test(apiServer) || !/testMode:\s*process\.env\.MUSUNIL_IDENTITY_TEST_MODE === "true" && !productionRuntime/.test(apiServer) || !/identity\.test_mode/.test(apiServer)) {
+  failures.push("PortOne identity test mode must be impossible in production and reported by readiness");
+}
 if (!/userTokenTtlMs/.test(apiApp) || !/expiresAt/.test(apiApp)) failures.push("verified identity session tokens must expire");
 if (/x-musunil-user-secret/.test(apiApp)) failures.push("user token secret must not be read from request headers");
 if (!/held_private/.test(apiApp) || !/publicClaimsForTarget/.test(apiApp) || !/setClaimVisibility/.test(apiApp)) {

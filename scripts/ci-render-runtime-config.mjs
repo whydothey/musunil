@@ -185,7 +185,50 @@ try {
   if (code !== 0) exitCode = 1;
 }
 
+if (exitCode === 0) {
+  try {
+    await assertProductionIdentityTestModeBlocked();
+  } catch (error) {
+    exitCode = 1;
+    console.error(error instanceof Error ? error.message : String(error));
+  }
+}
+
 process.exit(exitCode);
+
+async function assertProductionIdentityTestModeBlocked() {
+  const testPort = await freePort();
+  const testEnv = {
+    ...env,
+    PORT: String(testPort),
+    MUSUNIL_IDENTITY_TEST_MODE: "true"
+  };
+  const testServer = spawn(process.execPath, ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", "src/server.ts"], {
+    cwd: resolve(cwd, "services/api"),
+    env: testEnv,
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  let output = "";
+  testServer.stdout.on("data", (data) => {
+    output += data.toString();
+  });
+  testServer.stderr.on("data", (data) => {
+    output += data.toString();
+  });
+  try {
+    await waitForHealth(testPort, testServer);
+    const response = await fetch(`http://localhost:${testPort}/ready`);
+    const body = await response.json();
+    const failedIds = Array.isArray(body.checks) ? body.checks.filter((check) => !check.ok).map((check) => check.id) : [];
+    assert(response.status === 503, `production identity test mode should block readiness, got ${response.status}`);
+    assert(failedIds.includes("identity.test_mode"), "production identity test mode was not reported by /ready");
+    assert(body.summary?.blockingGroups?.includes("identity"), "production identity test mode did not map to identity blocking group");
+  } finally {
+    testServer.kill("SIGTERM");
+    const code = await waitForExit(testServer);
+    if (code !== 0) throw new Error(`identity test mode guard server exited with ${code}${output.trim() ? `: ${output.trim()}` : ""}`);
+  }
+}
 
 function freePort() {
   return new Promise((resolvePort, reject) => {
@@ -198,10 +241,10 @@ function freePort() {
   });
 }
 
-async function waitForHealth(port) {
+async function waitForHealth(port, child = server) {
   const deadline = Date.now() + 8_000;
   while (Date.now() < deadline) {
-    if (server.exitCode !== null) throw new Error(`API exited before health check with ${server.exitCode}`);
+    if (child.exitCode !== null) throw new Error(`API exited before health check with ${child.exitCode}`);
     try {
       const response = await fetch(`http://localhost:${port}/health`);
       if (response.ok) return;
