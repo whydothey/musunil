@@ -25,6 +25,7 @@ const userFacingDocs = [
 ].map((path) => `${path}\n${readFileSync(resolve(cwd, path), "utf8")}`).join("\n");
 const localCompletionStatus = readFileSync(resolve(cwd, "docs/local-completion-status.md"), "utf8");
 const completionAudit = readFileSync(resolve(cwd, "docs/splus-completion-audit.md"), "utf8");
+const splusUxTracker = readFileSync(resolve(cwd, "docs/splus-ux-tracker.md"), "utf8");
 const webConfigJs = readFileSync(resolve(cwd, "apps/web/config.js"), "utf8");
 const webConfigWriter = readFileSync(resolve(cwd, "scripts/write-web-config.mjs"), "utf8");
 const webHeaderWriter = readFileSync(resolve(cwd, "scripts/write-web-headers.mjs"), "utf8");
@@ -472,6 +473,14 @@ if (
   !/freshness window/.test(completionAudit)
 ) {
   failures.push("completion audit must document current live blockers, stale evidence policy, and require Cloudflare strict, live sync, and final gate evidence");
+}
+const uxCurrentVerdict = markdownSection(splusUxTracker, "## Current Verdict", "## Design S+ Active Goals");
+const uxScorecard = markdownSection(splusUxTracker, "## Scorecard", "## Previous UX Evidence Under Review");
+if (/live 홈 이슈 피드가 0건|issues=0|first=none/.test(completionAudit + "\n" + uxCurrentVerdict + "\n" + uxScorecard)) {
+  failures.push("current UX/completion docs must not use stale live issue-feed evidence after production fallback topic issues are verified");
+}
+if (!/정보통신망법 개정 관련 집회/.test(completionAudit) || !/source bundle first 0\/4/.test(completionAudit) || !/serviceSyncState=delayed/.test(uxCurrentVerdict)) {
+  failures.push("current UX/completion docs must record the latest live fallback topic issue state while live API sync is still delayed");
 }
 const localCompletedSection = markdownSection(localCompletionStatus, "## 완료", "## 외부 연결 필요");
 const localExternalSection = markdownSection(localCompletionStatus, "## 외부 연결 필요", "\n## ");

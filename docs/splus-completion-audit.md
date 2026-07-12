@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-12 09:22 KST
+Last updated: 2026-07-12 10:08 KST
 
 Status: 완료 아님.
 
@@ -66,7 +66,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 
 - `api_endpoint_preflight`: `api.musunil.com` DNS가 아직 연결되지 않아 API `/health`, `/ready`, 공개 payload, identity boundary 검사가 skip 상태다.
 - `web_header_contract`: live Web에 no-store, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options가 아직 적용되지 않았다.
-- `web_visual_surface`: API 미연결 때문에 `serviceSyncState=delayed`이고 live 홈 이슈 피드가 0건으로 감시된다. 최종 완료에는 `serviceSyncState=live`, 홈 topic issue 3개 이상, `web_visual_surface=ok`가 필요하다.
+- `web_visual_surface`: 실제 `https://musunil.com` 화면 구조는 `pnpm check:visual-surface:live`에서 통과하지만 API 미연결 때문에 `serviceSyncState=delayed`다. 최신 live visual 결과는 첫 이슈 `정보통신망법 개정 관련 집회`, 홈 topic issue 3개, story 3개, source bundle first 0/4를 보여준다. 최종 완료에는 `serviceSyncState=live`, 홈 topic issue 3개 이상, `web_visual_surface=ok`, 남은 failure 0개가 필요하다.
 
 ## Required Final Evidence
 
