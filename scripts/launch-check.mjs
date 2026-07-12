@@ -371,6 +371,10 @@ if (
   !/service:watch:visual/.test(launchNextActions) ||
   !/launch:apply/.test(launchNextActions) ||
   !/launch:apply -- --apply/.test(launchNextActions) ||
+  !/runLaunchApplyPlan/.test(launchNextActions) ||
+  !/Launch Apply Inputs/.test(launchNextActions) ||
+  !/operatorInputs/.test(launchNextActions) ||
+  !/requiredEnv/.test(launchNextActions) ||
   !/render:api-settings/.test(launchNextActions) ||
   !/render:web-settings/.test(launchNextActions) ||
   !/render:apply/.test(launchNextActions) ||
@@ -468,6 +472,9 @@ if (
   !/launch-cutover-plan\.mjs/.test(launchOperatorBrief) ||
   !/render-web-settings\.mjs/.test(launchOperatorBrief) ||
   !/render-api-settings\.mjs/.test(launchOperatorBrief) ||
+  !/launch-apply\.mjs/.test(launchOperatorBrief) ||
+  !/launchApplyPlan/.test(launchOperatorBrief) ||
+  !/launchInputLines/.test(launchOperatorBrief) ||
   !/render:apply/.test(launchOperatorBrief) ||
   !/launch-ready\.mjs/.test(launchOperatorBrief) ||
   !/external-smoke\.mjs/.test(launchOperatorBrief) ||
@@ -490,6 +497,8 @@ if (
   !/Render API Service/.test(launchOperatorBriefDoc) ||
   !/Render API automation/.test(launchOperatorBriefDoc) ||
   !/One Command Apply/.test(launchOperatorBriefDoc) ||
+  !/Required launch inputs from current dry-run/.test(launchOperatorBriefDoc) ||
+  !/RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET/.test(launchOperatorBriefDoc) ||
   !/pnpm launch:apply -- --apply/.test(launchOperatorBriefDoc) ||
   !/pnpm render:apply -- --web-headers --apply/.test(launchOperatorBriefDoc) ||
   !/pnpm render:apply -- --api-domain --apply/.test(launchOperatorBriefDoc) ||

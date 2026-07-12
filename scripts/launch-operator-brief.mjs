@@ -21,10 +21,11 @@ const rehearsal = runJson("cutover rehearsal", [
 const cutoverPlan = runJson("cutover plan", ["scripts/launch-cutover-plan.mjs", "--", "--json"]);
 const webSettings = runJson("Render Web settings", ["scripts/render-web-settings.mjs", "--", "--json"]);
 const apiSettings = runJson("Render API settings", ["scripts/render-api-settings.mjs", "--", "--json"]);
+const launchApplyPlan = runJson("launch apply plan", ["scripts/launch-apply.mjs", "--", "--json"]);
 const launchReadyPlan = runJson("launch ready plan", ["scripts/launch-ready.mjs", "--", "--list"]);
 const externalSmokePlan = runJson("external smoke plan", ["scripts/external-smoke.mjs", "--", "--list"]);
 
-const helperFailures = [rehearsal, cutoverPlan, webSettings, apiSettings, launchReadyPlan, externalSmokePlan].filter((item) => !item.ok);
+const helperFailures = [rehearsal, cutoverPlan, webSettings, apiSettings, launchApplyPlan, launchReadyPlan, externalSmokePlan].filter((item) => !item.ok);
 const brief = buildBrief();
 
 if (json) {
@@ -49,6 +50,7 @@ function buildBrief() {
   const planData = cutoverPlan.data || {};
   const webData = webSettings.data || {};
   const apiData = apiSettings.data || {};
+  const launchApplyData = launchApplyPlan.data || {};
   const launchReadyData = launchReadyPlan.data || {};
   const externalSmokeData = externalSmokePlan.data || {};
   const requiredActions = rehearsalData.requiredActions || [];
@@ -84,6 +86,7 @@ function buildBrief() {
     requiredActions,
     renderStaticSite: webData,
     renderApiService: apiData,
+    launchApply: launchApplyData,
     cloudflareDnsTemplate: planData.cloudflareDnsTemplate || {},
     cloudflareDns: planData.cloudflareDns || [],
     cloudflareCacheRules: planData.cloudflareCacheRules || [],
@@ -132,6 +135,10 @@ function renderMarkdown(value) {
     "- Web header가 계속 live에 반영되지 않을 때만 `pnpm launch:apply -- --apply --cloudflare-headers`를 사용한다.",
     "- Web build metadata까지 새로 반영해야 하면 `pnpm launch:apply -- --apply --deploy-web`을 사용한다.",
     "- 적용 후 완료 판정은 항상 `pnpm launch:final-gate`다.",
+    "",
+    "Required launch inputs from current dry-run:",
+    "",
+    ...launchInputLines(value.launchApply),
     "",
     "## What To Do Now",
     "",
@@ -257,6 +264,24 @@ function actionLines(actions) {
     `   - Verify: \`${action.verify || "pnpm launch:final-gate"}\``,
     action.reference && action.reference !== "-" ? `   - Reference: ${action.reference}` : ""
   ].filter(Boolean));
+}
+
+function launchInputLines(plan) {
+  const requiredEnv = plan?.requiredEnv || [];
+  const inputs = plan?.operatorInputs || [];
+  const lines = [];
+  lines.push(`- Mode: \`${plan?.mode || "unknown"}\``);
+  lines.push(`- Required env: ${requiredEnv.length ? requiredEnv.map((item) => `\`${item}\``).join(", ") : "(none)"}`);
+  if (!inputs.length) return [...lines, "- Inputs: (none)"];
+  lines.push("");
+  lines.push("| ID | Required | Status | Env | Purpose |");
+  lines.push("|---|---|---|---|---|");
+  for (const input of inputs) {
+    const required = input.requiredMode === "one_of" ? "one_of" : input.required ? "yes" : "no";
+    const env = [...(input.env || []), ...(input.alternatives || []).map((item) => `alt:${item}`)].join("<br>");
+    lines.push(`| ${input.id || ""} | ${required} | ${input.status || ""} | ${env || "-"} | ${input.purpose || ""} |`);
+  }
+  return lines;
 }
 
 function stepLines(steps) {

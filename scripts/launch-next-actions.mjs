@@ -9,6 +9,7 @@ const failOnBlockers = args.includes("--fail-on-blockers") || args.includes("--s
 const cwd = resolve(import.meta.dirname, "..");
 const reportPath = resolve(cwd, "docs/splus-service-watch.md");
 let refreshResult = { attempted: false };
+const launchApplyPlan = runLaunchApplyPlan();
 
 if (refresh) {
   refreshResult = refreshServiceWatch();
@@ -102,6 +103,7 @@ function parseReport(source, refreshMetadata = { attempted: false }) {
       : { attempted: false },
     status,
     releaseBlocked,
+    launchApply: launchApplyPlan,
     passCount: ok.length,
     failCount: failed.length,
     skipCount: skipped.length,
@@ -258,6 +260,10 @@ function printMarkdown(summary) {
   }
   console.log(`Next command: \`${summary.nextOperatorCommand}\``);
   console.log("");
+  console.log("## Launch Apply Inputs");
+  console.log("");
+  printLaunchApplyInputs(summary.launchApply);
+  console.log("");
   if (summary.stale) {
     console.log("> This blocker summary is based on stale live evidence. Run `pnpm launch:blockers -- --refresh` before making a launch decision.");
     console.log("");
@@ -294,6 +300,49 @@ function printMarkdown(summary) {
   console.log("## Helper Commands");
   console.log("");
   for (const command of summary.helperCommands) console.log(`- ${command}`);
+}
+
+function printLaunchApplyInputs(plan) {
+  if (!plan?.ok) {
+    console.log(`- Could not read launch apply dry-run: ${compact(plan?.error || "unknown error")}`);
+    console.log("- Run `pnpm launch:apply` directly.");
+    return;
+  }
+  console.log(`- Mode: \`${plan.mode || "unknown"}\``);
+  console.log(`- Required env: ${(plan.requiredEnv || []).length ? plan.requiredEnv.map((item) => `\`${item}\``).join(", ") : "(none)"}`);
+  console.log("");
+  console.log("| ID | Required | Status | Env |");
+  console.log("|---|---|---|---|");
+  for (const input of plan.operatorInputs || []) {
+    const required = input.requiredMode === "one_of" ? "one_of" : input.required ? "yes" : "no";
+    const env = [...(input.env || []), ...(input.alternatives || []).map((item) => `alt:${item}`)].join("<br>") || "-";
+    console.log(`| ${input.id || ""} | ${required} | ${input.status || ""} | ${env} |`);
+  }
+}
+
+function runLaunchApplyPlan() {
+  const result = spawnSync("node", ["scripts/launch-apply.mjs", "--", "--json"], {
+    cwd,
+    env: process.env,
+    encoding: "utf8",
+    maxBuffer: 40 * 1024 * 1024
+  });
+  if (result.error) return { ok: false, error: result.error.message };
+  if (result.status !== 0) return { ok: false, error: compact(result.stderr || result.stdout || `exit ${result.status}`) };
+  try {
+    const data = JSON.parse(result.stdout);
+    return {
+      ok: data.ok !== false,
+      mode: data.mode,
+      requiredEnv: data.requiredEnv || [],
+      operatorInputs: data.operatorInputs || [],
+      derivedTargets: data.derivedTargets || {},
+      targetSource: data.targetSource || {},
+      tokenState: data.tokenState || {}
+    };
+  } catch (error) {
+    return { ok: false, error: `invalid JSON output: ${error instanceof Error ? error.message : String(error)}` };
+  }
 }
 
 function compact(value, maxLength = 240) {
