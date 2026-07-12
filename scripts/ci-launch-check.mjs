@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { acquireWebStaticFileLock } from "./web-static-file-lock.mjs";
 
 const launchYaml = `app:
   name: "무슨일"
@@ -141,6 +142,7 @@ const brokenYaml = join(tempDir, "broken-user-inputs.yaml");
 const unsafeLiveYaml = join(tempDir, "unsafe-live-user-inputs.yaml");
 const buildInfoJsPath = join(process.cwd(), "apps/web/build-info.js");
 const buildInfoJsonPath = join(process.cwd(), "apps/web/build-info.json");
+const releaseWebStaticFileLock = acquireWebStaticFileLock("ci-launch-check");
 const originalBuildInfoJs = readFileSync(buildInfoJsPath, "utf8");
 const originalBuildInfoJson = readFileSync(buildInfoJsonPath, "utf8");
 
@@ -184,6 +186,7 @@ moderation:
     console.error(error instanceof Error ? error.message : String(error));
   }
   rmSync(tempDir, { recursive: true, force: true });
+  releaseWebStaticFileLock();
 }
 
 process.exit(exitCode);

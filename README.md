@@ -43,7 +43,7 @@ pnpm dev:web
 
 브라우저에서 출력된 `http://localhost:<port>`를 연다. API가 `http://localhost:4000`에서 실행 중이면 데이터를 가져오고, 아니면 내장 샘플을 표시한다.
 운영 정적 빌드는 `pnpm build:web-config`로 단일 YAML의 `api.public_base_url`, `map.map_style_url`만 [apps/web/config.js](/Users/mk/Documents/Musunil/apps/web/config.js)에 공개 주입한다.
-Render Static Site는 `pnpm build:web-static:render`를 사용한다. 이 명령은 `MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com`, `MUSUNIL_WRITE_BUILD_INFO=1`, `pnpm build:web-static`, `pnpm check:web-smoke`를 한 번에 실행한다. Render build command가 이 단일 명령을 쓰면 [apps/web/build-info.json](/Users/mk/Documents/Musunil/apps/web/build-info.json)이 실제 커밋 SHA로 덮어써지고, 로컬 release check는 tracked placeholder를 보존한다.
+Render Static Site는 `pnpm build:web-static:render`를 사용한다. 이 명령은 `MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com`, `MUSUNIL_WRITE_BUILD_INFO=1`, `pnpm build:web-static`, `pnpm check:web-render-build-output`, `pnpm check:web-smoke`를 한 번에 실행한다. Render build command가 이 단일 명령을 쓰면 [apps/web/build-info.json](/Users/mk/Documents/Musunil/apps/web/build-info.json)이 실제 커밋 SHA로 덮어써지고, 로컬 release check의 `pnpm check:web-render-build-command`는 같은 명령을 실행한 뒤 tracked placeholder를 복원한다.
 
 Render Static Site 수동 생성값은 아래 명령으로 `render.yaml`에서 추출한다.
 
@@ -60,6 +60,8 @@ Build Command: corepack enable && pnpm install --frozen-lockfile && pnpm build:w
 Publish Directory: apps/web
 Required headers: render.yaml의 musunil-web headers 블록과 동일하게 적용
 ```
+
+Render Dashboard 값을 바꾸기 전 로컬에서 `pnpm check:web-render-build-command`가 통과해야 한다. 이 검사는 Render 전용 빌드 명령이 실제 build metadata, 운영 API base, 정적 manifest, portable headers를 산출하는지 확인하고 tracked placeholder 파일을 자동 복원한다.
 
 Render 공식 문서 기준, Static Site 응답 헤더는 서버 코드가 아니라 [Render Dashboard의 Static Site Headers 설정](https://render.com/docs/static-site-headers) 또는 [Blueprint의 `headers` 설정](https://render.com/docs/blueprint-spec)으로 적용된다. 수동 Static Site를 쓰는 경우 `pnpm render:web-settings`가 출력하는 Headers 항목을 Dashboard에 그대로 입력한다.
 

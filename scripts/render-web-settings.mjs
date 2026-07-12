@@ -63,6 +63,7 @@ const settings = {
     "Blueprint-managed service: sync render.yaml and confirm the musunil-web headers section is applied by Render."
   ],
   afterSave: [
+    "Local preflight before touching Render: pnpm check:web-render-build-command",
     "Optional API automation: RENDER_API_TOKEN=... pnpm render:apply -- --web-headers --apply",
     "Clear build cache & deploy",
     ': "${MUSUNIL_RENDER_WEB_DNS_TARGET:?set exact Render Web target from Render first}"',

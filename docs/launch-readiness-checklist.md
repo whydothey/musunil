@@ -132,7 +132,7 @@
 - Render Static Site 수동 설정값은 `pnpm render:web-settings`로 출력한 Branch, Root Directory, Build Command, Publish Directory, Headers를 기준으로 맞춘다.
 - 출시 컷오버는 `pnpm launch:cutover-plan`, `pnpm cloudflare:dns`, [cloudflare-dns-records.md](/Users/mk/Documents/Musunil/docs/cloudflare-dns-records.md), [launch-cutover-runbook.md](/Users/mk/Documents/Musunil/docs/launch-cutover-runbook.md)를 기준으로 API DNS, Cloudflare DNS, Render Static headers, 검증 순서를 한 번에 확인한다.
 - production Web은 `build-info.json`의 `commitSha`가 배포 대상 Git SHA와 같아야 한다. `/static-manifest.json`과 live HTML/config/media SHA-256 일치는 최신 정적 파일 확인용 보조 증거지만, 출시 검증에서 build metadata placeholder를 대체하지 않는다.
-- Render Static Site는 repo root에서 `pnpm build:web-static:render`를 실행하고 `apps/web`만 publish한다. 이 단일 명령은 운영 API base 주입, 실제 build-info 작성, 정적 manifest 생성, web smoke를 모두 포함한다.
+- Render Static Site는 repo root에서 `pnpm build:web-static:render`를 실행하고 `apps/web`만 publish한다. 이 단일 명령은 운영 API base 주입, 실제 build-info 작성, 정적 manifest 생성, Render output 검사, web smoke를 모두 포함한다. Dashboard 값을 바꾸기 전 `pnpm check:web-render-build-command`가 같은 계약을 로컬에서 통과해야 한다.
 - Render 배포 뒤에는 `pnpm check:visual-surface:live`로 실제 `musunil.com` 화면의 이슈 스토리, 이슈 카드, 상세, 인증영상 대기/영상, 지도, 제보 첫 행동이 390px, 430px, 768px, 1440px에서 모두 유지되는지 확인한다.
 - 운영 감시 문서까지 갱신하려면 `pnpm service:watch:visual`을 실행한다.
 - `service:watch` 결과에서 `skip`은 검증 생략이지 통과가 아니다. 출시 판단은 모든 check가 `ok`이고 Required Actions가 비어 있을 때만 `S+ Guard`로 본다.

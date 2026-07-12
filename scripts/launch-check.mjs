@@ -47,6 +47,7 @@ const launchOperatorBrief = readFileSync(resolve(cwd, "scripts/launch-operator-b
 const launchMissingInputs = readFileSync(resolve(cwd, "scripts/launch-missing-inputs.mjs"), "utf8");
 const checkLaunchInputs = readFileSync(resolve(cwd, "scripts/check-launch-inputs.mjs"), "utf8");
 const userInputsShapeCheck = readFileSync(resolve(cwd, "scripts/check-user-inputs-shape.mjs"), "utf8");
+const ciLaunchCheck = readFileSync(resolve(cwd, "scripts/ci-launch-check.mjs"), "utf8");
 const launchHandoff = readFileSync(resolve(cwd, "scripts/launch-handoff.mjs"), "utf8");
 const cloudflareDnsTemplate = readFileSync(resolve(cwd, "scripts/cloudflare-dns-template.mjs"), "utf8");
 const cloudflareResponseHeaders = readFileSync(resolve(cwd, "scripts/cloudflare-response-headers-template.mjs"), "utf8");
@@ -1203,6 +1204,7 @@ if (
   !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(renderWebSettings) ||
   !/MUSUNIL_EXPECTED_API_BASE_URL/.test(renderWebSettings) ||
   !/Clear build cache & deploy/.test(renderWebSettings) ||
+  !/check:web-render-build-command/.test(renderWebSettings) ||
   !/check:visual-surface:live/.test(renderWebSettings) ||
   !/service:watch:visual/.test(renderWebSettings) ||
   !/pnpm launch:final-gate/.test(renderWebSettings) ||
@@ -1214,7 +1216,7 @@ if (
   !/cloudflare:headers/.test(renderWebSettings) ||
   !/cloudflare:check/.test(renderWebSettings)
 ) {
-  failures.push("Render Web settings helper must print strict header, live visual, integrated service watch, manual/Blueprint header mode, and clear-cache redeploy instructions");
+  failures.push("Render Web settings helper must print Render build preflight, strict header, live visual, integrated service watch, manual/Blueprint header mode, and clear-cache redeploy instructions");
 }
 if (!/"launch:cutover-plan"/.test(packageJson) || !/launch-cutover-plan\.mjs/.test(packageJson)) {
   failures.push("launch cutover plan helper command is missing");
@@ -1621,9 +1623,13 @@ if (
   !/build:web-static:render/.test(webRenderBuildCommandCheck) ||
   !/preservedFiles/.test(webRenderBuildCommandCheck) ||
   !/writeFileSync/.test(webRenderBuildCommandCheck) ||
-  !/MUSUNIL_EXPECTED_API_BASE_URL/.test(webRenderBuildCommandCheck)
+  !/MUSUNIL_EXPECTED_API_BASE_URL/.test(webRenderBuildCommandCheck) ||
+  !/RENDER_GIT_COMMIT/.test(webRenderBuildCommandCheck) ||
+  !/gitValue\("rev-parse", "HEAD"\)/.test(webRenderBuildCommandCheck) ||
+  !/acquireWebStaticFileLock/.test(webRenderBuildCommandCheck) ||
+  !/acquireWebStaticFileLock/.test(ciLaunchCheck)
 ) {
-  failures.push("release check must execute the exact Render Web build command and restore tracked static placeholders afterward");
+  failures.push("release check must execute the exact Render Web build command under a shared Web static file lock and restore tracked static placeholders afterward");
 }
 if (
   !/generated-at-build/.test(webDeployCheck) ||
@@ -1721,8 +1727,13 @@ if (!/name:\s*musunil-web[\s\S]*?buildCommand:\s*corepack enable && pnpm install
 if (!/Build Command:\s*corepack enable && pnpm install --frozen-lockfile && pnpm build:web-static:render/.test(readme)) {
   failures.push("README Render Static Site build command must match pnpm build:web-static:render");
 }
-if (!/Render Static Site는 `pnpm build:web-static:render`/.test(readme) || !/MUSUNIL_WRITE_BUILD_INFO=1/.test(readme)) {
-  failures.push("README must explain that build:web-static:render writes build-info and preserves local placeholders");
+if (
+  !/Render Static Site는 `pnpm build:web-static:render`/.test(readme) ||
+  !/MUSUNIL_WRITE_BUILD_INFO=1/.test(readme) ||
+  !/check:web-render-build-output/.test(readme) ||
+  !/check:web-render-build-command/.test(readme)
+) {
+  failures.push("README must explain that build:web-static:render writes build-info, checks Render output, and release CI preserves local placeholders");
 }
 if (!/MUSUNIL_STRICT_WEB_HEADERS=1[^\n]*MUSUNIL_EXPECTED_API_BASE_URL=https:\/\/api\.musunil\.com[^\n]*pnpm check:web-deploy/.test(readme)) {
   failures.push("README strict web deploy check must verify the expected API base URL");
