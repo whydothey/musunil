@@ -15,8 +15,10 @@ const blockers = runJson("launch:blockers", [
 ]);
 const cutoverPlan = runJson("launch:cutover-plan", ["scripts/launch-cutover-plan.mjs", "--", "--json"]);
 const finalGatePlan = runJson("launch:final-gate --list", ["scripts/launch-final-gate.mjs", "--", "--list"]);
+const launchReadyPlan = runJson("launch:ready --list", ["scripts/launch-ready.mjs", "--", "--list"]);
+const externalSmokePlan = runJson("launch:external-smoke --list", ["scripts/external-smoke.mjs", "--", "--list"]);
 
-const summary = buildSummary({ blockers, cutoverPlan, finalGatePlan });
+const summary = buildSummary({ blockers, cutoverPlan, finalGatePlan, launchReadyPlan, externalSmokePlan });
 
 if (json) {
   console.log(JSON.stringify(summary, null, 2));
@@ -114,6 +116,13 @@ function buildSummary(results) {
       userInputPriority: cutoverData.userInputPriority || [],
       verificationOrder: cutoverData.verificationOrder || [],
       successCriteria: cutoverData.successCriteria || []
+    },
+    launchReady: {
+      inputPath: results.launchReadyPlan.data?.inputPath || "config/musunil.user-inputs.local.yaml",
+      steps: results.launchReadyPlan.data?.steps || []
+    },
+    externalSmoke: {
+      steps: results.externalSmokePlan.data?.steps || []
     },
     finalGate: {
       env: finalGateData.env || null,
@@ -254,6 +263,17 @@ function printMarkdown(value) {
     console.log("");
   }
 
+  console.log("## Launch Ready Plan");
+  console.log("");
+  console.log(`- Input file: \`${value.launchReady.inputPath}\``);
+  for (const step of value.launchReady.steps) console.log(`- ${formatStep(step)}`);
+  console.log("");
+
+  console.log("## External Smoke Proofs");
+  console.log("");
+  for (const step of value.externalSmoke.steps) console.log(`- ${formatStep(step)}`);
+  console.log("");
+
   console.log("## Final Gate Steps");
   console.log("");
   for (const step of value.finalGate.steps) console.log(`- ${step.id}: \`${step.command}\``);
@@ -268,4 +288,10 @@ function compact(value, maxLength = 240) {
   const text = String(value || "").replace(/\s+/g, " ").trim();
   if (text.length <= maxLength) return text;
   return `${text.slice(0, maxLength - 1)}...`;
+}
+
+function formatStep(step) {
+  const proof = step.proofMarker ? `, proof: \`${step.proofMarker}\`` : "";
+  const forbidden = step.forbiddenMarker ? `, forbidden: \`${step.forbiddenMarker}\`` : "";
+  return `${step.id}: \`${step.command}\`${proof}${forbidden}`;
 }

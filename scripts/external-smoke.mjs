@@ -17,7 +17,15 @@ const steps = [
 ];
 
 if (listOnly) {
-  console.log(JSON.stringify({ checked: "external_smoke_plan", steps: steps.map(({ id, args }) => ({ id, command: [pnpm, ...args].join(" ") })) }, null, 2));
+  console.log(JSON.stringify({
+    checked: "external_smoke_plan",
+    steps: steps.map(({ id, args, requireRealOutput, forbidOutput }) => ({
+      id,
+      command: [pnpm, ...args].join(" "),
+      proofMarker: requireRealOutput,
+      forbiddenMarker: forbidOutput || null
+    }))
+  }, null, 2));
   process.exit(0);
 }
 

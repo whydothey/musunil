@@ -21,8 +21,10 @@ const rehearsal = runJson("cutover rehearsal", [
 const cutoverPlan = runJson("cutover plan", ["scripts/launch-cutover-plan.mjs", "--", "--json"]);
 const webSettings = runJson("Render Web settings", ["scripts/render-web-settings.mjs", "--", "--json"]);
 const apiSettings = runJson("Render API settings", ["scripts/render-api-settings.mjs", "--", "--json"]);
+const launchReadyPlan = runJson("launch ready plan", ["scripts/launch-ready.mjs", "--", "--list"]);
+const externalSmokePlan = runJson("external smoke plan", ["scripts/external-smoke.mjs", "--", "--list"]);
 
-const helperFailures = [rehearsal, cutoverPlan, webSettings, apiSettings].filter((item) => !item.ok);
+const helperFailures = [rehearsal, cutoverPlan, webSettings, apiSettings, launchReadyPlan, externalSmokePlan].filter((item) => !item.ok);
 const brief = buildBrief();
 
 if (json) {
@@ -47,6 +49,8 @@ function buildBrief() {
   const planData = cutoverPlan.data || {};
   const webData = webSettings.data || {};
   const apiData = apiSettings.data || {};
+  const launchReadyData = launchReadyPlan.data || {};
+  const externalSmokeData = externalSmokePlan.data || {};
   const requiredActions = rehearsalData.requiredActions || [];
   const failedChecks = rehearsalData.failedChecks || [];
   const skippedChecks = rehearsalData.skippedChecks || [];
@@ -85,7 +89,14 @@ function buildBrief() {
     cloudflareCacheRules: planData.cloudflareCacheRules || [],
     userInputPriority: planData.userInputPriority || [],
     verificationOrder: planData.verificationOrder || [],
-    successCriteria: planData.successCriteria || []
+    successCriteria: planData.successCriteria || [],
+    launchReady: {
+      inputPath: launchReadyData.inputPath || "config/musunil.user-inputs.local.yaml",
+      steps: launchReadyData.steps || []
+    },
+    externalSmoke: {
+      steps: externalSmokeData.steps || []
+    }
   };
 }
 
@@ -176,6 +187,17 @@ function renderMarkdown(value) {
     "",
     ...listLines(value.userInputPriority),
     "",
+    "## Launch Ready Plan",
+    "",
+    `- Input file: \`${value.launchReady.inputPath}\``,
+    ...stepLines(value.launchReady.steps),
+    "",
+    "## External Smoke Proofs",
+    "",
+    "실제 운영 직전에는 아래 proof marker가 각 명령 출력에 있어야 한다. 이 단계는 mock 성공이나 문서상 준비 상태가 아니라 provider 연결 증거를 요구한다.",
+    "",
+    ...stepLines(value.externalSmoke.steps),
+    "",
     "## Verification",
     "",
     ...listLines(value.verificationOrder),
@@ -205,6 +227,15 @@ function actionLines(actions) {
     `   - Verify: \`${action.verify || "pnpm launch:final-gate"}\``,
     action.reference && action.reference !== "-" ? `   - Reference: ${action.reference}` : ""
   ].filter(Boolean));
+}
+
+function stepLines(steps) {
+  if (!steps.length) return ["- (none)"];
+  return steps.map((step) => {
+    const proof = step.proofMarker ? `, proof: \`${step.proofMarker}\`` : "";
+    const forbidden = step.forbiddenMarker ? `, forbidden: \`${step.forbiddenMarker}\`` : "";
+    return `- ${step.id}: \`${step.command}\`${proof}${forbidden}`;
+  });
 }
 
 function envLines(items) {

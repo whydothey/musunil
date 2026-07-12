@@ -6,8 +6,8 @@
 
 ## Current State
 
-- Generated: 2026-07-12T01:54:44.324Z
-- Git SHA: 5a1e883913b29b16a497f95ee3a0379f9b68eb25
+- Generated: 2026-07-12T02:00:52.940Z
+- Git SHA: 85a28199c2eb5b34246cf1f07d14062c333772b9
 - Refresh command: `pnpm launch:operator-brief -- --refresh`
 - Active goal: active
 - Launch readiness: blocked
@@ -155,6 +155,25 @@ Cache rules:
 - identity.portone_store_id / identity channel key / identity API secret
 - public_data_sources.national_assembly_bill_api_key or public_data_sources.law_go_kr_oc
 - payments.* only after individual business account and PG contract are ready
+
+## Launch Ready Plan
+
+- Input file: `/Users/mk/Documents/Musunil/config/musunil.user-inputs.local.yaml`
+- input_validation: `pnpm launch:verify-inputs -- /Users/mk/Documents/Musunil/config/musunil.user-inputs.local.yaml`
+- config_encode_check: `pnpm config:encode -- --check /Users/mk/Documents/Musunil/config/musunil.user-inputs.local.yaml`
+- render_runtime_config_sample: `pnpm check:render-runtime-config`
+- operational_metadata_diagnostics: `pnpm ops:diagnose -- --require-external-smoke-ready`
+- external_smoke: `pnpm launch:external-smoke`
+- release_check: `pnpm check:release`
+
+## External Smoke Proofs
+
+실제 운영 직전에는 아래 proof marker가 각 명령 출력에 있어야 한다. 이 단계는 mock 성공이나 문서상 준비 상태가 아니라 provider 연결 증거를 요구한다.
+
+- storage: `pnpm storage:smoke`, proof: `storage_put_delete`
+- redaction: `pnpm redaction:smoke`, proof: `redaction_engine_smoke`
+- mobile_integrity: `pnpm mobile:integrity-smoke`, proof: `mobile_integrity_provider_dry_run`
+- laws_dry_run: `pnpm sources:laws`, proof: `laws_dry_run`, forbidden: `laws_disabled`
 
 ## Verification
 

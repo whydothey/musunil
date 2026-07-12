@@ -36,6 +36,7 @@ const launchCutoverPlan = readFileSync(resolve(cwd, "scripts/launch-cutover-plan
 const cloudflareDnsCheck = readFileSync(resolve(cwd, "scripts/cloudflare-dns-check.mjs"), "utf8");
 const launchNextActions = readFileSync(resolve(cwd, "scripts/launch-next-actions.mjs"), "utf8");
 const launchReady = readFileSync(resolve(cwd, "scripts/launch-ready.mjs"), "utf8");
+const externalSmoke = readFileSync(resolve(cwd, "scripts/external-smoke.mjs"), "utf8");
 const launchFinalGate = readFileSync(resolve(cwd, "scripts/launch-final-gate.mjs"), "utf8");
 const launchCutoverRehearsal = readFileSync(resolve(cwd, "scripts/launch-cutover-rehearsal.mjs"), "utf8");
 const launchOperatorBrief = readFileSync(resolve(cwd, "scripts/launch-operator-brief.mjs"), "utf8");
@@ -342,6 +343,8 @@ if (
   !/launch:blockers/.test(launchCutoverRehearsal) ||
   !/launch:cutover-plan/.test(launchCutoverRehearsal) ||
   !/launch:final-gate --list/.test(launchCutoverRehearsal) ||
+  !/launch:ready --list/.test(launchCutoverRehearsal) ||
+  !/launch:external-smoke --list/.test(launchCutoverRehearsal) ||
   !/goalState/.test(launchCutoverRehearsal) ||
   !/launchState/.test(launchCutoverRehearsal) ||
   !/Active goal/.test(launchCutoverRehearsal) ||
@@ -357,6 +360,12 @@ if (
   !/apply_static_headers/.test(launchCutoverRehearsal) ||
   !/cloudflare:headers/.test(launchCutoverRehearsal) ||
   !/restore_live_issue_sync/.test(launchCutoverRehearsal) ||
+  !/Launch Ready Plan/.test(launchCutoverRehearsal) ||
+  !/External Smoke Proofs/.test(launchCutoverRehearsal) ||
+  !/proofMarker/.test(launchCutoverRehearsal) ||
+  !/storage_put_delete/.test(externalSmoke) ||
+  !/redaction_engine_smoke/.test(externalSmoke) ||
+  !/mobile_integrity_provider_dry_run/.test(externalSmoke) ||
   !/--refresh/.test(launchCutoverRehearsal) ||
   !/--strict/.test(launchCutoverRehearsal) ||
   !/pnpm launch:cutover-rehearsal/.test(launchCutoverRunbook) ||
@@ -373,6 +382,8 @@ if (
   !/launch-cutover-plan\.mjs/.test(launchOperatorBrief) ||
   !/render-web-settings\.mjs/.test(launchOperatorBrief) ||
   !/render-api-settings\.mjs/.test(launchOperatorBrief) ||
+  !/launch-ready\.mjs/.test(launchOperatorBrief) ||
+  !/external-smoke\.mjs/.test(launchOperatorBrief) ||
   !/pnpm launch:operator-brief -- --refresh/.test(launchOperatorBrief) ||
   !/goalState/.test(launchOperatorBrief) ||
   !/launchState/.test(launchOperatorBrief) ||
@@ -391,6 +402,12 @@ if (
   !/Render Web Static Site/.test(launchOperatorBriefDoc) ||
   !/Render API Service/.test(launchOperatorBriefDoc) ||
   !/Cloudflare/.test(launchOperatorBriefDoc) ||
+  !/Launch Ready Plan/.test(launchOperatorBriefDoc) ||
+  !/External Smoke Proofs/.test(launchOperatorBriefDoc) ||
+  !/provider 연결 증거/.test(launchOperatorBriefDoc) ||
+  !/proof: `storage_put_delete`/.test(launchOperatorBriefDoc) ||
+  !/proof: `redaction_engine_smoke`/.test(launchOperatorBriefDoc) ||
+  !/proof: `mobile_integrity_provider_dry_run`/.test(launchOperatorBriefDoc) ||
   !/cloudflare:dns/.test(launchOperatorBriefDoc) ||
   !/cloudflare:headers/.test(launchOperatorBriefDoc) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET/.test(launchOperatorBrief) ||
