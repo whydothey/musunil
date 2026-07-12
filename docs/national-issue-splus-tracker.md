@@ -214,3 +214,4 @@ S+ 완료 판정은 아래 증거가 있어야 한다.
 | 2026-07-10 04:36 KST | 릴리즈 게이트 | `pnpm check:release`가 통과했다. public live evidence 기준 강화 뒤 typecheck, test, runtime smoke, web smoke가 유지됨을 확인했다. | 전국 이슈 S+ 회귀 없음 |
 | 2026-07-10 04:38 KST | 전체 S+ 관리 | `pnpm check:splus`가 전국 이슈 트래커의 A+ 판정과 실제 모바일 attestation/storage/redaction smoke 잔여 조건을 함께 검증하게 했다. | 조기 S+ 선언 방지 |
 | 2026-07-10 04:47 KST | 실시간 현장 인증 | `pnpm mobile:integrity-smoke`를 추가해 실제 Play Integrity/App Attest verifier dry-run이 운영 전 통합 smoke의 일부가 되게 했다. | 모바일 attestation dry-run 증거 경로 준비 |
+| 2026-07-12 21:50 KST | 실시간 현장 인증 | LIVE 영상 Proof-of-Presence와 현장 판단용 sensor signal을 스키마 함수에서 분리했다. sensor는 field verification 판정에는 쓰지만 영상 제보 proof로는 통과하지 않으며, schema/API self-check와 launch gate가 이 경계를 감시한다. | 영상 제보 우회 방지 · 실제 provider smoke 전 완료 아님 |

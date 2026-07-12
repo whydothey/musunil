@@ -163,6 +163,7 @@
 - 자료 제보, 현장 정정, 권리침해 신고, 반론은 본인확인 완료 세션 없이는 401이며, 성공해도 `202 queued_for_review`와 `held_private` Claim으로만 저장된다.
 - 비-LIVE 사용자 제출은 Admin review에서 공개 전환되기 전까지 공개 홈/상세/우선순위/지도 집계와 evidence count에 반영되지 않는다.
 - LIVE Proof-of-Presence는 앱 내 촬영 `in_app_camera`와 최소 5초 영상만 통과하고 gallery, screen recording, external link, 너무 짧은 영상은 현장 인증 Claim으로 인정하지 않는다.
+- 현장 판단용 sensor signal은 LIVE 영상 Proof-of-Presence와 별도 경계로 판정한다. sensor는 영상 제보 proof로 인정하지 않는다.
 - LIVE 제보와 현장 판단 Claim의 5분 제한은 클라이언트가 보낸 `uploadedAt`이 아니라 서버가 기록한 업로드/요청 시각으로 판정한다.
 - 현장 판단 Claim은 내부 verifier의 device integrity pass/proof 전에는 `held_private`이며 공개 판단 요약과 이견 수에 반영되지 않는다.
 - `held_private` Claim은 공개 홈/상세/우선순위/지도 집계에 반영되지 않고 admin review queue에만 보인다.

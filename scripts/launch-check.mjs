@@ -113,6 +113,9 @@ for (const phrase of [
   if (userFacingDocs.includes(phrase)) failures.push(`non-protest source/domain wording must not reappear in launch docs: ${phrase}`);
   if (readme.includes(phrase)) failures.push(`non-protest source/domain wording must not reappear in README: ${phrase}`);
 }
+if (!/sensor는 영상 제보 proof로 인정하지 않는다/.test(userFacingDocs)) {
+  failures.push("launch docs must state that field sensor signals are not LIVE video Proof-of-Presence");
+}
 for (const pattern of ["config/*.local.yaml", "config/*.secret.yaml", ".env", ".env.*", "*.pem", "*.key", "docs/cloudflare-dns-records.local.md", "infra/cloudflare/dns-records.local.tfvars"]) {
   if (!gitignore.split("\n").includes(pattern)) failures.push(`.gitignore must block local secret pattern: ${pattern}`);
 }
@@ -220,7 +223,7 @@ if (!/timingSafeEqual/.test(publicResponseFiles)) failures.push("internal key co
 if (!/body_too_large/.test(readFileSync(resolve(cwd, "services/api/src/http-boundary.ts"), "utf8"))) failures.push("HTTP JSON body limit is missing");
 if (!/invalid_json/.test(readFileSync(resolve(cwd, "services/api/src/http-boundary.ts"), "utf8"))) failures.push("HTTP invalid JSON guard is missing");
 if (!/rate_limited/.test(readFileSync(resolve(cwd, "services/api/src/http-boundary.ts"), "utf8"))) failures.push("public write rate limit is missing");
-if (!/evidence\.evidenceType === "live_media" && evidence\.captureMode !== "in_app_camera"/.test(schemasIndex)) {
+if (!/evidence\.evidenceType !== "live_media"/.test(schemasIndex) || !/evidence\.captureMode !== "in_app_camera"/.test(schemasIndex)) {
   failures.push("Proof-of-Presence must only accept in-app camera LIVE media");
 }
 if (!/minDurationMs/.test(schemasIndex) || !/\(evidence\.durationMs \?\? 0\) < policy\.minDurationMs/.test(schemasIndex)) {
@@ -1543,6 +1546,14 @@ if (!derivedCrowdEstimate || !/independentViewpointCount = new Set\(liveEvidence
 }
 if (!derivedCrowdEstimate || !/if \(!liveEvidence\.length\) return undefined/.test(derivedCrowdEstimate[0])) {
   failures.push("derived CrowdEstimate must not generate numeric ranges without publishable live evidence");
+}
+const liveProofOfPresence = schemasIndex.match(/export function hasProofOfPresence[\s\S]*?export function hasFieldPresenceSignal/);
+const fieldPresenceSignal = schemasIndex.match(/export function hasFieldPresenceSignal[\s\S]*?function hasLocalPresenceSignal/);
+if (!liveProofOfPresence || !/evidence\.evidenceType !== "live_media"/.test(liveProofOfPresence[0]) || !/captureMode !== "in_app_camera"/.test(liveProofOfPresence[0]) || /evidenceType !== "sensor"|evidenceType === "sensor"/.test(liveProofOfPresence[0])) {
+  failures.push("LIVE Proof-of-Presence must be live_media in_app_camera only and must not accept sensor evidence");
+}
+if (!fieldPresenceSignal || !/evidence\.evidenceType !== "sensor"/.test(fieldPresenceSignal[0]) || !/hasLocalPresenceSignal/.test(fieldPresenceSignal[0])) {
+  failures.push("field verification presence signal must stay separate from LIVE video Proof-of-Presence");
 }
 for (const removedTarget of ["transit_occurrence", "crowd_density_signal", "route_segment", "route_checkpoint"]) {
   if (apiApp.includes(removedTarget)) failures.push(`removed public target type still present in API app: ${removedTarget}`);

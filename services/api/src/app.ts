@@ -2,6 +2,7 @@ import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, 
 import {
   calculatePriorityScore,
   evidenceStrengths,
+  hasFieldPresenceSignal,
   hasProofOfPresence,
   moderationDecisionFromRightsReports,
   shouldNotify,
@@ -2444,7 +2445,7 @@ function postFieldVerification(store: Store, claimId: string | undefined, reques
     deviceAttestationBucket: deviceAttestationBucket(data),
     proofOfPresenceStatus: "unknown"
   };
-  if (!hasProofOfPresence(evidence, { maxUploadMinutes: 5, minDurationMs: 5000, minGpsAccuracyM: 100, maxDistanceToTargetM: 200 })) {
+  if (!hasFieldPresenceSignal(evidence, { maxUploadMinutes: 5, minDurationMs: 5000, minGpsAccuracyM: 100, maxDistanceToTargetM: 200 })) {
     return json(422, { error: "proof_of_presence_failed" });
   }
 

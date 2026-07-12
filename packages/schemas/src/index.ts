@@ -300,9 +300,18 @@ export type ProofOfPresencePolicy = {
 };
 
 export function hasProofOfPresence(evidence: Evidence, policy: ProofOfPresencePolicy): boolean {
-  if (evidence.evidenceType !== "live_media" && evidence.evidenceType !== "sensor") return false;
-  if (evidence.evidenceType === "live_media" && evidence.captureMode !== "in_app_camera") return false;
-  if (evidence.evidenceType === "live_media" && (evidence.durationMs ?? 0) < policy.minDurationMs) return false;
+  if (evidence.evidenceType !== "live_media") return false;
+  if (evidence.captureMode !== "in_app_camera") return false;
+  if ((evidence.durationMs ?? 0) < policy.minDurationMs) return false;
+  return hasLocalPresenceSignal(evidence, policy);
+}
+
+export function hasFieldPresenceSignal(evidence: Evidence, policy: ProofOfPresencePolicy): boolean {
+  if (evidence.evidenceType !== "sensor") return false;
+  return hasLocalPresenceSignal(evidence, policy);
+}
+
+function hasLocalPresenceSignal(evidence: Evidence, policy: ProofOfPresencePolicy): boolean {
   if (!evidence.capturedAt) return false;
   if (!evidence.foregroundGps) return false;
   if (evidence.deviceIntegrityStatus === "fail") return false;

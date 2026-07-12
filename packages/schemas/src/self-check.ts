@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   calculatePriorityScore,
   canAutoMergeCandidate,
+  hasFieldPresenceSignal,
   hasProofOfPresence,
   moderationDecisionFromRightsReports,
   shouldNotify,
@@ -45,7 +46,9 @@ const liveEvidence: Evidence = {
 const proofPolicy = { maxUploadMinutes: 5, minDurationMs: 5000, minGpsAccuracyM: 100, maxDistanceToTargetM: 200 };
 
 assert.equal(hasProofOfPresence(liveEvidence, proofPolicy), true);
-assert.equal(hasProofOfPresence({ ...liveEvidence, evidenceType: "sensor" }, proofPolicy), true);
+assert.equal(hasProofOfPresence({ ...liveEvidence, evidenceType: "sensor" }, proofPolicy), false);
+assert.equal(hasFieldPresenceSignal({ ...liveEvidence, evidenceType: "sensor" }, proofPolicy), true);
+assert.equal(hasFieldPresenceSignal(liveEvidence, proofPolicy), false);
 assert.equal(hasProofOfPresence({ ...liveEvidence, evidenceType: "material_media" }, proofPolicy), false);
 assert.equal(hasProofOfPresence({ ...liveEvidence, captureMode: "gallery" }, proofPolicy), false);
 assert.equal(hasProofOfPresence({ ...liveEvidence, captureMode: "external_link" }, proofPolicy), false);
