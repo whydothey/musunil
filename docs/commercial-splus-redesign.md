@@ -154,7 +154,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 11 | 모바일 카드 정보량 압축 | 완료 | 390px 첫 카드 높이 170px, 첫 viewport 이슈 카드 2개, `overflowX=false` |
 | 12 | 상업용 캡처 검증 | 진행 중 | 독립 비평 A-를 A+/S 후보로 끌어올릴 추가 캡처와 5/10/20초 이해도 검증 |
 | 13 | 사용자 수락 | 대기 | 사용자가 상업용 앱 수준으로 인정 |
-| 14 | 상위 IA 재검증 | Active | `영상/지도/제보`에 선택 이슈 문맥 라인은 생겼지만 독립 red-team은 B- 판정. 10초 위치·시간·규모 이해도와 사용자 수락 필요 |
+| 14 | 상위 IA 재검증 | 1차 보강 | 홈 story ring과 카드 deck을 `주제 → 입장/쟁점 → 현장 범위`로 읽히게 바꾸고, 상세 개요 첫 행에 `무슨 주제`를 추가. 실제 사용자 수락과 독립 재검증 필요 |
 | 15 | 모바일 릴스 내비 겹침 제거 | 완료 | 390px에서 릴스 오버레이/액션 bottom 759px, 하단 내비 top 772px, 겹침 없음 |
 | 16 | 영상 표면 placeholder감 완화 | 2차 완료 | poster 없는 LIVE Claim은 `reel-pending-card` 검토 카드로 낮추고, 실제 공개 clip+poster가 있을 때만 풀스크린 video player를 사용. 390/430/768/1440px `reelPendingFullCount=0`, 하단 내비 겹침 없음 |
 | 17 | 데스크톱 제보 빈 공간 완화 | 1차 완료 | 1440px 제보 화면에서 context panel visible, panel width 980px, start/action gap 12px, `overflowX=false` |
@@ -441,6 +441,9 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 19:53 mobile pending video card | `docs/visual-evidence/current/mobile_390_reels.png` |
 | 19:53 desktop pending video card | `docs/visual-evidence/current/desktop_1440_reels.png` |
 | 19:53 reels metrics | poster 없는 LIVE Claim은 `reel-card reel-full reel-pending`이 아니라 `reel-pending-card`로 표시된다. 390/430/768/1440px visual smoke에서 `reelPendingFullCount=0`, `navOverlap=false`, forbidden 0. 실제 공개 clip+poster가 있으면 `<video class="reel-video">` 경로를 유지한다. 사용자 수락 전 S+는 아니다. |
+| 20:21 mobile subject hierarchy | `docs/visual-evidence/current/mobile_390_home.png`, `docs/visual-evidence/current/mobile_390_detail.png` |
+| 20:21 desktop subject hierarchy | `docs/visual-evidence/current/desktop_1440_home.png` |
+| 20:21 subject hierarchy metrics | 홈 story ring은 `정보통신망법 개정 쟁점`과 `정보통신망법 개정 반대`처럼 주제와 입장/쟁점을 함께 보여준다. 이슈 카드 deck은 `정보통신망법 개정 · 관련 쟁점 · 2026.07.12 기준`처럼 주제-쟁점-기준일로 읽히고, 상세 개요 첫 행은 `무슨 주제`를 먼저 설명한다. `pnpm check:web-smoke`, `pnpm check:web-flow`, `pnpm check:ux-surface`, `pnpm check:visual-surface:evidence` 통과. 사용자 수락 전 S+는 아니다. |
 
 ## Non-Negotiable Gates
 

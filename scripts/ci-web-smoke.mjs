@@ -148,6 +148,11 @@ async function checkWeb(port) {
   assert(index.includes("issueConfirmedSummaryLine"), "shared issue confirmed summary helper missing");
   assert(index.includes("issueCardMainFactLine"), "issue card main fact summary helper missing");
   assert(index.includes("issueCardEvidenceLine"), "issue card evidence summary helper missing");
+  assert(index.includes("issueSubjectText"), "issue subject hierarchy helper missing");
+  assert(index.includes("issuePositionText"), "issue position hierarchy helper missing");
+  assert(index.includes("issueHierarchyText"), "issue hierarchy deck helper missing");
+  assert(index.includes("issueStoryLabel"), "issue story labels must use subject-first text");
+  assert(index.includes("<b>무슨 주제</b>"), "issue detail must explain subject grouping before location and evidence");
   assert(index.includes("issueAssemblyTimeText"), "issue assembly time summary helper missing");
   assert(index.includes("issueSourceBasisText"), "issue source basis summary helper missing");
   assert(index.includes("isMetaPublicSourceIssue"), "meta public-source issue sort guard missing");

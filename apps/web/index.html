@@ -8602,19 +8602,50 @@
         return "현장 변화 확인";
       }
 
+      function issueSubjectText(issueOrValue) {
+        const text = typeof issueOrValue === "string"
+          ? issueOrValue
+          : `${issueOrValue?.title || ""} ${(issueOrValue?.topicTags || []).join(" ")}`;
+        if (/부정선거|선거\s*검증|선관위/.test(text)) return "부정선거 의혹";
+        if (/정보통신망법|정보통신망\s*이용촉진/.test(text)) return "정보통신망법 개정";
+        if (/대통령\s*탄핵|탄핵/.test(text)) return "대통령 탄핵";
+        if (/선거\s*절차|공직선거법|투표|개표/.test(text)) return "선거 절차";
+        if (/지역별|공개\s*일정|오늘의\s*집회/.test(text)) return "지역별 공개 일정";
+        if (/신고[·\s-]*개최|통계/.test(text)) return "집회 신고·개최 통계";
+        const tag = typeof issueOrValue === "object"
+          ? (issueOrValue?.topicTags || []).find((item) => !/집회|시위|공개자료|공개\s*일정|관련|반대|찬성|요구|행진|통계/.test(item))
+          : "";
+        return tag || publicDisplayTitle(text || "이슈").replace(/[ \t\r\n]+(관련\s*)?집회$/g, "").trim() || "주제 확인 중";
+      }
+
+      function issuePositionText(issue) {
+        const text = `${issue?.title || ""} ${(issue?.topicTags || []).join(" ")}`;
+        if (/반대/.test(text)) return "반대 집회";
+        if (/찬성/.test(text)) return "찬성 집회";
+        if (/요구\s*행진|행진/.test(text)) return "요구·행진";
+        if (/요구/.test(text)) return "요구 집회";
+        if (/의혹|검증/.test(text)) return "의혹·검증";
+        if (/공개\s*일정|오늘의\s*집회/.test(text)) return "공개 일정";
+        if (/통계|신고[·\s-]*개최/.test(text)) return "기록 자료";
+        return "관련 쟁점";
+      }
+
+      function issueHierarchyText(issue) {
+        return `${issueSubjectText(issue)} · ${issuePositionText(issue)}`;
+      }
+
       function issueCardDeckText(issue) {
+        const hierarchy = issueHierarchyText(issue);
         if (issue.lifecycleState === "ARCHIVED" || issue.status === "archived") {
           const regions = issueRegions(issue);
           const place = regions.length ? regions.slice(0, 2).join(" · ") : "지역 확인 중";
-          return `${place} · 기록 보관`;
+          return `${hierarchy} · ${place}`;
         }
         const cards = issueRelatedCards(issue);
-        const regions = issueRegions(issue, cards);
-        const place = regions.length ? regions.slice(0, 2).join(" · ") : "지역 확인 중";
         const date = issueDateText(issue, cards);
         const basis = publicDate(issue?.updatedAt || issue?.lastUpdatedAt);
         const when = /확인 중|예정|진행/.test(date) ? (basis ? `${basis} 기준` : "일정 확인 중") : date;
-        return `${place} · ${when}`;
+        return `${hierarchy} · ${when}`;
       }
 
       function issueCardProofText(issue) {
@@ -8853,11 +8884,21 @@
           button.setAttribute("aria-label", `${issue.title} 상세 보기`);
           button.innerHTML = `
             <span class="story-orb" aria-hidden="true">${renderIssueStoryVisual(issue)}</span>
-            <span class="story-label">${escapeHtml(compactIssueTitle(issue.title))}</span>
+            <span class="story-label">${escapeHtml(issueStoryLabel(issue))}</span>
           `;
           button.addEventListener("click", () => selectIssue(issue, { openDetail: true, scrollToCards: false }));
           root.append(button);
         }
+      }
+
+      function issueStoryLabel(issue) {
+        const subject = issueSubjectText(issue);
+        const position = issuePositionText(issue)
+          .replace(/[ \t\r\n]+집회$/g, "")
+          .replace("관련 쟁점", "쟁점")
+          .replace("기록 자료", "기록");
+        if (!position || position === "공개 일정") return compactIssueTitle(subject);
+        return compactIssueTitle(`${subject} ${position}`);
       }
 
       function compactIssueTitle(value) {
@@ -9573,6 +9614,10 @@
         `).join("");
 	        return `
             <section class="detail-answer-list" aria-label="이슈 핵심">
+              <div class="detail-answer-row">
+                <b>무슨 주제</b>
+                <span>${escapeHtml(`${issueSubjectText(issue)} · ${issuePositionText(issue)}로 묶어 봅니다. 지역과 시간이 다르면 별도 현장입니다.`)}</span>
+              </div>
               <div class="detail-answer-row">
                 <b>어디서</b>
                 <span>${escapeHtml(`${placeText}에서 관련 현장 ${targetCount || "확인 중"}건을 지역·시간별로 분리해 봅니다.`)}</span>
