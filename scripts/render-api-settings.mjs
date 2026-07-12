@@ -38,7 +38,7 @@ const settings = {
     "Attach api.musunil.com in Render Custom Domains and copy the Render target to Cloudflare DNS.",
     "pnpm cloudflare:dns",
     "pnpm cloudflare:check",
-    "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws",
+    "pnpm launch:post-deploy-smoke -- --require-laws",
     "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once",
     "pnpm launch:final-gate"
   ]

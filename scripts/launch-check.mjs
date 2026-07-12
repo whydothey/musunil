@@ -367,7 +367,7 @@ if (
   !/Render generated/.test(renderApiSettings) ||
   !/Cloudflare DNS/.test(renderApiSettings) ||
   !/cloudflare:dns/.test(renderApiSettings) ||
-  !/MUSUNIL_WEB_BASE_URL=https:\/\/musunil\.com MUSUNIL_API_BASE_URL=https:\/\/api\.musunil\.com pnpm launch:post-deploy-smoke/.test(renderApiSettings) ||
+  !/pnpm launch:post-deploy-smoke -- --require-laws/.test(renderApiSettings) ||
   !/pnpm launch:final-gate/.test(renderApiSettings) ||
   !/launch:post-deploy-smoke/.test(renderApiSettings) ||
   !/service:watch/.test(renderApiSettings) ||

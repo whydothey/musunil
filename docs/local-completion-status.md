@@ -182,7 +182,7 @@ Last updated: 2026-07-12 07:59 KST
 - 운영 DB/Redis 연결 상태에서 `/ready` 200 확인.
 - Render Static headers 적용 뒤 `pnpm cloudflare:check:strict` 통과.
 - API DNS와 운영 API 연결 뒤 `pnpm service:watch:visual`에서 `serviceSyncState=live`, `web_visual_surface=ok`, 남은 skipped/fail check 0 확인.
-- 실제 Web/API URL 기준 `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws` 통과.
+- production 기본 Web/API URL 기준 `pnpm launch:post-deploy-smoke -- --require-laws` 통과. staging/preview 검증 때만 URL 환경변수를 override.
 - 실제 Web/API URL 기준 `pnpm launch:final-gate` 통과.
 - Render cron 실제 실행과 실패 알림 확인.
 - FCM/APNs 실제 발송 provider를 켤 경우 별도 provider smoke.
