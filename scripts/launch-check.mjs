@@ -31,6 +31,7 @@ const webConfigWriter = readFileSync(resolve(cwd, "scripts/write-web-config.mjs"
 const webHeaderWriter = readFileSync(resolve(cwd, "scripts/write-web-headers.mjs"), "utf8");
 const webServer = readFileSync(resolve(cwd, "scripts/serve-web.mjs"), "utf8");
 const webDeployCheck = readFileSync(resolve(cwd, "scripts/check-web-deploy.mjs"), "utf8");
+const webRenderBuildOutputCheck = readFileSync(resolve(cwd, "scripts/ci-web-render-build-output.mjs"), "utf8");
 const renderWebSettings = readFileSync(resolve(cwd, "scripts/render-web-settings.mjs"), "utf8");
 const renderApply = readFileSync(resolve(cwd, "scripts/render-apply.mjs"), "utf8");
 const launchCutoverPlan = readFileSync(resolve(cwd, "scripts/launch-cutover-plan.mjs"), "utf8");
@@ -1600,6 +1601,17 @@ if (
 }
 if (!/"check:build-info-clean"/.test(packageJson) || !/ci-build-info-clean\.mjs/.test(packageJson) || !/pnpm check:build-info-clean/.test(JSON.parse(packageJson).scripts["check:release"] ?? "")) {
   failures.push("release check must verify local commands preserve tracked build-info placeholders");
+}
+if (
+  !/"check:web-render-build-output"/.test(packageJson) ||
+  !/ci-web-render-build-output\.mjs/.test(packageJson) ||
+  !/check:web-render-build-output/.test(JSON.parse(packageJson).scripts["build:web-static:render"] ?? "") ||
+  !/MUSUNIL_WRITE_BUILD_INFO=1/.test(JSON.parse(packageJson).scripts["build:web-static:render"] ?? "") ||
+  !/Render build output must not publish tracked build-info placeholders/.test(webRenderBuildOutputCheck) ||
+  !/buildInfoJson\.commitSha !== expectedCommitSha/.test(webRenderBuildOutputCheck) ||
+  !/config\.js apiBaseUrl must be/.test(webRenderBuildOutputCheck)
+) {
+  failures.push("Render Web build command must fail if build-info placeholders or wrong production apiBaseUrl reach the static output");
 }
 if (
   !/generated-at-build/.test(webDeployCheck) ||
