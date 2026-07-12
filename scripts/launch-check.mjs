@@ -32,6 +32,7 @@ const webHeaderWriter = readFileSync(resolve(cwd, "scripts/write-web-headers.mjs
 const webServer = readFileSync(resolve(cwd, "scripts/serve-web.mjs"), "utf8");
 const webDeployCheck = readFileSync(resolve(cwd, "scripts/check-web-deploy.mjs"), "utf8");
 const webRenderBuildOutputCheck = readFileSync(resolve(cwd, "scripts/ci-web-render-build-output.mjs"), "utf8");
+const webRenderBuildCommandCheck = readFileSync(resolve(cwd, "scripts/ci-web-render-build-command.mjs"), "utf8");
 const renderWebSettings = readFileSync(resolve(cwd, "scripts/render-web-settings.mjs"), "utf8");
 const renderApply = readFileSync(resolve(cwd, "scripts/render-apply.mjs"), "utf8");
 const launchCutoverPlan = readFileSync(resolve(cwd, "scripts/launch-cutover-plan.mjs"), "utf8");
@@ -1612,6 +1613,17 @@ if (
   !/config\.js apiBaseUrl must be/.test(webRenderBuildOutputCheck)
 ) {
   failures.push("Render Web build command must fail if build-info placeholders or wrong production apiBaseUrl reach the static output");
+}
+if (
+  !/"check:web-render-build-command"/.test(packageJson) ||
+  !/ci-web-render-build-command\.mjs/.test(packageJson) ||
+  !/pnpm check:web-render-build-command/.test(JSON.parse(packageJson).scripts["check:release"] ?? "") ||
+  !/build:web-static:render/.test(webRenderBuildCommandCheck) ||
+  !/preservedFiles/.test(webRenderBuildCommandCheck) ||
+  !/writeFileSync/.test(webRenderBuildCommandCheck) ||
+  !/MUSUNIL_EXPECTED_API_BASE_URL/.test(webRenderBuildCommandCheck)
+) {
+  failures.push("release check must execute the exact Render Web build command and restore tracked static placeholders afterward");
 }
 if (
   !/generated-at-build/.test(webDeployCheck) ||
