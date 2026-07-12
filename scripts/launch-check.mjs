@@ -65,6 +65,7 @@ const visualSurfaceSmoke = readFileSync(resolve(cwd, "scripts/ci-visual-surface-
 const publicApiRoutes = readFileSync(resolve(cwd, "scripts/public-api-routes.mjs"), "utf8");
 const webStaticManifestScript = readFileSync(resolve(cwd, "scripts/write-web-static-manifest.mjs"), "utf8");
 const postDeploySmokeRunner = readFileSync(resolve(cwd, "scripts/post-deploy-smoke-runner.mjs"), "utf8");
+const githubPostDeployWorkflow = readFileSync(resolve(cwd, "scripts/github-post-deploy-workflow.mjs"), "utf8");
 const publicSourceRefreshPreflight = readFileSync(resolve(cwd, "scripts/public-source-refresh-preflight.mjs"), "utf8");
 const lawSourceIngest = readFileSync(resolve(cwd, "workers/public-source-ingest/src/laws.ts"), "utf8");
 const rootPackageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
@@ -150,19 +151,23 @@ if (
 if (
   !/render_api_dns_target/.test(readme) ||
   !/github_environment/.test(readme) ||
+  !/pnpm launch:post-deploy-workflow/.test(readme) ||
   !/RENDER_API_TOKEN/.test(readme) ||
   !/MUSUNIL_INTERNAL_API_KEY/.test(readme) ||
   !/render_api_dns_target/.test(launchCutoverRunbook) ||
   !/github_environment/.test(launchCutoverRunbook) ||
+  !/pnpm launch:post-deploy-workflow/.test(launchCutoverRunbook) ||
   !/RENDER_API_TOKEN/.test(launchCutoverRunbook) ||
   !/MUSUNIL_INTERNAL_API_KEY/.test(launchCutoverRunbook) ||
   !/render_api_dns_target/.test(userFacingDocs) ||
   !/github_environment/.test(userFacingDocs) ||
+  !/pnpm launch:post-deploy-workflow/.test(userFacingDocs) ||
   !/RENDER_API_TOKEN/.test(userFacingDocs) ||
   !/MUSUNIL_INTERNAL_API_KEY/.test(userFacingDocs) ||
-  !/render_api_dns_target/.test(launchCutoverPlan)
+  !/render_api_dns_target/.test(launchCutoverPlan) ||
+  !/launch:post-deploy-workflow -- --mode=final-gate/.test(launchCutoverPlan)
 ) {
-  failures.push("post-deploy operator docs must tell the operator to pass Render api.musunil.com DNS target through render_api_dns_target, use github_environment for environment secrets, and document optional RENDER_API_TOKEN/MUSUNIL_INTERNAL_API_KEY secrets for remote final-gate strict DNS/source checks");
+  failures.push("post-deploy operator docs must tell the operator to generate the gh workflow command, pass Render api.musunil.com DNS target through render_api_dns_target, use github_environment for environment secrets, and document optional RENDER_API_TOKEN/MUSUNIL_INTERNAL_API_KEY secrets for remote final-gate strict DNS/source checks");
 }
 if (!/fallback\.issueCards = fallback\.issueCards\.filter\(\(issue\) => !isPreviewIssue\(issue\.id\) && !isMetaPublicSourceIssue\(issue\)\)/.test(web)) {
   failures.push("production Web fallback must not expose public source bundles as issue cards");
@@ -348,6 +353,29 @@ if (
   !/service_disruption/.test(postDeploySmoke)
 ) {
   failures.push("post-deploy smoke command must verify deployed Web/API alignment, strict Web headers, readiness, coverage, laws, and admin auth boundary");
+}
+if (
+  !/"launch:post-deploy-workflow"/.test(packageJson) ||
+  !/github-post-deploy-workflow\.mjs/.test(packageJson) ||
+  !/github_post_deploy_workflow_command/.test(githubPostDeployWorkflow) ||
+  !/"gh", "workflow", "run", workflow/.test(githubPostDeployWorkflow) ||
+  !/"post-deploy\.yml"/.test(githubPostDeployWorkflow) ||
+  !/"verification_mode"/.test(githubPostDeployWorkflow) ||
+  !/"web_base_url"/.test(githubPostDeployWorkflow) ||
+  !/"api_base_url"/.test(githubPostDeployWorkflow) ||
+  !/"expected_api_base_url"/.test(githubPostDeployWorkflow) ||
+  !/"expected_commit_sha"/.test(githubPostDeployWorkflow) ||
+  !/"render_api_dns_target"/.test(githubPostDeployWorkflow) ||
+  !/"github_environment"/.test(githubPostDeployWorkflow) ||
+  !/"production"/.test(githubPostDeployWorkflow) ||
+  !/MUSUNIL_RENDER_API_DNS_TARGET/.test(githubPostDeployWorkflow) ||
+  !/MUSUNIL_GITHUB_ENVIRONMENT/.test(githubPostDeployWorkflow) ||
+  !/This command passes only workflow inputs/.test(githubPostDeployWorkflow) ||
+  !/expected_commit_sha must be a 40-character Git SHA/.test(githubPostDeployWorkflow) ||
+  !/pnpm launch:post-deploy-workflow -- --mode=web-deploy/.test(launchNextActions) ||
+  !/pnpm launch:post-deploy-workflow -- --mode=final-gate/.test(launchNextActions)
+) {
+  failures.push("GitHub post-deploy workflow helper must generate a safe gh workflow run command with all post-deploy inputs and no CLI secret values");
 }
 if (!/"render:web-settings"/.test(packageJson) || !/render-web-settings\.mjs/.test(packageJson)) {
   failures.push("Render Web settings helper command is missing");

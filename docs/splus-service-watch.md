@@ -1,6 +1,6 @@
 # S+ Service Watch
 
-Last checked: 2026-07-12T08:50:53.295Z
+Last checked: 2026-07-12T08:59:49.644Z
 
 Status: Active
 
@@ -11,7 +11,7 @@ Status: Active
 | web_build_info | ok | {"commitSha":"generated-at-build","builtAt":"1970-01-01T00:00:00.000Z","mode":"static_manifest_verified_fallback"} |
 | web_header_contract | fail | invalid Web headers: / Cache-Control expected no-store, got public, max-age=0, s-maxage=300; / Content-Security-Policy expected CSP with self, https API/map, public media, PortOne, and blob worker/media allowances, got missing; / Permissions-Policy expected camera=(self), microphone=(), geolocation=(self), got missing; / Referrer-Policy expected no-referrer, got missing; / X-Frame-Options expected DENY, got missing; /config.js Cache-Control expected no-store, got public, max-age=14400, s-maxage=300; /config.js Content-Security-Policy expected CSP with self, https API/map, public media, PortOne, and blob worker/media allowances, got missing; /config.js Permissions-Policy expected camera=(self), microphone=(), geolocation=(self), got missing; /config.js Referrer-Policy expected no-referrer, got missing; /config.js X-Frame-Options expected DENY, got missing; /build-info.json Cache-Control expected no-store, got public, max-age=0, s-maxage=300; /build-info.json Content-Security-Policy expected CSP with self, https API/map, public media, PortOne, and blob worker/media allowances, got missing; /build-info.json Permissions-Policy expected camera=(self), microphone=(), geolocation=(self), got missing; /build-info.json Referrer-Policy expected no-referrer, got missing; /build-info.json X-Frame-Options expected DENY, got missing |
 | web_forbidden_ui_absent | ok | {"bytes":391100,"tokenCount":22} |
-| web_visual_surface | fail | live visual surface is rendering non-live data state: delayed; firstIssues=정보통신망법 개정 관련 집회; sourceBundleFirst=0/4 |
+| web_visual_surface | fail | Visual surface smoke failed: serviceStates=delayed ; homeSummaries=mobile_390_home:issues=3 stories=3 state=delayed banner=공개자료로 먼저 확인 first=정보통신망법 개정 관련 집회 empty=missing emptyTitle=none emptyBody=none emptyActions= ; mobile_430_home:issues=3 stories=3 state=delayed banner=공개자료로 먼저 확인 first=정보통신망법 개정 관련 집회 empty=missing emptyTitle=none emptyBody=none emptyActions= ; tablet_768_home:issues=3 stories=3 state=delayed banner=공개자료로 먼저 확인 first=정보통신망법 개정 관련 집회 empty=missing emptyTitle=none emptyBody=none emptyActions= ; desktop_1440_home:issues=3 stories=3 state=delayed banner=공개자료로 먼저 확인 first=정보통신망법 개정 관련 집회 empty=missing emptyTitle=none emptyBody=none emptyActions= ; failures=mobile_390_reels: reels evidence action missing:  \| mobile_390_reels: reels location action missing: |
 | api_endpoint_preflight | fail | getaddrinfo ENOTFOUND api.musunil.com |
 | api_health_ready | skip | skipped: API endpoint preflight failed |
 | public_redacted_media | skip | skipped: API endpoint preflight failed |

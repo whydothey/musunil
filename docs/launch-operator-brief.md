@@ -6,14 +6,14 @@
 
 ## Current State
 
-- Generated: 2026-07-12T08:50:53.549Z
+- Generated: 2026-07-12T08:59:49.893Z
 - Expected deploy SHA: run `git rev-parse HEAD` immediately before Render deploy and `pnpm launch:final-gate`.
 - Refresh command: `pnpm launch:handoff`
 - Active goal: active
 - Launch readiness: blocked
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T08:50:53.295Z (fresh)
+- Service watch: 2026-07-12T08:59:49.644Z (fresh)
 - Checks: 4 ok, 3 fail, 13 skip, 4 actions
 - Before next command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Next command: `pnpm launch:apply`
@@ -259,7 +259,9 @@ Cache rules:
 - pnpm cloudflare:check:strict
 - MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy
 - MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy
+- pnpm launch:post-deploy-workflow -- --mode=web-deploy
 - GitHub Actions post-deploy workflow_dispatch: run web-deploy mode after Render Web deploy.
+- pnpm launch:post-deploy-workflow -- --mode=final-gate
 - GitHub Actions post-deploy workflow_dispatch: run final-gate mode after Web/API/DNS/Header connection. Keep github_environment as production unless secrets are repository-level only. The workflow can read optional RENDER_API_TOKEN or MUSUNIL_RENDER_API_TOKEN and MUSUNIL_INTERNAL_API_KEY secrets; fill render_api_dns_target with the Render api.musunil.com DNS target when no Render API token is available to the workflow.
 - pnpm check:visual-surface:live
 - pnpm sources:refresh-preflight

@@ -48,6 +48,7 @@
     "launch:apply": "node scripts/launch-apply.mjs",
     "launch:apply:plan": "node scripts/launch-apply.mjs -- --json",
     "launch:post-deploy-smoke": "node scripts/post-deploy-smoke-runner.mjs",
+    "launch:post-deploy-workflow": "node scripts/github-post-deploy-workflow.mjs",
     "launch:final-gate": "node scripts/launch-final-gate.mjs",
     "service:watch": "node scripts/service-watch.mjs",
     "service:watch:visual": "node scripts/service-watch.mjs -- --once --with-visual",
