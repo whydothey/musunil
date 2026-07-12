@@ -6,7 +6,7 @@
 
 ## Current State
 
-- Generated: 2026-07-12T10:31:57.299Z
+- Generated: 2026-07-12T11:05:56.678Z
 - Expected deploy SHA: run `git rev-parse HEAD` immediately before Render deploy and `pnpm launch:final-gate`.
 - Refresh command: `pnpm launch:handoff`
 - Active goal: active
@@ -14,7 +14,7 @@
 - Stage: connect_api_endpoint
 - Release blocked: yes
 - Push CI: run `pnpm ci:status` after every push. `queued` means GitHub has accepted the workflow but has not assigned a runner yet; use the printed watch command for the final result.
-- Service watch: 2026-07-12T10:16:52.091Z (fresh)
+- Service watch: 2026-07-12T11:05:56.425Z (fresh)
 - Checks: 4 ok, 3 fail, 13 skip, 4 actions
 - Before apply command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Immediate safe command: `pnpm launch:apply`
@@ -51,6 +51,7 @@ Split apply paths from current blockers:
   - Requires: `CLOUDFLARE_API_TOKEN`, `Cloudflare proxied Web record for musunil.com/www`
   - Inputs ready: no
   - Missing: `CLOUDFLARE_API_TOKEN`
+  - Web proxy observed: yes, status=200, server=cloudflare, cfRayPresent=true, Cloudflare edge is observable for Web responses; response header transforms can affect this host.
   - Dry-run: `pnpm launch:apply -- --cloudflare-headers-only`
   - Apply: `pnpm launch:apply -- --apply --cloudflare-headers-only`
   - Verify: `pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy`

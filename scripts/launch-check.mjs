@@ -564,6 +564,8 @@ if (
   !/splitApplyPaths/.test(launchNextActions) ||
   !/Split Apply Paths/.test(launchNextActions) ||
   !/web_headers_only/.test(launchNextActions) ||
+  !/webProxyModeForPlan/.test(launchNextActions) ||
+  !/Web proxy observed/.test(launchNextActions) ||
   !/api_dns_and_render_domain/.test(launchNextActions) ||
   !/Launch readiness/.test(launchNextActions) ||
   !/Current stage/.test(launchNextActions) ||
@@ -729,6 +731,7 @@ if (
   !/launchInputLines/.test(launchOperatorBrief) ||
   !/splitApplyPathLines/.test(launchOperatorBrief) ||
   !/Split apply paths from current blockers/.test(launchOperatorBrief) ||
+  !/Web proxy observed/.test(launchOperatorBrief) ||
   !/Inputs ready/.test(launchOperatorBrief) ||
   !/missingInputs/.test(launchOperatorBrief) ||
   !/render:apply/.test(launchOperatorBrief) ||
@@ -770,6 +773,7 @@ if (
   !/Cloudflare user API token with musunil\.com zone DNS edit/.test(launchOperatorBriefDoc) ||
   !/Split apply paths from current blockers/.test(launchOperatorBriefDoc) ||
   !/web_headers_only/.test(launchOperatorBriefDoc) ||
+  !/Web proxy observed/.test(launchOperatorBriefDoc) ||
   !/Inputs ready/.test(launchOperatorBriefDoc) ||
   !/Missing:/.test(launchOperatorBriefDoc) ||
   !/RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET/.test(launchOperatorBriefDoc) ||

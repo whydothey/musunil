@@ -14,9 +14,9 @@ const webTarget = renderTargetInput("MUSUNIL_RENDER_WEB_DNS_TARGET");
 const apiTarget = renderTargetInput("MUSUNIL_RENDER_API_DNS_TARGET");
 const webProxied = /^(1|true|yes)$/i.test(process.env.MUSUNIL_CLOUDFLARE_WEB_PROXIED || "");
 const webBaseUrl = process.env.MUSUNIL_WEB_BASE_URL || "https://musunil.com";
-const webProxyMode = headersRequested && apply
+const webProxyMode = headersRequested
   ? await inspectWebProxyMode(webBaseUrl)
-  : { checked: false, proxyObserved: false, note: "checked only for --apply --headers" };
+  : { checked: false, proxyObserved: false, note: "checked only when response headers are requested" };
 const dnsRecords = buildDnsRecords();
 const responseHeaderRule = buildResponseHeaderRule();
 

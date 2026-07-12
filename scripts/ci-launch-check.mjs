@@ -168,6 +168,7 @@ moderation:
   run(["launch:check"], launchEnv);
   assertLaunchApplyBlocksMissingInputs();
   assertLaunchApplyBlocksBadRenderToken();
+  assertLaunchApplyHeaderOnlyChecksProxyInDryRun();
   assertLaunchApplyManualTargetSkipsRenderWrites();
   assertLaunchBlockersManualTargetGuidance();
 } catch (error) {
@@ -198,6 +199,22 @@ function run(args, env) {
 function runExpectFailure(args, env) {
   const result = spawnSync(pnpm, args, { env, stdio: "pipe" });
   if (result.status === 0) throw new Error(`${pnpm} ${args.join(" ")} unexpectedly passed`);
+}
+
+function runNodeJson(args, env) {
+  const result = spawnSync(process.execPath, args, {
+    env,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  if (result.status !== 0) {
+    throw new Error(`node ${args.join(" ")} failed with ${result.status}: ${result.stderr || result.stdout}`);
+  }
+  try {
+    return JSON.parse(result.stdout);
+  } catch (error) {
+    throw new Error(`node ${args.join(" ")} did not emit parseable JSON: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 function runNodeJsonExpectFailure(args, env) {
@@ -254,6 +271,24 @@ function assertLaunchApplyBlocksBadRenderToken() {
   }
   if (result.renderTargetDerivation?.failed !== true || !/401|Unauthorized/.test(result.renderTargetDerivation?.apiError || "")) {
     throw new Error(`launch:apply --apply must expose Render target derivation failure, got ${JSON.stringify(result.renderTargetDerivation)}`);
+  }
+}
+
+function assertLaunchApplyHeaderOnlyChecksProxyInDryRun() {
+  const result = runNodeJson(["scripts/launch-apply.mjs", "--", "--cloudflare-headers-only", "--json"], launchApplyPreflightEnv());
+  const step = (result.preflight?.steps || []).find((item) => item.id === "cloudflare_header_apply");
+  const proxy = step?.data?.webProxyMode;
+  if (result.renderSkippedReason !== "cloudflare_headers_only" || result.requested?.render !== false) {
+    throw new Error(`header-only launch apply must skip Render in dry-run: ${JSON.stringify({ renderSkippedReason: result.renderSkippedReason, requested: result.requested })}`);
+  }
+  if (!proxy || proxy.checked !== true) {
+    throw new Error(`header-only launch apply dry-run must inspect live Web proxy mode, got ${JSON.stringify(proxy)}`);
+  }
+  if (!String(proxy.note || "").includes("response header transforms") && !String(proxy.note || "").includes("Response Header Transform")) {
+    throw new Error(`header-only launch apply proxy inspection note must explain header transform applicability, got ${JSON.stringify(proxy)}`);
+  }
+  if (!(result.requiredEnv || []).includes("CLOUDFLARE_API_TOKEN")) {
+    throw new Error(`header-only launch apply must still require CLOUDFLARE_API_TOKEN, got ${(result.requiredEnv || []).join(", ")}`);
   }
 }
 

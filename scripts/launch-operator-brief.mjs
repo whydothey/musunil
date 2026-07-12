@@ -323,11 +323,23 @@ function splitApplyPathLines(paths) {
       `  - Requires: ${(path.requires || []).map((item) => `\`${item}\``).join(", ") || "(none)"}`,
       `  - Inputs ready: ${path.inputsReady ? "yes" : "no"}`,
       ...(!path.inputsReady && missing.length ? [`  - Missing: ${missing.map((item) => `\`${item}\``).join(", ")}`] : []),
+      ...(path.webProxyMode ? [`  - Web proxy observed: ${webProxyModeLabel(path.webProxyMode)}`] : []),
       `  - Dry-run: \`${path.dryRun}\``,
       `  - Apply: \`${path.apply}\``,
       `  - Verify: \`${path.verify}\``
     ];
   });
+}
+
+function webProxyModeLabel(mode) {
+  const observed = mode.proxyObserved ? "yes" : "no";
+  const parts = [`${observed}`];
+  if (mode.checked === false) parts.push("not checked");
+  if (mode.status) parts.push(`status=${mode.status}`);
+  if (mode.server) parts.push(`server=${mode.server}`);
+  if (typeof mode.cfRayPresent === "boolean") parts.push(`cfRayPresent=${mode.cfRayPresent}`);
+  if (mode.note) parts.push(mode.note);
+  return parts.join(", ");
 }
 
 function stepLines(steps) {

@@ -221,6 +221,7 @@ function nextApplyCommandForStage(stage, actions, launchApplyPlan, headerApplyPl
 function splitApplyPaths({ failed, actions, launchApplyPlan, headerApplyPlan }) {
   const actionIds = new Set(actions.map((action) => action.id));
   const failedIds = new Set(failed.map((check) => check.id));
+  const headerWebProxyMode = webProxyModeForPlan(headerApplyPlan);
   const paths = [];
   if (actionIds.has("apply_static_headers") || failedIds.has("web_header_contract")) {
     paths.push({
@@ -232,6 +233,7 @@ function splitApplyPaths({ failed, actions, launchApplyPlan, headerApplyPlan }) 
       dryRun: "pnpm launch:apply -- --cloudflare-headers-only",
       apply: "pnpm launch:apply -- --apply --cloudflare-headers-only",
       verify: "pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy",
+      webProxyMode: headerWebProxyMode,
       note: "Render target/API DNS 없이 Web 보안 헤더 blocker만 먼저 줄인다. Cloudflare Response Header Transform Rule은 proxied Web record에서만 실제 응답에 적용된다. 최종 출시는 API DNS와 live API sync가 별도로 통과해야 한다."
     });
   }
@@ -252,6 +254,12 @@ function splitApplyPaths({ failed, actions, launchApplyPlan, headerApplyPlan }) 
     });
   }
   return paths;
+}
+
+function webProxyModeForPlan(plan) {
+  if (plan?.webProxyMode) return plan.webProxyMode;
+  const steps = [...(plan?.preflight?.steps || []), ...(plan?.steps || [])];
+  return steps.find((step) => step?.data?.webProxyMode)?.data?.webProxyMode || null;
 }
 
 function manualApiTargetPath(plan) {
@@ -398,6 +406,7 @@ function printMarkdown(summary) {
       console.log(`  - Requires: ${path.requires.map((item) => `\`${item}\``).join(", ")}`);
       console.log(`  - Inputs ready: ${path.inputsReady ? "yes" : "no"}`);
       if (!path.inputsReady && path.missingInputs?.length) console.log(`  - Missing: ${path.missingInputs.map((item) => `\`${item}\``).join(", ")}`);
+      if (path.webProxyMode) console.log(`  - Web proxy observed: ${webProxyModeLabel(path.webProxyMode)}`);
       console.log(`  - Dry-run: \`${path.dryRun}\``);
       console.log(`  - Apply: \`${path.apply}\``);
       console.log(`  - Verify: \`${path.verify}\``);
@@ -442,6 +451,17 @@ function printMarkdown(summary) {
   for (const command of summary.helperCommands) console.log(`- ${command}`);
 }
 
+function webProxyModeLabel(mode) {
+  const observed = mode.proxyObserved ? "yes" : "no";
+  const parts = [`${observed}`];
+  if (mode.checked === false) parts.push("not checked");
+  if (mode.status) parts.push(`status=${mode.status}`);
+  if (mode.server) parts.push(`server=${mode.server}`);
+  if (typeof mode.cfRayPresent === "boolean") parts.push(`cfRayPresent=${mode.cfRayPresent}`);
+  if (mode.note) parts.push(mode.note);
+  return parts.join(", ");
+}
+
 function printLaunchApplyInputs(plan) {
   if (!plan?.ok) {
     console.log(`- Could not read launch apply dry-run: ${compact(plan?.error || "unknown error")}`);
@@ -480,7 +500,8 @@ function runLaunchApplyPlan(...extraArgs) {
       derivedTargets: data.derivedTargets || {},
       targetSource: data.targetSource || {},
       tokenState: data.tokenState || {},
-      renderSkippedReason: data.renderSkippedReason || ""
+      renderSkippedReason: data.renderSkippedReason || "",
+      webProxyMode: webProxyModeForPlan(data)
     };
   } catch (error) {
     return { ok: false, error: `invalid JSON output: ${error instanceof Error ? error.message : String(error)}` };
