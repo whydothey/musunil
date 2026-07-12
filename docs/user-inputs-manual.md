@@ -175,6 +175,8 @@ redaction:
 pnpm redaction:smoke
 ```
 
+이 smoke는 샘플 얼굴/차량번호 토큰이 출력에 그대로 남으면 실패한다. 단순히 `{input}`을 `{output}`으로 복사하는 명령은 운영 준비 증거가 아니다.
+
 ## 7. 모바일 현장 인증
 
 운영에서는 Android Play Integrity 또는 iOS App Attest 중 하나가 필수다.

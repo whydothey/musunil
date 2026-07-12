@@ -22,13 +22,16 @@ if (!command) {
 const dir = mkdtempSync(join(tmpdir(), "musunil-redaction-"));
 const input = join(dir, "input.txt");
 const output = join(dir, "output.txt");
-writeFileSync(input, "musunil redaction smoke\nsample face\nsample plate 12가3456\n");
+const sensitiveSamples = ["sample face", "12가3456"];
+writeFileSync(input, `musunil redaction smoke\n${sensitiveSamples[0]}\nsample plate ${sensitiveSamples[1]}\n`);
 
 try {
   await run(command.replaceAll("{input}", shellQuote(input)).replaceAll("{output}", shellQuote(output)));
   const size = statSync(output).size;
   if (size <= 0) throw new Error("redaction smoke output is empty.");
-  const redactionProofHash = `sha256-${createHash("sha256").update(readFileSync(output)).digest("base64url")}`;
+  const outputBytes = readFileSync(output);
+  assertSampleRedacted(outputBytes);
+  const redactionProofHash = `sha256-${createHash("sha256").update(outputBytes).digest("base64url")}`;
   console.log(JSON.stringify({ checked: "redaction_engine_smoke", source, path, outputBytes: size, redactionProofHash }, null, 2));
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
@@ -56,6 +59,15 @@ function run(commandLine) {
       reject(error);
     });
   });
+}
+
+function assertSampleRedacted(outputBytes) {
+  const outputText = outputBytes.toString("utf8");
+  for (const sample of sensitiveSamples) {
+    if (outputText.includes(sample)) {
+      throw new Error("redaction smoke output still contains an unredacted sensitive sample token.");
+    }
+  }
 }
 
 function shellQuote(value) {

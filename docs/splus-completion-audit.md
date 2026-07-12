@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-12 18:25 KST
+Last updated: 2026-07-12 18:33 KST
 
 Status: 완료 아님.
 
@@ -185,6 +185,7 @@ GET /ready -> 200
 - 2026-07-12 18:09 `launch:blockers`, `launch:cutover-rehearsal`, `launch:operator-brief`, `launch:missing-inputs`가 필수 입력 누락 상태에서 즉시 실행 가능한 dry-run과 입력 후 실제 apply 명령을 분리해 표시한다. `pnpm launch:apply`는 현재 안전한 dry-run이고 `pnpm launch:apply -- --apply`는 Render/Cloudflare 입력 뒤 실행할 명령으로만 안내되지만, 실제 DNS/Header/API live sync와 final gate 전 운영 준비 완료가 아니다.
 - 2026-07-12 18:17 `storage:smoke`가 `MUSUNIL_STORAGE_SMOKE_KEY` override를 `private/live/smoke/` 아래로 제한한다. 이 guard는 기존 원본 media key 오삭제를 막지만, 실제 storage credential로 `pnpm storage:smoke`가 통과하기 전 운영 storage 준비 완료가 아니다.
 - 2026-07-12 18:25 storage smoke key 제한은 `assertStorageSmokeKey`와 API self-check에서 실행 검증된다. 정상 smoke key는 통과하고 기존 원본 media key 후보, traversal, double-slash key는 실패해야 한다. 이 회귀 테스트는 운영 원본 오삭제 위험을 낮추지만, 실제 storage credential로 `pnpm storage:smoke`가 통과하기 전 운영 storage 준비 완료가 아니다.
+- 2026-07-12 18:33 `redaction:smoke`는 이제 샘플 얼굴/차량번호 토큰이 출력에 남으면 실패한다. `check:redaction-smoke-safety`가 실제 redacted fixture와 copy fixture를 모두 실행해 단순 복사 command가 비식별 엔진 증거로 인정되지 않게 하지만, 실제 운영 redaction provider로 `pnpm redaction:smoke`가 통과하기 전 운영 비식별 준비 완료가 아니다.
 
 ## Next Active Goal Order
 

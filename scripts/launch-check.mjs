@@ -1266,10 +1266,30 @@ if (
   !/redaction\.engine_smoke_command/.test(redactionSmoke) ||
   !/shellQuote/.test(redactionSmoke) ||
   !/stdio:\s*\["ignore",\s*"pipe",\s*"pipe"\]/.test(redactionSmoke) ||
+  !/assertSampleRedacted/.test(redactionSmoke) ||
+  !/unredacted sensitive sample token/.test(redactionSmoke) ||
+  !/12가3456/.test(redactionSmoke) ||
+  !/sample face/.test(redactionSmoke) ||
   !/"redaction:smoke"/.test(packageJson) ||
+  !/"check:redaction-smoke-safety"/.test(packageJson) ||
+  !/check:redaction-smoke-safety/.test(JSON.parse(packageJson).scripts["check:release"] ?? "") ||
+  !/ci-redaction-smoke-safety\.mjs/.test(packageJson) ||
   !/redaction\.engine_smoke_command/.test(readFileSync(resolve(cwd, "packages/config/src/index.ts"), "utf8"))
 ) {
   failures.push("redaction engine launch smoke command is missing");
+}
+const redactionSmokeSafety = readFileSync(resolve(cwd, "scripts/ci-redaction-smoke-safety.mjs"), "utf8");
+const redactionSmokeFixture = readFileSync(resolve(cwd, "scripts/redaction-smoke-fixture.mjs"), "utf8");
+if (
+  !/redaction_smoke_safety/.test(redactionSmokeSafety) ||
+  !/copy fixture unexpectedly passed/.test(redactionSmokeSafety) ||
+  !/unredacted sensitive sample token/.test(redactionSmokeSafety) ||
+  !/sample face/.test(redactionSmokeSafety) ||
+  !/12가3456/.test(redactionSmokeSafety) ||
+  !/replaceAll\("sample face"/.test(redactionSmokeFixture) ||
+  !/replaceAll\("12가3456"/.test(redactionSmokeFixture)
+) {
+  failures.push("redaction smoke safety check must execute-test redacted and unredacted sample outputs without leaking sensitive samples");
 }
 if (/process\.(stdout|stderr)\.write\(data\)/.test(mobileIntegritySmoke)) {
   failures.push("mobile integrity smoke must not stream provider output into launch logs");
