@@ -43,6 +43,8 @@ const launchFinalGate = readFileSync(resolve(cwd, "scripts/launch-final-gate.mjs
 const launchCutoverRehearsal = readFileSync(resolve(cwd, "scripts/launch-cutover-rehearsal.mjs"), "utf8");
 const launchOperatorBrief = readFileSync(resolve(cwd, "scripts/launch-operator-brief.mjs"), "utf8");
 const launchMissingInputs = readFileSync(resolve(cwd, "scripts/launch-missing-inputs.mjs"), "utf8");
+const checkLaunchInputs = readFileSync(resolve(cwd, "scripts/check-launch-inputs.mjs"), "utf8");
+const userInputsShapeCheck = readFileSync(resolve(cwd, "scripts/check-user-inputs-shape.mjs"), "utf8");
 const launchHandoff = readFileSync(resolve(cwd, "scripts/launch-handoff.mjs"), "utf8");
 const cloudflareDnsTemplate = readFileSync(resolve(cwd, "scripts/cloudflare-dns-template.mjs"), "utf8");
 const cloudflareResponseHeaders = readFileSync(resolve(cwd, "scripts/cloudflare-response-headers-template.mjs"), "utf8");
@@ -232,6 +234,17 @@ const adminReview = readFileSync(resolve(cwd, "scripts/admin-review.mjs"), "utf8
 const renderApiSettings = readFileSync(resolve(cwd, "scripts/render-api-settings.mjs"), "utf8");
 const postgresStore = readFileSync(resolve(cwd, "services/api/src/postgres-store.ts"), "utf8");
 const packageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
+if (
+  !/"check:user-inputs-shape"/.test(packageJson) ||
+  !/check-user-inputs-shape\.mjs/.test(packageJson) ||
+  !/checked:\s*"user_inputs_shape"/.test(userInputsShapeCheck) ||
+  !/missingPaths/.test(userInputsShapeCheck) ||
+  !/templatePathCount/.test(userInputsShapeCheck) ||
+  !/leafPaths/.test(userInputsShapeCheck) ||
+  !/scripts\/check-user-inputs-shape\.mjs/.test(checkLaunchInputs)
+) {
+  failures.push("launch input verification must check local YAML shape against the template before value validation");
+}
 if (!/pingPostgres/.test(apiServer)) failures.push("/ready postgres ping is missing");
 if (!/tcpUrlReadyCheck\("redis"/.test(apiServer)) failures.push("/ready redis reachability check is missing");
 if (

@@ -26,6 +26,7 @@ const renderManagedEnv = {
 
 let exitCode = 0;
 try {
+  run(["exec", "node", "scripts/check-user-inputs-shape.mjs", inputPath], renderManagedEnv);
   run(["build:web-config"], renderManagedEnv);
   run(["launch:check"], renderManagedEnv);
 } catch (error) {

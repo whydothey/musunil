@@ -20,6 +20,8 @@ cp config/musunil.user-inputs.template.yaml config/musunil.user-inputs.local.yam
 pnpm launch:verify-inputs
 ```
 
+이 명령은 먼저 `config/musunil.user-inputs.template.yaml`과 로컬 입력 파일의 필드 구조를 비교한다. 오래된 로컬 파일에 새 섹션이 빠져 있으면 실제 값 검증 전에 누락 경로를 출력한다.
+
 Render 기본 배포에서는 `DATABASE_URL`, `REDIS_URL`, `MUSUNIL_USER_TOKEN_SECRET`, `MUSUNIL_ENCRYPTION_KEY`, `MUSUNIL_INTERNAL_API_KEY`를 Render가 주입한다. 사용자는 로컬 YAML의 `CHANGE_ME_*` 값부터 채운다.
 
 국내 운영과 후원 수익화 구조는 [domestic-operation-and-monetization.md](/Users/mk/Documents/Musunil/docs/domestic-operation-and-monetization.md)에 따로 정리한다.

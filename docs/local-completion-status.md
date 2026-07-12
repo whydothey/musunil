@@ -16,6 +16,7 @@ Last updated: 2026-07-12 19:25 KST
   - `config/musunil.user-inputs.local.yaml`
   - 템플릿은 명시적으로 허용한 self-check에서만 사용
   - 템플릿 기본값은 production-safe로 preview fixture 비활성화
+  - `pnpm launch:verify-inputs`가 값 검증 전에 템플릿 대비 로컬 YAML 구조 drift를 검사
 - `packages/schemas`
   - Claim, Evidence
   - Issue, Occurrence

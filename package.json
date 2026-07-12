@@ -77,6 +77,7 @@
     "launch:blockers:strict": "node scripts/launch-next-actions.mjs -- --fail-on-blockers",
     "launch:blockers:refresh-strict": "node scripts/launch-next-actions.mjs -- --refresh --fail-on-blockers",
     "launch:inputs": "node scripts/create-launch-inputs.mjs",
+    "check:user-inputs-shape": "node scripts/check-user-inputs-shape.mjs",
     "launch:verify-inputs": "node scripts/check-launch-inputs.mjs",
     "sources:coverage": "pnpm --filter @musunil/public-source-ingest dev -- --coverage",
     "sources:diagnose": "pnpm --filter @musunil/public-source-ingest dev -- --diagnose",

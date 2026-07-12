@@ -37,7 +37,7 @@
 - `pnpm render:api-settings` 출력이 `render.yaml`의 `musunil-api` 설정, env source, `api.musunil.com` 검증 명령과 일치.
 - `pnpm launch:inputs`로 생성한 운영 YAML은 `CHANGE_ME_*` 값만 남기고 Render generated secret 필드는 비워 둔다.
 - 기본 템플릿은 production-safe로 preview fixture가 꺼져 있고 운영 입력값만 `CHANGE_ME_*`로 남긴다.
-- `pnpm launch:verify-inputs`는 Render 관리형 DB/Redis를 모의 주입해 사용자 YAML만 검증한다.
+- `pnpm launch:verify-inputs`는 템플릿 대비 로컬 YAML 구조 drift를 먼저 잡고, Render 관리형 DB/Redis를 모의 주입해 사용자 YAML만 검증한다.
 - `pnpm check:render-runtime-config`는 YAML 보안 키가 비어 있어도 Render generated env로 API `/ready` 보안 검증이 통과하는지 sample config로 검사한다.
 - `pnpm config:encode -- --check config/musunil.user-inputs.local.yaml` 통과.
 - `pnpm smoke:api -- --require-ready` 통과.

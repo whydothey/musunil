@@ -162,7 +162,7 @@ Render 배포가 끝난 뒤 로컬 셸 없이 검증하려면 GitHub Actions `po
 - GitHub Actions `pnpm check:release` CI와 `pnpm ci:status` 원격 상태 확인 helper.
 - `pnpm launch:inputs` 운영 YAML 초안 생성: Render generated secret은 비워 두고 실제 운영 값만 `CHANGE_ME_*`로 남김.
 - 기본 템플릿은 production-safe 값으로 preview fixture를 끄고 `CHANGE_ME_*` 입력값만 드러냄.
-- `pnpm launch:verify-inputs` 로컬 검증: Render 관리형 DB/Redis를 모의 주입해 사용자 YAML만 검증.
+- `pnpm launch:verify-inputs` 로컬 검증: 템플릿 대비 로컬 YAML 구조 drift를 먼저 잡고, Render 관리형 DB/Redis를 모의 주입해 사용자 YAML만 검증.
 - `pnpm config:encode` 운영 YAML 검증 후 `MUSUNIL_USER_INPUTS_B64` 생성. placeholder가 남아 있으면 실패.
 
 ## 외부 연결 전까지 보류
