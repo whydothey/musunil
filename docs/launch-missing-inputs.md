@@ -4,7 +4,7 @@
 
 ## Current Gate
 
-- Generated: 2026-07-12T06:53:32.116Z
+- Generated: 2026-07-12T07:00:50.547Z
 - Source: local_file
 - Launch state: blocked
 - Current stage: connect_api_endpoint
@@ -91,8 +91,11 @@
 
 | Field | Status |
 |---|---|
-| `public_data_sources.national_assembly_bill_api_key or public_data_sources.law_go_kr_oc` | required_for_production |
-| `public_data_sources.law_interest_keywords` | configured |
+| `public_data_sources.national_assembly_bill_api_key or public_data_sources.law_go_kr_oc` | missing |
+| `public_data_sources.national_assembly_bill_api_key` | missing |
+| `public_data_sources.law_go_kr_oc` | missing |
+| `public_data_sources.official_law_endpoints` | 2_official |
+| `public_data_sources.law_interest_keywords` | 6_keywords |
 
 
 ## Runtime Secrets

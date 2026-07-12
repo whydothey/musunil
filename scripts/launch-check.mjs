@@ -62,6 +62,7 @@ const publicApiRoutes = readFileSync(resolve(cwd, "scripts/public-api-routes.mjs
 const webStaticManifestScript = readFileSync(resolve(cwd, "scripts/write-web-static-manifest.mjs"), "utf8");
 const postDeploySmokeRunner = readFileSync(resolve(cwd, "scripts/post-deploy-smoke-runner.mjs"), "utf8");
 const publicSourceRefreshPreflight = readFileSync(resolve(cwd, "scripts/public-source-refresh-preflight.mjs"), "utf8");
+const lawSourceIngest = readFileSync(resolve(cwd, "workers/public-source-ingest/src/laws.ts"), "utf8");
 const rootPackageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
 const ciWorkflow = readFileSync(resolve(cwd, ".github/workflows/ci.yml"), "utf8");
 const postDeployWorkflow = readFileSync(resolve(cwd, ".github/workflows/post-deploy.yml"), "utf8");
@@ -630,6 +631,9 @@ if (
   !/operational-readiness-diagnostics\.mjs/.test(launchMissingInputs) ||
   !/launch-ready\.mjs/.test(launchMissingInputs) ||
   !/external-smoke\.mjs/.test(launchMissingInputs) ||
+  !/law source diagnostics/.test(launchMissingInputs) ||
+  !/workers\/public-source-ingest\/src\/index\.ts/.test(launchMissingInputs) ||
+  !/lawsGroup\(lawDiagnostics\.data\?\.diagnostics\)/.test(launchMissingInputs) ||
   !/Immediate Apply Inputs/.test(launchMissingInputsDoc) ||
   !/Provider Smoke Inputs/.test(launchMissingInputsDoc) ||
   !/Runtime Secrets/.test(launchMissingInputsDoc) ||
@@ -640,6 +644,8 @@ if (
   !/mobile_integrity_provider_dry_run/.test(launchMissingInputsDoc) ||
   !/identity_portone_verified_lookup/.test(launchMissingInputsDoc) ||
   !/laws_dry_run/.test(launchMissingInputsDoc) ||
+  !/public_data_sources\.national_assembly_bill_api_key/.test(launchMissingInputsDoc) ||
+  !/public_data_sources\.official_law_endpoints/.test(launchMissingInputsDoc) ||
   !/MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID/.test(launchMissingInputsDoc) ||
   !/Static Web에는 넣지 않는다/.test(launchMissingInputsDoc) ||
   !/실제 값을 담지 않는다/.test(launchMissingInputsDoc)
@@ -1263,6 +1269,9 @@ if (!/"sources:diagnose"/.test(rootPackageJson) || !/"check:source-diagnostics"/
 }
 if (!/--laws-diagnose/.test(publicIngestWorker) || !/--require-law-metadata/.test(publicIngestWorker) || !/lawOperationalDiagnostics/.test(publicIngestWorker)) {
   failures.push("law source ingest worker must expose metadata-only law diagnostics");
+}
+if (!/readCredentialString/.test(lawSourceIngest) || !/isPlaceholderCredential/.test(lawSourceIngest) || !/\^CHANGE_ME/.test(lawSourceIngest)) {
+  failures.push("law source diagnostics must ignore placeholder credential values before reporting laws as ready for ingest");
 }
 if (!/"sources:laws-diagnose"/.test(rootPackageJson) || !/"check:law-diagnostics"/.test(rootPackageJson) || !/check:law-diagnostics/.test(JSON.parse(rootPackageJson).scripts["check:release"] ?? "")) {
   failures.push("release check must include law source metadata diagnostics");

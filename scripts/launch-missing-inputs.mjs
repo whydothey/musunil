@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const cwd = resolve(import.meta.dirname, "..");
@@ -24,6 +24,11 @@ const ops = runJson("operational diagnostics", [
   "scripts/operational-readiness-diagnostics.mjs",
   ...(template ? ["--template"] : [])
 ]);
+const lawDiagnostics = runJson(
+  "law source diagnostics",
+  ["node", "--disable-warning=ExperimentalWarning", "--experimental-strip-types", "workers/public-source-ingest/src/index.ts", "--", "--laws-diagnose"],
+  { env: template ? templateUserInputsEnv() : process.env }
+);
 const readyPlan = runJson("launch ready plan", ["node", "scripts/launch-ready.mjs", "--", "--list"]);
 const externalPlan = runJson("external smoke plan", ["node", "scripts/external-smoke.mjs", "--", "--list"]);
 
@@ -78,13 +83,13 @@ function buildSummary() {
       redactionGroup(components.redaction),
       mobileIntegrityGroup(components.mobileIntegrity),
       identityGroup(components.identity),
-      lawsGroup()
+      lawsGroup(lawDiagnostics.data?.diagnostics)
     ],
     runtimeSecretGroups: runtimeSecretGroups(),
     requiredActions: opsData.summary?.requiredActions || [],
     launchReadySteps: readyPlan.data?.steps || [],
     externalSmokeSteps: externalPlan.data?.steps || [],
-    helperFailures: [blockers, ops, readyPlan, externalPlan]
+    helperFailures: [blockers, ops, lawDiagnostics, readyPlan, externalPlan]
       .filter((item) => !item.ok)
       .map(({ label, command, status, error, stderr }) => ({ label, command, status, error, stderr: compact(stderr || "") }))
   };
@@ -162,14 +167,24 @@ function identityGroup(component = {}) {
   };
 }
 
-function lawsGroup() {
+function lawsGroup(diagnostics = {}) {
+  const summary = diagnostics.summary || {};
+  const providers = Array.isArray(diagnostics.providers) ? diagnostics.providers : [];
+  const assembly = providers.find((provider) => provider.id === "assembly_bill") || {};
+  const law = providers.find((provider) => provider.id === "law_effective") || {};
+  const credentialConfigured = Boolean(summary.credentialConfigured);
+  const assemblyStatus = assembly.credentialStatus || (summary.assemblyBillCredentialConfigured ? "configured" : "missing");
+  const lawStatus = law.credentialStatus || (summary.lawGoKrCredentialConfigured ? "configured" : "missing");
   return {
     id: "laws",
     title: "법안·법령 공식 원천",
-    readyForSmoke: false,
+    readyForSmoke: Boolean(diagnostics.readyForOperationalIngest),
     fields: [
-      field("public_data_sources.national_assembly_bill_api_key or public_data_sources.law_go_kr_oc", "required_for_production"),
-      field("public_data_sources.law_interest_keywords", "configured")
+      field("public_data_sources.national_assembly_bill_api_key or public_data_sources.law_go_kr_oc", credentialConfigured ? "configured" : "missing"),
+      field("public_data_sources.national_assembly_bill_api_key", assemblyStatus),
+      field("public_data_sources.law_go_kr_oc", lawStatus === "missing" && credentialConfigured ? "optional_not_configured" : lawStatus),
+      field("public_data_sources.official_law_endpoints", `${summary.officialEndpointCount ?? 0}_official`),
+      field("public_data_sources.law_interest_keywords", summary.keywordCount > 0 ? `${summary.keywordCount}_keywords` : "missing")
     ],
     command: "pnpm sources:laws",
     proof: "laws_dry_run"
@@ -316,10 +331,10 @@ function listLines(items) {
   return items.map((item) => `- ${item}`);
 }
 
-function runJson(label, command) {
+function runJson(label, command, options = {}) {
   const result = spawnSync(command[0], command.slice(1), {
     cwd,
-    env: process.env,
+    env: options.env || process.env,
     encoding: "utf8",
     maxBuffer: 50 * 1024 * 1024
   });
@@ -345,4 +360,13 @@ function compact(value, maxLength = 240) {
   const text = String(value || "").replace(/\s+/g, " ").trim();
   if (text.length <= maxLength) return text;
   return `${text.slice(0, maxLength - 1)}...`;
+}
+
+function templateUserInputsEnv() {
+  const templateYaml = readFileSync(resolve(cwd, "config/musunil.user-inputs.template.yaml"), "utf8");
+  return {
+    ...process.env,
+    MUSUNIL_USER_INPUTS_B64: Buffer.from(templateYaml).toString("base64"),
+    MUSUNIL_USER_INPUTS_FILE_PATH: ""
+  };
 }

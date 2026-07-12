@@ -61,11 +61,11 @@ const defaultKeywords = [
 export function readLawRuntime(config: Record<string, unknown>, env: NodeJS.ProcessEnv = process.env): LawRuntime {
   return {
     assemblyBillApiKey:
-      env.MUSUNIL_ASSEMBLY_BILL_API_KEY ??
-      readConfigString(config, "public_data_sources.national_assembly_bill_api_key") ??
-      readConfigString(config, "public_data_sources.assembly_notice_api_key"),
+      readCredentialString(env.MUSUNIL_ASSEMBLY_BILL_API_KEY) ??
+      readConfigCredentialString(config, "public_data_sources.national_assembly_bill_api_key") ??
+      readConfigCredentialString(config, "public_data_sources.assembly_notice_api_key"),
     assemblyBillApiUrl: env.MUSUNIL_ASSEMBLY_BILL_API_URL ?? readConfigString(config, "public_data_sources.national_assembly_bill_api_url") ?? defaultAssemblyBillApiUrl,
-    lawApiOc: env.MUSUNIL_LAW_GO_KR_OC ?? readConfigString(config, "public_data_sources.law_go_kr_oc"),
+    lawApiOc: readCredentialString(env.MUSUNIL_LAW_GO_KR_OC) ?? readConfigCredentialString(config, "public_data_sources.law_go_kr_oc"),
     lawApiBaseUrl: env.MUSUNIL_LAW_GO_KR_BASE_URL ?? readConfigString(config, "public_data_sources.law_go_kr_base_url") ?? defaultLawApiBaseUrl,
     keywords: readConfigStringArray(config, "public_data_sources.law_interest_keywords", defaultKeywords)
   };
@@ -283,6 +283,27 @@ function dedupeLawPayloads(payloads: LawPayload[]): LawPayload[] {
 function readConfigString(config: Record<string, unknown>, path: string): string | undefined {
   const value = readConfigValue(config, path);
   return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function readConfigCredentialString(config: Record<string, unknown>, path: string): string | undefined {
+  return readCredentialString(readConfigString(config, path));
+}
+
+function readCredentialString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed || isPlaceholderCredential(trimmed)) return undefined;
+  return trimmed;
+}
+
+function isPlaceholderCredential(value: string): boolean {
+  return [
+    /^CHANGE_ME/i,
+    /(^|[/:@._-])example(\.|$|[/:@._-])/i,
+    /(^|[/:@._-])sample($|[/:@._-])/i,
+    /placeholder/i,
+    /launch-check-only/i
+  ].some((pattern) => pattern.test(value));
 }
 
 function readConfigStringArray(config: Record<string, unknown>, path: string, fallback: string[]): string[] {
