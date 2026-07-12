@@ -339,6 +339,11 @@ if (
   !/render-apply\.mjs/.test(launchApply) ||
   !/cloudflare-apply\.mjs/.test(launchApply) ||
   !/deriveTargets/.test(launchApply) ||
+  !/runLaunchSteps/.test(launchApply) ||
+  !/runCloudflareSteps/.test(launchApply) ||
+  !/preflight/.test(launchApply) ||
+  !/applyBlocked/.test(launchApply) ||
+  !/No Render or Cloudflare writes were attempted because launch apply preflight did not pass/.test(launchApply) ||
   !/renderTargetDerivationStatus/.test(launchApply) ||
   !/renderTargetDerivation/.test(launchApply) ||
   !/configured_but_target_derivation_failed/.test(launchApply) ||

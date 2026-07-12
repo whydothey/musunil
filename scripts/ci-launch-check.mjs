@@ -166,6 +166,8 @@ moderation:
   run(["build:web-config"], launchEnv);
   assertRenderBuildInfo();
   run(["launch:check"], launchEnv);
+  assertLaunchApplyBlocksMissingInputs();
+  assertLaunchApplyBlocksBadRenderToken();
 } catch (error) {
   exitCode = 1;
   console.error(error instanceof Error ? error.message : String(error));
@@ -194,6 +196,63 @@ function run(args, env) {
 function runExpectFailure(args, env) {
   const result = spawnSync(pnpm, args, { env, stdio: "pipe" });
   if (result.status === 0) throw new Error(`${pnpm} ${args.join(" ")} unexpectedly passed`);
+}
+
+function runNodeJsonExpectFailure(args, env) {
+  const result = spawnSync(process.execPath, args, {
+    env,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  if (result.status === 0) throw new Error(`node ${args.join(" ")} unexpectedly passed`);
+  try {
+    return JSON.parse(result.stdout);
+  } catch (error) {
+    throw new Error(`node ${args.join(" ")} did not emit parseable JSON before failing: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+function launchApplyPreflightEnv(overrides = {}) {
+  return {
+    ...originalEnv,
+    RENDER_API_TOKEN: "",
+    MUSUNIL_RENDER_API_TOKEN: "",
+    MUSUNIL_RENDER_API_DNS_TARGET: "",
+    MUSUNIL_RENDER_WEB_DNS_TARGET: "",
+    CLOUDFLARE_API_TOKEN: "",
+    CF_API_TOKEN: "",
+    ...overrides
+  };
+}
+
+function assertLaunchApplyBlocksMissingInputs() {
+  const result = runNodeJsonExpectFailure(["scripts/launch-apply.mjs", "--", "--apply"], launchApplyPreflightEnv());
+  if (result.ok !== false || result.applied !== false || result.applyBlocked !== true) {
+    throw new Error("launch:apply --apply must report ok=false, applied=false, applyBlocked=true when required inputs are missing");
+  }
+  if ((result.steps || []).length !== 0) {
+    throw new Error("launch:apply --apply must not run provider write steps when required inputs are missing");
+  }
+  const preflightIds = (result.preflight?.steps || []).map((step) => step.id);
+  if (!preflightIds.includes("render_apply") || !preflightIds.includes("cloudflare_dns_apply")) {
+    throw new Error(`launch:apply --apply missing preflight step ids: ${preflightIds.join(", ")}`);
+  }
+  if (!(result.requiredEnv || []).includes("RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET") || !(result.requiredEnv || []).includes("CLOUDFLARE_API_TOKEN")) {
+    throw new Error(`launch:apply --apply missing requiredEnv evidence: ${(result.requiredEnv || []).join(", ")}`);
+  }
+  if (!String((result.next || [])[0] || "").includes("No Render or Cloudflare writes were attempted")) {
+    throw new Error("launch:apply --apply must explicitly state that no provider writes were attempted");
+  }
+}
+
+function assertLaunchApplyBlocksBadRenderToken() {
+  const result = runNodeJsonExpectFailure(["scripts/launch-apply.mjs", "--", "--apply"], launchApplyPreflightEnv({ RENDER_API_TOKEN: "dummy" }));
+  if (result.applyBlocked !== true || result.applied !== false || (result.steps || []).length !== 0) {
+    throw new Error("launch:apply --apply must block writes when Render target derivation fails");
+  }
+  if (result.renderTargetDerivation?.failed !== true || !/401|Unauthorized/.test(result.renderTargetDerivation?.apiError || "")) {
+    throw new Error(`launch:apply --apply must expose Render target derivation failure, got ${JSON.stringify(result.renderTargetDerivation)}`);
+  }
 }
 
 function fillGeneratedLaunchInputs(raw) {

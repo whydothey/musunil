@@ -43,25 +43,9 @@ const base = {
   ]
 };
 
-const steps = [];
-let renderData = null;
-if (renderRequested) {
-  const renderArgs = [
-    "--api-domain",
-    "--web-headers",
-    ...(deployWeb ? ["--deploy-web"] : []),
-    ...(deployApi ? ["--deploy-api"] : []),
-    ...(verifyDomains ? ["--verify-domains"] : []),
-    "--json",
-    ...(apply ? ["--apply"] : [])
-  ];
-  const renderStep = runNode("render_apply", "scripts/render-apply.mjs", renderArgs, process.env);
-  steps.push(renderStep);
-  renderData = renderStep.data || null;
-}
-
-const derivedTargets = deriveTargets(renderData);
-const renderTargetDerivation = renderTargetDerivationStatus(renderData, derivedTargets);
+const preflight = runLaunchSteps({ applyMode: false });
+const derivedTargets = deriveTargets(preflight.renderData);
+const renderTargetDerivation = renderTargetDerivationStatus(preflight.renderData, derivedTargets);
 const cloudflareEnv = {
   ...process.env,
   ...(derivedTargets.web && !process.env.MUSUNIL_RENDER_WEB_DNS_TARGET
@@ -72,24 +56,7 @@ const cloudflareEnv = {
     : {})
 };
 
-if (cloudflareRequested) {
-  if (cloudflareDnsRequested) {
-    const dnsStep = runNode("cloudflare_dns_apply", "scripts/cloudflare-apply.mjs", [
-      "--dns",
-      "--json",
-      ...(apply ? ["--apply"] : [])
-    ], cloudflareEnv);
-    steps.push(dnsStep);
-  }
-  if (cloudflareHeaders) {
-    const headerStep = runNode("cloudflare_header_apply", "scripts/cloudflare-apply.mjs", [
-      "--headers",
-      "--json",
-      ...(apply ? ["--apply"] : [])
-    ], cloudflareEnv);
-    steps.push(headerStep);
-  }
-}
+preflight.steps.push(...runCloudflareSteps({ applyMode: false, env: cloudflareEnv }));
 
 const result = {
   ...base,
@@ -105,18 +72,90 @@ const result = {
     web: targetSource("web", derivedTargets.web),
     api: targetSource("api", derivedTargets.api)
   },
-  steps,
+  preflight: {
+    ok: preflight.steps.every((step) => step.ok),
+    steps: preflight.steps
+  },
+  steps: preflight.steps,
   operatorInputs: [],
   requiredEnv: [],
-  ok: steps.every((step) => step.ok),
+  ok: preflight.steps.every((step) => step.ok),
+  applied: false,
+  applyBlocked: false,
   next: []
 };
 result.operatorInputs = operatorInputs(result);
 result.requiredEnv = requiredEnv(result.operatorInputs);
 result.next = nextCommands(result);
 
+if (apply) {
+  const missing = missingRequiredInputs(result.operatorInputs);
+  const preflightFailed = !result.preflight.ok;
+  if (missing.length > 0 || preflightFailed) {
+    result.ok = false;
+    result.applyBlocked = true;
+    result.steps = [];
+    result.next = [
+      "No Render or Cloudflare writes were attempted because launch apply preflight did not pass.",
+      ...result.next
+    ];
+  } else {
+    const applyRun = runLaunchSteps({ applyMode: true, env: cloudflareEnv });
+    result.steps = applyRun.steps;
+    result.ok = applyRun.steps.every((step) => step.ok);
+    result.applied = result.ok;
+    if (!result.ok) {
+      result.next = [
+        "Apply was attempted after a passing preflight, but one or more provider writes failed. Inspect steps before retrying.",
+        ...result.next
+      ];
+    }
+  }
+}
+
 printResult(result);
 if (!result.ok) process.exit(1);
+
+function runLaunchSteps({ applyMode, env = process.env }) {
+  const steps = [];
+  let renderData = null;
+  if (renderRequested) {
+    const renderArgs = [
+      "--api-domain",
+      "--web-headers",
+      ...(deployWeb ? ["--deploy-web"] : []),
+      ...(deployApi ? ["--deploy-api"] : []),
+      ...(verifyDomains ? ["--verify-domains"] : []),
+      "--json",
+      ...(applyMode ? ["--apply"] : [])
+    ];
+    const renderStep = runNode("render_apply", "scripts/render-apply.mjs", renderArgs, env);
+    steps.push(renderStep);
+    renderData = renderStep.data || null;
+  }
+  if (applyMode) steps.push(...runCloudflareSteps({ applyMode, env }));
+  return { steps, renderData };
+}
+
+function runCloudflareSteps({ applyMode, env }) {
+  const cloudflareSteps = [];
+  if (!cloudflareRequested) return cloudflareSteps;
+  if (cloudflareDnsRequested) {
+    cloudflareSteps.push(runNode("cloudflare_dns_apply", "scripts/cloudflare-apply.mjs", [
+      "--dns",
+      "--json",
+      ...(applyMode ? ["--apply"] : [])
+    ], env));
+  }
+  if (cloudflareHeaders) {
+    cloudflareSteps.push(runNode("cloudflare_header_apply", "scripts/cloudflare-apply.mjs", [
+      "--headers",
+      "--json",
+      ...(applyMode ? ["--apply"] : [])
+    ], env));
+  }
+  return cloudflareSteps;
+}
 
 function runNode(id, script, scriptArgs, env) {
   const command = ["node", script, "--", ...scriptArgs];
