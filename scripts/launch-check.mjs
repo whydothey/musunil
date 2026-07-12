@@ -394,8 +394,11 @@ if (
   !/goalState/.test(launchNextActions) ||
   !/launchState/.test(launchNextActions) ||
   !/blockerStage/.test(launchNextActions) ||
+  !/launchApplyInputsReady/.test(launchNextActions) ||
+  !/requiredLaunchInputsMissing/.test(launchNextActions) ||
   !/nextOperatorPrerequisite/.test(launchNextActions) ||
   !/Before next command/.test(launchNextActions) ||
+  !/필수 입력이 비어 있으면/.test(launchNextActions) ||
   !/deploy_latest_static/.test(launchNextActions) ||
   !/actionIds\.has\("deploy_latest_static"\)[\s\S]*return "deploy_latest_static"/.test(launchNextActions) ||
   !/Render onrender\.com target/.test(launchNextActions) ||
@@ -488,6 +491,8 @@ if (
   !/launch:external-smoke --list/.test(launchCutoverRehearsal) ||
   !/goalState/.test(launchCutoverRehearsal) ||
   !/launchState/.test(launchCutoverRehearsal) ||
+  !/launchApplyInputsReady/.test(launchCutoverRehearsal) ||
+  !/requiredLaunchInputsMissing/.test(launchCutoverRehearsal) ||
   !/Active goal/.test(launchCutoverRehearsal) ||
   !/Launch readiness/.test(launchCutoverRehearsal) ||
   !/releaseBlocked/.test(launchCutoverRehearsal) ||
@@ -522,6 +527,15 @@ if (
   !/launch:cutover-rehearsal/.test(userFacingDocs)
 ) {
   failures.push("Launch cutover rehearsal helper must combine blockers, cutover plan, final gate plan, ordered operator actions, refresh, and strict modes");
+}
+if (
+  /return "pnpm launch:apply && pnpm launch:final-gate"/.test(launchNextActions) ||
+  /return "pnpm launch:apply && pnpm launch:final-gate"/.test(launchCutoverRehearsal) ||
+  /Next command:\s*`pnpm launch:apply && pnpm launch:final-gate`/.test(launchOperatorBriefDoc) ||
+  /\|\s*`pnpm launch:apply && pnpm launch:final-gate`\s*\|/.test(launchCutoverRunbook) ||
+  /^\|\s*connect_api_endpoint\s*\|.*pnpm launch:apply && pnpm launch:final-gate.*$/m.test(serviceWatchDoc)
+) {
+  failures.push("Launch helpers must not suggest final-gate immediately after a dry-run-only launch:apply when required operator inputs are missing");
 }
 if (
   !/"launch:operator-brief"/.test(packageJson) ||

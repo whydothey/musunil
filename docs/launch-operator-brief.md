@@ -6,17 +6,17 @@
 
 ## Current State
 
-- Generated: 2026-07-12T05:40:46.360Z
-- Git SHA: 940ddd03051f8038295a42a41fec2d9f50d00569
+- Generated: 2026-07-12T06:39:58.752Z
+- Git SHA: 992cdf9451c4381228c1edc20a04de5e3abcbec0
 - Refresh command: `pnpm launch:operator-brief -- --refresh`
 - Active goal: active
 - Launch readiness: blocked
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T05:40:59.922Z (fresh)
+- Service watch: 2026-07-12T06:40:11.567Z (fresh)
 - Checks: 4 ok, 3 fail, 13 skip, 4 actions
-- Before next command: Render API token과 Cloudflare token이 있으면 `pnpm launch:apply -- --apply`가 api.musunil.com custom domain 생성, Render onrender.com target 파생, Cloudflare DNS 적용을 한 번에 처리한다. token이 없으면 dry-run 출력의 requiredEnv만 채우고, 하위 확인은 `pnpm render:api-settings`와 `pnpm cloudflare:dns`를 사용한다.
-- Next command: `pnpm launch:apply && pnpm launch:final-gate`
+- Before next command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
+- Next command: `pnpm launch:apply`
 
 ## One Command Apply
 
@@ -60,7 +60,7 @@ Split apply paths from current blockers:
 
 1. connect_api_endpoint (operator)
    - Action: pnpm launch:apply 출력대로 Render/Cloudflare token과 서비스 target 상태를 확인한다. Render API token과 Cloudflare token이 있으면 pnpm launch:apply -- --apply가 api.musunil.com custom domain 생성, Render onrender.com target 파생, Cloudflare DNS 적용을 한 번에 처리한다. token이 없으면 pnpm render:api-settings와 pnpm cloudflare:dns로 값을 확인한 뒤 Render Dashboard target을 MUSUNIL_RENDER_API_DNS_TARGET에 넣고 Cloudflare DNS의 api 레코드에 DNS only로 연결한다.
-   - Verify: `pnpm launch:apply && pnpm launch:final-gate`
+   - Verify: `pnpm launch:apply && pnpm launch:blockers -- --refresh`
    - Reference: docs/launch-cutover-runbook.md#3-render-api
 2. apply_static_headers (operator)
    - Action: pnpm launch:apply 출력대로 Render Web header 적용 계획을 확인한다. Render API token이 있으면 pnpm launch:apply -- --apply --deploy-web으로 musunil-web Headers를 적용하고 배포까지 요청한다. Render headers가 live 응답에 계속 반영되지 않거나 Render token 없이 Web header만 먼저 고치려면 pnpm cloudflare:check에서 web_proxy_mode.proxyObserved=true를 확인한 뒤 pnpm launch:apply -- --apply --cloudflare-headers-only로 Web 전용 Response Header Transform Rule만 추가한다.

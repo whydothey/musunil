@@ -620,7 +620,7 @@ function requiredActions(result) {
         ? "pnpm launch:apply 출력대로 Render/Cloudflare token과 서비스 target 상태를 확인한다. Render API token과 Cloudflare token이 있으면 pnpm launch:apply -- --apply가 api.musunil.com custom domain 생성, Render onrender.com target 파생, Cloudflare DNS 적용을 한 번에 처리한다. token이 없으면 pnpm render:api-settings와 pnpm cloudflare:dns로 값을 확인한 뒤 Render Dashboard target을 MUSUNIL_RENDER_API_DNS_TARGET에 넣고 Cloudflare DNS의 api 레코드에 DNS only로 연결한다."
         : "api.musunil.com의 TLS 인증서, Render musunil-api 서비스 상태, /health 응답을 확인한다. 수동 확인은 pnpm render:api-settings와 pnpm cloudflare:check를 사용한다.",
       verify: withVisualSurface
-        ? `pnpm launch:apply && ${finalGateVerify}`
+        ? "pnpm launch:apply && pnpm launch:blockers -- --refresh"
         : "pnpm launch:apply && MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once",
       reference: "docs/launch-cutover-runbook.md#3-render-api"
     });

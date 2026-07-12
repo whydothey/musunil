@@ -77,6 +77,7 @@ function buildSummary(results) {
   const failedChecks = blockersData.failedChecks || [];
   const skippedChecks = blockersData.skippedChecks || [];
   const requiredActions = prioritizeActions(blockersData.requiredActions || []);
+  const launchApplyPlan = blockersData.launchApply || {};
   const releaseBlocked = helperFailures.length > 0 || Boolean(blockersData.releaseBlocked);
   const stage = determineStage({ helperFailures, blockersData, requiredActions, skippedChecks });
 
@@ -106,9 +107,11 @@ function buildSummary(results) {
     failedChecks: failedChecks.map(slimCheck),
     skippedChecks: skippedChecks.map(slimCheck),
     requiredActions,
+    launchApplyInputsReady: launchApplyInputsReady(launchApplyPlan),
+    requiredLaunchInputsMissing: requiredLaunchInputsMissing(launchApplyPlan),
     splitApplyPaths: blockersData.splitApplyPaths || [],
-    nextOperatorPrerequisite: nextOperatorPrerequisite(stage),
-    nextOperatorCommand: nextOperatorCommand(stage, requiredActions),
+    nextOperatorPrerequisite: nextOperatorPrerequisite(stage, launchApplyPlan),
+    nextOperatorCommand: nextOperatorCommand(stage, requiredActions, launchApplyPlan),
     cutover: {
       domains: cutoverData.domains || { web: "https://musunil.com", api: "https://api.musunil.com" },
       renderStaticSite: cutoverData.renderStaticSite || null,
@@ -183,16 +186,18 @@ function slimCheck(check) {
   };
 }
 
-function nextOperatorCommand(stage, actions) {
+function nextOperatorCommand(stage, actions, launchApplyPlan) {
   if (stage === "refresh_live_evidence") return "pnpm launch:cutover-rehearsal -- --refresh";
   if (stage === "deploy_latest_static") {
     return "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy";
   }
   if (stage === "connect_api_endpoint") {
-    return "pnpm launch:apply && pnpm launch:final-gate";
+    if (!launchApplyInputsReady(launchApplyPlan)) return "pnpm launch:apply";
+    return "pnpm launch:apply -- --apply && pnpm launch:final-gate";
   }
   if (stage === "apply_static_headers") {
-    return "pnpm launch:apply && pnpm launch:final-gate";
+    if (!launchApplyInputsReady(launchApplyPlan)) return "pnpm launch:apply -- --cloudflare-headers-only";
+    return "pnpm launch:apply -- --apply --cloudflare-headers-only && pnpm launch:final-gate";
   }
   if (stage === "publish_build_metadata") {
     return "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy";
@@ -203,14 +208,20 @@ function nextOperatorCommand(stage, actions) {
   return "pnpm launch:blockers -- --refresh";
 }
 
-function nextOperatorPrerequisite(stage) {
+function nextOperatorPrerequisite(stage, launchApplyPlan = null) {
   if (stage === "deploy_latest_static") {
     return "Render musunil-web가 현재 main 커밋을 배포했는지 확인한다. live static manifest가 local manifest와 다르면 Clear build cache & deploy를 실행하고 완료 후 다시 검증한다.";
   }
   if (stage === "connect_api_endpoint") {
+    if (!launchApplyInputsReady(launchApplyPlan)) {
+      return "먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.";
+    }
     return "Render API token과 Cloudflare token이 있으면 `pnpm launch:apply -- --apply`가 api.musunil.com custom domain 생성, Render onrender.com target 파생, Cloudflare DNS 적용을 한 번에 처리한다. token이 없으면 dry-run 출력의 requiredEnv만 채우고, 하위 확인은 `pnpm render:api-settings`와 `pnpm cloudflare:dns`를 사용한다.";
   }
   if (stage === "apply_static_headers") {
+    if (!launchApplyInputsReady(launchApplyPlan)) {
+      return "먼저 `pnpm launch:apply -- --cloudflare-headers-only` dry-run으로 Web header 적용에 필요한 Cloudflare 입력을 확인한다. 필수 입력이 비어 있으면 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.";
+    }
     return "Render API token이 있으면 `pnpm launch:apply -- --apply --deploy-web`으로 musunil-web Headers를 적용하고 배포까지 요청한다. Render headers가 live에 계속 없거나 Render token 없이 Web header만 먼저 고치려면 `pnpm cloudflare:check`에서 `web_proxy_mode.proxyObserved=true`를 확인한 뒤 `pnpm launch:apply -- --apply --cloudflare-headers-only`로 Web 전용 Cloudflare fallback을 추가한다.";
   }
   if (stage === "publish_build_metadata") {
@@ -220,6 +231,19 @@ function nextOperatorPrerequisite(stage) {
     return "Web config.js가 https://api.musunil.com을 보고 있고 api.musunil.com /health, /ready가 응답하는 상태에서 live issue sync를 검증한다.";
   }
   return "";
+}
+
+function launchApplyInputsReady(plan) {
+  return !requiredLaunchInputsMissing(plan);
+}
+
+function requiredLaunchInputsMissing(plan) {
+  if (!plan?.ok) return true;
+  if ((plan.requiredEnv || []).length > 0) return true;
+  return (plan.operatorInputs || []).some((input) => {
+    const required = input.required || input.requiredMode === "one_of";
+    return required && /missing|invalid|placeholder/i.test(input.status || "");
+  });
 }
 
 function printMarkdown(value) {
