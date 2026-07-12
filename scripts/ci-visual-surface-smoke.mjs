@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
@@ -10,6 +10,8 @@ const failures = [];
 const scenarios = [];
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
 const productionFallbackMode = args.includes("--production-fallback") || process.env.MUSUNIL_VISUAL_PRODUCTION_FALLBACK === "1";
+const evidenceDir = evidenceDirFromArgs();
+const evidenceScreenshots = [];
 let server;
 let chrome;
 
@@ -20,6 +22,7 @@ async function main() {
     console.error("Chrome executable not found. Set CHROME_PATH to run visual surface smoke.");
     process.exit(1);
   }
+  if (evidenceDir) mkdirSync(evidenceDir, { recursive: true });
 
   const debugPort = await freePort();
   const userDataDir = mkdtempSync(join(tmpdir(), "musunil-chrome-"));
@@ -106,9 +109,17 @@ async function main() {
     productionFallbackMode,
     serviceStates,
     serviceBannerVisibleCount: scenarios.filter((item) => item.detail?.serviceBannerVisible).length,
+    evidenceDir: evidenceDir ? relativeFromCwd(evidenceDir) : "",
+    evidenceScreenshots,
     scenarios,
     failures
   };
+  if (evidenceDir) {
+    writeFileSync(
+      join(evidenceDir, "visual-surface-evidence.json"),
+      `${JSON.stringify(payload, null, 2)}\n`
+    );
+  }
 
   if (failures.length > 0) {
     console.error(["Visual surface smoke failed:", ...failures.map((failure) => `- ${failure}`)].join("\n"));
@@ -145,6 +156,7 @@ async function runViewport(client, viewport, url) {
   await sleep(260);
 
   const home = await evaluate(client, visualMetrics("home"));
+  await captureEvidence(client, `${viewport.id}_home`);
   scenario(`${viewport.id}_home`, [
     () => assert(
       homeReady,
@@ -186,6 +198,7 @@ async function runViewport(client, viewport, url) {
     : "document.querySelector('.layout')?.classList.contains('desktop-detail-open')");
   await sleep(220);
   const detail = await evaluate(client, visualMetrics("detail"));
+  await captureEvidence(client, `${viewport.id}_detail`);
   scenario(`${viewport.id}_detail`, [
     () => assert(detail.scrollWidth <= viewport.width, `detail overflows horizontally: ${detail.scrollWidth} > ${viewport.width}`),
     () => assert(detail.forbidden.length === 0, `forbidden detail copy: ${detail.forbidden.join(", ")}`),
@@ -204,6 +217,7 @@ async function runViewport(client, viewport, url) {
   await waitForExpression(client, "document.querySelector('#reels-section') && getComputedStyle(document.querySelector('#reels-section')).display !== 'none'");
   await sleep(220);
   const reels = await evaluate(client, visualMetrics("reels"));
+  await captureEvidence(client, `${viewport.id}_reels`);
   scenario(`${viewport.id}_reels`, [
     () => assert(reels.scrollWidth <= viewport.width, `reels overflows horizontally: ${reels.scrollWidth} > ${viewport.width}`),
     () => assert(reels.forbidden.length === 0, `forbidden reels copy: ${reels.forbidden.join(", ")}`),
@@ -217,6 +231,7 @@ async function runViewport(client, viewport, url) {
   await waitForExpression(client, "document.querySelector('#map-section') && getComputedStyle(document.querySelector('#map-section')).display !== 'none'");
   await sleep(260);
   const map = await evaluate(client, visualMetrics("map"));
+  await captureEvidence(client, `${viewport.id}_map`);
   scenario(`${viewport.id}_map`, [
     () => assert(map.scrollWidth <= viewport.width, `map overflows horizontally: ${map.scrollWidth} > ${viewport.width}`),
     () => assert(map.forbidden.length === 0, `forbidden map copy: ${map.forbidden.join(", ")}`),
@@ -232,6 +247,7 @@ async function runViewport(client, viewport, url) {
   await waitForExpression(client, "document.querySelector('#report-section') && getComputedStyle(document.querySelector('#report-section')).display !== 'none'");
   await sleep(220);
   const report = await evaluate(client, visualMetrics("report"));
+  await captureEvidence(client, `${viewport.id}_report`);
   scenario(`${viewport.id}_report`, [
     () => assert(report.scrollWidth <= viewport.width, `report overflows horizontally: ${report.scrollWidth} > ${viewport.width}`),
     () => assert(report.forbidden.length === 0, `forbidden report copy: ${report.forbidden.join(", ")}`),
@@ -240,6 +256,19 @@ async function runViewport(client, viewport, url) {
     () => assert(report.visibleReportPanels.length === 0, `report exposes target panels before user action: ${report.visibleReportPanels.join(", ")}`),
     () => assert(!viewport.mobile || !report.navOverlap, "mobile report surface overlaps bottom navigation")
   ], serviceDetail(report));
+}
+
+async function captureEvidence(client, scenarioId) {
+  if (!evidenceDir) return;
+  const safeId = scenarioId.replace(/[^a-z0-9_-]+/gi, "-").replace(/^-+|-+$/g, "");
+  const fileName = `${safeId}.png`;
+  const outputPath = join(evidenceDir, fileName);
+  const result = await client.send("Page.captureScreenshot", {
+    format: "png",
+    captureBeyondViewport: false
+  });
+  writeFileSync(outputPath, Buffer.from(result.data || "", "base64"));
+  evidenceScreenshots.push(relativeFromCwd(outputPath));
 }
 
 function serviceDetail(metrics) {
@@ -429,6 +458,17 @@ function visualBaseUrlFromArgs() {
     throw new Error(`Visual surface base URL must be HTTPS or localhost HTTP: ${value}`);
   }
   return new URL("/", parsed).toString();
+}
+
+function evidenceDirFromArgs() {
+  const value = argValue("--evidence-dir") ?? process.env.MUSUNIL_VISUAL_EVIDENCE_DIR;
+  if (!value) return "";
+  return resolve(cwd, value);
+}
+
+function relativeFromCwd(value) {
+  const absolute = resolve(value);
+  return absolute.startsWith(`${cwd}/`) ? absolute.slice(cwd.length + 1) : absolute;
 }
 
 function argValue(name) {

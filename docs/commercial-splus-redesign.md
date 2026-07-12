@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-12 12:56 KST
+Last updated: 2026-07-12 14:50 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -28,6 +28,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 2026-07-12 12:49 패치로 `pnpm launch:apply` dry-run에 `operatorInputs`와 `requiredEnv`를 추가했다. 마지막에 필요한 외부 입력은 `RENDER_API_TOKEN` 또는 `MUSUNIL_RENDER_API_DNS_TARGET`, `CLOUDFLARE_API_TOKEN` 중심으로 구조화되어 보이며, 둘 중 하나만 필요한 Render target source는 `one_of`로 표시된다. Cloudflare zone은 `musunil.com` 이름으로 자동 조회하고, token 권한 때문에 조회가 실패할 때만 `CLOUDFLARE_ZONE_ID`를 fallback으로 넣는다. `pnpm check:launch-sample`, `pnpm launch:cutover-rehearsal -- --json`, `pnpm launch:apply`는 통과했지만 실제 token/DNS/API live 연결 전에는 출시 S+가 아니다.
 - 2026-07-12 12:56 패치로 `pnpm launch:next-actions`와 `docs/launch-operator-brief.md`가 `launch:apply` dry-run의 필수 입력값을 같은 화면에 표시한다. 운영자가 별도 명령을 찾아보지 않아도 Render target source, Cloudflare token, Cloudflare zone 누락 상태와 대체 env를 볼 수 있다. `pnpm check:launch-sample`은 통과했지만 실제 token/DNS/API live 연결 전에는 출시 S+가 아니다.
 - 2026-07-12 13:46 패치로 Web header blocker 전용 경로 `pnpm launch:apply -- --cloudflare-headers-only`를 추가했다. 이 경로는 Render target/API DNS 없이 진행할 수 있지만, 적용 전 `pnpm cloudflare:check`에서 `web_proxy_mode.proxyObserved=true`가 확인되어야 Cloudflare Response Header Transform Rule이 실제 Web 응답에 적용된다. 실제 Cloudflare 적용과 strict header 검증 전에는 출시 S+가 아니다.
+- 2026-07-12 14:50 패치로 `pnpm check:visual-surface:evidence`와 `pnpm check:visual-surface:live:evidence`를 추가했다. 현재 390/430/768/1440px 홈·상세·영상·탐색·제보 PNG와 `visual-surface-evidence.json`은 `docs/visual-evidence/current`에 저장된다. 동시에 홈 이슈 카드의 표형 `위치/근거` 라벨은 화면에서 숨기고 요약 줄을 `장소·위치`, `현장·공식자료·현장영상·반론/정정` 중심으로 줄여 카드가 내부 대시보드 row처럼 보이는 신호를 낮췄다. `pnpm check:web-smoke`, `pnpm check:ux-surface`, `pnpm check:visual-surface:evidence`는 통과했지만 실제 운영 API live 동기화와 사용자 수락 전에는 S+가 아니다.
 - 03:14 패치로 홈 카드의 반복 요약을 줄였다. 첫 카드 흐름은 `제목 → 서울 · 현장 2건 · 위치 1곳 → 영상 1건 · 인원 추정 검토 → 공식 확인 중 · 다른 주장 1건`처럼 줄마다 역할이 나뉘며, 기존 `서울에서 같은 주제로 확인된 현장 2건을 묶어 봅니다` 문장과 같은 수치 반복을 제거했다. 390px/1440px 모두 `scrollWidth=viewport`, 첫 카드 높이 206/216px이다. 아직 데스크톱 홈 지도와 이슈 목록 경쟁, 실제 운영 데이터 품질, 사용자 수락 전 S+는 아니다.
 - 04:43 독립 비평 기준 현재 화면은 S+가 아니다. Visual critique는 A- 공공서비스 프로토타입, IA red-team은 B-로 평가했다. 이번 패치는 `영상/지도/제보`가 선택 이슈 맥락으로 읽히게 하는 1차 보정이며, 상업용 S+ 승급 근거가 아니다.
 - 05:02 패치로 현장 영상 poster를 어두운 야간 placeholder 톤에서 밝은 비식별 공공 현장 프레임으로 재생성했고, 데스크톱 제보 화면에 연결 이슈·선택 현장·공개 위치·현재 단계 상태 패널을 추가했다. 그래도 사용자 수락 전 S+는 아니다.

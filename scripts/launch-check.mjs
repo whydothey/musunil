@@ -830,13 +830,17 @@ if (
   !/"check:visual-surface"/.test(packageJson) ||
   !/"check:visual-surface:production-fallback"/.test(packageJson) ||
   !/"check:visual-surface:live"/.test(packageJson) ||
+  !/"check:visual-surface:evidence"/.test(packageJson) ||
+  !/"check:visual-surface:live:evidence"/.test(packageJson) ||
   !/ci-visual-surface-smoke\.mjs/.test(packageJson) ||
   !/--production-fallback/.test(packageJson) ||
   !/--base-url https:\/\/musunil\.com/.test(packageJson) ||
+  !/--evidence-dir docs\/visual-evidence\/current/.test(packageJson) ||
+  !/--evidence-dir docs\/visual-evidence\/live-current/.test(packageJson) ||
   !/pnpm check:visual-surface/.test(JSON.parse(packageJson).scripts["check:release"] ?? "") ||
   !/pnpm check:visual-surface:production-fallback/.test(JSON.parse(packageJson).scripts["check:release"] ?? "")
 ) {
-  failures.push("Commercial visual surface smoke must be wired into release checks and have production fallback and live URL verification commands");
+  failures.push("Commercial visual surface smoke must be wired into release checks and have production fallback, live URL, and screenshot evidence commands");
 }
 if (
   !/mobile_390/.test(visualSurfaceSmoke) ||
@@ -851,9 +855,12 @@ if (
   !/dashboardVisible/.test(visualSurfaceSmoke) ||
   !/navOverlap/.test(visualSurfaceSmoke) ||
   !/mapSheetHeight/.test(visualSurfaceSmoke) ||
-  !/reportPrimaryAction/.test(visualSurfaceSmoke)
+  !/reportPrimaryAction/.test(visualSurfaceSmoke) ||
+  !/Page\.captureScreenshot/.test(visualSurfaceSmoke) ||
+  !/visual-surface-evidence\.json/.test(visualSurfaceSmoke) ||
+  !/MUSUNIL_VISUAL_EVIDENCE_DIR/.test(visualSurfaceSmoke)
 ) {
-  failures.push("Commercial visual surface smoke must cover responsive viewports, dashboard regression, navigation overlap, map density, and report first action");
+  failures.push("Commercial visual surface smoke must cover responsive viewports, dashboard regression, navigation overlap, map density, report first action, and optional screenshot evidence");
 }
 if (
   !/firstIssueActionCount/.test(visualSurfaceSmoke) ||

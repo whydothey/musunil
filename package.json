@@ -35,6 +35,8 @@
     "check:visual-surface": "node scripts/ci-visual-surface-smoke.mjs",
     "check:visual-surface:production-fallback": "node scripts/ci-visual-surface-smoke.mjs --production-fallback",
     "check:visual-surface:live": "node scripts/ci-visual-surface-smoke.mjs --base-url https://musunil.com",
+    "check:visual-surface:evidence": "node scripts/ci-visual-surface-smoke.mjs --evidence-dir docs/visual-evidence/current",
+    "check:visual-surface:live:evidence": "node scripts/ci-visual-surface-smoke.mjs --base-url https://musunil.com --evidence-dir docs/visual-evidence/live-current",
     "check:build-info-clean": "node scripts/ci-build-info-clean.mjs",
     "smoke:api": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/runtime-smoke.mjs",
     "storage:smoke": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/storage-smoke.mjs",

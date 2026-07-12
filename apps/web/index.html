@@ -1892,9 +1892,9 @@
 
       .issue-card-proof-row span {
         display: grid;
-        grid-template-columns: 42px minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr);
         align-items: baseline;
-        gap: 8px;
+        gap: 0;
         min-width: 0;
         color: var(--muted);
         font-size: 12px;
@@ -1903,20 +1903,23 @@
       }
 
       .issue-card-proof-row b {
-        color: color-mix(in srgb, var(--ink) 68%, var(--muted));
-        font-size: 11px;
-        font-weight: 860;
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
       }
 
       .issue-card-proof-row em {
-        display: -webkit-box;
+        display: block;
         min-width: 0;
         overflow: hidden;
         color: var(--text);
         font-style: normal;
         text-overflow: ellipsis;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 1;
+        white-space: nowrap;
       }
 
       .issue-location-strip {
@@ -5127,13 +5130,14 @@
         }
 
         .issue-card-proof-row span {
-          grid-template-columns: 36px minmax(0, 1fr);
-          gap: 7px;
-          font-size: 10.5px;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 0;
+          font-size: 11px;
         }
 
         .issue-card-proof-row b {
-          font-size: 10px;
+          width: 1px;
+          height: 1px;
         }
 
         .issue-card > .chips {
@@ -8370,11 +8374,21 @@
       }
 
       function issueCardPlaceLine(issue) {
-        return issueConfirmedWhereWhenLine(issue);
+        const cards = issueRelatedCards(issue);
+        const regions = issueRegions(issue, cards);
+        const locationCount = Number(issue?.regionCount || regions.length || 0);
+        const place = regions.length ? regions.slice(0, 2).join(" · ") : "지역 확인 중";
+        return [place, locationCount ? `위치 ${locationCount}곳` : "위치 확인 중"].join(" · ");
       }
 
       function issueCardMainFactLine(issue) {
-        return issueConfirmedEvidenceLine(issue);
+        const cards = issueRelatedCards(issue);
+        return [
+          issueTargetCountText(issue, cards),
+          issueOfficialSummaryText(issue),
+          issueVideoSummaryText(issue),
+          issueDisputeSummaryText(issue)
+        ].join(" · ");
       }
 
       function issueCardEvidenceLine(issue) {
