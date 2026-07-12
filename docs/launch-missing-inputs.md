@@ -5,16 +5,27 @@
 
 ## Current Gate
 
-- Generated: 2026-07-12T13:10:25.717Z
+- Generated: 2026-07-12T13:16:39.398Z
 - Source: local_file
 - Launch state: blocked
 - Current stage: connect_api_endpoint
 - Release blocked: yes
-- Blocker report: 2026-07-12T13:10:23.459Z (0m old, refresh after 15m)
+- Blocker report: 2026-07-12T13:16:37.024Z (0m old, refresh after 15m)
 - Report freshness: fresh
 - Before apply command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Immediate safe command: `pnpm launch:apply`
 - Apply command after inputs: `pnpm launch:apply -- --apply`
+
+## Pre-External-Change Checks
+
+아래 명령은 실제 값을 출력하지 않고, 외부 설정 변경 전에 로컬 계약과 필요한 입력 상태를 먼저 확인한다.
+
+- render_static_build_contract: `pnpm check:web-render-build-command`
+  - Render Dashboard Build Command, build-info, _headers, static manifest, and web smoke contract must pass locally before Web redeploy or build metadata changes.
+- web_headers_only_dry_run: `pnpm launch:apply -- --cloudflare-headers-only`
+  - Plans the Web-only Cloudflare header fallback without requiring Render API target or API DNS values.
+- render_cloudflare_apply_dry_run: `pnpm launch:apply`
+  - Lists required Render/Cloudflare inputs and derived targets without writing to providers.
 
 ## Immediate Apply Inputs
 

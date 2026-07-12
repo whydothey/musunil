@@ -93,6 +93,7 @@ function parseReport(source, refreshMetadata = { attempted: false }) {
     nextOperatorCommand,
     nextOperatorCommandScope,
     nextApplyCommand: nextApplyCommandForStage(blockerStage, actions, launchApplyPlan, headerApplyPlan),
+    preExternalChangeChecks: preExternalChangeChecks(actions),
     splitApplyPaths: splitApplyPaths({ failed, actions, launchApplyPlan, headerApplyPlan }),
     staleDecisionWarning: freshness.stale
       ? "STALE LIVE EVIDENCE: run pnpm launch:blockers -- --refresh before applying operator actions or declaring blockers cleared."
@@ -413,6 +414,7 @@ function printMarkdown(summary) {
     console.log(`Next command: \`${summary.nextOperatorCommand}\``);
   }
   console.log("");
+  printPreExternalChangeChecks(summary.preExternalChangeChecks);
   console.log("## Launch Apply Inputs");
   console.log("");
   printLaunchApplyInputs(summary.launchApply);
@@ -464,6 +466,44 @@ function printMarkdown(summary) {
   console.log("## Helper Commands");
   console.log("");
   for (const command of summary.helperCommands) console.log(`- ${command}`);
+}
+
+function preExternalChangeChecks(actions) {
+  const actionIds = new Set(actions.map((action) => action.id));
+  const checks = [];
+  if (actionIds.has("deploy_latest_static") || actionIds.has("publish_build_metadata")) {
+    checks.push({
+      id: "render_static_build_contract",
+      command: "pnpm check:web-render-build-command",
+      note: "Render Dashboard Build Command, build-info, _headers, static manifest, and web smoke contract must pass locally before Web redeploy or build metadata changes."
+    });
+  }
+  if (actionIds.has("apply_static_headers")) {
+    checks.push({
+      id: "web_headers_only_dry_run",
+      command: "pnpm launch:apply -- --cloudflare-headers-only",
+      note: "Plans the Web-only Cloudflare header fallback without requiring Render API target or API DNS values."
+    });
+  }
+  if (actionIds.has("connect_api_endpoint") || actionIds.has("connect_api_dns")) {
+    checks.push({
+      id: "render_cloudflare_apply_dry_run",
+      command: "pnpm launch:apply",
+      note: "Lists required Render/Cloudflare inputs and derived targets without writing to providers."
+    });
+  }
+  return checks;
+}
+
+function printPreExternalChangeChecks(checks = []) {
+  if (!checks.length) return;
+  console.log("## Pre-External-Change Checks");
+  console.log("");
+  for (const check of checks) {
+    console.log(`- ${check.id}: \`${check.command}\``);
+    console.log(`  - ${check.note}`);
+  }
+  console.log("");
 }
 
 function webProxyModeLabel(mode) {

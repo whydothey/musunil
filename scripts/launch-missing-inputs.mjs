@@ -98,6 +98,7 @@ function buildSummary() {
       ? "STALE LIVE EVIDENCE: run pnpm launch:missing-inputs -- --refresh before applying operator actions or declaring blockers cleared."
       : ""),
     actionsAdvisoryOnly: Boolean(blockerData.actionsAdvisoryOnly || blockerData.stale),
+    preExternalChangeChecks: blockerData.preExternalChangeChecks || [],
     immediateApplyInputs,
     requiredEnv: launchApply.requiredEnv || [],
     providerGroups: [
@@ -272,6 +273,7 @@ function renderMarkdown(value) {
     "",
     ...staleReportLines(value.blockerReport, value),
     ...helperFailureLines(value.helperFailures),
+    ...preExternalChangeLines(value.preExternalChangeChecks),
     "## Immediate Apply Inputs",
     "",
     value.immediateApplyInputs.length
@@ -339,6 +341,21 @@ function staleReportLines(report = {}, value = {}) {
 function helperFailureLines(items) {
   if (!items.length) return [];
   return ["## Helper Failures", "", ...items.map((item) => `- ${item.label}: ${compact(item.error || item.stderr || `exit ${item.status}`)}`), ""];
+}
+
+function preExternalChangeLines(checks = []) {
+  if (!checks.length) return [];
+  return [
+    "## Pre-External-Change Checks",
+    "",
+    "아래 명령은 실제 값을 출력하지 않고, 외부 설정 변경 전에 로컬 계약과 필요한 입력 상태를 먼저 확인한다.",
+    "",
+    ...checks.flatMap((check) => [
+      `- ${check.id}: \`${check.command}\``,
+      `  - ${check.note || ""}`
+    ]),
+    ""
+  ];
 }
 
 function applyInputLines(inputs, requiredEnv) {

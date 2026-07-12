@@ -95,6 +95,7 @@ function buildBrief() {
     failedChecks,
     skippedChecks,
     requiredActions,
+    preExternalChangeChecks: rehearsalData.preExternalChangeChecks || [],
     splitApplyPaths: rehearsalData.splitApplyPaths || [],
     renderStaticSite: webData,
     renderApiService: apiData,
@@ -140,6 +141,7 @@ function renderMarkdown(value) {
     "",
     ...staleEvidenceSection(value),
     ...helperFailureSection(value.helperFailures),
+    ...preExternalChangeSection(value.preExternalChangeChecks),
     "## One Command Apply",
     "",
     "- `pnpm launch:apply`는 Render와 Cloudflare 적용 계획을 한 번에 보여주는 dry-run이다.",
@@ -290,6 +292,21 @@ function staleEvidenceSection(value) {
     `- ${value.staleDecisionWarning}`,
     "- Treat the commands, split apply paths, and ordered actions below as diagnostic only until `pnpm launch:handoff` refreshes live evidence.",
     "- Do not change Render/Cloudflare settings or mark launch blockers cleared from this stale operator brief.",
+    ""
+  ];
+}
+
+function preExternalChangeSection(checks = []) {
+  if (!checks.length) return [];
+  return [
+    "## Pre-External-Change Checks",
+    "",
+    "Render/Cloudflare 화면을 바꾸기 전에 아래 명령이 먼저 통과하거나 dry-run으로 입력 상태를 설명해야 한다.",
+    "",
+    ...checks.flatMap((check) => [
+      `- ${check.id}: \`${check.command}\``,
+      `  - ${check.note || ""}`
+    ]),
     ""
   ];
 }

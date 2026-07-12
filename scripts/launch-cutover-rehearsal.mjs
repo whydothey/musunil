@@ -113,6 +113,7 @@ function buildSummary(results) {
     requiredActions,
     launchApplyInputsReady: launchApplyInputsReady(launchApplyPlan),
     requiredLaunchInputsMissing: requiredLaunchInputsMissing(launchApplyPlan),
+    preExternalChangeChecks: blockersData.preExternalChangeChecks || [],
     splitApplyPaths: blockersData.splitApplyPaths || [],
     nextOperatorPrerequisite: blockersData.nextOperatorPrerequisite || nextOperatorPrerequisite(stage, launchApplyPlan),
     nextOperatorCommand: blockersData.nextOperatorCommand || nextOperatorCommand(stage, requiredActions, launchApplyPlan),
@@ -302,6 +303,16 @@ function printMarkdown(value) {
     console.log(`Next command: \`${value.nextOperatorCommand}\``);
   }
   console.log("");
+
+  if (value.preExternalChangeChecks.length > 0) {
+    console.log("## Pre-External-Change Checks");
+    console.log("");
+    for (const check of value.preExternalChangeChecks) {
+      console.log(`- ${check.id}: \`${check.command}\``);
+      console.log(`  - ${check.note}`);
+    }
+    console.log("");
+  }
 
   if (value.helperFailures.length > 0) {
     console.log("## Helper Failures");

@@ -6,7 +6,7 @@
 
 ## Current State
 
-- Generated: 2026-07-12T13:10:23.699Z
+- Generated: 2026-07-12T13:16:37.302Z
 - Expected deploy SHA: run `git rev-parse HEAD` immediately before Render deploy and `pnpm launch:final-gate`.
 - Refresh command: `pnpm launch:handoff`
 - Active goal: active
@@ -14,11 +14,22 @@
 - Stage: connect_api_endpoint
 - Release blocked: yes
 - Push CI: run `pnpm ci:status` after every push. `queued` means GitHub has accepted the workflow but has not assigned a runner yet; use the printed watch command for the final result.
-- Service watch: 2026-07-12T13:10:23.459Z (fresh)
+- Service watch: 2026-07-12T13:16:37.024Z (fresh)
 - Checks: 3 ok, 4 fail, 13 skip, 4 actions
 - Before apply command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Immediate safe command: `pnpm launch:apply`
 - Apply command after inputs: `pnpm launch:apply -- --apply`
+
+## Pre-External-Change Checks
+
+Render/Cloudflare 화면을 바꾸기 전에 아래 명령이 먼저 통과하거나 dry-run으로 입력 상태를 설명해야 한다.
+
+- render_static_build_contract: `pnpm check:web-render-build-command`
+  - Render Dashboard Build Command, build-info, _headers, static manifest, and web smoke contract must pass locally before Web redeploy or build metadata changes.
+- web_headers_only_dry_run: `pnpm launch:apply -- --cloudflare-headers-only`
+  - Plans the Web-only Cloudflare header fallback without requiring Render API target or API DNS values.
+- render_cloudflare_apply_dry_run: `pnpm launch:apply`
+  - Lists required Render/Cloudflare inputs and derived targets without writing to providers.
 
 ## One Command Apply
 

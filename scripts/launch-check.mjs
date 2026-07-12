@@ -576,6 +576,11 @@ if (
   !/nextOperatorPrerequisite/.test(launchNextActions) ||
   !/nextOperatorCommandScope/.test(launchNextActions) ||
   !/nextApplyCommand/.test(launchNextActions) ||
+  !/preExternalChangeChecks/.test(launchNextActions) ||
+  !/Pre-External-Change Checks/.test(launchNextActions) ||
+  !/render_static_build_contract/.test(launchNextActions) ||
+  !/web_headers_only_dry_run/.test(launchNextActions) ||
+  !/render_cloudflare_apply_dry_run/.test(launchNextActions) ||
   !/commandScopeForStage/.test(launchNextActions) ||
   !/Immediate safe command/.test(launchNextActions) ||
   !/Apply command after inputs/.test(launchNextActions) ||
@@ -709,6 +714,8 @@ if (
   !/nextOperatorPrerequisite/.test(launchCutoverRehearsal) ||
   !/nextOperatorCommandScope/.test(launchCutoverRehearsal) ||
   !/nextApplyCommand/.test(launchCutoverRehearsal) ||
+  !/preExternalChangeChecks/.test(launchCutoverRehearsal) ||
+  !/Pre-External-Change Checks/.test(launchCutoverRehearsal) ||
   !/Immediate safe command/.test(launchCutoverRehearsal) ||
   !/Apply command after inputs/.test(launchCutoverRehearsal) ||
   !/Before apply command/.test(launchCutoverRehearsal) ||
@@ -795,6 +802,9 @@ if (
   !/nextOperatorCommandScope/.test(launchOperatorBrief) ||
   !/nextApplyCommand/.test(launchOperatorBrief) ||
   !/operatorCommandLines/.test(launchOperatorBrief) ||
+  !/preExternalChangeChecks/.test(launchOperatorBrief) ||
+  !/preExternalChangeSection/.test(launchOperatorBrief) ||
+  !/Pre-External-Change Checks/.test(launchOperatorBrief) ||
   !/staleDecisionWarning/.test(launchOperatorBrief) ||
   !/actionsAdvisoryOnly/.test(launchOperatorBrief) ||
   !/staleEvidenceSection/.test(launchOperatorBrief) ||
@@ -810,6 +820,10 @@ if (
   !/Immediate safe command/.test(launchOperatorBriefDoc) ||
   !/Apply command after inputs/.test(launchOperatorBriefDoc) ||
   !/Before apply command/.test(launchOperatorBriefDoc) ||
+  !/Pre-External-Change Checks/.test(launchOperatorBriefDoc) ||
+  !/render_static_build_contract/.test(launchOperatorBriefDoc) ||
+  !/web_headers_only_dry_run/.test(launchOperatorBriefDoc) ||
+  !/render_cloudflare_apply_dry_run/.test(launchOperatorBriefDoc) ||
   !/Render `onrender\.com` host/.test(launchOperatorBriefDoc) ||
   !/Active goal/.test(launchOperatorBrief) ||
   !/Launch readiness/.test(launchOperatorBrief) ||
@@ -910,6 +924,9 @@ if (
   !/nextOperatorCommandScope/.test(launchMissingInputs) ||
   !/nextApplyCommand/.test(launchMissingInputs) ||
   !/operatorCommandLines/.test(launchMissingInputs) ||
+  !/preExternalChangeChecks/.test(launchMissingInputs) ||
+  !/preExternalChangeLines/.test(launchMissingInputs) ||
+  !/Pre-External-Change Checks/.test(launchMissingInputs) ||
   !/staleDecisionWarning/.test(launchMissingInputs) ||
   !/actionsAdvisoryOnly/.test(launchMissingInputs) ||
   !/STALE LIVE EVIDENCE/.test(launchMissingInputs) ||
@@ -927,6 +944,10 @@ if (
   !/Immediate safe command/.test(launchMissingInputsDoc) ||
   !/Apply command after inputs/.test(launchMissingInputsDoc) ||
   !/Before apply command/.test(launchMissingInputsDoc) ||
+  !/Pre-External-Change Checks/.test(launchMissingInputsDoc) ||
+  !/render_static_build_contract/.test(launchMissingInputsDoc) ||
+  !/web_headers_only_dry_run/.test(launchMissingInputsDoc) ||
+  !/render_cloudflare_apply_dry_run/.test(launchMissingInputsDoc) ||
   !/Immediate Apply Inputs/.test(launchMissingInputsDoc) ||
   !/\| ID \| Required \| Status \| Env \| Purpose \| Where \| Validate \|/.test(launchMissingInputsDoc) ||
   !/Render API key, or Render musunil-api custom-domain\/service host/.test(launchMissingInputsDoc) ||
