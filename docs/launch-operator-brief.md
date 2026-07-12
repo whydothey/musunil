@@ -6,14 +6,14 @@
 
 ## Current State
 
-- Generated: 2026-07-12T08:24:12.391Z
-- Git SHA: 327d206a1992496747ac6b11f6d2c12a9c801dc2
+- Generated: 2026-07-12T08:29:32.809Z
+- Expected deploy SHA: run `git rev-parse HEAD` immediately before Render deploy and `pnpm launch:final-gate`.
 - Refresh command: `pnpm launch:handoff`
 - Active goal: active
 - Launch readiness: blocked
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T08:24:12.152Z (fresh)
+- Service watch: 2026-07-12T08:29:32.575Z (fresh)
 - Checks: 4 ok, 3 fail, 13 skip, 4 actions
 - Before next command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Next command: `pnpm launch:apply`

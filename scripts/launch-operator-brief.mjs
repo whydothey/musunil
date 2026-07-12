@@ -115,7 +115,7 @@ function renderMarkdown(value) {
     "## Current State",
     "",
     `- Generated: ${value.generatedAt}`,
-    `- Git SHA: ${value.gitSha || "unknown"}`,
+    "- Expected deploy SHA: run `git rev-parse HEAD` immediately before Render deploy and `pnpm launch:final-gate`.",
     `- Refresh command: \`pnpm launch:handoff\``,
     `- Active goal: ${value.goalState}`,
     `- Launch readiness: ${value.launchState}`,

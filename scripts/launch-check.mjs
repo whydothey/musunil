@@ -616,6 +616,8 @@ if (
   !/Launch Operator Brief/.test(launchOperatorBriefDoc) ||
   !/pnpm launch:handoff/.test(launchOperatorBriefDoc) ||
   !/live blocker를 한 번만 갱신/.test(launchOperatorBriefDoc) ||
+  !/Expected deploy SHA: run `git rev-parse HEAD`/.test(launchOperatorBrief) ||
+  !/Expected deploy SHA: run `git rev-parse HEAD`/.test(launchOperatorBriefDoc) ||
   !/Render Web Static Site/.test(launchOperatorBriefDoc) ||
   !/Render API Service/.test(launchOperatorBriefDoc) ||
   !/Render API automation/.test(launchOperatorBriefDoc) ||
@@ -663,6 +665,9 @@ if (
 }
 if (!serviceWatchLastChecked || !launchOperatorBriefServiceWatch || serviceWatchLastChecked !== launchOperatorBriefServiceWatch) {
   failures.push("docs/launch-operator-brief.md must be regenerated from the latest docs/splus-service-watch.md blocker report. Run pnpm launch:handoff.");
+}
+if (/^- Git SHA:\s*[a-f0-9]{40}\s*$/im.test(launchOperatorBriefDoc)) {
+  failures.push("docs/launch-operator-brief.md must not store a hard-coded Git SHA because committing the handoff makes it stale. Run pnpm launch:handoff after updating the generator.");
 }
 const serviceWatchStaticReady =
   /\|\s*web_static_manifest\s*\|\s*ok\s*\|/.test(serviceWatchDoc) &&

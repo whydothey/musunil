@@ -175,6 +175,7 @@ GET /ready -> 200
 - 2026-07-12 17:08 `launch:blockers`와 `service:watch` Required Action이 수동 Render target 경로를 직접 표시한다. `Render automation: skipped (manual_api_dns_target_without_render_token)`와 split path note는 operator 안내가 실제 apply 동작과 일치한다는 증거지만, 실제 Cloudflare DNS 적용과 `serviceSyncState=live` 전 운영 준비 완료가 아니다.
 - 2026-07-12 17:13 `docs/launch-missing-inputs.md`를 최신 live blocker report로 다시 생성했고, `launch-check`가 `docs/splus-service-watch.md`의 `Last checked`와 입력 체크리스트의 `Blocker report` 시각이 다르면 실패하게 했다. 이는 오래된 사용자 입력 체크리스트를 완료 증거로 쓰지 않기 위한 guard이며, 실제 Cloudflare DNS/Web header/API live sync 전 운영 준비 완료가 아니다.
 - 2026-07-12 17:22 `pnpm launch:handoff`를 추가했다. 이제 live blocker를 한 번만 갱신한 뒤 운영 브리프와 입력 체크리스트를 같은 report 시각으로 생성하고, `launch-check`가 `docs/splus-service-watch.md`, `docs/launch-operator-brief.md`, `docs/launch-missing-inputs.md`의 blocker 시각 불일치를 실패 처리한다. 이는 운영자 handoff 문서 오판을 줄이는 guard이며, 실제 외부 DNS/Header/API 연결 완료 증거가 아니다.
+- 2026-07-12 17:29 운영 브리프의 하드코딩 Git SHA를 제거했다. 문서를 커밋하면 기록된 SHA는 구조적으로 stale해지므로, 이제 배포 직전 `git rev-parse HEAD`를 실행해 확인하도록 안내하고 `launch-check`가 `- Git SHA: <40hex>` 회귀를 실패 처리한다. 이는 stale commit 기준 배포 오판을 막는 guard이며, live 배포 완료 증거가 아니다.
 
 ## Next Active Goal Order
 
