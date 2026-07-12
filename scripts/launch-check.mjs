@@ -428,6 +428,10 @@ if (
   !/canApplyHeaderOnly/.test(launchNextActions) ||
   !/전체 API DNS 적용 입력은 아직 부족하지만 Web header-only 경로는 준비됐다/.test(launchNextActions) ||
   !/pnpm launch:apply -- --apply --cloudflare-headers-only/.test(launchNextActions) ||
+  !/manualApiTargetPath/.test(launchNextActions) ||
+  !/manual_api_dns_target_without_render_token/.test(launchNextActions) ||
+  !/Render automation: skipped/.test(launchNextActions) ||
+  !/Render Dashboard target을 수동 입력한 경로다/.test(launchNextActions) ||
   !/deploy_latest_static/.test(launchNextActions) ||
   !/actionIds\.has\("deploy_latest_static"\)[\s\S]*return "deploy_latest_static"/.test(launchNextActions) ||
   !/Render onrender\.com target/.test(launchNextActions) ||
@@ -1096,6 +1100,8 @@ if (
   !/restore_issue_first_api_payload/.test(serviceWatch) ||
   !/requiredActions/.test(serviceWatch) ||
   !/connect_api_endpoint/.test(serviceWatch) ||
+  !/manual_api_dns_target_without_render_token/.test(serviceWatch) ||
+  !/Render token 없이 Dashboard target을 직접 복사한 경우/.test(serviceWatch) ||
   !/fix_web_runtime_config/.test(serviceWatch) ||
   !/build:web-static:render/.test(serviceWatch) ||
   !/pnpm launch:final-gate/.test(serviceWatch) ||

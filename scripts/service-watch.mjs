@@ -617,7 +617,7 @@ function requiredActions(result) {
       id: "connect_api_endpoint",
       owner: "operator",
       action: apiPreflight.message?.includes("ENOTFOUND")
-        ? "pnpm launch:apply 출력대로 Render/Cloudflare token과 서비스 target 상태를 확인한다. Render API token과 Cloudflare token이 있으면 pnpm launch:apply -- --apply가 api.musunil.com custom domain 생성, Render onrender.com target 파생, Cloudflare DNS 적용을 한 번에 처리한다. token이 없으면 pnpm render:api-settings와 pnpm cloudflare:dns로 값을 확인한 뒤 Render Dashboard target을 MUSUNIL_RENDER_API_DNS_TARGET에 넣고 Cloudflare DNS의 api 레코드에 DNS only로 연결한다."
+        ? "pnpm launch:apply 출력대로 Render/Cloudflare token과 서비스 target 상태를 확인한다. Render API token과 Cloudflare token이 있으면 pnpm launch:apply -- --apply가 api.musunil.com custom domain 생성, Render onrender.com target 파생, Cloudflare DNS 적용을 한 번에 처리한다. Render token 없이 Dashboard target을 직접 복사한 경우에는 pnpm render:api-settings와 pnpm cloudflare:dns로 값을 확인한 뒤 MUSUNIL_RENDER_API_DNS_TARGET와 CLOUDFLARE_API_TOKEN만 넣고 같은 명령을 실행한다. 이때 renderSkippedReason=manual_api_dns_target_without_render_token이면 Render API write는 건너뛰고 Cloudflare api CNAME만 DNS only로 적용한다."
         : "api.musunil.com의 TLS 인증서, Render musunil-api 서비스 상태, /health 응답을 확인한다. 수동 확인은 pnpm render:api-settings와 pnpm cloudflare:check를 사용한다.",
       verify: withVisualSurface
         ? "pnpm launch:apply && pnpm launch:blockers -- --refresh"

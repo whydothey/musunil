@@ -169,6 +169,7 @@ moderation:
   assertLaunchApplyBlocksMissingInputs();
   assertLaunchApplyBlocksBadRenderToken();
   assertLaunchApplyManualTargetSkipsRenderWrites();
+  assertLaunchBlockersManualTargetGuidance();
 } catch (error) {
   exitCode = 1;
   console.error(error instanceof Error ? error.message : String(error));
@@ -277,6 +278,31 @@ function assertLaunchApplyManualTargetSkipsRenderWrites() {
   }
   if (!preflightIds.includes("cloudflare_dns_apply") || !applyIds.includes("cloudflare_dns_apply")) {
     throw new Error(`launch:apply manual target path must run only Cloudflare DNS apply, got preflight=${preflightIds.join(",")} apply=${applyIds.join(",")}`);
+  }
+}
+
+function assertLaunchBlockersManualTargetGuidance() {
+  const result = spawnSync(pnpm, ["launch:blockers"], {
+    env: launchApplyPreflightEnv({
+      MUSUNIL_RENDER_API_DNS_TARGET: "musunil-api.onrender.com",
+      CLOUDFLARE_API_TOKEN: "dummy",
+      MUSUNIL_LAUNCH_BLOCKERS_STALE_AFTER_MINUTES: "999999"
+    }),
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  if (result.status !== 0) throw new Error(`pnpm launch:blockers manual target guidance failed with ${result.status}: ${result.stderr || result.stdout}`);
+  const output = result.stdout;
+  const required = [
+    "Required env: (none)",
+    "Render automation: skipped (manual_api_dns_target_without_render_token)",
+    "Render Dashboard target이 `MUSUNIL_RENDER_API_DNS_TARGET`로 들어와 있으므로",
+    "Render Dashboard target을 수동 입력한 경로다",
+    "Inputs ready: yes",
+    "pnpm launch:apply -- --apply && pnpm launch:final-gate"
+  ];
+  for (const text of required) {
+    if (!output.includes(text)) throw new Error(`pnpm launch:blockers manual target guidance missing: ${text}`);
   }
 }
 

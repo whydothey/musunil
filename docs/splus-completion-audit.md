@@ -172,6 +172,7 @@ GET /ready -> 200
 - 2026-07-12 16:43 `launch:apply`가 Render token 존재와 Render API target 파생 성공을 분리한다. 잘못된 token이나 서비스 조회 실패로 target을 못 얻으면 `configured_but_target_derivation_failed`와 수동 `MUSUNIL_RENDER_API_DNS_TARGET` 대안을 출력하지만, 실제 유효 token 또는 정확한 target 입력과 final gate 전 운영 준비 완료가 아니다.
 - 2026-07-12 16:51 `launch:apply -- --apply`가 실제 Render/Cloudflare write 전에 dry-run preflight를 먼저 실행한다. 필수 입력 누락, 잘못된 Render token, target 파생 실패가 있으면 `applyBlocked=true`와 `No Render or Cloudflare writes were attempted`를 출력하므로, 부분 입력 상태의 실적용 오작동을 완료 증거로 오해하지 않는다.
 - 2026-07-12 16:59 `MUSUNIL_RENDER_API_DNS_TARGET`와 `CLOUDFLARE_API_TOKEN`만 있는 수동 target 경로에서는 `launch:apply -- --apply`가 Render API write를 건너뛰고 Cloudflare DNS apply만 실행한다. 이 경로는 Render Dashboard에서 custom domain target을 이미 확인한 경우의 적용 보조이며, Cloudflare apply와 strict DNS/final gate 통과 전 운영 준비 완료가 아니다.
+- 2026-07-12 17:08 `launch:blockers`와 `service:watch` Required Action이 수동 Render target 경로를 직접 표시한다. `Render automation: skipped (manual_api_dns_target_without_render_token)`와 split path note는 operator 안내가 실제 apply 동작과 일치한다는 증거지만, 실제 Cloudflare DNS 적용과 `serviceSyncState=live` 전 운영 준비 완료가 아니다.
 
 ## Next Active Goal Order
 

@@ -211,19 +211,26 @@ function splitApplyPaths({ failed, actions, launchApplyPlan, headerApplyPlan }) 
     });
   }
   if (actionIds.has("connect_api_endpoint") || actionIds.has("connect_api_dns") || failedIds.has("api_endpoint_preflight")) {
+    const manualTarget = manualApiTargetPath(launchApplyPlan);
     paths.push({
       id: "api_dns_and_render_domain",
       clears: ["api_endpoint_preflight", "api_health_ready", "web_visual_surface"],
-      requires: ["RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET", "CLOUDFLARE_API_TOKEN"],
+      requires: [manualTarget ? "MUSUNIL_RENDER_API_DNS_TARGET" : "RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET", "CLOUDFLARE_API_TOKEN"],
       inputsReady: launchApplyInputsReady(launchApplyPlan),
       missingInputs: requiredInputs(launchApplyPlan),
       dryRun: "pnpm launch:apply",
       apply: "pnpm launch:apply -- --apply",
       verify: "pnpm launch:final-gate",
-      note: "Render API custom domain, api.musunil.com DNS, live API 동기화까지 한 번에 검증하는 주 경로다."
+      note: manualTarget
+        ? "Render Dashboard target을 수동 입력한 경로다. Render API write 없이 Cloudflare api CNAME만 DNS only로 적용하고, live API 동기화는 final gate에서 검증한다."
+        : "Render API custom domain, api.musunil.com DNS, live API 동기화까지 한 번에 검증하는 주 경로다."
     });
   }
   return paths;
+}
+
+function manualApiTargetPath(plan) {
+  return plan?.renderSkippedReason === "manual_api_dns_target_without_render_token";
 }
 
 function prerequisiteForStage(stage, actions, launchApplyPlan = null, headerApplyPlan = null) {
@@ -236,6 +243,9 @@ function prerequisiteForStage(stage, actions, launchApplyPlan = null, headerAppl
     }
     if (!launchApplyInputsReady(launchApplyPlan)) {
       return "먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.";
+    }
+    if (manualApiTargetPath(launchApplyPlan)) {
+      return "Render Dashboard target이 `MUSUNIL_RENDER_API_DNS_TARGET`로 들어와 있으므로 Render API write 없이 Cloudflare DNS만 적용하는 수동 target 경로다. `pnpm launch:apply -- --apply` 후 `pnpm launch:final-gate`로 CNAME, API health, live sync를 검증한다.";
     }
     return "Render API token과 Cloudflare token이 있으면 `pnpm launch:apply -- --apply`가 api.musunil.com custom domain 생성, Render onrender.com target 파생, Cloudflare DNS 적용을 한 번에 처리한다. token이 없으면 dry-run 출력의 requiredEnv만 채운다.";
   }
@@ -409,6 +419,7 @@ function printLaunchApplyInputs(plan) {
   }
   console.log(`- Mode: \`${plan.mode || "unknown"}\``);
   console.log(`- Required env: ${(plan.requiredEnv || []).length ? plan.requiredEnv.map((item) => `\`${item}\``).join(", ") : "(none)"}`);
+  if (plan.renderSkippedReason) console.log(`- Render automation: skipped (${plan.renderSkippedReason})`);
   console.log("");
   console.log("| ID | Required | Status | Env |");
   console.log("|---|---|---|---|");
@@ -437,7 +448,8 @@ function runLaunchApplyPlan(...extraArgs) {
       operatorInputs: data.operatorInputs || [],
       derivedTargets: data.derivedTargets || {},
       targetSource: data.targetSource || {},
-      tokenState: data.tokenState || {}
+      tokenState: data.tokenState || {},
+      renderSkippedReason: data.renderSkippedReason || ""
     };
   } catch (error) {
     return { ok: false, error: `invalid JSON output: ${error instanceof Error ? error.message : String(error)}` };
