@@ -164,6 +164,7 @@ GET /ready -> 200
 - 2026-07-12 08:28 Render Static Site build command를 `pnpm build:web-static:render` 단일 명령으로 수렴했다. 이 명령은 운영 API base, 실제 build-info 작성, 정적 빌드, web smoke를 묶고 `launch-check`가 Render/README 계약을 감시한다. 다만 실제 Render build metadata, static headers, API DNS가 live에서 통과하기 전 운영 준비 완료가 아니다.
 - 2026-07-12 08:44 `pnpm launch:blockers -- --refresh`로 live evidence를 갱신했다. `docs/splus-service-watch.md`는 `publish_build_metadata` 조치가 `pnpm build:web-static:render` 확인을 요구하도록 바뀌었지만, Web header contract, `api.musunil.com` DNS, live issue feed 0건은 계속 실패다. 이 상태는 완료 증거가 아니라 외부 조치 전 차단 증거다.
 - 2026-07-12 09:22 홈 빈 상태의 운영 문구를 `새 이슈를 확인 중입니다`와 `다시 확인/지역 보기`로 낮췄다. 이는 API 미연결 상태에서도 사용자가 다음 행동을 이해하게 하는 UX guard이며, `serviceSyncState=live` 또는 `/home.issueCards` 운영 데이터 연결 완료 증거가 아니다.
+- 2026-07-12 16:17 `launch:blockers`가 Web header-only 경로와 API DNS+Render domain 경로의 입력 준비 상태를 분리했다. 현재 `web_headers_only` 누락값은 `CLOUDFLARE_API_TOKEN`만이고, 전체 API 경로는 `RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET`와 `CLOUDFLARE_API_TOKEN`을 요구한다. 실제 token 적용과 live 재검증 전 운영 준비 완료가 아니다.
 
 ## Next Active Goal Order
 

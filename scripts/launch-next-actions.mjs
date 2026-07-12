@@ -10,6 +10,7 @@ const cwd = resolve(import.meta.dirname, "..");
 const reportPath = resolve(cwd, "docs/splus-service-watch.md");
 let refreshResult = { attempted: false };
 const launchApplyPlan = runLaunchApplyPlan();
+const headerApplyPlan = runLaunchApplyPlan("--cloudflare-headers-only");
 
 if (refresh) {
   refreshResult = refreshServiceWatch();
@@ -83,10 +84,12 @@ function parseReport(source, refreshMetadata = { attempted: false }) {
     launchState: releaseBlocked ? "blocked" : "ready_for_final_gate",
     blockerStage,
     launchApplyInputsReady: launchApplyInputsReady(launchApplyPlan),
+    headerApplyInputsReady: launchApplyInputsReady(headerApplyPlan),
     requiredLaunchInputsMissing: requiredLaunchInputsMissing(launchApplyPlan),
+    requiredHeaderInputsMissing: requiredLaunchInputsMissing(headerApplyPlan),
     nextOperatorPrerequisite: prerequisiteForStage(blockerStage, launchApplyPlan),
-    nextOperatorCommand: nextCommandForStage(blockerStage, actions, launchApplyPlan),
-    splitApplyPaths: splitApplyPaths({ failed, actions }),
+    nextOperatorCommand: nextCommandForStage(blockerStage, actions, launchApplyPlan, headerApplyPlan),
+    splitApplyPaths: splitApplyPaths({ failed, actions, launchApplyPlan, headerApplyPlan }),
     lastChecked,
     reportAgeMinutes: freshness.ageMinutes,
     staleAfterMinutes: freshness.staleAfterMinutes,
@@ -107,6 +110,7 @@ function parseReport(source, refreshMetadata = { attempted: false }) {
     status,
     releaseBlocked,
     launchApply: launchApplyPlan,
+    headerApply: headerApplyPlan,
     passCount: ok.length,
     failCount: failed.length,
     skipCount: skipped.length,
@@ -166,7 +170,7 @@ function determineBlockerStage({ refreshFailed, freshness, status, failed, skipp
   return "ready_for_final_gate";
 }
 
-function nextCommandForStage(stage, actions, launchApplyPlan) {
+function nextCommandForStage(stage, actions, launchApplyPlan, headerApplyPlan) {
   if (stage === "refresh_live_evidence" || stage === "refresh_live_evidence_failed") return "pnpm launch:blockers -- --refresh";
   if (stage === "deploy_latest_static") {
     return "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy";
@@ -176,7 +180,7 @@ function nextCommandForStage(stage, actions, launchApplyPlan) {
     return "pnpm launch:apply -- --apply && pnpm launch:final-gate";
   }
   if (stage === "apply_static_headers") {
-    if (!launchApplyInputsReady(launchApplyPlan)) return "pnpm launch:apply -- --cloudflare-headers-only";
+    if (!launchApplyInputsReady(headerApplyPlan)) return "pnpm launch:apply -- --cloudflare-headers-only";
     return "pnpm launch:apply -- --apply --cloudflare-headers-only && pnpm launch:final-gate";
   }
   if (stage === "publish_build_metadata") {
@@ -188,7 +192,7 @@ function nextCommandForStage(stage, actions, launchApplyPlan) {
   return "pnpm launch:blockers -- --refresh";
 }
 
-function splitApplyPaths({ failed, actions }) {
+function splitApplyPaths({ failed, actions, launchApplyPlan, headerApplyPlan }) {
   const actionIds = new Set(actions.map((action) => action.id));
   const failedIds = new Set(failed.map((check) => check.id));
   const paths = [];
@@ -197,6 +201,8 @@ function splitApplyPaths({ failed, actions }) {
       id: "web_headers_only",
       clears: ["web_header_contract"],
       requires: ["CLOUDFLARE_API_TOKEN", "Cloudflare proxied Web record for musunil.com/www"],
+      inputsReady: launchApplyInputsReady(headerApplyPlan),
+      missingInputs: requiredInputs(headerApplyPlan),
       dryRun: "pnpm launch:apply -- --cloudflare-headers-only",
       apply: "pnpm launch:apply -- --apply --cloudflare-headers-only",
       verify: "pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy",
@@ -208,6 +214,8 @@ function splitApplyPaths({ failed, actions }) {
       id: "api_dns_and_render_domain",
       clears: ["api_endpoint_preflight", "api_health_ready", "web_visual_surface"],
       requires: ["RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET", "CLOUDFLARE_API_TOKEN"],
+      inputsReady: launchApplyInputsReady(launchApplyPlan),
+      missingInputs: requiredInputs(launchApplyPlan),
       dryRun: "pnpm launch:apply",
       apply: "pnpm launch:apply -- --apply",
       verify: "pnpm launch:final-gate",
@@ -228,7 +236,7 @@ function prerequisiteForStage(stage, launchApplyPlan = null) {
     return "Render API token과 Cloudflare token이 있으면 `pnpm launch:apply -- --apply`가 api.musunil.com custom domain 생성, Render onrender.com target 파생, Cloudflare DNS 적용을 한 번에 처리한다. token이 없으면 dry-run 출력의 requiredEnv만 채운다.";
   }
   if (stage === "apply_static_headers") {
-    if (!launchApplyInputsReady(launchApplyPlan)) {
+    if (!launchApplyInputsReady(headerApplyPlan)) {
       return "먼저 `pnpm launch:apply -- --cloudflare-headers-only` dry-run으로 Web header 적용에 필요한 Cloudflare 입력을 확인한다. 필수 입력이 비어 있으면 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.";
     }
     return "Render API token이 있으면 `pnpm launch:apply -- --apply --deploy-web`으로 musunil-web Headers를 적용하고 배포까지 요청한다. Render headers가 live에 계속 없거나 Render token 없이 Web header만 먼저 고치려면 `pnpm cloudflare:check`에서 `web_proxy_mode.proxyObserved=true`를 확인한 뒤 `pnpm launch:apply -- --apply --cloudflare-headers-only`로 Web 전용 Cloudflare fallback을 추가한다.";
@@ -253,6 +261,20 @@ function requiredLaunchInputsMissing(plan) {
     const required = input.required || input.requiredMode === "one_of";
     return required && /missing|invalid|placeholder/i.test(input.status || "");
   });
+}
+
+function requiredInputs(plan) {
+  if (!plan?.ok) return ["launch_apply_plan_unavailable"];
+  const missing = [...(plan.requiredEnv || [])];
+  for (const input of plan.operatorInputs || []) {
+    const required = input.required || input.requiredMode === "one_of";
+    if (required && /missing|invalid|placeholder/i.test(input.status || "")) {
+      const envNames = input.env || [];
+      const alreadyCovered = envNames.some((envName) => missing.some((item) => item.includes(envName)));
+      if (!alreadyCovered) missing.push(input.id || envNames.join(" or ") || "required_input");
+    }
+  }
+  return [...new Set(missing)];
 }
 
 function parseTable(source, firstHeader, nextHeading) {
@@ -325,6 +347,8 @@ function printMarkdown(summary) {
     for (const path of summary.splitApplyPaths) {
       console.log(`- ${path.id}: ${path.note}`);
       console.log(`  - Requires: ${path.requires.map((item) => `\`${item}\``).join(", ")}`);
+      console.log(`  - Inputs ready: ${path.inputsReady ? "yes" : "no"}`);
+      if (!path.inputsReady && path.missingInputs?.length) console.log(`  - Missing: ${path.missingInputs.map((item) => `\`${item}\``).join(", ")}`);
       console.log(`  - Dry-run: \`${path.dryRun}\``);
       console.log(`  - Apply: \`${path.apply}\``);
       console.log(`  - Verify: \`${path.verify}\``);
@@ -387,8 +411,8 @@ function printLaunchApplyInputs(plan) {
   }
 }
 
-function runLaunchApplyPlan() {
-  const result = spawnSync("node", ["scripts/launch-apply.mjs", "--", "--json"], {
+function runLaunchApplyPlan(...extraArgs) {
+  const result = spawnSync("node", ["scripts/launch-apply.mjs", "--", ...extraArgs, "--json"], {
     cwd,
     env: process.env,
     encoding: "utf8",

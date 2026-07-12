@@ -403,7 +403,9 @@ if (
   !/launchState/.test(launchNextActions) ||
   !/blockerStage/.test(launchNextActions) ||
   !/launchApplyInputsReady/.test(launchNextActions) ||
+  !/headerApplyInputsReady/.test(launchNextActions) ||
   !/requiredLaunchInputsMissing/.test(launchNextActions) ||
+  !/requiredHeaderInputsMissing/.test(launchNextActions) ||
   !/nextOperatorPrerequisite/.test(launchNextActions) ||
   !/Before next command/.test(launchNextActions) ||
   !/필수 입력이 비어 있으면/.test(launchNextActions) ||
@@ -427,9 +429,13 @@ if (
   !/launch:apply/.test(launchNextActions) ||
   !/launch:apply -- --apply/.test(launchNextActions) ||
   !/runLaunchApplyPlan/.test(launchNextActions) ||
+  !/runLaunchApplyPlan\("--cloudflare-headers-only"\)/.test(launchNextActions) ||
   !/Launch Apply Inputs/.test(launchNextActions) ||
   !/operatorInputs/.test(launchNextActions) ||
   !/requiredEnv/.test(launchNextActions) ||
+  !/Inputs ready/.test(launchNextActions) ||
+  !/Missing:/.test(launchNextActions) ||
+  !/requiredInputs/.test(launchNextActions) ||
   !/render:api-settings/.test(launchNextActions) ||
   !/render:web-settings/.test(launchNextActions) ||
   !/render:apply/.test(launchNextActions) ||
