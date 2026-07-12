@@ -135,6 +135,7 @@ function determineStage({ helperFailures, blockersData, requiredActions, skipped
   if (helperFailures.length > 0) return "helper_failure";
   if (blockersData.stale) return "refresh_live_evidence";
   const actionIds = new Set(requiredActions.map((action) => action.id));
+  if (actionIds.has("deploy_latest_static")) return "deploy_latest_static";
   if (actionIds.has("connect_api_endpoint") || actionIds.has("connect_api_dns")) return "connect_api_endpoint";
   if (actionIds.has("apply_static_headers")) return "apply_static_headers";
   if (actionIds.has("publish_build_metadata")) return "publish_build_metadata";
@@ -146,6 +147,7 @@ function determineStage({ helperFailures, blockersData, requiredActions, skipped
 
 function prioritizeActions(actions) {
   const order = [
+    "deploy_latest_static",
     "connect_api_endpoint",
     "connect_api_dns",
     "apply_static_headers",
@@ -182,6 +184,9 @@ function slimCheck(check) {
 
 function nextOperatorCommand(stage, actions) {
   if (stage === "refresh_live_evidence") return "pnpm launch:cutover-rehearsal -- --refresh";
+  if (stage === "deploy_latest_static") {
+    return "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy";
+  }
   if (stage === "connect_api_endpoint") {
     return 'pnpm render:api-settings && : "${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}" && pnpm cloudflare:dns && pnpm cloudflare:check:strict';
   }
@@ -198,6 +203,9 @@ function nextOperatorCommand(stage, actions) {
 }
 
 function nextOperatorPrerequisite(stage) {
+  if (stage === "deploy_latest_static") {
+    return "Render musunil-web가 현재 main 커밋을 배포했는지 확인한다. live static manifest가 local manifest와 다르면 Clear build cache & deploy를 실행하고 완료 후 다시 검증한다.";
+  }
   if (stage === "connect_api_endpoint") {
     return "Render musunil-api > Settings > Custom Domains에서 api.musunil.com의 DNS target을 복사해 현재 셸의 MUSUNIL_RENDER_API_DNS_TARGET에 먼저 export한다. 문서 placeholder, 괄호 예시, 추측한 .onrender.com 값은 쓰지 않는다.";
   }

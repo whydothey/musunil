@@ -165,6 +165,7 @@ function renderMarkdown(value) {
     "## Cloudflare",
     "",
     "Render Dashboard가 보여주는 custom-domain target을 그대로 복사한다. API는 smoke 통과 전까지 DNS only가 안전하다.",
+    "Custom Domains에서 api.musunil.com의 DNS target을 복사해 MUSUNIL_RENDER_API_DNS_TARGET에 넣은 뒤 Cloudflare api 레코드에 적용한다.",
     "",
     `DNS template: \`${value.cloudflareDnsTemplate.command || "pnpm cloudflare:dns"}\` -> \`${value.cloudflareDnsTemplate.docsPath || "docs/cloudflare-dns-records.md"}\`, \`${value.cloudflareDnsTemplate.terraformPath || "infra/cloudflare/dns-records.tf.example"}\``,
     `Exact target env: \`${(value.cloudflareDnsTemplate.exactTargetEnv || ["MUSUNIL_RENDER_WEB_DNS_TARGET", "MUSUNIL_RENDER_API_DNS_TARGET"]).join("`, `")}\``,

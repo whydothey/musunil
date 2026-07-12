@@ -301,6 +301,8 @@ if (
   !/blockerStage/.test(launchNextActions) ||
   !/nextOperatorPrerequisite/.test(launchNextActions) ||
   !/Before next command/.test(launchNextActions) ||
+  !/deploy_latest_static/.test(launchNextActions) ||
+  !/actionIds\.has\("deploy_latest_static"\)[\s\S]*return "deploy_latest_static"/.test(launchNextActions) ||
   !/Custom Domains에서 api\.musunil\.com의 DNS target/.test(launchNextActions) ||
   !/nextOperatorCommand/.test(launchNextActions) ||
   !/Launch readiness/.test(launchNextActions) ||
@@ -366,10 +368,14 @@ if (
   !/releaseBlocked/.test(launchCutoverRehearsal) ||
   !/nextOperatorPrerequisite/.test(launchCutoverRehearsal) ||
   !/Before next command/.test(launchCutoverRehearsal) ||
+  !/deploy_latest_static/.test(launchCutoverRehearsal) ||
+  !/actionIds\.has\("deploy_latest_static"\)[\s\S]*return "deploy_latest_static"/.test(launchCutoverRehearsal) ||
+  !/"deploy_latest_static"[\s\S]*"connect_api_endpoint"/.test(launchCutoverRehearsal) ||
   !/Custom Domains에서 api\.musunil\.com의 DNS target/.test(launchCutoverRehearsal) ||
   !/nextOperatorCommand/.test(launchCutoverRehearsal) ||
   !/Ordered Operator Actions/.test(launchCutoverRehearsal) ||
   !/connect_api_endpoint/.test(launchCutoverRehearsal) ||
+  !/deploy_latest_static/.test(launchCutoverPlan) ||
   !/cloudflare:dns/.test(launchCutoverRehearsal) ||
   !/apply_static_headers/.test(launchCutoverRehearsal) ||
   !/cloudflare:headers/.test(launchCutoverRehearsal) ||

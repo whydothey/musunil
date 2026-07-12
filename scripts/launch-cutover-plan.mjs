@@ -17,6 +17,12 @@ const plan = {
   },
   currentBlockersToClear: [
     {
+      id: "deploy_latest_static",
+      owner: "operator",
+      action: "Confirm Render musunil-web is deploying the current main commit with pnpm build:web-static:render. If the live static manifest does not match the local manifest, run Clear build cache & deploy on musunil-web, wait for completion, then verify the deployed commit and manifest.",
+      verify: "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy"
+    },
+    {
       id: "api_dns",
       owner: "operator",
       action: "Run pnpm render:api-settings and pnpm cloudflare:dns, attach api.musunil.com as a custom domain on the Render musunil-api service, copy the Render target into MUSUNIL_RENDER_API_DNS_TARGET, then create the matching Cloudflare DNS record from the generated template.",
