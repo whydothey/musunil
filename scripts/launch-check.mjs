@@ -1164,7 +1164,7 @@ const uxScorecard = markdownSection(splusUxTracker, "## Scorecard", "## Previous
 if (/live 홈 이슈 피드가 0건|issues=0|first=none/.test(completionAudit + "\n" + uxCurrentVerdict + "\n" + uxScorecard)) {
   failures.push("current UX/completion docs must not use stale live issue-feed evidence after production fallback topic issues are verified");
 }
-if (!/정보통신망법 개정 관련 집회/.test(completionAudit) || !/source bundle first 0\/4/.test(completionAudit) || !/serviceSyncState=delayed/.test(uxCurrentVerdict)) {
+if (!/정보통신망법 개정 반대 집회/.test(completionAudit) || !/source bundle first 0\/4/.test(completionAudit) || !/serviceSyncState=delayed/.test(uxCurrentVerdict)) {
   failures.push("current UX/completion docs must record the latest live fallback topic issue state while live API sync is still delayed");
 }
 const localCompletedSection = markdownSection(localCompletionStatus, "## 완료", "## 외부 연결 필요");

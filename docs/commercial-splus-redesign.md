@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-12 22:35 KST
+Last updated: 2026-07-12 22:51 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -35,6 +35,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 2026-07-12 19:43 독립 Visual Critique/IA Red-Team은 홈의 KPI 문자열, nested 위치 박스, 생성형 story fallback, 모호한 `상세 보기`를 P0로 지적했다. 이번 패치는 홈 제목을 `공개자료 기반 집회·시위`로 낮추고, story fallback을 추상 상태 마크로 바꾸며, 위치 박스를 평면 `지도에서 보기` 행으로 낮추고, primary CTA를 `근거·영상`으로 바꿔 상세 근거 탭에 바로 진입한다. `pnpm check:web-smoke`, `pnpm check:ux-surface`, `pnpm check:web-flow`, `pnpm check:visual-surface:evidence`는 통과했지만 실제 live API 동기화와 사용자 수락 전에는 S+가 아니다.
 - 2026-07-12 19:53 패치로 poster 없는 LIVE Claim을 더 이상 `reel-full`로 보여주지 않는다. 실제 공개 clip+poster가 모두 있을 때만 풀스크린 `<video class="reel-video">`를 쓰고, 공개 전 자료는 `reel-pending-card`로 낮춰 `현장 영상 공개 준비 중`, 위치, 길이, 상태, 근거/위치/반론/이슈 액션만 보여준다. `pnpm check:visual-surface:evidence`는 `reelPendingFullCount=0`을 검사한다. 실제 운영 공개 영상과 사용자 수락 전에는 S+가 아니다.
 - 2026-07-12 22:35 패치로 19:43 패치의 CTA를 다시 보정했다. `근거·영상`처럼 실제 공개 영상이 없는 상태까지 약속하는 라벨은 제거하고, 카드와 지도 시트의 주행동을 `근거 보기`로 고정했다. 공개 가능한 redacted clip+poster가 모두 있을 때만 `영상 보기`가 보인다. 주요 이슈 레일은 poster 없는 경우 원형 생성 비주얼 대신 텍스트형 이슈 칩으로 낮췄고, production fallback 첫 이슈는 넓은 `정보통신망법 개정 관련 집회`보다 구체적인 `정보통신망법 개정 반대 집회`가 먼저 나오게 했다. 제보 첫 화면은 위치 권한 전에도 후보 선택에서 확인할 정보 3가지를 보여준다. `pnpm check:web-smoke`, `pnpm check:web-flow`, `pnpm check:ux-surface`, `pnpm check:visual-surface:evidence`는 통과했지만 실제 live API 동기화와 사용자 수락 전에는 S+가 아니다.
+- 2026-07-12 22:51에는 실제 `https://musunil.com`에서 `pnpm check:visual-surface:live:evidence`를 실행했다. 390/430/768/1440px 홈·상세·영상·탐색·제보 20개 live 화면은 모두 통과했고 첫 이슈는 `정보통신망법 개정 반대 집회`, `sourceBundleFirst=false`로 확인됐다. 다만 모든 화면이 `serviceSyncState=delayed`라 이 결과는 최신 UI 배포와 fallback 품질 증거이며, 운영 API live 동기화 완료나 S+ 승인 증거가 아니다.
 - 03:14 패치로 홈 카드의 반복 요약을 줄였다. 첫 카드 흐름은 `제목 → 서울 · 현장 2건 · 위치 1곳 → 영상 1건 · 인원 추정 검토 → 공식 확인 중 · 다른 주장 1건`처럼 줄마다 역할이 나뉘며, 기존 `서울에서 같은 주제로 확인된 현장 2건을 묶어 봅니다` 문장과 같은 수치 반복을 제거했다. 390px/1440px 모두 `scrollWidth=viewport`, 첫 카드 높이 206/216px이다. 아직 데스크톱 홈 지도와 이슈 목록 경쟁, 실제 운영 데이터 품질, 사용자 수락 전 S+는 아니다.
 - 04:43 독립 비평 기준 현재 화면은 S+가 아니다. Visual critique는 A- 공공서비스 프로토타입, IA red-team은 B-로 평가했다. 이번 패치는 `영상/지도/제보`가 선택 이슈 맥락으로 읽히게 하는 1차 보정이며, 상업용 S+ 승급 근거가 아니다.
 - 05:02 패치로 현장 영상 poster를 어두운 야간 placeholder 톤에서 밝은 비식별 공공 현장 프레임으로 재생성했고, 데스크톱 제보 화면에 연결 이슈·선택 현장·공개 위치·현재 단계 상태 패널을 추가했다. 그래도 사용자 수락 전 S+는 아니다.
