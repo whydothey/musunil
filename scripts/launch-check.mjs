@@ -152,16 +152,19 @@ if (
   !/render_api_dns_target/.test(readme) ||
   !/github_environment/.test(readme) ||
   !/pnpm launch:post-deploy-workflow/.test(readme) ||
+  !/workflow\/branch\/commit/.test(readme) ||
   !/RENDER_API_TOKEN/.test(readme) ||
   !/MUSUNIL_INTERNAL_API_KEY/.test(readme) ||
   !/render_api_dns_target/.test(launchCutoverRunbook) ||
   !/github_environment/.test(launchCutoverRunbook) ||
   !/pnpm launch:post-deploy-workflow/.test(launchCutoverRunbook) ||
+  !/workflow\/branch\/commit/.test(launchCutoverRunbook) ||
   !/RENDER_API_TOKEN/.test(launchCutoverRunbook) ||
   !/MUSUNIL_INTERNAL_API_KEY/.test(launchCutoverRunbook) ||
   !/render_api_dns_target/.test(userFacingDocs) ||
   !/github_environment/.test(userFacingDocs) ||
   !/pnpm launch:post-deploy-workflow/.test(userFacingDocs) ||
+  !/workflow\/branch\/commit/.test(userFacingDocs) ||
   !/RENDER_API_TOKEN/.test(userFacingDocs) ||
   !/MUSUNIL_INTERNAL_API_KEY/.test(userFacingDocs) ||
   !/render_api_dns_target/.test(launchCutoverPlan) ||
@@ -393,6 +396,16 @@ if (
   !/"render_api_dns_target"/.test(githubPostDeployWorkflow) ||
   !/"github_environment"/.test(githubPostDeployWorkflow) ||
   !/"production"/.test(githubPostDeployWorkflow) ||
+  !/listRunCommand/.test(githubPostDeployWorkflow) ||
+  !/watchCommand/.test(githubPostDeployWorkflow) ||
+  !/"gh", "run", "list"/.test(githubPostDeployWorkflow) ||
+  !/"--workflow", workflow/.test(githubPostDeployWorkflow) ||
+  !/"--event", "workflow_dispatch"/.test(githubPostDeployWorkflow) ||
+  !/"--commit", inputs\.expected_commit_sha/.test(githubPostDeployWorkflow) ||
+  !/run_id=\$\(\$\{listRunCommand\}\)/.test(githubPostDeployWorkflow) ||
+  !/test -n "\$run_id"/.test(githubPostDeployWorkflow) ||
+  !/"gh", "run", "watch", "--repo", repo, "\$run_id", "--exit-status"/.test(githubPostDeployWorkflow) ||
+  !/workflow_dispatch run id/.test(githubPostDeployWorkflow) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET/.test(githubPostDeployWorkflow) ||
   !/MUSUNIL_GITHUB_ENVIRONMENT/.test(githubPostDeployWorkflow) ||
   !/This command passes only workflow inputs/.test(githubPostDeployWorkflow) ||

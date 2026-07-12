@@ -16,6 +16,7 @@ if (json || check) {
     ref: plan.ref,
     inputs: plan.inputs,
     shellCommand: plan.shellCommand,
+    listRunCommand: plan.listRunCommand,
     watchCommand: plan.watchCommand,
     notes: plan.notes,
     issues
@@ -37,7 +38,7 @@ console.log([
   "",
   plan.shellCommand,
   "",
-  "Then watch the latest run:",
+  "Then watch the matching workflow_dispatch run:",
   "",
   plan.watchCommand,
   "",
@@ -67,18 +68,36 @@ function buildPlan(options, env) {
     "--ref", ref,
     ...Object.entries(inputs).flatMap(([key, value]) => ["-f", `${key}=${value}`])
   ];
+  const listRunCommand = shellJoin([
+    "gh", "run", "list",
+    "--repo", repo,
+    "--workflow", workflow,
+    "--branch", ref,
+    "--event", "workflow_dispatch",
+    "--commit", inputs.expected_commit_sha,
+    "--limit", "1",
+    "--json", "databaseId",
+    "--jq", ".[0].databaseId // \"\""
+  ]);
+  const watchCommand = [
+    `run_id=$(${listRunCommand})`,
+    'test -n "$run_id"',
+    shellJoin(["gh", "run", "watch", "--repo", repo, "$run_id", "--exit-status"])
+  ].join(" && ");
   return {
     workflow,
     repo,
     ref,
     inputs,
     shellCommand: shellJoin(ghArgs),
-    watchCommand: shellJoin(["gh", "run", "watch", "--repo", repo, "--exit-status"]),
+    listRunCommand,
+    watchCommand,
     notes: [
       "This command passes only workflow inputs. It does not print or pass secret values on the CLI.",
       "For final-gate, keep github_environment=production unless you intentionally store secrets at repository level only.",
       "If GitHub cannot read RENDER_API_TOKEN or MUSUNIL_RENDER_API_TOKEN, fill render_api_dns_target with the Render api.musunil.com DNS target hostname.",
-      "Set expected_commit_sha to the Git SHA deployed by Render, not an old handoff document value."
+      "Set expected_commit_sha to the Git SHA deployed by Render, not an old handoff document value.",
+      "The watch command resolves the workflow_dispatch run id by workflow, branch, and expected_commit_sha before watching it."
     ]
   };
 }
@@ -114,6 +133,12 @@ function validatePlan(plan) {
   }
   for (const required of ["verification_mode", "web_base_url", "api_base_url", "expected_api_base_url", "expected_commit_sha", "render_api_dns_target", "github_environment"]) {
     if (!plan.shellCommand.includes(`${required}=`)) issues.push(`shell command is missing ${required}`);
+  }
+  for (const required of ["--workflow", "post-deploy.yml", "--event", "workflow_dispatch", "--branch", plan.ref, "--commit", plan.inputs.expected_commit_sha]) {
+    if (!plan.watchCommand.includes(required)) issues.push(`watch command is missing ${required}`);
+  }
+  if (!/gh run watch .*\$run_id.*--exit-status/.test(plan.watchCommand)) {
+    issues.push("watch command must resolve and watch a specific workflow run id");
   }
   return issues;
 }
@@ -157,6 +182,7 @@ function shellJoin(values) {
 
 function shellQuote(value) {
   const text = String(value);
+  if (text === "$run_id") return text;
   if (/^[A-Za-z0-9_./:=@-]*$/.test(text)) return text;
   return `'${text.replace(/'/g, "'\\''")}'`;
 }

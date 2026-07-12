@@ -60,7 +60,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - `pnpm launch:cutover-rehearsal`로 현재 stage, 다음 operator 명령, final gate 순서를 한 화면에 확인
 - `pnpm launch:missing-inputs -- --refresh`로 secret 값을 출력하지 않고 마지막 입력 필드, provider smoke proof marker, Runtime secret 범위를 확인
 - `pnpm launch:missing-inputs -- --template --json`에서 법안 placeholder credential이 `missing`으로 남는지 확인
-- `pnpm launch:post-deploy-workflow -- --check`로 현재 Git SHA, production 기본 URL, `github_environment`, `render_api_dns_target` 입력을 포함한 GitHub Actions `post-deploy` 실행 명령을 secret 노출 없이 생성
+- `pnpm launch:post-deploy-workflow -- --check`로 현재 Git SHA, production 기본 URL, `github_environment`, `render_api_dns_target` 입력을 포함한 GitHub Actions `post-deploy` 실행 명령과 workflow/branch/commit 일치 run id 감시 명령을 secret 노출 없이 생성
 - `pnpm render:api-settings`
 - API/runtime/web smoke 경계 검증
 
