@@ -214,7 +214,7 @@ MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) \
 pnpm launch:final-gate
 ```
 
-Production `musunil.com` 기준 최종 판정 전에는 strict 리허설로 현재 blocker stage를 확인하고, 최종 판정은 `pnpm launch:final-gate`로 한다. 위처럼 환경변수를 쓰는 형태는 staging/preview 도메인이나 특정 commit 검증을 override할 때만 사용한다.
+Production `musunil.com` 기준 최종 판정 전에는 strict 리허설로 현재 blocker stage를 확인하고, 최종 판정은 `pnpm launch:final-gate`로 한다. 이 최종 게이트는 공개 원천 preflight 뒤 `pnpm cloudflare:check:strict`를 실행해 Web header와 API CNAME target까지 같은 흐름에서 차단한다. 위처럼 환경변수를 쓰는 형태는 staging/preview 도메인이나 특정 commit 검증을 override할 때만 사용한다.
 
 ```bash
 pnpm launch:cutover-rehearsal -- --strict

@@ -12,6 +12,11 @@ const steps = [
     args: ["sources:refresh-preflight"]
   },
   {
+    id: "cloudflare_dns_strict_preflight",
+    scope: "live_dns_edge",
+    args: ["cloudflare:check:strict"]
+  },
+  {
     id: "post_deploy_smoke",
     scope: "live_web_api",
     args: ["launch:post-deploy-smoke", "--", "--require-laws", "--require-source-refreshes"]
@@ -97,6 +102,7 @@ function deriveLaunchEnv(baseEnv) {
   setDefault(env, defaults, "MUSUNIL_API_BASE_URL", "https://api.musunil.com");
   setDefault(env, defaults, "MUSUNIL_EXPECTED_API_BASE_URL", env.MUSUNIL_API_BASE_URL);
   setDefault(env, defaults, "MUSUNIL_EXPECTED_COMMIT_SHA", env.RENDER_GIT_COMMIT || gitHead());
+  const renderApiTarget = ensureRenderApiDnsTarget(env, defaults);
   return {
     env,
     summary: {
@@ -104,9 +110,38 @@ function deriveLaunchEnv(baseEnv) {
       apiBaseUrl: env.MUSUNIL_API_BASE_URL,
       expectedApiBaseUrl: env.MUSUNIL_EXPECTED_API_BASE_URL,
       expectedCommitSha: env.MUSUNIL_EXPECTED_COMMIT_SHA || null,
+      renderApiDnsTargetConfigured: Boolean(env.MUSUNIL_RENDER_API_DNS_TARGET),
+      renderApiDnsTargetSource: renderApiTarget.source,
+      renderApiDnsTargetError: renderApiTarget.error || "",
       defaulted: defaults
     }
   };
+}
+
+function ensureRenderApiDnsTarget(env, defaults) {
+  if (env.MUSUNIL_RENDER_API_DNS_TARGET) return { source: "MUSUNIL_RENDER_API_DNS_TARGET" };
+  if (!(env.RENDER_API_TOKEN || env.MUSUNIL_RENDER_API_TOKEN)) return { source: "missing" };
+  const result = spawnSync(process.execPath, ["scripts/render-apply.mjs", "--", "--api-domain", "--json"], {
+    cwd: process.cwd(),
+    env,
+    encoding: "utf8",
+    maxBuffer: 20 * 1024 * 1024
+  });
+  if (result.status !== 0) {
+    return { source: "render_api_lookup_failed", error: compact(result.stderr || result.stdout || `exit ${result.status}`) };
+  }
+  try {
+    const parsed = JSON.parse(result.stdout);
+    const host = parsed?.inspected?.api?.serviceUrlHost;
+    if (typeof host === "string" && host.length > 0) {
+      env.MUSUNIL_RENDER_API_DNS_TARGET = host;
+      defaults.push("MUSUNIL_RENDER_API_DNS_TARGET");
+      return { source: "render_api_service_url" };
+    }
+    return { source: "render_api_lookup_missing_target" };
+  } catch (error) {
+    return { source: "render_api_lookup_invalid_json", error: error instanceof Error ? error.message : String(error) };
+  }
 }
 
 function setDefault(env, defaults, key, value) {
@@ -123,4 +158,8 @@ function gitHead() {
   });
   if (result.status !== 0) return "";
   return result.stdout.trim();
+}
+
+function compact(value) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, 500);
 }

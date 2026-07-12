@@ -585,6 +585,12 @@ if (
   !/launch_final_gate_plan/.test(launchFinalGate) ||
   !/sources:refresh-preflight/.test(launchFinalGate) ||
   !/public_source_refresh_preflight/.test(launchFinalGate) ||
+  !/cloudflare_dns_strict_preflight/.test(launchFinalGate) ||
+  !/live_dns_edge/.test(launchFinalGate) ||
+  !/cloudflare:check:strict/.test(launchFinalGate) ||
+  !/ensureRenderApiDnsTarget/.test(launchFinalGate) ||
+  !/render_api_service_url/.test(launchFinalGate) ||
+  !/MUSUNIL_RENDER_API_DNS_TARGET/.test(launchFinalGate) ||
   !/launch:post-deploy-smoke/.test(launchFinalGate) ||
   !/--require-laws/.test(launchFinalGate) ||
   !/--require-source-refreshes/.test(launchFinalGate) ||
@@ -594,9 +600,9 @@ if (
   !/gitHead\(\)/.test(launchFinalGate) ||
   !/scope:\s*step\.scope/.test(launchFinalGate) ||
   !/command:\s*stepCommands\.get\(step\.id\)/.test(launchFinalGate) ||
-  !/public_source_refresh_preflight[\s\S]*post_deploy_smoke[\s\S]*live_blocker_refresh_strict/.test(launchFinalGate)
+  !/public_source_refresh_preflight[\s\S]*cloudflare_dns_strict_preflight[\s\S]*post_deploy_smoke[\s\S]*live_blocker_refresh_strict/.test(launchFinalGate)
 ) {
-  failures.push("Launch final gate must run public source refresh preflight, post-deploy smoke with laws, and refresh-strict blockers in one ordered command");
+  failures.push("Launch final gate must run public source refresh preflight, strict Cloudflare DNS, post-deploy smoke with laws, and refresh-strict blockers in one ordered command");
 }
 if (
   !/api\.musunil\.com/.test(renderApiSettings) ||

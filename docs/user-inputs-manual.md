@@ -392,7 +392,7 @@ pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes
 pnpm launch:final-gate
 ```
 
-`pnpm launch:final-gate`는 production 기본값으로 `musunil.com`, `api.musunil.com`, 현재 Git SHA를 보정한다. 공개 집회 원천 refresh preflight를 먼저 실행하고, post-deploy smoke를 법안과 공개 집회 원천 refresh 필수 조건으로 실행한 뒤 live service watch를 새로 갱신한다. blocker가 하나라도 남아 있으면 실패하며, 앞 검증이 실패해도 blocker 갱신은 시도하므로 출력된 단계별 결과와 `docs/splus-service-watch.md`의 Required Actions를 기준으로 고친다.
+`pnpm launch:final-gate`는 production 기본값으로 `musunil.com`, `api.musunil.com`, 현재 Git SHA를 보정한다. 공개 집회 원천 refresh preflight를 먼저 실행하고, `pnpm cloudflare:check:strict`로 Web header와 API CNAME target을 확인한 뒤, post-deploy smoke를 법안과 공개 집회 원천 refresh 필수 조건으로 실행하고 live service watch를 새로 갱신한다. `MUSUNIL_RENDER_API_DNS_TARGET`이 없고 Render API token이 있으면 Render service URL에서 target을 자동 파생한다. blocker가 하나라도 남아 있으면 실패하며, 앞 검증이 실패해도 blocker 갱신은 시도하므로 출력된 단계별 결과와 `docs/splus-service-watch.md`의 Required Actions를 기준으로 고친다.
 
 Render Static Site 수동 설정값 확인:
 

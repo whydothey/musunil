@@ -163,7 +163,7 @@ Last updated: 2026-07-12 07:59 KST
   - `GET /transparency/logs`는 공개용 DTO와 sanitized public reason만 반환하며 raw audit reason, private media, identity, GPS field를 노출하지 않음
   - `pnpm launch:post-deploy-smoke`는 배포 후 실제 Web `config.js`와 API URL 정합성, API `/health`, `/ready`, public payload safety, `/me`, `/transparency/logs`, `/transparency/monthly`, coverage, laws, admin auth boundary를 비파괴로 확인
   - `pnpm service:watch -- --once`는 live static hash, build metadata fallback, Web header, API DNS preflight, public payload safety, `/me`, `/transparency/logs`, `/transparency/monthly`를 확인하고 차단 항목별 owner/action/verify/reference를 문서화
-  - `pnpm launch:final-gate`는 배포 후 post-deploy smoke와 live blocker refresh-strict를 한 순서로 실행하고, 앞 단계가 실패해도 service watch blocker 갱신을 시도
+  - `pnpm launch:final-gate`는 배포 후 공개 원천 refresh preflight, strict Cloudflare DNS/API CNAME target 확인, post-deploy smoke, live blocker refresh-strict를 한 순서로 실행하고, 앞 단계가 실패해도 service watch blocker 갱신을 시도
   - `docs/splus-master-tracker.md`
   - `docs/national-issue-splus-tracker.md`
   - `docs/splus-completion-audit.md`
