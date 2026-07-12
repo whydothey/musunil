@@ -9686,15 +9686,15 @@
               <h3>${escapeHtml(publicDisplayTitle(title))}</h3>
               <p>${escapeHtml(facts)}</p>
             </div>
+            <div class="reels-empty-actions" aria-label="영상 대기 상태에서 확인할 항목">
+              <button class="button primary" type="button" data-reel-empty-action="evidence"><svg class="button-symbol" aria-hidden="true"><use href="#icon-stats"></use></svg><span>근거</span></button>
+              <button class="button ghost" type="button" data-reel-empty-action="map"><svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg><span>위치</span></button>
+              <button class="button ghost" type="button" data-reel-empty-action="report"><svg class="button-symbol" aria-hidden="true"><use href="#icon-report"></use></svg><span>제보</span></button>
+            </div>
             <div class="reels-empty-status">
               <span><b>현재</b><em>${escapeHtml(current)}</em></span>
               <span><b>근거</b><em>${escapeHtml(evidence || emptyText)}</em></span>
               <span><b>위치</b><em>${escapeHtml(location)}</em></span>
-            </div>
-            <div class="reels-empty-actions" aria-label="영상 대기 상태에서 확인할 항목">
-              <button class="button primary" type="button" data-reel-empty-action="evidence"><svg class="button-symbol" aria-hidden="true"><use href="#icon-stats"></use></svg><span>근거</span></button>
-              <button class="button ghost" type="button" data-reel-empty-action="map"><svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg><span>지도</span></button>
-              <button class="button ghost" type="button" data-reel-empty-action="report"><svg class="button-symbol" aria-hidden="true"><use href="#icon-report"></use></svg><span>제보</span></button>
             </div>
           </article>
         `;

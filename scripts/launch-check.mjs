@@ -34,6 +34,7 @@ const webDeployCheck = readFileSync(resolve(cwd, "scripts/check-web-deploy.mjs")
 const renderWebSettings = readFileSync(resolve(cwd, "scripts/render-web-settings.mjs"), "utf8");
 const renderApply = readFileSync(resolve(cwd, "scripts/render-apply.mjs"), "utf8");
 const launchCutoverPlan = readFileSync(resolve(cwd, "scripts/launch-cutover-plan.mjs"), "utf8");
+const launchApply = readFileSync(resolve(cwd, "scripts/launch-apply.mjs"), "utf8");
 const cloudflareDnsCheck = readFileSync(resolve(cwd, "scripts/cloudflare-dns-check.mjs"), "utf8");
 const launchNextActions = readFileSync(resolve(cwd, "scripts/launch-next-actions.mjs"), "utf8");
 const launchReady = readFileSync(resolve(cwd, "scripts/launch-ready.mjs"), "utf8");
@@ -287,6 +288,27 @@ if (!/"render:api-settings"/.test(packageJson) || !/render-api-settings\.mjs/.te
   failures.push("Render API settings helper command is missing");
 }
 if (
+  !/"launch:apply"/.test(packageJson) ||
+  !/"launch:apply:plan"/.test(packageJson) ||
+  !/launch-apply\.mjs/.test(packageJson) ||
+  !/launch_apply_plan/.test(launchApply) ||
+  !/RENDER_API_TOKEN/.test(launchApply) ||
+  !/CLOUDFLARE_API_TOKEN/.test(launchApply) ||
+  !/CLOUDFLARE_ZONE_ID/.test(launchApply) ||
+  !/render-apply\.mjs/.test(launchApply) ||
+  !/cloudflare-apply\.mjs/.test(launchApply) ||
+  !/deriveTargets/.test(launchApply) ||
+  !/render_api_service_url/.test(launchApply) ||
+  !/MUSUNIL_RENDER_API_DNS_TARGET/.test(launchApply) ||
+  !/--cloudflare-headers/.test(launchApply) ||
+  !/--deploy-web/.test(launchApply) ||
+  !/--apply/.test(launchApply) ||
+  !/dry_run/.test(launchApply) ||
+  !/Render env vars and secret files are not replaced/.test(launchApply)
+) {
+  failures.push("Launch apply helper must orchestrate dry-run-first Render and Cloudflare apply using Render-derived onrender.com targets");
+}
+if (
   !/"render:apply"/.test(packageJson) ||
   !/"render:apply:plan"/.test(packageJson) ||
   !/render-apply\.mjs/.test(packageJson) ||
@@ -328,7 +350,7 @@ if (
   !/Before next command/.test(launchNextActions) ||
   !/deploy_latest_static/.test(launchNextActions) ||
   !/actionIds\.has\("deploy_latest_static"\)[\s\S]*return "deploy_latest_static"/.test(launchNextActions) ||
-  !/api\.musunil\.com[\s\S]*DNS target/.test(launchNextActions) ||
+  !/Render onrender\.com target/.test(launchNextActions) ||
   !/nextOperatorCommand/.test(launchNextActions) ||
   !/Launch readiness/.test(launchNextActions) ||
   !/Current stage/.test(launchNextActions) ||
@@ -339,11 +361,11 @@ if (
   !/reportUpdated/.test(launchNextActions) ||
   !/failOnBlockers/.test(launchNextActions) ||
   !/service:watch:visual/.test(launchNextActions) ||
+  !/launch:apply/.test(launchNextActions) ||
+  !/launch:apply -- --apply/.test(launchNextActions) ||
   !/render:api-settings/.test(launchNextActions) ||
   !/render:web-settings/.test(launchNextActions) ||
   !/render:apply/.test(launchNextActions) ||
-  !/render:apply -- --api-domain --apply/.test(launchNextActions) ||
-  !/render:apply -- --web-headers --apply/.test(launchNextActions) ||
   !/cloudflare:dns/.test(launchNextActions) ||
   !/cloudflare:headers/.test(launchNextActions) ||
   !/cloudflare:apply/.test(launchNextActions) ||
@@ -375,12 +397,17 @@ for (const [surface, source] of operatorCommandSurfaces) {
   }
 }
 if (
+  !/deriveTargets/.test(launchApply) ||
+  !/render_api_service_url/.test(launchApply) ||
+  !/MUSUNIL_RENDER_API_DNS_TARGET/.test(launchApply) ||
+  !/Render service onrender\.com hosts are derived only from Render API serviceDetails\.url/.test(launchApply) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET:\?set exact Render API target from Render first/.test(launchNextActions) ||
-  !/MUSUNIL_RENDER_API_DNS_TARGET:\?set exact Render API target from Render first/.test(launchCutoverRehearsal) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET:\?set exact Render API target from Render first/.test(launchCutoverPlan) ||
-  !/MUSUNIL_RENDER_API_DNS_TARGET:\?set exact Render API target from Render first/.test(serviceWatch)
+  !/pnpm launch:apply -- --apply/.test(launchNextActions) ||
+  !/pnpm launch:apply -- --apply/.test(launchCutoverRehearsal) ||
+  !/pnpm launch:apply -- --apply/.test(serviceWatch)
 ) {
-  failures.push("Operator DNS helpers must require the real Render API target via shell parameter expansion before strict DNS checks");
+  failures.push("Operator DNS helpers must derive the real Render API target from Render API serviceDetails.url, keep a manual MUSUNIL_RENDER_API_DNS_TARGET fallback, and expose strict DNS verification");
 }
 if (
   !/"launch:cutover-rehearsal"/.test(packageJson) ||
@@ -400,10 +427,9 @@ if (
   !/deploy_latest_static/.test(launchCutoverRehearsal) ||
   !/actionIds\.has\("deploy_latest_static"\)[\s\S]*return "deploy_latest_static"/.test(launchCutoverRehearsal) ||
   !/"deploy_latest_static"[\s\S]*"connect_api_endpoint"/.test(launchCutoverRehearsal) ||
-  !/api\.musunil\.com[\s\S]*DNS target/.test(launchCutoverRehearsal) ||
+  !/Render onrender\.com target/.test(launchCutoverRehearsal) ||
   !/nextOperatorCommand/.test(launchCutoverRehearsal) ||
-  !/render:apply -- --api-domain/.test(launchCutoverRehearsal) ||
-  !/render:apply -- --web-headers/.test(launchCutoverRehearsal) ||
+  !/launch:apply/.test(launchCutoverRehearsal) ||
   !/Ordered Operator Actions/.test(launchCutoverRehearsal) ||
   !/connect_api_endpoint/.test(launchCutoverRehearsal) ||
   !/deploy_latest_static/.test(launchCutoverPlan) ||
@@ -443,7 +469,7 @@ if (
   !/nextOperatorPrerequisite/.test(launchOperatorBrief) ||
   !/Before next command/.test(launchOperatorBrief) ||
   !/Before next command/.test(launchOperatorBriefDoc) ||
-  !/api\.musunil\.com[\s\S]*DNS target/.test(launchOperatorBriefDoc) ||
+  !/Render `onrender\.com` host/.test(launchOperatorBriefDoc) ||
   !/Active goal/.test(launchOperatorBrief) ||
   !/Launch readiness/.test(launchOperatorBrief) ||
   !/오래된 Git SHA나 blocker 상태를 출시 판단 증거로 쓰지 않는다/.test(launchOperatorBrief) ||
@@ -455,6 +481,8 @@ if (
   !/Render Web Static Site/.test(launchOperatorBriefDoc) ||
   !/Render API Service/.test(launchOperatorBriefDoc) ||
   !/Render API automation/.test(launchOperatorBriefDoc) ||
+  !/One Command Apply/.test(launchOperatorBriefDoc) ||
+  !/pnpm launch:apply -- --apply/.test(launchOperatorBriefDoc) ||
   !/pnpm render:apply -- --web-headers --apply/.test(launchOperatorBriefDoc) ||
   !/pnpm render:apply -- --api-domain --apply/.test(launchOperatorBriefDoc) ||
   !/Cloudflare/.test(launchOperatorBriefDoc) ||
@@ -785,8 +813,7 @@ if (
   !/dns-records\.local\.tfvars/.test(launchCutoverPlan) ||
   !/render:api-settings/.test(launchCutoverPlan) ||
   !/render:web-settings/.test(launchCutoverPlan) ||
-  !/render:apply -- --api-domain/.test(launchCutoverPlan) ||
-  !/render:apply -- --web-headers/.test(launchCutoverPlan) ||
+  !/launch:apply/.test(launchCutoverPlan) ||
   !/build:web-static:render/.test(launchCutoverPlan) ||
   !/MUSUNIL_EXPECTED_API_BASE_URL/.test(launchCutoverPlan) ||
   !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(launchCutoverPlan) ||

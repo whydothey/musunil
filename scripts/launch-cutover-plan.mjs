@@ -25,14 +25,14 @@ const plan = {
     {
       id: "api_dns",
       owner: "operator",
-      action: "Run pnpm render:api-settings and pnpm render:apply -- --api-domain. If RENDER_API_TOKEN is available, add api.musunil.com to the Render musunil-api service with pnpm render:apply -- --api-domain --apply. Copy the Render target into MUSUNIL_RENDER_API_DNS_TARGET, then create the matching Cloudflare DNS record from the generated template.",
-      verify: ': "${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}" && pnpm cloudflare:check:strict'
+      action: "Run pnpm launch:apply. If RENDER_API_TOKEN, CLOUDFLARE_API_TOKEN, and CLOUDFLARE_ZONE_ID are available, pnpm launch:apply -- --apply adds api.musunil.com to Render, derives the Render onrender.com target, and applies the Cloudflare DNS record. Without tokens, copy the Render target into MUSUNIL_RENDER_API_DNS_TARGET, then create the matching Cloudflare DNS record from the generated template.",
+      verify: "pnpm launch:apply && pnpm launch:final-gate"
     },
     {
       id: "static_headers",
       owner: "operator",
-      action: "Check pnpm render:web-settings Header application mode and pnpm render:apply -- --web-headers. If RENDER_API_TOKEN is available, apply Render headers with pnpm render:apply -- --web-headers --apply. Otherwise copy every header into Render musunil-web Settings > Headers. If Render headers still do not appear on live responses or the Web record is proxied by Cloudflare, apply the pnpm cloudflare:headers Response Header Transform Rule for Web only. Then Clear build cache & deploy or purge the Web edge cache as applicable.",
-      verify: "pnpm render:apply -- --web-headers && pnpm cloudflare:headers && pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy"
+      action: "Run pnpm launch:apply. If RENDER_API_TOKEN is available, pnpm launch:apply -- --apply --deploy-web applies Render headers and requests a Web deploy. If Render headers still do not appear on live responses or the Web record is proxied by Cloudflare, apply pnpm launch:apply -- --apply --cloudflare-headers for the Web-only response header fallback.",
+      verify: "pnpm launch:apply && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy"
     },
     {
       id: "build_metadata",
@@ -121,6 +121,7 @@ const plan = {
     "pnpm launch:verify-inputs config/musunil.user-inputs.local.yaml",
     "pnpm config:encode -- --check config/musunil.user-inputs.local.yaml",
     "pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws",
+    "pnpm launch:apply",
     "pnpm render:api-settings",
     "pnpm render:web-settings",
     "pnpm render:apply -- --api-domain",

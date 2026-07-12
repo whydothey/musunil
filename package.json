@@ -43,6 +43,8 @@
     "identity:smoke": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/identity-smoke.mjs",
     "launch:external-smoke": "node scripts/external-smoke.mjs",
     "launch:ready": "node scripts/launch-ready.mjs",
+    "launch:apply": "node scripts/launch-apply.mjs",
+    "launch:apply:plan": "node scripts/launch-apply.mjs -- --json",
     "launch:post-deploy-smoke": "node scripts/post-deploy-smoke-runner.mjs",
     "launch:final-gate": "node scripts/launch-final-gate.mjs",
     "service:watch": "node scripts/service-watch.mjs",
