@@ -6,14 +6,14 @@
 
 ## Current State
 
-- Generated: 2026-07-12T09:53:53.138Z
+- Generated: 2026-07-12T10:03:31.705Z
 - Expected deploy SHA: run `git rev-parse HEAD` immediately before Render deploy and `pnpm launch:final-gate`.
 - Refresh command: `pnpm launch:handoff`
 - Active goal: active
 - Launch readiness: blocked
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T09:53:52.890Z (fresh)
+- Service watch: 2026-07-12T10:03:31.460Z (fresh)
 - Checks: 4 ok, 3 fail, 13 skip, 4 actions
 - Before apply command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Immediate safe command: `pnpm launch:apply`
@@ -34,15 +34,15 @@ Required launch inputs from current dry-run:
 - Mode: `dry_run`
 - Required env: `RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET`, `CLOUDFLARE_API_TOKEN`
 
-| ID | Required | Status | Env | Purpose |
-|---|---|---|---|---|
-| render_target_source | one_of | missing | RENDER_API_TOKEN<br>MUSUNIL_RENDER_API_DNS_TARGET<br>alt:MUSUNIL_RENDER_API_TOKEN | Choose one source for the Render API onrender.com target used by api.musunil.com |
-| render_api_token | no | missing_for_auto_target_derivation | RENDER_API_TOKEN<br>alt:MUSUNIL_RENDER_API_TOKEN<br>alt:MUSUNIL_RENDER_API_DNS_TARGET | Render service lookup, custom domain/header apply, and onrender.com target derivation |
-| render_service_identity | no | optional_by_exact_service_name | MUSUNIL_RENDER_WEB_SERVICE_ID<br>MUSUNIL_RENDER_API_SERVICE_ID<br>alt:MUSUNIL_RENDER_WEB_SERVICE_NAME=musunil-web<br>alt:MUSUNIL_RENDER_API_SERVICE_NAME=musunil-api | Use exact Render service IDs when service-name lookup is ambiguous |
-| cloudflare_api_token | yes | missing | CLOUDFLARE_API_TOKEN<br>alt:CF_API_TOKEN | Create or update Cloudflare DNS records and optional response header rule |
-| cloudflare_zone | no | default_zone_name_lookup | CLOUDFLARE_ZONE_ID<br>alt:CF_ZONE_ID<br>alt:CLOUDFLARE_ZONE_NAME=musunil.com | Optional fallback when the Cloudflare token cannot resolve the musunil.com zone by name |
-| render_api_dns_target | no | missing_manual_fallback | MUSUNIL_RENDER_API_DNS_TARGET<br>alt:RENDER_API_TOKEN | Manual fallback CNAME target for api.musunil.com when Render API target derivation is unavailable |
-| render_web_dns_target | no | not_required_for_current_request | MUSUNIL_RENDER_WEB_DNS_TARGET<br>alt:RENDER_API_TOKEN | Manual fallback CNAME target for musunil.com when a Web DNS record is being applied |
+| ID | Required | Status | Env | Purpose | Where | Validate |
+|---|---|---|---|---|---|---|
+| render_target_source | one_of | missing | RENDER_API_TOKEN<br>MUSUNIL_RENDER_API_DNS_TARGET<br>alt:MUSUNIL_RENDER_API_TOKEN | Choose one source for the Render API onrender.com target used by api.musunil.com | Render API key, or Render musunil-api custom-domain/service host copied as MUSUNIL_RENDER_API_DNS_TARGET | pnpm launch:apply shows derivedTargets.api or targetSource.api is not missing |
+| render_api_token | no | missing_for_auto_target_derivation | RENDER_API_TOKEN<br>alt:MUSUNIL_RENDER_API_TOKEN<br>alt:MUSUNIL_RENDER_API_DNS_TARGET | Render service lookup, custom domain/header apply, and onrender.com target derivation | Render Account Settings API key; use MUSUNIL_RENDER_API_DNS_TARGET instead when avoiding Render API writes | pnpm render:api-settings or pnpm launch:apply can inspect musunil-api |
+| render_service_identity | no | optional_by_exact_service_name | MUSUNIL_RENDER_WEB_SERVICE_ID<br>MUSUNIL_RENDER_API_SERVICE_ID<br>alt:MUSUNIL_RENDER_WEB_SERVICE_NAME=musunil-web<br>alt:MUSUNIL_RENDER_API_SERVICE_NAME=musunil-api | Use exact Render service IDs when service-name lookup is ambiguous | Render service settings for musunil-web and musunil-api | pnpm launch:apply shows render_apply ok and inspected web/api services |
+| cloudflare_api_token | yes | missing | CLOUDFLARE_API_TOKEN<br>alt:CF_API_TOKEN | Create or update Cloudflare DNS records and optional response header rule | Cloudflare user API token with musunil.com zone DNS edit and response header rule permissions | pnpm cloudflare:dns or pnpm launch:apply can resolve zone and plan records |
+| cloudflare_zone | no | default_zone_name_lookup | CLOUDFLARE_ZONE_ID<br>alt:CF_ZONE_ID<br>alt:CLOUDFLARE_ZONE_NAME=musunil.com | Optional fallback when the Cloudflare token cannot resolve the musunil.com zone by name | Cloudflare musunil.com Overview page Zone ID | pnpm cloudflare:dns reports zoneResolution without an error |
+| render_api_dns_target | no | missing_manual_fallback | MUSUNIL_RENDER_API_DNS_TARGET<br>alt:RENDER_API_TOKEN | Manual fallback CNAME target for api.musunil.com when Render API target derivation is unavailable | Render musunil-api custom-domain CNAME target or service onrender.com host | pnpm cloudflare:dns plans api.musunil.com as DNS only CNAME to this host |
+| render_web_dns_target | no | not_required_for_current_request | MUSUNIL_RENDER_WEB_DNS_TARGET<br>alt:RENDER_API_TOKEN | Manual fallback CNAME target for musunil.com when a Web DNS record is being applied | Render musunil-web custom-domain CNAME target | pnpm cloudflare:dns plans musunil.com/www only when Web DNS apply is requested |
 
 Split apply paths from current blockers:
 

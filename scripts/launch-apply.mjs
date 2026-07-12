@@ -234,7 +234,9 @@ function operatorInputs(value) {
       requiredMode: "one_of",
       env: ["RENDER_API_TOKEN", "MUSUNIL_RENDER_API_DNS_TARGET"],
       alternatives: ["MUSUNIL_RENDER_API_TOKEN"],
-      purpose: "Choose one source for the Render API onrender.com target used by api.musunil.com"
+      purpose: "Choose one source for the Render API onrender.com target used by api.musunil.com",
+      whereToFind: "Render API key, or Render musunil-api custom-domain/service host copied as MUSUNIL_RENDER_API_DNS_TARGET",
+      howToValidate: "pnpm launch:apply shows derivedTargets.api or targetSource.api is not missing"
     });
     inputs.push({
       id: "render_api_token",
@@ -248,7 +250,9 @@ function operatorInputs(value) {
           : "missing_for_auto_target_derivation",
       env: ["RENDER_API_TOKEN"],
       alternatives: ["MUSUNIL_RENDER_API_TOKEN", "MUSUNIL_RENDER_API_DNS_TARGET"],
-      purpose: "Render service lookup, custom domain/header apply, and onrender.com target derivation"
+      purpose: "Render service lookup, custom domain/header apply, and onrender.com target derivation",
+      whereToFind: "Render Account Settings API key; use MUSUNIL_RENDER_API_DNS_TARGET instead when avoiding Render API writes",
+      howToValidate: "pnpm render:api-settings or pnpm launch:apply can inspect musunil-api"
     });
     inputs.push({
       id: "render_service_identity",
@@ -258,7 +262,9 @@ function operatorInputs(value) {
         : "optional_by_exact_service_name",
       env: ["MUSUNIL_RENDER_WEB_SERVICE_ID", "MUSUNIL_RENDER_API_SERVICE_ID"],
       alternatives: ["MUSUNIL_RENDER_WEB_SERVICE_NAME=musunil-web", "MUSUNIL_RENDER_API_SERVICE_NAME=musunil-api"],
-      purpose: "Use exact Render service IDs when service-name lookup is ambiguous"
+      purpose: "Use exact Render service IDs when service-name lookup is ambiguous",
+      whereToFind: "Render service settings for musunil-web and musunil-api",
+      howToValidate: "pnpm launch:apply shows render_apply ok and inspected web/api services"
     });
   }
   if (value.requested.cloudflare) {
@@ -268,7 +274,9 @@ function operatorInputs(value) {
       status: value.tokenState.cloudflare ? "configured" : "missing",
       env: ["CLOUDFLARE_API_TOKEN"],
       alternatives: ["CF_API_TOKEN"],
-      purpose: "Create or update Cloudflare DNS records and optional response header rule"
+      purpose: "Create or update Cloudflare DNS records and optional response header rule",
+      whereToFind: "Cloudflare user API token with musunil.com zone DNS edit and response header rule permissions",
+      howToValidate: "pnpm cloudflare:dns or pnpm launch:apply can resolve zone and plan records"
     });
     inputs.push({
       id: "cloudflare_zone",
@@ -276,7 +284,9 @@ function operatorInputs(value) {
       status: value.tokenState.cloudflareZoneId ? "configured" : "default_zone_name_lookup",
       env: ["CLOUDFLARE_ZONE_ID"],
       alternatives: ["CF_ZONE_ID", "CLOUDFLARE_ZONE_NAME=musunil.com"],
-      purpose: "Optional fallback when the Cloudflare token cannot resolve the musunil.com zone by name"
+      purpose: "Optional fallback when the Cloudflare token cannot resolve the musunil.com zone by name",
+      whereToFind: "Cloudflare musunil.com Overview page Zone ID",
+      howToValidate: "pnpm cloudflare:dns reports zoneResolution without an error"
     });
     inputs.push({
       id: "render_api_dns_target",
@@ -292,7 +302,9 @@ function operatorInputs(value) {
         : "missing_manual_fallback",
       env: ["MUSUNIL_RENDER_API_DNS_TARGET"],
       alternatives: ["RENDER_API_TOKEN"],
-      purpose: "Manual fallback CNAME target for api.musunil.com when Render API target derivation is unavailable"
+      purpose: "Manual fallback CNAME target for api.musunil.com when Render API target derivation is unavailable",
+      whereToFind: "Render musunil-api custom-domain CNAME target or service onrender.com host",
+      howToValidate: "pnpm cloudflare:dns plans api.musunil.com as DNS only CNAME to this host"
     });
     inputs.push({
       id: "render_web_dns_target",
@@ -306,7 +318,9 @@ function operatorInputs(value) {
           : "not_required_for_current_request",
       env: ["MUSUNIL_RENDER_WEB_DNS_TARGET"],
       alternatives: ["RENDER_API_TOKEN"],
-      purpose: "Manual fallback CNAME target for musunil.com when a Web DNS record is being applied"
+      purpose: "Manual fallback CNAME target for musunil.com when a Web DNS record is being applied",
+      whereToFind: "Render musunil-web custom-domain CNAME target",
+      howToValidate: "pnpm cloudflare:dns plans musunil.com/www only when Web DNS apply is requested"
     });
   }
   return inputs;

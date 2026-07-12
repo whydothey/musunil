@@ -452,12 +452,12 @@ function printLaunchApplyInputs(plan) {
   console.log(`- Required env: ${(plan.requiredEnv || []).length ? plan.requiredEnv.map((item) => `\`${item}\``).join(", ") : "(none)"}`);
   if (plan.renderSkippedReason) console.log(`- Render automation: skipped (${plan.renderSkippedReason})`);
   console.log("");
-  console.log("| ID | Required | Status | Env |");
-  console.log("|---|---|---|---|");
+  console.log("| ID | Required | Status | Env | Where | Validate |");
+  console.log("|---|---|---|---|---|---|");
   for (const input of plan.operatorInputs || []) {
     const required = input.requiredMode === "one_of" ? "one_of" : input.required ? "yes" : "no";
     const env = [...(input.env || []), ...(input.alternatives || []).map((item) => `alt:${item}`)].join("<br>") || "-";
-    console.log(`| ${input.id || ""} | ${required} | ${input.status || ""} | ${env} |`);
+    console.log(`| ${input.id || ""} | ${required} | ${input.status || ""} | ${env} | ${input.whereToFind || ""} | ${input.howToValidate || ""} |`);
   }
 }
 

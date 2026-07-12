@@ -303,12 +303,12 @@ function launchInputLines(plan) {
   lines.push(`- Required env: ${requiredEnv.length ? requiredEnv.map((item) => `\`${item}\``).join(", ") : "(none)"}`);
   if (!inputs.length) return [...lines, "- Inputs: (none)"];
   lines.push("");
-  lines.push("| ID | Required | Status | Env | Purpose |");
-  lines.push("|---|---|---|---|---|");
+  lines.push("| ID | Required | Status | Env | Purpose | Where | Validate |");
+  lines.push("|---|---|---|---|---|---|---|");
   for (const input of inputs) {
     const required = input.requiredMode === "one_of" ? "one_of" : input.required ? "yes" : "no";
     const env = [...(input.env || []), ...(input.alternatives || []).map((item) => `alt:${item}`)].join("<br>");
-    lines.push(`| ${input.id || ""} | ${required} | ${input.status || ""} | ${env || "-"} | ${input.purpose || ""} |`);
+    lines.push(`| ${input.id || ""} | ${required} | ${input.status || ""} | ${env || "-"} | ${input.purpose || ""} | ${input.whereToFind || ""} | ${input.howToValidate || ""} |`);
   }
   return lines;
 }

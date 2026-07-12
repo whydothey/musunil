@@ -441,6 +441,10 @@ if (
   !/operatorInputs/.test(launchApply) ||
   !/requiredMode/.test(launchApply) ||
   !/one_of/.test(launchApply) ||
+  !/whereToFind/.test(launchApply) ||
+  !/howToValidate/.test(launchApply) ||
+  !/Render API key, or Render musunil-api custom-domain\/service host/.test(launchApply) ||
+  !/Cloudflare user API token with musunil\.com zone DNS edit/.test(launchApply) ||
   !/render_target_source/.test(launchApply) ||
   !/cloudflare_api_token/.test(launchApply) ||
   !/cloudflare_zone/.test(launchApply) ||
@@ -544,6 +548,9 @@ if (
   !/runLaunchApplyPlan\("--cloudflare-headers-only"\)/.test(launchNextActions) ||
   !/Launch Apply Inputs/.test(launchNextActions) ||
   !/operatorInputs/.test(launchNextActions) ||
+  !/\| ID \| Required \| Status \| Env \| Where \| Validate \|/.test(launchNextActions) ||
+  !/whereToFind/.test(launchNextActions) ||
+  !/howToValidate/.test(launchNextActions) ||
   !/requiredEnv/.test(launchNextActions) ||
   !/Inputs ready/.test(launchNextActions) ||
   !/Missing:/.test(launchNextActions) ||
@@ -725,6 +732,10 @@ if (
   !/Render API automation/.test(launchOperatorBriefDoc) ||
   !/One Command Apply/.test(launchOperatorBriefDoc) ||
   !/Required launch inputs from current dry-run/.test(launchOperatorBriefDoc) ||
+  !/\| ID \| Required \| Status \| Env \| Purpose \| Where \| Validate \|/.test(launchOperatorBriefDoc) ||
+  !/Render API key, or Render musunil-api custom-domain\/service host/.test(launchOperatorBriefDoc) ||
+  !/pnpm launch:apply shows derivedTargets\.api/.test(launchOperatorBriefDoc) ||
+  !/Cloudflare user API token with musunil\.com zone DNS edit/.test(launchOperatorBriefDoc) ||
   !/Split apply paths from current blockers/.test(launchOperatorBriefDoc) ||
   !/web_headers_only/.test(launchOperatorBriefDoc) ||
   !/Inputs ready/.test(launchOperatorBriefDoc) ||
@@ -818,6 +829,10 @@ if (
   !/Apply command after inputs/.test(launchMissingInputsDoc) ||
   !/Before apply command/.test(launchMissingInputsDoc) ||
   !/Immediate Apply Inputs/.test(launchMissingInputsDoc) ||
+  !/\| ID \| Required \| Status \| Env \| Purpose \| Where \| Validate \|/.test(launchMissingInputsDoc) ||
+  !/Render API key, or Render musunil-api custom-domain\/service host/.test(launchMissingInputsDoc) ||
+  !/pnpm launch:apply shows derivedTargets\.api/.test(launchMissingInputsDoc) ||
+  !/Cloudflare user API token with musunil\.com zone DNS edit/.test(launchMissingInputsDoc) ||
   !/Provider Smoke Inputs/.test(launchMissingInputsDoc) ||
   !/Runtime Secrets/.test(launchMissingInputsDoc) ||
   !/RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET/.test(launchMissingInputsDoc) ||

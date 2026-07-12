@@ -5,12 +5,12 @@
 
 ## Current Gate
 
-- Generated: 2026-07-12T09:53:54.708Z
+- Generated: 2026-07-12T10:03:33.280Z
 - Source: local_file
 - Launch state: blocked
 - Current stage: connect_api_endpoint
 - Release blocked: yes
-- Blocker report: 2026-07-12T09:53:52.890Z (0m old, refresh after 15m)
+- Blocker report: 2026-07-12T10:03:31.460Z (0m old, refresh after 15m)
 - Report freshness: fresh
 - Before apply command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Immediate safe command: `pnpm launch:apply`
@@ -22,10 +22,10 @@
 
 - Required env: `RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET`, `CLOUDFLARE_API_TOKEN`
 
-| ID | Required | Status | Env | Purpose |
-|---|---|---|---|---|
-| render_target_source | one_of | missing | `RENDER_API_TOKEN`<br>`MUSUNIL_RENDER_API_DNS_TARGET`<br>`alt:MUSUNIL_RENDER_API_TOKEN` | Choose one source for the Render API onrender.com target used by api.musunil.com |
-| cloudflare_api_token | yes | missing | `CLOUDFLARE_API_TOKEN`<br>`alt:CF_API_TOKEN` | Create or update Cloudflare DNS records and optional response header rule |
+| ID | Required | Status | Env | Purpose | Where | Validate |
+|---|---|---|---|---|---|---|
+| render_target_source | one_of | missing | `RENDER_API_TOKEN`<br>`MUSUNIL_RENDER_API_DNS_TARGET`<br>`alt:MUSUNIL_RENDER_API_TOKEN` | Choose one source for the Render API onrender.com target used by api.musunil.com | Render API key, or Render musunil-api custom-domain/service host copied as MUSUNIL_RENDER_API_DNS_TARGET | pnpm launch:apply shows derivedTargets.api or targetSource.api is not missing |
+| cloudflare_api_token | yes | missing | `CLOUDFLARE_API_TOKEN`<br>`alt:CF_API_TOKEN` | Create or update Cloudflare DNS records and optional response header rule | Cloudflare user API token with musunil.com zone DNS edit and response header rule permissions | pnpm cloudflare:dns or pnpm launch:apply can resolve zone and plan records |
 
 ## Provider Smoke Inputs
 

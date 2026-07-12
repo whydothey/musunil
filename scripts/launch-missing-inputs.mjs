@@ -68,7 +68,9 @@ function buildSummary() {
       status: input.status,
       required: input.requiredMode === "one_of" ? "one_of" : "yes",
       env: [...(input.env || []), ...(input.alternatives || []).map((item) => `alt:${item}`)],
-      purpose: input.purpose || ""
+      purpose: input.purpose || "",
+      whereToFind: input.whereToFind || "",
+      howToValidate: input.howToValidate || ""
     }));
 
   const components = opsData.components || {};
@@ -335,10 +337,10 @@ function applyInputLines(inputs, requiredEnv) {
   lines.push(`- Required env: ${requiredEnv.length ? requiredEnv.map((item) => `\`${item}\``).join(", ") : "(none)"}`);
   if (!inputs.length) return lines;
   lines.push("");
-  lines.push("| ID | Required | Status | Env | Purpose |");
-  lines.push("|---|---|---|---|---|");
+  lines.push("| ID | Required | Status | Env | Purpose | Where | Validate |");
+  lines.push("|---|---|---|---|---|---|---|");
   for (const input of inputs) {
-    lines.push(`| ${input.id} | ${input.required} | ${input.status} | ${input.env.map((item) => `\`${item}\``).join("<br>")} | ${input.purpose} |`);
+    lines.push(`| ${input.id} | ${input.required} | ${input.status} | ${input.env.map((item) => `\`${item}\``).join("<br>")} | ${input.purpose} | ${input.whereToFind} | ${input.howToValidate} |`);
   }
   return lines;
 }
