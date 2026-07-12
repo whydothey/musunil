@@ -64,7 +64,7 @@ const settings = {
   ],
   afterSave: [
     "Clear build cache & deploy",
-    "export MUSUNIL_RENDER_WEB_DNS_TARGET=\"srv-actual-web-target.onrender.com\"",
+    ': "${MUSUNIL_RENDER_WEB_DNS_TARGET:?set exact Render Web target from Render first}"',
     "pnpm cloudflare:headers",
     "pnpm cloudflare:check",
     "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",

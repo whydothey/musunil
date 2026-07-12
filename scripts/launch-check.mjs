@@ -321,14 +321,17 @@ for (const [surface, source] of operatorCommandSurfaces) {
   if (/<Render (API|Web|musunil)[^>]*target>/i.test(source)) {
     failures.push(`${surface} must not print angle-bracket Render DNS target placeholders in operator commands`);
   }
+  if (/srv-actual-[^\s"`']*\.onrender\.com/i.test(source)) {
+    failures.push(`${surface} must not print fake Render DNS target examples in operator commands`);
+  }
 }
 if (
-  !/srv-actual-api-target\.onrender\.com/.test(launchNextActions) ||
-  !/srv-actual-api-target\.onrender\.com/.test(launchCutoverRehearsal) ||
-  !/srv-actual-api-target\.onrender\.com/.test(launchCutoverPlan) ||
-  !/srv-actual-api-target\.onrender\.com/.test(serviceWatch)
+  !/MUSUNIL_RENDER_API_DNS_TARGET:\?set exact Render API target from Render first/.test(launchNextActions) ||
+  !/MUSUNIL_RENDER_API_DNS_TARGET:\?set exact Render API target from Render first/.test(launchCutoverRehearsal) ||
+  !/MUSUNIL_RENDER_API_DNS_TARGET:\?set exact Render API target from Render first/.test(launchCutoverPlan) ||
+  !/MUSUNIL_RENDER_API_DNS_TARGET:\?set exact Render API target from Render first/.test(serviceWatch)
 ) {
-  failures.push("Operator DNS helpers must use non-angle Render target example values that are rejected only by exact DNS comparison, not by placeholder syntax");
+  failures.push("Operator DNS helpers must require the real Render API target via shell parameter expansion before strict DNS checks");
 }
 if (
   !/"launch:cutover-rehearsal"/.test(packageJson) ||
@@ -468,6 +471,7 @@ if (
   !/MUSUNIL_RENDER_API_DNS_TARGET/.test(cloudflareDnsTemplate) ||
   !/placeholderRejected/.test(cloudflareDnsTemplate) ||
   !/isPlaceholderRenderTarget/.test(cloudflareDnsTemplate) ||
+  !/srv-actual-/.test(cloudflareDnsTemplate) ||
   !/Render musunil-api custom-domain target/.test(cloudflareDnsTemplate) ||
   !/web_record_proxied/.test(cloudflareDnsTemplate) ||
   !/proxied = false/.test(cloudflareDnsRecordsTerraform) ||

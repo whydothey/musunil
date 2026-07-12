@@ -397,8 +397,9 @@ Render Static Site 수동 설정값 확인:
 ```bash
 pnpm launch:cutover-plan
 pnpm render:web-settings
-export MUSUNIL_RENDER_WEB_DNS_TARGET="srv-actual-web-target.onrender.com"
-export MUSUNIL_RENDER_API_DNS_TARGET="srv-actual-api-target.onrender.com"
+# Render Dashboard에서 복사한 실제 target을 두 환경변수에 먼저 export한다.
+: "${MUSUNIL_RENDER_WEB_DNS_TARGET:?set exact Render Web target from Render first}"
+: "${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}"
 pnpm cloudflare:dns
 pnpm cloudflare:check:strict
 ```

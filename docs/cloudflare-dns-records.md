@@ -16,8 +16,9 @@
 Render target은 secret이 아니지만 서비스별로 다르므로 추적 문서에는 placeholder로 둔다. Render Dashboard에서 Custom Domain target을 복사한 뒤 로컬 셸에만 아래처럼 넣는다. 문서의 괄호 예시나 `custom-domain target` 문구를 그대로 넣으면 placeholder로 거부된다.
 
 ```bash
-export MUSUNIL_RENDER_WEB_DNS_TARGET="srv-actual-web-target.onrender.com"
-export MUSUNIL_RENDER_API_DNS_TARGET="srv-actual-api-target.onrender.com"
+# Render Dashboard에서 복사한 실제 target을 두 환경변수에 먼저 export한다.
+: "${MUSUNIL_RENDER_WEB_DNS_TARGET:?set exact Render Web target from Render first}"
+: "${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}"
 pnpm cloudflare:dns
 pnpm cloudflare:check:strict
 ```
