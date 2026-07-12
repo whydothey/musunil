@@ -317,7 +317,7 @@ moderation:
 
 - FCM/APNs 실제 푸시 발송 키
 - NAVER/Kakao/MapTiler 지도 키
-- 경찰·지자체·교통 API 중 아직 연결 방식이 확정되지 않은 키
+- 경찰·지자체의 집회·시위 공개 일정 원천 중 아직 연결 방식이 확정되지 않은 키
 - AI provider, model 이름, token 한도
 
 현재 템플릿에는 AI 추정 Claim을 나중에 켤 수 있도록 최소 필드만 남겨 두었다.

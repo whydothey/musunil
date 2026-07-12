@@ -144,7 +144,7 @@ diagnose report는 외부 사이트 fetch 없이 원천 registry만 검사한다
 ## 실제 데이터 연결 순서
 
 1. 현재 서울경찰청 교통정보센터·세종경찰청·대구경찰청·대전경찰청·강원경찰청·부산경찰청·경기남부경찰청·경기북부경찰청·광주경찰청·인천경찰청·경북경찰청·경남경찰청·제주경찰청·충북경찰청·충남경찰청·전북경찰청·전남경찰청·울산경찰청 게시판 worker는 별도 API 키 없이 공개 HTML, 공식 게시판 JSON, 또는 공식 통합검색 결과를 읽는다.
-2. 외부 worker가 공개 집회/교통 자료를 읽는다.
+2. 외부 worker가 공개 집회·시위 일정과 관련 공지 자료만 읽는다.
 3. worker는 일정 단위 결과를 `/internal/ingest/public-occurrence`로 보낸다.
 4. API는 공개 자료 결과를 `government_or_police`, `organizer_or_group`, `media_report`, `material_report` 등 Claim으로 저장한다.
 
