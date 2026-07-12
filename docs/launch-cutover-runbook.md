@@ -14,7 +14,7 @@ pnpm cloudflare:headers
 pnpm cloudflare:check
 ```
 
-`pnpm launch:operator-brief`는 위 명령들의 핵심 출력과 현재 blocker를 [launch-operator-brief.md](/Users/mk/Documents/Musunil/docs/launch-operator-brief.md)에 합쳐 쓰는 운영자용 단일 브리프다. Render/Cloudflare 화면을 열기 전에는 이 파일을 먼저 본다.
+`pnpm launch:operator-brief -- --refresh`는 위 명령들의 핵심 출력과 현재 blocker를 [launch-operator-brief.md](/Users/mk/Documents/Musunil/docs/launch-operator-brief.md)에 합쳐 쓰는 운영자용 단일 브리프다. Render/Cloudflare 화면을 열기 직전에는 반드시 refresh한 이 파일을 먼저 본다. 기존 파일의 오래된 Git SHA나 blocker 상태는 출시 판단 증거가 아니다.
 `pnpm cloudflare:dns`는 Render custom-domain target을 입력할 Cloudflare DNS 레코드 템플릿을 [cloudflare-dns-records.md](/Users/mk/Documents/Musunil/docs/cloudflare-dns-records.md)와 [dns-records.tf.example](/Users/mk/Documents/Musunil/infra/cloudflare/dns-records.tf.example)에 생성한다.
 `pnpm cloudflare:headers`는 Render Static headers가 live에 적용되지 않을 때 쓸 Cloudflare Response Header Transform Rule 템플릿을 [cloudflare-response-headers.md](/Users/mk/Documents/Musunil/docs/cloudflare-response-headers.md)와 [response-headers.tf.example](/Users/mk/Documents/Musunil/infra/cloudflare/response-headers.tf.example)에 생성한다.
 

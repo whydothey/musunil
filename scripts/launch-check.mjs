@@ -316,9 +316,13 @@ if (
   !/launch-cutover-plan\.mjs/.test(launchOperatorBrief) ||
   !/render-web-settings\.mjs/.test(launchOperatorBrief) ||
   !/render-api-settings\.mjs/.test(launchOperatorBrief) ||
+  !/pnpm launch:operator-brief -- --refresh/.test(launchOperatorBrief) ||
+  !/오래된 Git SHA나 blocker 상태를 출시 판단 증거로 쓰지 않는다/.test(launchOperatorBrief) ||
   !/Header application mode/.test(launchOperatorBrief) ||
   !/Static Web에는 DB\/Redis/.test(launchOperatorBrief) ||
   !/Launch Operator Brief/.test(launchOperatorBriefDoc) ||
+  !/pnpm launch:operator-brief -- --refresh/.test(launchOperatorBriefDoc) ||
+  !/오래된 Git SHA나 blocker 상태를 출시 판단 증거로 쓰지 않는다/.test(launchOperatorBriefDoc) ||
   !/Render Web Static Site/.test(launchOperatorBriefDoc) ||
   !/Render API Service/.test(launchOperatorBriefDoc) ||
   !/Cloudflare/.test(launchOperatorBriefDoc) ||

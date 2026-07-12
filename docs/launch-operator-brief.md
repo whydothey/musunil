@@ -2,13 +2,16 @@
 
 이 문서는 마지막 운영 연결 단계에서 사람이 Render/Cloudflare/Secret 입력을 할 때 보는 단일 브리프다. 여기 나온 값만 기준으로 맞추고, 완료 판단은 `pnpm launch:final-gate` 통과로만 한다.
 
+> 실제 Render/Cloudflare 화면을 열기 직전에는 반드시 `pnpm launch:operator-brief -- --refresh`를 다시 실행한다. 이 파일은 마지막 생성 시점의 스냅샷이며, 오래된 Git SHA나 blocker 상태를 출시 판단 증거로 쓰지 않는다.
+
 ## Current State
 
-- Generated: 2026-07-12T00:05:22.505Z
-- Git SHA: 9af196677f39d071fabb9e1c21bcc5373ddb4249
+- Generated: 2026-07-12T00:19:51.653Z
+- Git SHA: 2ae345ed9f0bcee03701bfba8c2a08939ab1ec1c
+- Refresh command: `pnpm launch:operator-brief -- --refresh`
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T00:05:14.889Z (fresh)
+- Service watch: 2026-07-12T00:21:22.405Z (fresh)
 - Checks: 4 ok, 3 fail, 12 skip, 4 actions
 - Next command: `pnpm render:api-settings && pnpm cloudflare:dns && pnpm cloudflare:check`
 
