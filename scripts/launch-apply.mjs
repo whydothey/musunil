@@ -61,6 +61,7 @@ if (renderRequested) {
 }
 
 const derivedTargets = deriveTargets(renderData);
+const renderTargetDerivation = renderTargetDerivationStatus(renderData, derivedTargets);
 const cloudflareEnv = {
   ...process.env,
   ...(derivedTargets.web && !process.env.MUSUNIL_RENDER_WEB_DNS_TARGET
@@ -99,6 +100,7 @@ const result = {
     cloudflareZoneName: process.env.CLOUDFLARE_ZONE_NAME || "musunil.com"
   },
   derivedTargets,
+  renderTargetDerivation,
   targetSource: {
     web: targetSource("web", derivedTargets.web),
     api: targetSource("api", derivedTargets.api)
@@ -152,6 +154,20 @@ function targetSource(kind, value) {
   return "render_api_service_url";
 }
 
+function renderTargetDerivationStatus(renderData, targets) {
+  const inspected = renderData?.inspected || {};
+  const apiError = inspected.api?.ok === false ? inspected.api.error || "unknown Render API error" : "";
+  const webError = inspected.web?.ok === false ? inspected.web.error || "unknown Render API error" : "";
+  const failed = Boolean(process.env.RENDER_API_TOKEN || process.env.MUSUNIL_RENDER_API_TOKEN) && !targets.api && Boolean(apiError || webError);
+  return {
+    attempted: Boolean(process.env.RENDER_API_TOKEN || process.env.MUSUNIL_RENDER_API_TOKEN),
+    ok: Boolean(targets.api) || !failed,
+    failed,
+    apiError,
+    webError
+  };
+}
+
 function operatorInputs(value) {
   const inputs = [];
   if (value.requested.render) {
@@ -162,7 +178,9 @@ function operatorInputs(value) {
         ? value.targetSource.api === "render_api_service_url"
           ? "derived_from_render_api"
           : "configured"
-        : "missing",
+        : value.renderTargetDerivation.failed
+          ? "missing_or_render_api_target_derivation_failed"
+          : "missing",
       requiredMode: "one_of",
       env: ["RENDER_API_TOKEN", "MUSUNIL_RENDER_API_DNS_TARGET"],
       alternatives: ["MUSUNIL_RENDER_API_TOKEN"],
@@ -172,7 +190,9 @@ function operatorInputs(value) {
       id: "render_api_token",
       required: false,
       status: value.tokenState.render
-        ? "configured"
+        ? value.renderTargetDerivation.failed
+          ? "configured_but_target_derivation_failed"
+          : "configured"
         : value.derivedTargets.api
           ? "not_required_target_available"
           : "missing_for_auto_target_derivation",
@@ -217,6 +237,8 @@ function operatorInputs(value) {
           : "configured"
         : value.requested.cloudflareHeadersOnly
           ? "not_required_for_header_rule"
+        : value.renderTargetDerivation.failed
+          ? "missing_manual_fallback_after_render_api_derivation_failed"
         : "missing_manual_fallback",
       env: ["MUSUNIL_RENDER_API_DNS_TARGET"],
       alternatives: ["RENDER_API_TOKEN"],
@@ -246,7 +268,10 @@ function nextCommands(value) {
   if (missingRequired.length > 0) {
     commands.push(`Fill required launch inputs: ${missingRequired.join(", ")}.`);
   }
-  if (!value.requested.cloudflareHeadersOnly && !value.derivedTargets.api) {
+  if (!value.requested.cloudflareHeadersOnly && value.renderTargetDerivation.failed) {
+    const reason = compact(value.renderTargetDerivation.apiError || value.renderTargetDerivation.webError || "unknown Render API error", 180);
+    commands.push(`Render API token/service lookup did not derive the api.musunil.com target: ${reason}. Fix Render token/service lookup, or set MUSUNIL_RENDER_API_DNS_TARGET manually.`);
+  } else if (!value.requested.cloudflareHeadersOnly && !value.derivedTargets.api) {
     commands.push("Set RENDER_API_TOKEN so pnpm launch:apply can derive the Render API onrender.com target, or set MUSUNIL_RENDER_API_DNS_TARGET manually.");
   }
   if (value.steps.some((step) => step.id === "render_apply" && !step.ok)) {
@@ -264,7 +289,7 @@ function nextCommands(value) {
 }
 
 function missingRequiredInputs(inputs) {
-  return inputs.filter((item) => item.required && item.status === "missing");
+  return inputs.filter((item) => item.required && /missing|invalid|failed/i.test(item.status || ""));
 }
 
 function requiredEnv(inputs) {

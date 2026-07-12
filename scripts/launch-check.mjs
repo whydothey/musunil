@@ -339,6 +339,11 @@ if (
   !/render-apply\.mjs/.test(launchApply) ||
   !/cloudflare-apply\.mjs/.test(launchApply) ||
   !/deriveTargets/.test(launchApply) ||
+  !/renderTargetDerivationStatus/.test(launchApply) ||
+  !/renderTargetDerivation/.test(launchApply) ||
+  !/configured_but_target_derivation_failed/.test(launchApply) ||
+  !/missing_or_render_api_target_derivation_failed/.test(launchApply) ||
+  !/missing_manual_fallback_after_render_api_derivation_failed/.test(launchApply) ||
   !/render_api_service_url/.test(launchApply) ||
   !/operatorInputs/.test(launchApply) ||
   !/requiredMode/.test(launchApply) ||
@@ -351,6 +356,7 @@ if (
   !/token cannot read zones by name/.test(launchApply) ||
   !/requiredEnv/.test(launchApply) ||
   !/item\.env\.join\(" or "\)/.test(launchApply) ||
+  !/missing\|invalid\|failed/.test(launchApply) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET/.test(launchApply) ||
   !/--cloudflare-headers/.test(launchApply) ||
   !/--cloudflare-headers-only/.test(launchApply) ||
