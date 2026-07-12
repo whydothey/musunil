@@ -167,6 +167,7 @@ GET /ready -> 200
 - 2026-07-12 16:17 `launch:blockers`가 Web header-only 경로와 API DNS+Render domain 경로의 입력 준비 상태를 분리했다. 현재 `web_headers_only` 누락값은 `CLOUDFLARE_API_TOKEN`만이고, 전체 API 경로는 `RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET`와 `CLOUDFLARE_API_TOKEN`을 요구한다. 실제 token 적용과 live 재검증 전 운영 준비 완료가 아니다.
 - 2026-07-12 16:25 `CLOUDFLARE_API_TOKEN`만 있는 부분 입력 상태에서는 `launch:blockers`의 `Next command`가 `pnpm launch:apply -- --apply --cloudflare-headers-only`로 바뀐다. Web header blocker를 API DNS 입력과 독립적으로 먼저 줄일 수 있지만, 실제 적용·strict Web header 검증·API DNS/live sync 전 운영 준비 완료가 아니다.
 - 2026-07-12 16:26 `launch:cutover-rehearsal`과 `launch:operator-brief`가 `launch:blockers`의 split apply 판단을 그대로 쓰게 했다. `CLOUDFLARE_API_TOKEN`만 있는 상태에서는 두 경로 모두 Web header-only 명령을 안내하지만, 실제 Cloudflare 적용·strict Web header 검증·API DNS/live sync 전 운영 준비 완료가 아니다.
+- 2026-07-12 16:33 `launch:missing-inputs`가 `Blocker report` 시각과 `Report freshness`를 함께 표시하고, stale live blocker report 기반이면 refresh 경고를 남긴다. 법안 원천 진단 helper가 실패하면 `launch:missing-inputs`도 실패하므로, 오래된 입력 체크리스트나 깨진 법 원천 진단을 출시 준비 증거로 쓰지 않는다.
 
 ## Next Active Goal Order
 

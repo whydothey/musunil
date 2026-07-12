@@ -49,7 +49,7 @@ if (json) {
   }
 }
 
-if (!blockers.ok || !ops.ok || !readyPlan.ok || !externalPlan.ok) process.exitCode = 1;
+if (!blockers.ok || !ops.ok || !lawDiagnostics.ok || !readyPlan.ok || !externalPlan.ok) process.exitCode = 1;
 
 function buildSummary() {
   const blockerData = blockers.data || {};
@@ -76,6 +76,15 @@ function buildSummary() {
     releaseBlocked: Boolean(blockerData.releaseBlocked),
     nextOperatorCommand: blockerData.nextOperatorCommand || "pnpm launch:blockers -- --refresh",
     nextOperatorPrerequisite: blockerData.nextOperatorPrerequisite || "",
+    blockerReport: {
+      lastChecked: blockerData.lastChecked || null,
+      reportAgeMinutes: typeof blockerData.reportAgeMinutes === "number" ? blockerData.reportAgeMinutes : null,
+      staleAfterMinutes: typeof blockerData.staleAfterMinutes === "number" ? blockerData.staleAfterMinutes : null,
+      stale: Boolean(blockerData.stale),
+      refreshRequired: Boolean(blockerData.refreshRequired),
+      refreshAttempted: Boolean(blockerData.refresh?.attempted),
+      refreshReportUpdated: blockerData.refresh?.reportUpdated ?? null
+    },
     immediateApplyInputs,
     requiredEnv: launchApply.requiredEnv || [],
     providerGroups: [
@@ -238,9 +247,12 @@ function renderMarkdown(value) {
     `- Launch state: ${value.launchState}`,
     `- Current stage: ${value.blockerStage}`,
     `- Release blocked: ${value.releaseBlocked ? "yes" : "no"}`,
+    `- Blocker report: ${blockerReportLine(value.blockerReport)}`,
+    `- Report freshness: ${value.blockerReport?.stale ? "stale" : "fresh"}`,
     value.nextOperatorPrerequisite ? `- Before next command: ${value.nextOperatorPrerequisite}` : "",
     `- Next command: \`${value.nextOperatorCommand}\``,
     "",
+    ...staleReportLines(value.blockerReport),
     ...helperFailureLines(value.helperFailures),
     "## Immediate Apply Inputs",
     "",
@@ -271,6 +283,21 @@ function renderMarkdown(value) {
     ...listLines(value.requiredActions),
     ""
   ].join("\n");
+}
+
+function blockerReportLine(report = {}) {
+  const lastChecked = report.lastChecked || "unknown";
+  const age = typeof report.reportAgeMinutes === "number" ? `${report.reportAgeMinutes}m old` : "age unknown";
+  const staleAfter = typeof report.staleAfterMinutes === "number" ? `refresh after ${report.staleAfterMinutes}m` : "refresh window unknown";
+  return `${lastChecked} (${age}, ${staleAfter})`;
+}
+
+function staleReportLines(report = {}) {
+  if (!report.stale) return [];
+  return [
+    "> 이 입력 체크리스트는 stale live blocker report를 기준으로 한다. 출시 판단이나 실제 적용 전에는 `pnpm launch:missing-inputs -- --refresh`를 다시 실행한다.",
+    ""
+  ];
 }
 
 function helperFailureLines(items) {

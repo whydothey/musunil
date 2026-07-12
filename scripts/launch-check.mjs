@@ -652,6 +652,13 @@ if (
   !/law source diagnostics/.test(launchMissingInputs) ||
   !/workers\/public-source-ingest\/src\/index\.ts/.test(launchMissingInputs) ||
   !/lawsGroup\(lawDiagnostics\.data\?\.diagnostics\)/.test(launchMissingInputs) ||
+  !/!lawDiagnostics\.ok/.test(launchMissingInputs) ||
+  !/blockerReport/.test(launchMissingInputs) ||
+  !/Report freshness/.test(launchMissingInputs) ||
+  !/stale live blocker report/.test(launchMissingInputs) ||
+  !/pnpm launch:missing-inputs -- --refresh/.test(launchMissingInputs) ||
+  !/Blocker report/.test(launchMissingInputsDoc) ||
+  !/Report freshness/.test(launchMissingInputsDoc) ||
   !/Immediate Apply Inputs/.test(launchMissingInputsDoc) ||
   !/Provider Smoke Inputs/.test(launchMissingInputsDoc) ||
   !/Runtime Secrets/.test(launchMissingInputsDoc) ||
