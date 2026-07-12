@@ -651,8 +651,8 @@ function requiredActions(result) {
     actions.push({
       id: "publish_build_metadata",
       owner: "operator",
-      action: "Static manifest hash로 최신 UI는 확인됐지만 build-info가 placeholder다. Render musunil-web Build Command가 pnpm build:web-static:render인지 확인한다. 이 단일 명령은 MUSUNIL_WRITE_BUILD_INFO=1로 실제 Git SHA를 쓰며, 수정 후 Clear build cache & deploy를 실행한다.",
-      verify: "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
+      action: "Static manifest hash로 최신 UI는 확인됐지만 build-info가 placeholder다. Render Dashboard를 바꾸기 전 `pnpm check:web-render-build-command`로 실제 Render build contract를 로컬에서 먼저 통과시킨다. 그 다음 musunil-web Build Command가 pnpm build:web-static:render인지 확인한다. 이 단일 명령은 MUSUNIL_WRITE_BUILD_INFO=1로 실제 Git SHA를 쓰며, 수정 후 Clear build cache & deploy를 실행한다.",
+      verify: "pnpm check:web-render-build-command && pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
       reference: "docs/launch-readiness-checklist.md"
     });
   }

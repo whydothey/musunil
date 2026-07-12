@@ -146,6 +146,7 @@ function parseReport(source, refreshMetadata = { attempted: false }) {
       "pnpm cloudflare:headers",
       "pnpm cloudflare:check",
       "pnpm cloudflare:check:strict",
+      "pnpm check:web-render-build-command",
       "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
       "MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
       "pnpm launch:post-deploy-workflow -- --mode=web-deploy",
@@ -179,7 +180,7 @@ function determineBlockerStage({ refreshFailed, freshness, status, failed, skipp
 function nextCommandForStage(stage, actions, launchApplyPlan, headerApplyPlan) {
   if (stage === "refresh_live_evidence" || stage === "refresh_live_evidence_failed") return "pnpm launch:blockers -- --refresh";
   if (stage === "deploy_latest_static") {
-    return "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy";
+    return "pnpm check:web-render-build-command && pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy";
   }
   if (stage === "connect_api_endpoint") {
     if (!launchApplyInputsReady(launchApplyPlan) && canApplyHeaderOnly(actions, headerApplyPlan)) return "pnpm launch:apply -- --apply --cloudflare-headers-only";
@@ -191,7 +192,7 @@ function nextCommandForStage(stage, actions, launchApplyPlan, headerApplyPlan) {
     return "pnpm launch:apply -- --apply --cloudflare-headers-only && pnpm launch:final-gate";
   }
   if (stage === "publish_build_metadata") {
-    return "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy";
+    return "pnpm check:web-render-build-command && pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy";
   }
   if (stage === "restore_live_issue_sync" || stage === "restore_issue_first_data" || stage === "fix_api_readiness") return "pnpm launch:final-gate";
   if (actions[0]?.verify) return actions[0].verify;
@@ -268,7 +269,7 @@ function manualApiTargetPath(plan) {
 
 function prerequisiteForStage(stage, actions, launchApplyPlan = null, headerApplyPlan = null) {
   if (stage === "deploy_latest_static") {
-    return "Render musunil-web가 현재 main 커밋을 배포했는지 확인한다. 아직 이전 정적 manifest가 보이면 Render musunil-web에서 Clear build cache & deploy를 실행하고 배포 완료 후 검증한다.";
+    return "`pnpm check:web-render-build-command`로 Render 전용 build contract가 로컬에서 통과하는지 먼저 확인한다. 이후 Render musunil-web가 현재 main 커밋을 배포했는지 확인한다. 아직 이전 정적 manifest가 보이면 Render musunil-web에서 Clear build cache & deploy를 실행하고 배포 완료 후 검증한다.";
   }
   if (stage === "connect_api_endpoint") {
     if (!launchApplyInputsReady(launchApplyPlan) && canApplyHeaderOnly(actions, headerApplyPlan)) {
@@ -289,7 +290,7 @@ function prerequisiteForStage(stage, actions, launchApplyPlan = null, headerAppl
     return "Render API token이 있으면 `pnpm launch:apply -- --apply --deploy-web`으로 musunil-web Headers를 적용하고 배포까지 요청한다. Render headers가 live에 계속 없거나 Render token 없이 Web header만 먼저 고치려면 `pnpm cloudflare:check`에서 `web_proxy_mode.proxyObserved=true`를 확인한 뒤 `pnpm launch:apply -- --apply --cloudflare-headers-only`로 Web 전용 Cloudflare fallback을 추가한다.";
   }
   if (stage === "publish_build_metadata") {
-    return "Render musunil-web Build Command가 pnpm build:web-static:render인지 먼저 확인하고 Clear build cache & deploy로 새 산출물을 publish한다.";
+    return "`pnpm check:web-render-build-command`로 Render 전용 build contract를 먼저 검증한다. 이후 Render musunil-web Build Command가 pnpm build:web-static:render인지 확인하고 Clear build cache & deploy로 새 산출물을 publish한다.";
   }
   if (stage === "restore_live_issue_sync") {
     return "api.musunil.com DNS와 Web config.js의 apiBaseUrl이 https://api.musunil.com으로 맞은 상태에서 live API 응답을 확인한다.";

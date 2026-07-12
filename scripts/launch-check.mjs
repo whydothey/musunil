@@ -584,6 +584,7 @@ if (
   !/Render Dashboard target을 수동 입력한 경로다/.test(launchNextActions) ||
   !/deploy_latest_static/.test(launchNextActions) ||
   !/actionIds\.has\("deploy_latest_static"\)[\s\S]*return "deploy_latest_static"/.test(launchNextActions) ||
+  !/check:web-render-build-command/.test(launchNextActions) ||
   !/Render onrender\.com target/.test(launchNextActions) ||
   !/nextOperatorCommand/.test(launchNextActions) ||
   !/splitApplyPaths/.test(launchNextActions) ||
@@ -1234,6 +1235,7 @@ if (
   !/render:api-settings/.test(launchCutoverPlan) ||
   !/render:web-settings/.test(launchCutoverPlan) ||
   !/launch:apply/.test(launchCutoverPlan) ||
+  !/check:web-render-build-command/.test(launchCutoverPlan) ||
   !/build:web-static:render/.test(launchCutoverPlan) ||
   !/MUSUNIL_EXPECTED_API_BASE_URL/.test(launchCutoverPlan) ||
   !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(launchCutoverPlan) ||
@@ -1321,6 +1323,7 @@ if (
   !/manual_api_dns_target_without_render_token/.test(serviceWatch) ||
   !/Render token 없이 Dashboard target을 직접 복사한 경우/.test(serviceWatch) ||
   !/fix_web_runtime_config/.test(serviceWatch) ||
+  !/check:web-render-build-command/.test(serviceWatch) ||
   !/build:web-static:render/.test(serviceWatch) ||
   !/pnpm launch:final-gate/.test(serviceWatch) ||
   !/render:api-settings/.test(serviceWatch) ||

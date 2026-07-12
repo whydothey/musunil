@@ -19,8 +19,8 @@ const plan = {
     {
       id: "deploy_latest_static",
       owner: "operator",
-      action: "Confirm Render musunil-web is deploying the current main commit with pnpm build:web-static:render. If the live static manifest does not match the local manifest, run Clear build cache & deploy on musunil-web, wait for completion, then verify the deployed commit and manifest.",
-      verify: "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy"
+      action: "Run pnpm check:web-render-build-command before editing Render, then confirm Render musunil-web is deploying the current main commit with pnpm build:web-static:render. If the live static manifest does not match the local manifest, run Clear build cache & deploy on musunil-web, wait for completion, then verify the deployed commit and manifest.",
+      verify: "pnpm check:web-render-build-command && pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy"
     },
     {
       id: "api_dns",
@@ -37,8 +37,8 @@ const plan = {
     {
       id: "build_metadata",
       owner: "operator",
-      action: "Confirm Render musunil-web uses pnpm build:web-static:render and publishes that build output. Static hash match is acceptable for UI freshness, but build-info should eventually contain the deployed Git SHA.",
-      verify: "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy"
+      action: "Run pnpm check:web-render-build-command locally, then confirm Render musunil-web uses pnpm build:web-static:render and publishes that build output. Static hash match is acceptable for UI freshness, but build-info should eventually contain the deployed Git SHA.",
+      verify: "pnpm check:web-render-build-command && pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy"
     },
     {
       id: "live_data_sync",

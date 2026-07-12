@@ -6,7 +6,7 @@
 
 ## Current State
 
-- Generated: 2026-07-12T12:10:53.648Z
+- Generated: 2026-07-12T12:15:51.465Z
 - Expected deploy SHA: run `git rev-parse HEAD` immediately before Render deploy and `pnpm launch:final-gate`.
 - Refresh command: `pnpm launch:handoff`
 - Active goal: active
@@ -14,7 +14,7 @@
 - Stage: connect_api_endpoint
 - Release blocked: yes
 - Push CI: run `pnpm ci:status` after every push. `queued` means GitHub has accepted the workflow but has not assigned a runner yet; use the printed watch command for the final result.
-- Service watch: 2026-07-12T12:10:53.418Z (fresh)
+- Service watch: 2026-07-12T12:15:51.072Z (fresh)
 - Checks: 3 ok, 4 fail, 13 skip, 4 actions
 - Before apply command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Immediate safe command: `pnpm launch:apply`
@@ -74,8 +74,8 @@ Split apply paths from current blockers:
    - Verify: `pnpm launch:apply -- --cloudflare-headers-only && pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy`
    - Reference: docs/launch-cutover-runbook.md#2-render-static-site
 3. publish_build_metadata (operator)
-   - Action: Static manifest hash로 최신 UI는 확인됐지만 build-info가 placeholder다. Render musunil-web Build Command가 pnpm build:web-static:render인지 확인한다. 이 단일 명령은 MUSUNIL_WRITE_BUILD_INFO=1로 실제 Git SHA를 쓰며, 수정 후 Clear build cache & deploy를 실행한다.
-   - Verify: `pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy`
+   - Action: Static manifest hash로 최신 UI는 확인됐지만 build-info가 placeholder다. Render Dashboard를 바꾸기 전 `pnpm check:web-render-build-command`로 실제 Render build contract를 로컬에서 먼저 통과시킨다. 그 다음 musunil-web Build Command가 pnpm build:web-static:render인지 확인한다. 이 단일 명령은 MUSUNIL_WRITE_BUILD_INFO=1로 실제 Git SHA를 쓰며, 수정 후 Clear build cache & deploy를 실행한다.
+   - Verify: `pnpm check:web-render-build-command && pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy`
    - Reference: docs/launch-readiness-checklist.md
 4. stop_live_visual_surface_regression (lead)
    - Action: 실제 musunil.com은 fallback 이슈 피드를 렌더링하지만 live API 동기화가 아니다. API DNS/CORS/Web config와 `/home.issueCards` 연결을 고쳐 `serviceSyncState=live`가 될 때까지 배포 승급을 중단한다.
