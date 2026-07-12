@@ -173,7 +173,7 @@ function slimCheck(check) {
 function nextOperatorCommand(stage, actions) {
   if (stage === "refresh_live_evidence") return "pnpm launch:cutover-rehearsal -- --refresh";
   if (stage === "connect_api_endpoint") {
-    return "pnpm render:api-settings && pnpm cloudflare:dns && MUSUNIL_RENDER_API_DNS_TARGET=\"<Render API target>\" pnpm cloudflare:check:strict";
+    return "pnpm render:api-settings && pnpm cloudflare:dns && MUSUNIL_RENDER_API_DNS_TARGET=\"srv-actual-api-target.onrender.com\" pnpm cloudflare:check:strict";
   }
   if (stage === "apply_static_headers") {
     return "pnpm render:web-settings && pnpm cloudflare:headers && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy";

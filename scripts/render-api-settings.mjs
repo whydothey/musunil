@@ -37,7 +37,7 @@ const settings = {
   afterSave: [
     "Deploy musunil-api after MUSUNIL_USER_INPUTS_B64 and generated secrets are present.",
     "Attach api.musunil.com in Render Custom Domains and copy the Render target to Cloudflare DNS.",
-    "export MUSUNIL_RENDER_API_DNS_TARGET=\"<Render musunil-api custom-domain target>\"",
+    "export MUSUNIL_RENDER_API_DNS_TARGET=\"srv-actual-api-target.onrender.com\"",
     "pnpm cloudflare:dns",
     "pnpm cloudflare:check:strict",
     "pnpm launch:post-deploy-smoke -- --require-laws",

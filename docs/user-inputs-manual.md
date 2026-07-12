@@ -397,8 +397,8 @@ Render Static Site 수동 설정값 확인:
 ```bash
 pnpm launch:cutover-plan
 pnpm render:web-settings
-export MUSUNIL_RENDER_WEB_DNS_TARGET="<Render Web target>"
-export MUSUNIL_RENDER_API_DNS_TARGET="<Render API target>"
+export MUSUNIL_RENDER_WEB_DNS_TARGET="srv-actual-web-target.onrender.com"
+export MUSUNIL_RENDER_API_DNS_TARGET="srv-actual-api-target.onrender.com"
 pnpm cloudflare:dns
 pnpm cloudflare:check:strict
 ```

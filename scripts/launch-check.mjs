@@ -43,6 +43,8 @@ const cloudflareDnsTemplate = readFileSync(resolve(cwd, "scripts/cloudflare-dns-
 const cloudflareResponseHeaders = readFileSync(resolve(cwd, "scripts/cloudflare-response-headers-template.mjs"), "utf8");
 const launchCutoverRunbook = readFileSync(resolve(cwd, "docs/launch-cutover-runbook.md"), "utf8");
 const launchOperatorBriefDoc = readFileSync(resolve(cwd, "docs/launch-operator-brief.md"), "utf8");
+const userInputsManual = readFileSync(resolve(cwd, "docs/user-inputs-manual.md"), "utf8");
+const serviceWatchDoc = readFileSync(resolve(cwd, "docs/splus-service-watch.md"), "utf8");
 const cloudflareDnsRecordsDoc = readFileSync(resolve(cwd, "docs/cloudflare-dns-records.md"), "utf8");
 const cloudflareDnsRecordsTerraform = readFileSync(resolve(cwd, "infra/cloudflare/dns-records.tf.example"), "utf8");
 const cloudflareResponseHeadersDoc = readFileSync(resolve(cwd, "docs/cloudflare-response-headers.md"), "utf8");
@@ -301,6 +303,32 @@ if (
   !/launch:post-deploy-smoke -- --require-laws/.test(launchNextActions)
 ) {
   failures.push("Launch blockers helper must summarize service watch freshness, required actions, and Web/API/laws verification commands");
+}
+const operatorCommandSurfaces = [
+  ["scripts/launch-next-actions.mjs", launchNextActions],
+  ["scripts/launch-cutover-rehearsal.mjs", launchCutoverRehearsal],
+  ["scripts/launch-cutover-plan.mjs", launchCutoverPlan],
+  ["scripts/render-web-settings.mjs", renderWebSettings],
+  ["scripts/render-api-settings.mjs", renderApiSettings],
+  ["scripts/service-watch.mjs", serviceWatch],
+  ["docs/launch-cutover-runbook.md", launchCutoverRunbook],
+  ["docs/launch-operator-brief.md", launchOperatorBriefDoc],
+  ["docs/splus-service-watch.md", serviceWatchDoc],
+  ["docs/user-inputs-manual.md", userInputsManual],
+  ["README.md", readme]
+];
+for (const [surface, source] of operatorCommandSurfaces) {
+  if (/<Render (API|Web|musunil)[^>]*target>/i.test(source)) {
+    failures.push(`${surface} must not print angle-bracket Render DNS target placeholders in operator commands`);
+  }
+}
+if (
+  !/srv-actual-api-target\.onrender\.com/.test(launchNextActions) ||
+  !/srv-actual-api-target\.onrender\.com/.test(launchCutoverRehearsal) ||
+  !/srv-actual-api-target\.onrender\.com/.test(launchCutoverPlan) ||
+  !/srv-actual-api-target\.onrender\.com/.test(serviceWatch)
+) {
+  failures.push("Operator DNS helpers must use non-angle Render target example values that are rejected only by exact DNS comparison, not by placeholder syntax");
 }
 if (
   !/"launch:cutover-rehearsal"/.test(packageJson) ||

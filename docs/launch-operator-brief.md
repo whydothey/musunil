@@ -6,22 +6,22 @@
 
 ## Current State
 
-- Generated: 2026-07-12T01:26:16.496Z
-- Git SHA: 6f7c8ddf5fe8bbb8c4602504312563e297221171
+- Generated: 2026-07-12T01:41:31.435Z
+- Git SHA: 838a9cb9007a90d6ba2694fffdfb1aced310f069
 - Refresh command: `pnpm launch:operator-brief -- --refresh`
 - Active goal: active
 - Launch readiness: blocked
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T01:25:39.306Z (fresh)
+- Service watch: 2026-07-12T01:41:26.876Z (fresh)
 - Checks: 4 ok, 3 fail, 12 skip, 4 actions
-- Next command: `pnpm render:api-settings && pnpm cloudflare:dns && MUSUNIL_RENDER_API_DNS_TARGET="<Render API target>" pnpm cloudflare:check:strict`
+- Next command: `pnpm render:api-settings && pnpm cloudflare:dns && MUSUNIL_RENDER_API_DNS_TARGET="srv-actual-api-target.onrender.com" pnpm cloudflare:check:strict`
 
 ## What To Do Now
 
 1. connect_api_endpoint (operator)
    - Action: pnpm render:api-settings와 pnpm cloudflare:dns 출력대로 Render musunil-api 설정과 환경변수를 확인한다. Custom Domains에 api.musunil.com을 추가하고, Render가 표시한 target을 MUSUNIL_RENDER_API_DNS_TARGET에 넣은 뒤 Cloudflare DNS의 api 레코드에 DNS only로 연결한다.
-   - Verify: `pnpm render:api-settings && pnpm cloudflare:dns && MUSUNIL_RENDER_API_DNS_TARGET="<Render API target>" pnpm cloudflare:check:strict && pnpm launch:final-gate`
+   - Verify: `pnpm render:api-settings && pnpm cloudflare:dns && MUSUNIL_RENDER_API_DNS_TARGET="srv-actual-api-target.onrender.com" pnpm cloudflare:check:strict && pnpm launch:final-gate`
    - Reference: docs/launch-cutover-runbook.md#3-render-api
 2. apply_static_headers (operator)
    - Action: pnpm render:web-settings 출력의 Header application mode를 먼저 확인한다. 수동 Static Site이면 Render musunil-web Settings > Headers에 Cache-Control, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options를 그대로 입력하고 Clear build cache & deploy를 실행한다. Render headers가 live 응답에 계속 반영되지 않거나 Cloudflare proxy가 켜져 있으면 pnpm cloudflare:headers로 생성되는 Web 전용 Response Header Transform Rule을 적용하고 /, /config.js, /build-info.json 캐시 우회도 확인한다.
@@ -162,8 +162,8 @@ Cache rules:
 - pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws
 - pnpm render:api-settings
 - pnpm render:web-settings
-- export MUSUNIL_RENDER_WEB_DNS_TARGET="<Render Web target>"
-- export MUSUNIL_RENDER_API_DNS_TARGET="<Render API target>"
+- export MUSUNIL_RENDER_WEB_DNS_TARGET="srv-actual-web-target.onrender.com"
+- export MUSUNIL_RENDER_API_DNS_TARGET="srv-actual-api-target.onrender.com"
 - pnpm cloudflare:dns
 - pnpm cloudflare:headers
 - Apply Render custom domains, Cloudflare DNS, and Render Static headers or the Web-only Cloudflare response header fallback.

@@ -73,8 +73,8 @@ Render/Cloudflare 연결 직후에는 먼저 DNS와 edge 응답을 분리 확인
 
 ```bash
 pnpm launch:operator-brief
-export MUSUNIL_RENDER_WEB_DNS_TARGET="<Render Web target>"
-export MUSUNIL_RENDER_API_DNS_TARGET="<Render API target>"
+export MUSUNIL_RENDER_WEB_DNS_TARGET="srv-actual-web-target.onrender.com"
+export MUSUNIL_RENDER_API_DNS_TARGET="srv-actual-api-target.onrender.com"
 pnpm cloudflare:dns
 pnpm cloudflare:headers
 pnpm cloudflare:check:strict

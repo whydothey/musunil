@@ -20,7 +20,7 @@ const plan = {
       id: "api_dns",
       owner: "operator",
       action: "Run pnpm render:api-settings and pnpm cloudflare:dns, attach api.musunil.com as a custom domain on the Render musunil-api service, copy the Render target into MUSUNIL_RENDER_API_DNS_TARGET, then create the matching Cloudflare DNS record from the generated template.",
-      verify: "MUSUNIL_RENDER_API_DNS_TARGET=\"<Render API target>\" pnpm cloudflare:check:strict"
+      verify: "MUSUNIL_RENDER_API_DNS_TARGET=\"srv-actual-api-target.onrender.com\" pnpm cloudflare:check:strict"
     },
     {
       id: "static_headers",
@@ -116,8 +116,8 @@ const plan = {
     "pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws",
     "pnpm render:api-settings",
     "pnpm render:web-settings",
-    "export MUSUNIL_RENDER_WEB_DNS_TARGET=\"<Render Web target>\"",
-    "export MUSUNIL_RENDER_API_DNS_TARGET=\"<Render API target>\"",
+    "export MUSUNIL_RENDER_WEB_DNS_TARGET=\"srv-actual-web-target.onrender.com\"",
+    "export MUSUNIL_RENDER_API_DNS_TARGET=\"srv-actual-api-target.onrender.com\"",
     "pnpm cloudflare:dns",
     "pnpm cloudflare:headers",
     "Apply Render custom domains, Cloudflare DNS, and Render Static headers or the Web-only Cloudflare response header fallback.",

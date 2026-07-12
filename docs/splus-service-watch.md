@@ -1,6 +1,6 @@
 # S+ Service Watch
 
-Last checked: 2026-07-12T01:25:39.306Z
+Last checked: 2026-07-12T01:41:26.876Z
 
 Status: Active
 
@@ -30,7 +30,7 @@ Status: Active
 
 | ID | Owner | Action | Verify | Reference |
 |---|---|---|---|---|
-| connect_api_endpoint | operator | pnpm render:api-settings와 pnpm cloudflare:dns 출력대로 Render musunil-api 설정과 환경변수를 확인한다. Custom Domains에 api.musunil.com을 추가하고, Render가 표시한 target을 MUSUNIL_RENDER_API_DNS_TARGET에 넣은 뒤 Cloudflare DNS의 api 레코드에 DNS only로 연결한다. | pnpm render:api-settings && pnpm cloudflare:dns && MUSUNIL_RENDER_API_DNS_TARGET="<Render API target>" pnpm cloudflare:check:strict && pnpm launch:final-gate | docs/launch-cutover-runbook.md#3-render-api |
+| connect_api_endpoint | operator | pnpm render:api-settings와 pnpm cloudflare:dns 출력대로 Render musunil-api 설정과 환경변수를 확인한다. Custom Domains에 api.musunil.com을 추가하고, Render가 표시한 target을 MUSUNIL_RENDER_API_DNS_TARGET에 넣은 뒤 Cloudflare DNS의 api 레코드에 DNS only로 연결한다. | pnpm render:api-settings && pnpm cloudflare:dns && MUSUNIL_RENDER_API_DNS_TARGET="srv-actual-api-target.onrender.com" pnpm cloudflare:check:strict && pnpm launch:final-gate | docs/launch-cutover-runbook.md#3-render-api |
 | apply_static_headers | operator | pnpm render:web-settings 출력의 Header application mode를 먼저 확인한다. 수동 Static Site이면 Render musunil-web Settings > Headers에 Cache-Control, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options를 그대로 입력하고 Clear build cache & deploy를 실행한다. Render headers가 live 응답에 계속 반영되지 않거나 Cloudflare proxy가 켜져 있으면 pnpm cloudflare:headers로 생성되는 Web 전용 Response Header Transform Rule을 적용하고 /, /config.js, /build-info.json 캐시 우회도 확인한다. | pnpm render:web-settings && pnpm cloudflare:headers && pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy | docs/launch-cutover-runbook.md#2-render-static-site |
 | publish_build_metadata | operator | Static manifest hash로 최신 UI는 확인됐지만 build-info가 placeholder다. Render musunil-web Build Command가 pnpm build:web-static:render인지 확인한다. 이 단일 명령은 MUSUNIL_WRITE_BUILD_INFO=1로 실제 Git SHA를 쓰며, 수정 후 Clear build cache & deploy를 실행한다. | pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy | docs/launch-readiness-checklist.md |
 | stop_live_visual_surface_regression | lead | 실제 musunil.com은 fallback 이슈 피드를 렌더링하지만 live API 동기화가 아니다. API DNS/CORS/Web config와 `/home.issueCards` 연결을 고쳐 `serviceSyncState=live`가 될 때까지 배포 승급을 중단한다. | pnpm launch:final-gate | docs/launch-cutover-runbook.md#3-render-api |
