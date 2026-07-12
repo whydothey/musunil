@@ -114,8 +114,8 @@ Render 배포가 끝난 뒤 로컬 셸 없이 검증하려면 GitHub Actions `po
 - 로컬 Web 정적 서버 `pnpm dev:web`.
 - MapLibre + OpenFreeMap 프리뷰 지도 연결.
 - OpenFreeMap 기본 지도 provider 확정, 별도 지도 API key 없이 launch check 통과.
-- 운영 seed에서 프리뷰/mock 데이터 제거 옵션.
-- 운영형 Web fallback에서 프리뷰/mock 카드와 핀 제거.
+- 운영 seed에서 개발용 preview/sample fixture 제거 옵션.
+- 운영형 Web fallback에서 preview/sample 카드와 핀 제거.
 - Web API override는 localhost에서만 허용.
 - 홈 카드 내부 enum 원문 비노출.
 - 실제 공개 원천 기반 시드: 경찰청 2011~2023 집회 신고·개최 통계, 대구 2020~2025 신고·개최 현황, 대구 오늘의 집회시위 게시판 항목.
@@ -148,7 +148,7 @@ Render 배포가 끝난 뒤 로컬 셸 없이 검증하려면 GitHub Actions `po
 - 정적 Web 공개 API URL 주입.
 - Render 배포 초안, cron worker, Postgres migration SQL.
 - Render Blueprint 관리형 Postgres/Key Value 자동 생성과 `DATABASE_URL`/`REDIS_URL` 주입.
-- Render 서비스 `MUSUNIL_RUNTIME_ENV=production` marker와 설정 실패 시 mock/LIVE 자동 공개 차단.
+- Render 서비스 `MUSUNIL_RUNTIME_ENV=production` marker와 설정 실패 시 preview/sample fixture 및 LIVE 자동 공개 차단.
 - Render Web이 API의 `MUSUNIL_USER_INPUTS_B64`를 참조해 YAML secret 입력을 API 한 곳으로 축소.
 - Render API가 `MUSUNIL_INTERNAL_API_KEY`, `MUSUNIL_USER_TOKEN_SECRET`, `MUSUNIL_ENCRYPTION_KEY`를 생성하고 내부 서비스가 이를 참조해 YAML 내 운영 secret을 줄임.
 - Render cron worker private `MUSUNIL_API_HOSTPORT` 주입과 worker fallback.
@@ -161,7 +161,7 @@ Render 배포가 끝난 뒤 로컬 셸 없이 검증하려면 GitHub Actions `po
 - LIVE 원본 업로드는 AES-GCM 암호화 후 S3-compatible storage adapter로 PUT하며, production 외부 저장소 필수 모드에서 adapter나 media encryption key가 없으면 fail-closed.
 - GitHub Actions `pnpm check:release` CI와 `pnpm ci:status` 원격 상태 확인 helper.
 - `pnpm launch:inputs` 운영 YAML 초안 생성: Render generated secret은 비워 두고 실제 운영 값만 `CHANGE_ME_*`로 남김.
-- 기본 템플릿은 production-safe 값으로 preview/mock을 끄고 `CHANGE_ME_*` 입력값만 드러냄.
+- 기본 템플릿은 production-safe 값으로 preview fixture를 끄고 `CHANGE_ME_*` 입력값만 드러냄.
 - `pnpm launch:verify-inputs` 로컬 검증: Render 관리형 DB/Redis를 모의 주입해 사용자 YAML만 검증.
 - `pnpm config:encode` 운영 YAML 검증 후 `MUSUNIL_USER_INPUTS_B64` 생성. placeholder가 남아 있으면 실패.
 
@@ -182,7 +182,7 @@ UI/UX 프리뷰용 외부 연결 순서는 [docs/uiux-preview-connections-guide.
 
 국내 운영과 운영 후원 수익화 순서는 [docs/domestic-operation-and-monetization.md](/Users/mk/Documents/Musunil/docs/domestic-operation-and-monetization.md)에 정리했다. 현재 순서는 도메인 기반 실제 서비스 오픈, 개인사업자 등록 및 사업용 계좌 확보, PG 단발/정기 운영 후원 연결이다. 개인 계좌 공개와 후원 기반 노출/알림/신뢰도 가중은 금지한다.
 
-Mock 데이터와 실제 공개 원천 ingest 방식은 [docs/data-fixtures-and-real-sources.md](/Users/mk/Documents/Musunil/docs/data-fixtures-and-real-sources.md)에 정리했다.
+개발용 sample fixture와 실제 공개 원천 ingest 방식은 [docs/data-fixtures-and-real-sources.md](/Users/mk/Documents/Musunil/docs/data-fixtures-and-real-sources.md)에 정리했다.
 
 내부 운영:
 

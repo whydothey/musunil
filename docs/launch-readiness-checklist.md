@@ -36,7 +36,7 @@
 - `pnpm check:build-info-clean` 통과.
 - `pnpm render:api-settings` 출력이 `render.yaml`의 `musunil-api` 설정, env source, `api.musunil.com` 검증 명령과 일치.
 - `pnpm launch:inputs`로 생성한 운영 YAML은 `CHANGE_ME_*` 값만 남기고 Render generated secret 필드는 비워 둔다.
-- 기본 템플릿은 production-safe로 preview/mock이 꺼져 있고 운영 입력값만 `CHANGE_ME_*`로 남긴다.
+- 기본 템플릿은 production-safe로 preview fixture가 꺼져 있고 운영 입력값만 `CHANGE_ME_*`로 남긴다.
 - `pnpm launch:verify-inputs`는 Render 관리형 DB/Redis를 모의 주입해 사용자 YAML만 검증한다.
 - `pnpm check:render-runtime-config`는 YAML 보안 키가 비어 있어도 Render generated env로 API `/ready` 보안 검증이 통과하는지 sample config로 검사한다.
 - `pnpm config:encode -- --check config/musunil.user-inputs.local.yaml` 통과.
@@ -59,7 +59,7 @@
 - Render API pre-deploy에서 `pnpm db:migrate`가 실행된다.
 - Render Blueprint가 `musunil-postgres`와 `musunil-redis`를 생성하고 private-network-only로 둔다.
 - Render API는 `DATABASE_URL`, `REDIS_URL`을 관리형 Postgres/Key Value에서 자동 주입받는다.
-- Render 서비스는 `MUSUNIL_RUNTIME_ENV=production`을 설정해 설정 로드 실패 fallback에서도 mock 데이터와 LIVE 자동 공개를 끈다.
+- Render 서비스는 `MUSUNIL_RUNTIME_ENV=production`을 설정해 설정 로드 실패 fallback에서도 preview/sample fixture와 LIVE 자동 공개를 끈다.
 - Render API만 `MUSUNIL_USER_INPUTS_B64`를 prompt 받는다. Static Web에는 사용자 입력 YAML, DB/Redis URL, user token secret, encryption key, internal API key를 주입하지 않는다.
 - Render API는 `MUSUNIL_INTERNAL_API_KEY`, `MUSUNIL_USER_TOKEN_SECRET`, `MUSUNIL_ENCRYPTION_KEY`를 생성한다.
 - Render Web은 공개 정적 빌드에 필요한 `NODE_VERSION`, `MUSUNIL_RUNTIME_ENV`만 env var로 두고, API base와 build metadata 작성은 `pnpm build:web-static:render` 단일 build command 안에서 고정한다.
@@ -104,7 +104,7 @@
 - PG 운영 후원을 켤 때는 개인사업자 번호, 사업용 계좌 예금주, PG MID/client key/secret/webhook secret/success/fail/webhook URL이 모두 입력되어 있다.
 - `hazard_area`, `service_disruption` 공개 타입이 없다.
 - 배포 후 post-deploy smoke에서 `/comments`, `/votes`, `/likes`, `/reactions`, `/donations`, `/sponsorships` GET/POST가 404인지 확인한다.
-- production seed와 `/home` 응답에 프리뷰/mock 집회가 섞이지 않는다.
+- production seed와 `/home` 응답에 개발용 preview/sample 집회가 섞이지 않는다.
 - 실제 법령·의안 ingest 전 production `/laws`는 preview 법령을 노출하지 않고 빈 목록을 반환한다.
 - `pnpm sources:laws-diagnose -- --require-law-metadata`는 국회 의안 API와 법제처 국가법령 API endpoint가 공식 URL이고 관심 키워드가 1개 이상인지 확인하며, API key/OC 원문을 출력하지 않는다.
 - `pnpm check:ops-diagnostics`는 외부 연결 없이 storage, redaction, mobile integrity, identity metadata 구조를 확인하고 secret 값이나 provider raw output을 출력하지 않는다.
@@ -125,7 +125,7 @@
 - 컷오버 리허설에는 `pnpm launch:cutover-rehearsal -- --refresh`를 사용한다. 이 명령은 live blocker 보고서를 갱신한 뒤 현재 stage와 `Next command`를 출력하므로, 운영자가 API DNS, Static headers, live issue sync 중 어디에서 막혔는지 한 번에 확인할 수 있어야 한다.
 - 운영자가 실제 Render/Cloudflare 화면을 열기 전에는 `pnpm launch:handoff`를 실행한다. 이 명령은 최신 live evidence를 한 번 갱신한 뒤 `docs/launch-operator-brief.md`에 복사할 Web headers, API env source, Cloudflare DNS, 다음 검증 명령을 남기고 `docs/launch-missing-inputs.md`의 blocker report 시각도 같은 값으로 맞춰야 한다.
 - 배포 직후 운영자가 최종 출시 여부를 볼 때는 `pnpm launch:final-gate`를 사용한다. 이 명령은 production 기본값으로 `musunil.com`, `api.musunil.com`, 현재 Git SHA를 보정하고, 공개 원천 refresh preflight, strict Cloudflare DNS/API CNAME target, live Web/API smoke, 법안 공개자료 존재, static hash, live visual sync, stale blocker 보고서 갱신 여부를 이어서 확인한다. staging/preview 도메인에서는 `MUSUNIL_WEB_BASE_URL`, `MUSUNIL_API_BASE_URL`, `MUSUNIL_EXPECTED_API_BASE_URL`, `MUSUNIL_EXPECTED_COMMIT_SHA`만 override한다.
-- production Web fallback에도 프리뷰/mock 카드와 프리뷰 전용 지도 핀이 보이지 않는다.
+- production Web fallback에도 preview/sample 카드와 preview 전용 지도 핀이 보이지 않는다.
 - production Web fallback은 API가 끊긴 상태에서도 지역별 공개 일정/신고 통계 같은 공개자료 묶음을 홈 이슈 카드로 대체하지 않는다. 주제형 이슈가 없으면 빈 이슈 상태로 남겨야 한다.
 - production Web은 `config.js`의 `apiBaseUrl`을 기준으로 하며, `?api=`와 localStorage API override는 localhost에서만 허용된다.
 - 로컬 dev 검증은 `MUSUNIL_WEB_API_BASE_URL=http://localhost:<api-port> pnpm dev:web`가 stale `apps/web/config.js` 값보다 우선해야 하며, `pnpm check:web-smoke`가 이 runtime override를 검증한다.

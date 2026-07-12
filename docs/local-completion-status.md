@@ -15,7 +15,7 @@ Last updated: 2026-07-12 19:25 KST
   - `MUSUNIL_USER_INPUTS_FILE_PATH`
   - `config/musunil.user-inputs.local.yaml`
   - 템플릿은 명시적으로 허용한 self-check에서만 사용
-  - 템플릿 기본값은 production-safe로 preview/mock 비활성화
+  - 템플릿 기본값은 production-safe로 preview fixture 비활성화
 - `packages/schemas`
   - Claim, Evidence
   - Issue, Occurrence
@@ -58,8 +58,8 @@ Last updated: 2026-07-12 19:25 KST
   - 객관 요약 상세
   - LIVE 제보
   - 상태 변경 알림 구독
-  - 운영 seed에서 프리뷰/mock 데이터 제거
-  - 운영형 Web fallback에서 프리뷰/mock 카드와 핀 제거
+  - 운영 seed에서 개발용 preview/sample 데이터 제거
+  - 운영형 Web fallback에서 preview/sample 카드와 핀 제거
   - 운영형 Web fallback의 공개자료 묶음 데이터는 유지하되, 지역별 공개 일정/신고 통계를 홈 이슈 카드로 대체 노출하지 않게 차단
   - Web API override를 localhost로 제한
   - 홈 카드 사용자 라벨에서 내부 enum 원문 제거

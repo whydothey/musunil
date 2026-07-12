@@ -5,12 +5,12 @@
 
 ## Current Gate
 
-- Generated: 2026-07-12T11:31:36.590Z
+- Generated: 2026-07-12T11:44:03.311Z
 - Source: local_file
 - Launch state: blocked
 - Current stage: connect_api_endpoint
 - Release blocked: yes
-- Blocker report: 2026-07-12T11:31:34.070Z (0m old, refresh after 15m)
+- Blocker report: 2026-07-12T11:31:34.070Z (12m old, refresh after 15m)
 - Report freshness: fresh
 - Before apply command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Immediate safe command: `pnpm launch:apply`
@@ -82,11 +82,11 @@
 
 | Field | Status |
 |---|---|
-| `identity.provider` | missing |
-| `identity.portone_store_id` | missing |
-| `identity.portone_identity_channel_key` | missing |
-| `identity.portone_api_secret` | missing |
-| `identity.session_cookie_domain` | missing |
+| `identity.provider` | configured |
+| `identity.portone_store_id` | placeholder |
+| `identity.portone_identity_channel_key` | placeholder |
+| `identity.portone_api_secret` | placeholder |
+| `identity.session_cookie_domain` | configured |
 | `MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID` | missing |
 
 ### 법안·법령 공식 원천

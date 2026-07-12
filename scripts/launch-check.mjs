@@ -256,7 +256,7 @@ if (
   !/stripPreviewData/.test(apiServer) ||
   !/id\.includes\("_sample"\)/.test(apiApp)
 ) {
-  failures.push("production mock-data strip wiring is missing");
+  failures.push("production preview/sample data strip wiring is missing");
 }
 if (!/sendPublicRedactedMedia/.test(apiServer) || !/publicRedactedMediaRoot/.test(apiServer) || !/publicRedactedMediaPrefix/.test(apiServer)) {
   failures.push("API public redacted media route is missing");
@@ -1626,7 +1626,7 @@ if (
   !/isPreviewIssue/.test(web) ||
   !/id\.includes\("_sample"\)/.test(web)
 ) {
-  failures.push("web production fallback must hide preview/mock data");
+  failures.push("web production fallback must hide preview/sample data");
 }
 if (!/data-time-filter="now"/.test(web) || !/function matchesCardFilters/.test(web) || !/function cardOrderScore/.test(web)) {
   failures.push("web home filters must drive real card ordering");
