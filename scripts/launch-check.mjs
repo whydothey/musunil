@@ -233,6 +233,8 @@ if (
   !/MUSUNIL_API_BASE_URL",\s*"https:\/\/api\.musunil\.com"/.test(postDeploySmokeRunner) ||
   !/MUSUNIL_EXPECTED_API_BASE_URL/.test(postDeploySmokeRunner) ||
   !/MUSUNIL_EXPECTED_COMMIT_SHA/.test(postDeploySmokeRunner) ||
+  !/MUSUNIL_STRICT_WEB_HEADERS",\s*"1"/.test(postDeploySmokeRunner) ||
+  !/strictWebHeaders/.test(postDeploySmokeRunner) ||
   !/MUSUNIL_WEB_BASE_URL/.test(postDeploySmoke) ||
   !/isDeployedHttpsUrl/.test(postDeploySmoke) ||
   !/url\.protocol === "https:"/.test(postDeploySmoke) ||
@@ -283,7 +285,7 @@ if (
   !/hazard_area/.test(postDeploySmoke) ||
   !/service_disruption/.test(postDeploySmoke)
 ) {
-  failures.push("post-deploy smoke command must verify deployed Web/API alignment, readiness, coverage, laws, and admin auth boundary");
+  failures.push("post-deploy smoke command must verify deployed Web/API alignment, strict Web headers, readiness, coverage, laws, and admin auth boundary");
 }
 if (!/"render:web-settings"/.test(packageJson) || !/render-web-settings\.mjs/.test(packageJson)) {
   failures.push("Render Web settings helper command is missing");

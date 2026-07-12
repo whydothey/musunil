@@ -64,6 +64,7 @@ function deriveLaunchEnv(baseEnv) {
   setDefault(env, defaults, "MUSUNIL_API_BASE_URL", "https://api.musunil.com");
   setDefault(env, defaults, "MUSUNIL_EXPECTED_API_BASE_URL", env.MUSUNIL_API_BASE_URL);
   setDefault(env, defaults, "MUSUNIL_EXPECTED_COMMIT_SHA", env.RENDER_GIT_COMMIT || gitHead());
+  setDefault(env, defaults, "MUSUNIL_STRICT_WEB_HEADERS", "1");
   return {
     env,
     summary: {
@@ -71,6 +72,7 @@ function deriveLaunchEnv(baseEnv) {
       apiBaseUrl: env.MUSUNIL_API_BASE_URL,
       expectedApiBaseUrl: env.MUSUNIL_EXPECTED_API_BASE_URL,
       expectedCommitSha: env.MUSUNIL_EXPECTED_COMMIT_SHA || null,
+      strictWebHeaders: env.MUSUNIL_STRICT_WEB_HEADERS === "1",
       defaulted: defaults
     }
   };
