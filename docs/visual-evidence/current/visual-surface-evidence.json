@@ -2,7 +2,7 @@
   "checked": "commercial_visual_surface",
   "ok": true,
   "mode": "local_static",
-  "baseUrl": "http://localhost:50758/",
+  "baseUrl": "http://localhost:51882/",
   "productionFallbackMode": false,
   "serviceStates": [
     "delayed"
@@ -39,7 +39,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 3,
@@ -57,7 +57,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 3,
@@ -75,7 +75,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 0,
@@ -93,7 +93,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 0,
@@ -111,7 +111,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 0,
@@ -129,7 +129,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 3,
@@ -147,7 +147,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 3,
@@ -165,7 +165,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 0,
@@ -183,7 +183,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 0,
@@ -201,7 +201,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 0,
@@ -219,7 +219,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 3,
@@ -237,7 +237,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 3,
@@ -255,7 +255,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 0,
@@ -273,7 +273,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 0,
@@ -291,7 +291,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 0,
@@ -309,7 +309,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 3,
@@ -327,7 +327,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 3,
@@ -345,7 +345,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 0,
@@ -363,7 +363,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 0,
@@ -381,7 +381,7 @@
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
-        "serviceBannerTitle": "저장된 공개자료 기준",
+        "serviceBannerTitle": "공개자료로 먼저 확인",
         "firstIssueTitle": "정보통신망법 개정 관련 집회",
         "sourceBundleFirst": false,
         "issueCount": 0,

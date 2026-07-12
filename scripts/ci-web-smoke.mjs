@@ -396,7 +396,8 @@ async function checkWeb(port) {
   assert(index.includes("<h2>확인된 집회·시위</h2>"), "consumer-facing home headline missing");
   assert(index.includes('id="service-banner"'), "public service sync banner missing");
   assert(index.includes("공개자료 확인 중"), "service sync checking copy missing");
-  assert(index.includes("저장된 공개자료 기준"), "stored public material fallback copy missing");
+  assert(index.includes("공개자료로 먼저 확인"), "public material fallback copy missing");
+  assert(index.includes("확인된 공개자료를 먼저 보여드립니다."), "public material fallback detail missing");
   assert(index.includes("새로고침"), "service sync refresh action missing");
   assert(index.includes('id="service-retry"'), "service sync retry action missing");
   assert(index.includes("setServiceSyncState(\"live\")"), "service sync success state missing");
