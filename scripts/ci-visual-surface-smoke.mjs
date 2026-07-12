@@ -174,8 +174,8 @@ async function runViewport(client, viewport, url) {
     () => assert(home.firstIssueRect.height <= (viewport.mobile ? 260 : 280), `first issue card is too tall for feed scanning: ${home.firstIssueRect.height}`),
     () => assert(viewport.mobile || home.homeRect.width >= Math.round(home.mapRect.width * 1.35), `desktop home issue feed should dominate map context: home=${home.homeRect.width}, map=${home.mapRect.width}`),
     () => assert(viewport.mobile || home.mapRect.height <= 310, `desktop home map should be context-sized, got ${home.mapRect.height}`),
-    () => assert(home.placePeekCount === 0 || home.placePeekMapCount === home.placePeekCount, `issue place previews must use mini-map surfaces: ${home.placePeekMapCount}/${home.placePeekCount}`),
-    () => assert(home.placePeekCount === 0 || home.placePeekAreaCount === home.placePeekCount, `issue place previews must show public area context: ${home.placePeekAreaCount}/${home.placePeekCount}`),
+    () => assert(home.placePeekCount >= 1, "issue cards must keep a lightweight map entry"),
+    () => assert(home.placePeekMapCount === 0 && home.placePeekAreaCount === 0, `home issue cards must not render decorative mini-map surfaces: map=${home.placePeekMapCount}, area=${home.placePeekAreaCount}`),
     () => assert(!/KPI|진행\/예정/.test(home.visibleText), "top-level dashboard metric copy is visible")
   ], serviceDetail(home));
   if (!homeReady) return;
@@ -301,16 +301,15 @@ function visualMetrics(label) {
       issueEmptyActions: [...document.querySelectorAll("[data-issue-empty-action]")].filter(visible).map((node) => node.textContent.trim()),
       homeRect: rect("#home-section"),
       firstIssueRect: rect(".issue-card"),
-      placePeekCount: [...document.querySelectorAll(".issue-place-peek")].filter(visible).length,
-      placePeekMapCount: [...document.querySelectorAll(".issue-place-peek .issue-place-map")]
-        .filter((node) => visible(node.closest(".issue-place-peek"))).length,
-      placePeekAreaCount: [...document.querySelectorAll(".issue-place-peek .issue-place-area")]
-        .filter((node) => visible(node.closest(".issue-place-peek"))).length,
+      placePeekCount: [...document.querySelectorAll(".issue-location-strip")].filter(visible).length,
+      placePeekMapCount: [...document.querySelectorAll(".issue-place-map")]
+        .filter((node) => visible(node)).length,
+      placePeekAreaCount: [...document.querySelectorAll(".issue-place-area")]
+        .filter((node) => visible(node)).length,
       firstIssueTitle: firstIssue?.querySelector(".issue-feed-title .title")?.textContent?.trim() || "",
       firstIssueDeck: firstIssue?.querySelector(".issue-card-deck")?.textContent?.trim() || "",
       firstIssueSummary: [
-        firstIssue?.querySelector(".issue-confirm-summary strong")?.textContent?.trim() || "",
-        firstIssue?.querySelector(".issue-confirm-summary span")?.textContent?.trim() || ""
+        ...[...(firstIssue?.querySelectorAll(".issue-card-proof-row span") || [])].map((node) => node.textContent.trim())
       ].filter(Boolean).join(" · "),
       sourceBundleFirst: /공개\\s*(일정|자료)|신고[·\\s-]*개최|신고\\s*통계|집회\\s*신고\\s*통계/.test(firstIssue?.querySelector(".issue-feed-title .title")?.textContent?.trim() || ""),
       firstIssueActions: [...(firstIssue?.querySelectorAll(".issue-card-action-label") || [])].filter((node) => visible(node)).map((node) => node.textContent.trim()),

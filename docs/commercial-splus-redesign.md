@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-12 06:04 KST
+Last updated: 2026-07-12 11:25 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -22,7 +22,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 2026-07-12 03:37 live 캡처 기준 `musunil.com`은 모바일/데스크톱 모두 overflow와 금지 문구 없이 렌더링되지만 `serviceSyncState=delayed`이고 첫 카드가 구체 이슈가 아니라 `지역별 집회 공개 일정`이다. 이는 운영 API DNS/데이터 연결 전에는 사용자가 "무슨 주제인지"를 5초 안에 파악하기 어렵다는 증거이므로 S+ 미달로 유지한다. visual smoke와 service-watch는 이제 첫 이슈 제목과 source-bundle first 여부를 함께 기록한다.
 - 2026-07-12 10:08 live visual 기준 운영 fallback에서 공개자료 묶음을 홈 이슈 카드로 대체하지 않게 바꿨다. 최신 `musunil.com`은 static manifest와 config가 현재 repo와 맞지만 API DNS가 미연결이라 `serviceSyncState=delayed`로 실패한다. 화면 구조는 390/430/768/1440px에서 통과했고 첫 이슈는 `정보통신망법 개정 관련 집회`, source bundle first는 0/4다. 이는 의도한 launch gate다. API 연결 후 `/home.issueCards`가 live 주제형 Issue를 반환해야 S+ 후보로 다시 평가한다.
 - 2026-07-12 06:04 패치로 카드·상세·지도 선택 요약의 순서를 `지역 · 집회 일시 · 자료 기준 · 위치 · 현장 · 공식자료 · 현장영상 · 반론/정정`으로 통일했다. `자료 기준`과 `집회 일시`를 분리해 10초 안에 “언제의 자료인지”와 “집회 일시가 확인됐는지”를 구분하게 했다. `pnpm check:web-smoke`, `pnpm check:ux-surface`, `pnpm check:visual-surface`는 통과했지만 실제 운영 API/공개 영상/GPS와 사용자 수락 전에는 S+가 아니다.
-- 03:07 패치로 홈 카드 우측 비주얼을 추상 타깃형 장식에서 자료 위치 미니맵으로 바꿨다. 공개 자료 핀과 현장 인증 범위가 같은 작은 지도 표면 위에서 보이고, `pnpm check:visual-surface`가 모든 viewport 홈에서 `.issue-place-map`/`.issue-place-area` 존재를 확인한다. 모바일 지도 범례도 `자료 위치/인증 범위`가 실제 10px 이상 글자로 보이는지 검사한다. 독립 비평이 지적한 `AI 대시보드처럼 보이는 시각 언어`와 `숨겨진 범례를 smoke가 놓침` 중 일부를 줄였지만, 사용자 수락 전 S+는 아니다.
+- 2026-07-12 11:25 패치로 홈 카드의 반복 미니맵을 제거했다. 홈은 `상태 → 제목 → 장소·일시·자료 기준 → 위치/근거 요약 → 지도 진입 행 → 상세 보기` 흐름만 남기고, 지도는 별도 위치 맥락 도구로 낮춘다. `pnpm check:visual-surface`는 모든 viewport에서 `.issue-location-strip`이 보이고 `.issue-place-map`/`.issue-place-area`가 보이지 않으며 첫 카드 높이가 피드 스캔 기준 안에 있는지 확인한다. 사용자 수락 전 S+는 아니다.
 - 03:14 패치로 홈 카드의 반복 요약을 줄였다. 첫 카드 흐름은 `제목 → 서울 · 현장 2건 · 위치 1곳 → 영상 1건 · 인원 추정 검토 → 공식 확인 중 · 다른 주장 1건`처럼 줄마다 역할이 나뉘며, 기존 `서울에서 같은 주제로 확인된 현장 2건을 묶어 봅니다` 문장과 같은 수치 반복을 제거했다. 390px/1440px 모두 `scrollWidth=viewport`, 첫 카드 높이 206/216px이다. 아직 데스크톱 홈 지도와 이슈 목록 경쟁, 실제 운영 데이터 품질, 사용자 수락 전 S+는 아니다.
 - 04:43 독립 비평 기준 현재 화면은 S+가 아니다. Visual critique는 A- 공공서비스 프로토타입, IA red-team은 B-로 평가했다. 이번 패치는 `영상/지도/제보`가 선택 이슈 맥락으로 읽히게 하는 1차 보정이며, 상업용 S+ 승급 근거가 아니다.
 - 05:02 패치로 현장 영상 poster를 어두운 야간 placeholder 톤에서 밝은 비식별 공공 현장 프레임으로 재생성했고, 데스크톱 제보 화면에 연결 이슈·선택 현장·공개 위치·현재 단계 상태 패널을 추가했다. 그래도 사용자 수락 전 S+는 아니다.
@@ -215,9 +215,8 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 23:59 surface56 desktop detail | `docs/commercial-splus-surface56-detail-desktop-1440-2026-07-11.png` |
 | 23:59 surface56 desktop map | `docs/commercial-splus-surface56-map-desktop-1440-2026-07-11.png` |
 | 23:59 surface56 metrics | 상세 overview cards 0, answer rows 5, disclosure 2, 데스크톱 상세 상태 map sheet 62px, 탐색 지도 sheet 114px/62px, `overflowX=false`, forbidden 0 |
-| 03:07 surface63 mobile minimap | `docs/commercial-splus-surface63-minimap-home-mobile-390-2026-07-12.png` |
-| 03:07 surface63 desktop minimap | `docs/commercial-splus-surface63-minimap-home-desktop-1440-2026-07-12.png` |
-| 03:07 surface63 metrics | 390px/1440px CDP 캡처 모두 `scrollWidth=viewport`, `placePeekCount=5`, `miniMapCount=5`, `areaCount=5`, 첫 이슈 `정보통신망법 개정 반대 집회`. `pnpm check:visual-surface` 홈 assertion 10개, 지도 assertion 7개 통과 |
+| 11:25 surface67 home location strip | `pnpm check:visual-surface` |
+| 11:25 surface67 metrics | 390px/430px/768px/1440px CDP 렌더링 모두 `issue-location-strip`이 보이고 홈 카드 decorative mini-map count 0, area count 0. 첫 카드 높이는 390/430/768/1440px 모두 visual smoke 기준 안에 들어감 |
 | 03:14 surface64 mobile card flow | `docs/commercial-splus-surface64-home-card-flow-mobile-390-2026-07-12.png` |
 | 03:14 surface64 desktop card flow | `docs/commercial-splus-surface64-home-card-flow-desktop-1440-2026-07-12.png` |
 | 03:14 surface64 metrics | 390px 첫 카드 `deck=서울 · 현장 2건 · 위치 1곳`, `main=영상 1건 · 인원 추정 검토`, `evidence=공식 확인 중 · 다른 주장 1건`, height 206px. 1440px 같은 흐름, height 216px, `scrollWidth=viewport` |

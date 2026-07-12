@@ -38,7 +38,7 @@ scenario("home_issue_card_to_detail_and_dispute", [
 
 scenario("home_issue_card_to_map_and_video", [
   has('data-issue-card-action="map"'),
-  has('class="issue-place-peek"'),
+  has('class="issue-location-strip"'),
   functionHas("openIssueCardAction", 'if (action === "video")'),
   functionHas("openIssueCardAction", 'requestedReelsIssueId = issue.id;'),
   functionHas("openIssueCardAction", 'setPrimaryView("reels");'),

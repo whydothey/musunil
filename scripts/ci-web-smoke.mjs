@@ -137,10 +137,11 @@ async function checkWeb(port) {
   assert(index.includes(">지역 보기<"), "home issue empty explore action must use regional label");
   assert(index.includes("!isPreviewIssue(issue.id) && !isMetaPublicSourceIssue(issue)"), "production fallback must not expose public-source bundles as issue cards");
   assert(!index.includes("issue-card-secondary-actions"), "legacy issue card secondary action row present");
-  assert(index.includes("issue-place-peek"), "issue card place preview missing");
-  assert(index.includes("issue-place-map"), "issue card place preview mini-map missing");
-  assert(index.includes("issue-map-lane"), "issue card place preview road surface missing");
-  assert(index.includes("issue-place-area"), "issue card place preview public area missing");
+  assert(index.includes("issue-location-strip"), "issue card lightweight map entry missing");
+  assert(index.includes("issue-location-symbol"), "issue card map entry icon missing");
+  assert(!index.includes("issue-place-map"), "home issue card must not render a decorative mini-map");
+  assert(!index.includes("issue-map-lane"), "home issue card must not render fake road lines");
+  assert(!index.includes("issue-place-area"), "home issue card must not render a fake area shape");
   assert(!index.includes("radial-gradient(circle at 72% 42%"), "issue card place preview still uses target-like radial art");
   assert(index.includes("primary-action"), "issue card primary action styling missing");
   assert(index.includes("issue-confirm-summary"), "issue card confirmed summary row missing");
@@ -178,7 +179,7 @@ async function checkWeb(port) {
   assert(index.includes("공개용으로 처리된 영상"), "public redacted media explanation missing");
   assert(index.includes("근처 현장 찾기"), "location-first report CTA missing");
   assert(index.includes("has-field-preview"), "compact mobile field preview class missing");
-  assert(index.includes("grid-template-columns: minmax(0, 1fr) 112px"), "compact mobile issue card media rail missing");
+  assert(index.includes("grid-template-columns: minmax(0, 1fr);") && index.includes("issue-location-strip"), "compact mobile issue card should use a single-column fact flow");
   assert(index.includes("issue-card-deck"), "issue card public summary deck missing");
   assert(index.includes("issue-card-proof-row"), "issue card proof row missing");
   assert(!index.includes("시민 5초 요약"), "internal five-second summary label exposed");

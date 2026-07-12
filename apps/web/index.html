@@ -1620,6 +1620,10 @@
         box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line) 68%, transparent);
       }
 
+      .issue-card.has-field-preview .issue-field-preview {
+        max-height: 176px;
+      }
+
       .issue-field-preview-media {
         position: relative;
         overflow: hidden;
@@ -1854,8 +1858,8 @@
 
       .issue-card-body {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 122px;
-        gap: 14px;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
         align-items: stretch;
       }
 
@@ -1878,193 +1882,120 @@
         -webkit-line-clamp: 2;
       }
 
-      .issue-card-proof-row {
-        display: grid;
-        gap: 4px;
-        color: var(--muted);
-        font-size: 12px;
-        font-weight: 680;
-        line-height: 1.36;
-      }
-
-      .issue-card-proof-row span {
-        display: -webkit-box;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
-      }
-
+      .issue-card-proof-row,
       .issue-confirm-summary {
         display: grid;
-        gap: 3px;
+        gap: 5px;
         min-width: 0;
         padding-top: 1px;
       }
 
-      .issue-confirm-summary strong {
-        display: block;
+      .issue-card-proof-row span {
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr);
+        align-items: baseline;
+        gap: 8px;
+        min-width: 0;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 720;
+        line-height: 1.34;
+      }
+
+      .issue-card-proof-row b {
+        color: color-mix(in srgb, var(--ink) 68%, var(--muted));
+        font-size: 11px;
+        font-weight: 860;
+      }
+
+      .issue-card-proof-row em {
+        display: -webkit-box;
+        min-width: 0;
         overflow: hidden;
         color: var(--text);
-        font-size: 12px;
-        font-weight: 820;
-        line-height: 1.32;
+        font-style: normal;
         text-overflow: ellipsis;
-        white-space: normal;
-        display: -webkit-box;
         -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
+        -webkit-line-clamp: 1;
       }
 
-      .issue-confirm-summary span {
-        display: block;
-        overflow: hidden;
-        color: var(--muted);
-        font-size: 11px;
-        font-weight: 740;
-        line-height: 1.34;
-        text-overflow: ellipsis;
-        white-space: normal;
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
-      }
-
-      .issue-place-peek {
+      .issue-location-strip {
         position: relative;
         display: grid;
-        grid-template-rows: minmax(0, 1fr) auto;
-        min-height: 112px;
-        overflow: hidden;
-        padding: 0;
-        border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
-        border-radius: 14px;
-        background:
-          linear-gradient(145deg, color-mix(in srgb, var(--surface-3) 96%, #fff), color-mix(in srgb, var(--surface) 88%, var(--story-color, var(--brand)) 5%));
+        grid-template-columns: 30px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+        min-height: 46px;
+        padding: 8px 10px;
+        border: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+        border-radius: 12px;
+        background: color-mix(in srgb, var(--surface-2) 74%, var(--surface));
         color: var(--ink);
         text-align: left;
         cursor: pointer;
-        box-shadow: inset 0 0 0 1px rgb(255 255 255 / 58%);
+        box-shadow: inset 0 1px 0 rgb(255 255 255 / 56%);
+        transition:
+          border-color var(--motion-fast) var(--ease-out),
+          background-color var(--motion-fast) var(--ease-out),
+          transform var(--motion-fast) var(--ease-out);
       }
 
-      .issue-place-map {
-        position: absolute;
-        inset: 0;
-        overflow: hidden;
-        background:
-          linear-gradient(0deg, rgb(236 242 242 / 70%), transparent 42%),
-          linear-gradient(145deg, #f7faf9, #edf3f3);
+      .issue-location-strip:hover {
+        border-color: color-mix(in srgb, var(--story-color, var(--brand)) 28%, var(--line));
+        background: color-mix(in srgb, var(--story-color, var(--brand)) 5%, var(--surface));
       }
 
-      .issue-place-map::before {
-        content: "";
-        position: absolute;
-        inset: -18px;
-        background:
-          repeating-linear-gradient(0deg, transparent 0 30px, rgb(19 44 52 / 5%) 31px 32px, transparent 33px 58px),
-          repeating-linear-gradient(90deg, transparent 0 28px, rgb(19 44 52 / 4%) 29px 30px, transparent 31px 56px);
-        opacity: .74;
+      .issue-location-strip:active {
+        transform: translateY(1px);
       }
 
-      .issue-place-map::after {
-        content: "";
-        position: absolute;
-        inset: auto -12px 0 -12px;
-        height: 46px;
-        background:
-          linear-gradient(0deg, rgb(255 255 255 / 96%), rgb(255 255 255 / 48%) 76%, transparent);
-      }
-
-      .issue-map-lane {
-        position: absolute;
-        left: -22px;
-        height: 9px;
-        border-radius: 999px;
-        background: rgb(255 255 255 / 92%);
-        box-shadow:
-          inset 0 0 0 1px rgb(20 43 50 / 6%),
-          0 1px 3px rgb(15 34 42 / 5%);
-        transform-origin: left center;
-      }
-
-      .issue-map-lane.a {
-        top: 32px;
-        width: 148px;
-        transform: rotate(-14deg);
-      }
-
-      .issue-map-lane.b {
-        top: 62px;
-        width: 142px;
-        transform: rotate(10deg);
-      }
-
-      .issue-map-lane.c {
-        left: 54px;
-        top: -14px;
-        width: 118px;
-        transform: rotate(76deg);
-      }
-
-      .issue-place-area {
-        position: absolute;
-        right: 18px;
-        top: 27px;
-        width: 70px;
-        height: 46px;
-        border: 1px solid color-mix(in srgb, var(--story-color, var(--brand)) 34%, transparent);
-        border-radius: 58% 42% 51% 49% / 46% 55% 45% 54%;
-        background:
-          linear-gradient(145deg, color-mix(in srgb, var(--story-color, var(--brand)) 16%, transparent), color-mix(in srgb, var(--story-color, var(--brand)) 7%, transparent));
-        transform: rotate(-8deg);
-      }
-
-      .issue-place-pin {
-        position: absolute;
-        right: 46px;
-        top: 42px;
-        width: 14px;
-        height: 14px;
-        border: 3px solid #fff;
-        border-radius: 999px;
-        background: var(--story-color, var(--brand));
-        box-shadow: 0 6px 12px rgb(15 34 42 / 18%);
-      }
-
-      .issue-place-pin::after {
-        content: "";
-        position: absolute;
-        inset: 3px;
-        border-radius: 999px;
-        background: #fff;
-      }
-
-      .issue-place-text {
-        position: relative;
-        z-index: 1;
+      .issue-location-symbol {
         display: grid;
-        align-self: end;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--story-color, var(--brand)) 10%, var(--surface));
+        color: var(--story-color, var(--brand));
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--story-color, var(--brand)) 18%, transparent);
+      }
+
+      .issue-location-symbol svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .issue-location-text {
+        display: grid;
         gap: 2px;
         min-width: 0;
-        padding: 0 12px 11px;
       }
 
-      .issue-place-text strong {
+      .issue-location-text strong {
         overflow: hidden;
         color: var(--ink);
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 850;
         line-height: 1.2;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
 
-      .issue-place-text span {
+      .issue-location-text span {
+        overflow: hidden;
         color: var(--muted);
         font-size: 11px;
-        font-weight: 760;
+        font-weight: 740;
         line-height: 1.25;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .issue-location-open {
+        color: var(--brand);
+        font-size: 11px;
+        font-weight: 860;
+        white-space: nowrap;
       }
 
       .issue-plain-summary {
@@ -5045,8 +4976,8 @@
         }
 
         .issue-card-body {
-          grid-template-columns: minmax(0, 1fr) 112px;
-          gap: 12px;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 8px;
         }
 
         .issue-card.has-field-preview .issue-feed-title {
@@ -5171,12 +5102,14 @@
           min-height: 30px;
         }
 
-        .issue-confirm-summary strong {
-          font-size: 11.5px;
+        .issue-card-proof-row span {
+          grid-template-columns: 36px minmax(0, 1fr);
+          gap: 7px;
+          font-size: 10.5px;
         }
 
-        .issue-confirm-summary span {
-          font-size: 10.5px;
+        .issue-card-proof-row b {
+          font-size: 10px;
         }
 
         .issue-card > .chips {
@@ -8460,26 +8393,39 @@
         return "정밀 위치와 제보자 정보는 공개하지 않습니다.";
       }
 
-      function issuePlacePeekMarkup(issue) {
+      function issueLocationStripMarkup(issue) {
         const cards = issueRelatedCards(issue);
         const regions = [...new Set(cards.map((card) => card.regionLabel).filter(Boolean))].slice(0, 2);
         const label = regions.length ? regions.join(" · ") : "위치 확인 중";
         const count = Number(issue.regionCount || regions.length || 0);
-        const countLabel = count ? `위치 ${count}곳` : "공개 위치 정리 중";
+        const countLabel = count ? `자료 위치 ${count}곳` : "공개 위치 정리 중";
+        const scopeLabel = issuePublicLocationScopeText(issue).replace("정밀 위치 비공개 · ", "");
         return `
-          <button class="issue-place-peek" type="button" data-issue-card-action="map" aria-label="${escapeHtml(issue.title || "이슈")} 지도에서 확인">
-            <span class="issue-place-map" aria-hidden="true">
-              <span class="issue-map-lane a"></span>
-              <span class="issue-map-lane b"></span>
-              <span class="issue-map-lane c"></span>
-              <span class="issue-place-area"></span>
-              <span class="issue-place-pin"></span>
-            </span>
-            <span class="issue-place-text">
+          <button class="issue-location-strip" type="button" data-issue-card-action="map" aria-label="${escapeHtml(issue.title || "이슈")} 지도에서 확인">
+            <span class="issue-location-symbol" aria-hidden="true"><svg class="button-symbol"><use href="#icon-locate"></use></svg></span>
+            <span class="issue-location-text">
               <strong>${escapeHtml(label)}</strong>
-              <span>${escapeHtml(countLabel)}</span>
+              <span>${escapeHtml(countLabel)} · ${escapeHtml(scopeLabel)}</span>
             </span>
+            <span class="issue-location-open" aria-hidden="true">지도</span>
           </button>
+        `;
+      }
+
+      function issueCardFactRows(issue) {
+        return [
+          ["위치", issueCardPlaceLine(issue)],
+          ["근거", `${issueCardMainFactLine(issue)} · ${issueCardEvidenceLine(issue)}`]
+        ];
+      }
+
+      function renderIssueCardFactRows(issue) {
+        return `
+          <div class="issue-confirm-summary issue-card-proof-row" aria-label="핵심 정보">
+            ${issueCardFactRows(issue).map(([label, value]) => `
+              <span><b>${escapeHtml(label)}</b><em>${escapeHtml(value)}</em></span>
+            `).join("")}
+          </div>
         `;
       }
 
@@ -8669,7 +8615,7 @@
 
 	        for (const issue of issues) {
           const fieldPreviewHtml = renderIssueFieldPreview(issue);
-          const visualPreviewHtml = fieldPreviewHtml || issuePlacePeekMarkup(issue);
+          const visualPreviewHtml = fieldPreviewHtml || issueLocationStripMarkup(issue);
 		          const card = document.createElement("article");
 		          card.className = `issue-card${fieldPreviewHtml ? " has-field-preview" : ""}`;
 		          card.dataset.issueId = issue.id;
@@ -8689,13 +8635,10 @@
                     <div class="title">${escapeHtml(issue.title)}</div>
                   </div>
                   <p class="issue-card-deck">${escapeHtml(issueCardDeckText(issue))}</p>
-                  <div class="issue-confirm-summary" aria-label="확인 요약">
-                    <strong>${escapeHtml(issueCardMainFactLine(issue))}</strong>
-                    <span>${escapeHtml(issueCardEvidenceLine(issue))}</span>
-                  </div>
+                  ${renderIssueCardFactRows(issue)}
                 </div>
-	              ${visualPreviewHtml}
 	              </div>
+	              ${visualPreviewHtml}
 	              ${issueCardActionMarkup(issue)}
 	            </div>
 		          `;

@@ -37,9 +37,11 @@ scenario("no_dashboard_regression", [
   absent("reels-review-panel"),
   has("issue-card-deck"),
   has("issue-card-proof-row"),
-  has("issue-place-map"),
-  has("issue-map-lane"),
-  has("issue-place-area"),
+  has("issue-location-strip"),
+  has("issue-location-symbol"),
+  absent("issue-place-map"),
+  absent("issue-map-lane"),
+  absent("issue-place-area"),
   has("issuePlainSummaryText"),
   has("issueCardScanlineText")
 ]);
