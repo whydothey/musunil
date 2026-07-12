@@ -129,6 +129,9 @@ if (
   !/final-gate/.test(postDeployWorkflow) ||
   !/render_api_dns_target/.test(postDeployWorkflow) ||
   !/INPUT_RENDER_API_DNS_TARGET/.test(postDeployWorkflow) ||
+  !/RENDER_API_TOKEN:\s*\$\{\{\s*secrets\.RENDER_API_TOKEN\s*\}\}/.test(postDeployWorkflow) ||
+  !/MUSUNIL_RENDER_API_TOKEN:\s*\$\{\{\s*secrets\.MUSUNIL_RENDER_API_TOKEN\s*\}\}/.test(postDeployWorkflow) ||
+  !/MUSUNIL_INTERNAL_API_KEY:\s*\$\{\{\s*secrets\.MUSUNIL_INTERNAL_API_KEY\s*\}\}/.test(postDeployWorkflow) ||
   !/MUSUNIL_WEB_BASE_URL/.test(postDeployWorkflow) ||
   !/MUSUNIL_API_BASE_URL/.test(postDeployWorkflow) ||
   !/MUSUNIL_EXPECTED_API_BASE_URL/.test(postDeployWorkflow) ||
@@ -139,15 +142,21 @@ if (
   !/pnpm launch:final-gate/.test(postDeployWorkflow) ||
   /on:\s*\n\s+push:/.test(postDeployWorkflow)
 ) {
-  failures.push("GitHub Actions post-deploy workflow must be manual-only and verify strict Web deploy or final launch gate against deployed URLs, including optional Render API DNS target input for strict CNAME checks");
+  failures.push("GitHub Actions post-deploy workflow must be manual-only and verify strict Web deploy or final launch gate against deployed URLs, including optional Render API DNS target input, optional Render token secrets, and internal API key secret for strict final-gate checks");
 }
 if (
   !/render_api_dns_target/.test(readme) ||
+  !/RENDER_API_TOKEN/.test(readme) ||
+  !/MUSUNIL_INTERNAL_API_KEY/.test(readme) ||
   !/render_api_dns_target/.test(launchCutoverRunbook) ||
+  !/RENDER_API_TOKEN/.test(launchCutoverRunbook) ||
+  !/MUSUNIL_INTERNAL_API_KEY/.test(launchCutoverRunbook) ||
   !/render_api_dns_target/.test(userFacingDocs) ||
+  !/RENDER_API_TOKEN/.test(userFacingDocs) ||
+  !/MUSUNIL_INTERNAL_API_KEY/.test(userFacingDocs) ||
   !/render_api_dns_target/.test(launchCutoverPlan)
 ) {
-  failures.push("post-deploy operator docs must tell the operator to pass Render api.musunil.com DNS target through render_api_dns_target for remote final-gate strict DNS checks");
+  failures.push("post-deploy operator docs must tell the operator to pass Render api.musunil.com DNS target through render_api_dns_target and document optional RENDER_API_TOKEN/MUSUNIL_INTERNAL_API_KEY secrets for remote final-gate strict DNS/source checks");
 }
 if (!/fallback\.issueCards = fallback\.issueCards\.filter\(\(issue\) => !isPreviewIssue\(issue\.id\) && !isMetaPublicSourceIssue\(issue\)\)/.test(web)) {
   failures.push("production Web fallback must not expose public source bundles as issue cards");
