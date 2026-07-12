@@ -74,9 +74,9 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 14:05 surface50 패치로 데스크톱 홈 기본 레이아웃에서 이슈 피드를 520px로 키우고 지도 맥락을 648x403px로 낮췄다. 1440px 홈은 지도보다 이슈 목록이 먼저 읽히고, 390px 홈은 지도 미노출·이슈 피드 중심을 유지한다. `overflowX=false`, forbidden 0, rejected 0을 확인했지만 실제 운영 공개 영상/GPS와 사용자 수락 전 S+는 아니다.
 - 14:14 surface51 패치로 홈 카드에서 공개 poster 없는 LIVE 영상을 `영상 검토 중` 썸네일처럼 표시하지 않고 위치 타일로 대체했다. 카드 우측 타일은 조작된 영상 프리뷰가 아니라 공개 위치 맥락만 보여주며, 390px/1440px 모두 `reviewOnlyCards=0`, `placePeekCards=3`, forbidden 0, rejected 0이다.
 - 14:24 surface53 패치로 주요 이슈 레일을 필터칩형 pill에서 원형 이슈 story ring으로 전환했다. 사람 계정처럼 보이지 않고 이슈 단위 대표 비주얼과 2줄 주제 라벨만 보여주며, 390px/1440px 모두 `storyCount=3`, `storyOrbCount=3`, `overflowX=false`, forbidden 0, rejected 0이다. 사용자 수락 전 S+는 아니다.
-- 21:26 배포 검증 정책을 static hash 우선으로 고쳤다. Render가 build metadata를 publish하지 않아 `/build-info.json`이 placeholder여도 `/static-manifest.json`과 live HTML/config/media SHA-256이 현재 repo 산출물과 같으면 최신 UI 배포는 통과시키고, placeholder/no-store는 경고로 남긴다. static hash가 다르면 계속 실패한다.
+- 21:26 배포 검증에 static hash 판정을 추가했다. 이후 출시 기준은 강화되어 `/static-manifest.json`과 live HTML/config/media SHA-256이 현재 repo 산출물과 같아도 `/build-info.json` placeholder와 no-store header 미적용은 blocker로 남긴다. static hash가 다르면 계속 실패한다.
 - 23:23 surface54 패치로 운영 API 미연결 상태를 조용한 fallback이 아니라 얇은 서비스 동기화 배너로 표시한다. 모바일은 한 줄 `실시간 동기화 지연`과 `다시 확인`만 보이고, 데스크톱은 저장된 공개자료 기준 안내를 함께 표시한다. 390px/1440px 모두 `overflowX=false`, forbidden 0이다.
-- 23:33 Render 수동 Static Site 설정값을 `render.yaml`에서 추출하는 `pnpm render:web-settings` helper를 추가했다. Branch, Root Directory, Build Command, Publish Directory, Headers, strict header 검증 명령을 한 번에 출력해 build-info placeholder/no-store 경고를 사람이 바로 수정할 수 있게 했다.
+- 23:33 Render 수동 Static Site 설정값을 `render.yaml`에서 추출하는 `pnpm render:web-settings` helper를 추가했다. Branch, Root Directory, Build Command, Publish Directory, Headers, strict header 검증 명령을 한 번에 출력해 build-info placeholder/no-store blocker를 사람이 바로 수정할 수 있게 했다.
 - 23:58 surface55 패치로 독립 Visual Critique/IA Red-Team의 P0를 반영했다. API 미연결 배너는 장애성 카피 대신 `저장된 공개자료 기준`으로 낮추고, 홈 카드의 10초 요약은 `지역 · 현장 · 위치 · 영상 · 인원` 고정 문장으로 바꿨다. 데스크톱 이슈 피드는 1열 520px 카드가 되어 긴 주제가 잘리지 않고, 반론 있는 이슈와 영상에는 `다른 주장/반론` 진입이 생겼다. 390px/1440px 모두 `overflowX=false`, forbidden 0이다. 사용자 수락 전 S+는 아니다.
 - 23:59 surface56 패치로 상세 화면을 리포트형 카드에서 질문-답변형 시민 화면으로 낮췄다. 개요 탭은 `어디서/얼마나/근거/다른 주장/아직 모르는 점` answer row 5개와 `지역·현장 흐름/근거 한계·검증` disclosure 2개만 보인다. 데스크톱 상세가 열린 상태의 지도 시트는 62px compact로 낮춰 상세와 경쟁하지 않게 했고, 빠른 버튼의 오독되는 아이콘은 숨겼다.
 
@@ -194,7 +194,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 51 | 소비자형 확인 요약·상세 진입 안정화 | 1차 완료 | 390px 홈 첫 카드 `primaryAction=summary`, `primaryLabel=상세 보기`, 확인 요약 `대구 · 전국 · 7월 9일 공개자료 · 위치 2곳 · 공식자료 6건 · 현장 영상 확인 중 · 반론/정정 없음`, 상세 `selectedDetailTab=개요`, 모바일/데스크톱 탭 `홈/영상/탐색/법안/제보`, `scrollWidth=390/1440`, forbidden 0 |
 | 52 | 구체 이슈 우선·요약 압축 | 1차 완료 | 390px/1440px 첫 카드가 `정보통신망법 개정 반대 집회`로 시작. 요약 `서울 · 일시 확인 중 · 기준 2026.07.11 · 위치 1곳 · 공식 확인 중 · 영상 1건 · 반론 1건`, 카드 action 1개 `상세 보기`, source/summary label visible false, 지도 CTA `근거·영상 보기`, forbidden 0 |
 | 53 | 주요 이슈 레일 앱형 전환 | 1차 완료 | pill/filter chip처럼 보이던 레일을 원형 이슈 story ring으로 바꿈. 390px/1440px `storyCount=3`, `storyLabels=정보통신망법 개정 반대/대통령 탄핵 요구 행진/전국 집회 공개 일정`, `overflowX=false`, forbidden 0, rejected 0 |
-| 54 | Render static deploy freshness 판정 | 1차 완료 | `check:web-deploy`와 `service:watch`가 live static manifest/hash를 1차 증거로 검증. build-info placeholder는 static hash 일치 시 경고, static hash 불일치 시 실패 |
+| 54 | Render static deploy freshness 판정 | 2차 완료 | `check:web-deploy`와 `service:watch`가 live static manifest/hash를 보조 증거로 검증하되, expected commit 검증에서는 build-info placeholder를 실패 처리. 정적 해시만 보는 진단은 `MUSUNIL_ALLOW_PLACEHOLDER_BUILD_INFO=1`로 명시해야 함 |
 | 55 | API 미연결 UX 상태 표시 | 1차 완료 | API fetch 실패 시 상단 `실시간 동기화 지연` 배너와 `다시 확인` 액션을 표시. 정상 동기화 시 숨김. 모바일/데스크톱 캡처에서 가로 넘침과 금지 문구 0 |
 | 56 | Render Dashboard 설정 helper | 1차 완료 | `pnpm render:web-settings`가 `render.yaml`의 `musunil-web` 설정과 Headers를 복사 가능한 형태로 출력. `launch-check`가 helper와 strict header 검증 안내를 감시 |
 | 57 | 홈 10초 이해·반론 진입 보강 | 1차 완료 | 홈 요약을 `지역/현장/위치/영상/인원` 고정 문장으로 바꾸고, 데스크톱 이슈 카드를 1열로 정리. 반론 있는 이슈/영상에서 `다른 주장/반론` 직접 진입 제공 |
@@ -211,7 +211,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 14:24 surface53 mobile story ring | `docs/commercial-splus-surface53-story-ring-home-mobile-390-2026-07-11.png` |
 | 14:24 surface53 desktop story ring | `docs/commercial-splus-surface53-story-ring-home-desktop-1440-2026-07-11.png` |
 | 14:24 surface53 metrics | 390px 홈 `storyCount=3`, `storyOrbCount=3`, `storyLabels=정보통신망법 개정 반대/대통령 탄핵 요구 행진/전국 집회 공개 일정`, `overflowX=false`, forbidden 0, rejected 0 |
-| 21:26 deploy freshness policy | `scripts/check-web-deploy.mjs`와 `scripts/service-watch.mjs`가 static hash 일치와 build metadata 경고를 분리 |
+| 21:26 deploy freshness policy | `scripts/check-web-deploy.mjs`와 `scripts/service-watch.mjs`가 static hash 일치를 보조 증거로 확인하고 build metadata placeholder를 출시 blocker로 분리 |
 | 23:23 surface54 mobile API sync banner | `docs/commercial-splus-surface54-api-sync-banner-mobile-390-2026-07-11.png` |
 | 23:23 surface54 desktop API sync banner | `docs/commercial-splus-surface54-api-sync-banner-desktop-1440-2026-07-11.png` |
 | 23:23 surface54 metrics | API 미연결 fallback 상태에서 banner visible, `실시간 동기화 지연`, `다시 확인`, `overflowX=false`, forbidden 0 |

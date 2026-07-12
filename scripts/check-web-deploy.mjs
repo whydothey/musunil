@@ -8,6 +8,7 @@ const cwd = resolve(import.meta.dirname, "..");
 const config = safeConfig();
 const webBaseUrl = deployedUrl(process.env.MUSUNIL_WEB_BASE_URL ?? positionalArg() ?? readString(config, "app.public_base_url"));
 const expectedCommitSha = process.env.MUSUNIL_EXPECTED_COMMIT_SHA || process.env.RENDER_GIT_COMMIT || gitHead();
+const allowPlaceholderBuildInfo = process.env.MUSUNIL_ALLOW_PLACEHOLDER_BUILD_INFO === "1";
 const expectedApiBaseUrl = deployedUrl(
   process.env.MUSUNIL_EXPECTED_API_BASE_URL ?? process.env.MUSUNIL_API_BASE_URL ?? readString(config, "api.public_base_url")
 );
@@ -18,7 +19,8 @@ const renderStaticHint =
   "Expected Render Static Site settings: Branch=main, Root Directory blank, " +
   "Build Command=\"corepack enable && pnpm install --frozen-lockfile && pnpm build:web-static:render\", " +
   "Publish Directory=apps/web, headers copied from render.yaml musunil-web. " +
-  "If static-manifest and live file hashes match but build-info is placeholder, the latest committed static files are deployed but Render did not publish build metadata.";
+  "If static-manifest and live file hashes match but build-info is placeholder, the latest committed static files are deployed but Render did not publish build metadata. " +
+  "Use MUSUNIL_ALLOW_PLACEHOLDER_BUILD_INFO=1 only for a static-hash-only diagnostic, never for a launch/final expected-commit check.";
 const webHeaderContract = [
   {
     id: "cache-control",
@@ -93,6 +95,12 @@ await check("web_build_info", async () => {
       staticManifestVerified,
       `build-info placeholder was deployed and static manifest could not prove freshness. body=${shortJson(response.body)}. ${renderStaticHint}`
     );
+    if (expectedCommitSha && !allowPlaceholderBuildInfo) {
+      assert(
+        false,
+        `build-info placeholder was deployed while expected commit ${expectedCommitSha} was required. body=${shortJson(response.body)}. ${renderStaticHint}`
+      );
+    }
     warn(
       "web_build_info_placeholder",
       `build-info is placeholder, but static-manifest and live file hashes match local output. ${renderStaticHint}`

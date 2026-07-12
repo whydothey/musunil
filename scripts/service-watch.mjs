@@ -13,6 +13,7 @@ const webBaseUrl = (process.env.MUSUNIL_WEB_BASE_URL ?? "https://musunil.com").r
 const apiBaseUrl = (process.env.MUSUNIL_API_BASE_URL ?? "https://api.musunil.com").replace(/\/$/, "");
 const expectedApiBaseUrl = deployedHttpsUrlString(process.env.MUSUNIL_EXPECTED_API_BASE_URL ?? apiBaseUrl);
 const expectedCommitSha = process.env.MUSUNIL_EXPECTED_COMMIT_SHA;
+const allowPlaceholderBuildInfo = process.env.MUSUNIL_ALLOW_PLACEHOLDER_BUILD_INFO === "1";
 const reportPath = resolve(process.cwd(), "docs/splus-service-watch.md");
 let webStaticManifestVerified = false;
 let apiEndpointReachable = false;
@@ -178,6 +179,10 @@ async function runChecks() {
     const build = await getJson(`${webBaseUrl}/build-info.json`);
     if (build.commitSha === "generated-at-build" || build.source === "placeholder") {
       if (!webStaticManifestVerified) throw new Error("build-info placeholder deployed and static manifest did not verify freshness");
+      if (!allowPlaceholderBuildInfo) {
+        const expected = expectedCommitSha ? ` while expected commit ${expectedCommitSha} was required` : "";
+        throw new Error(`build-info placeholder deployed${expected}; set MUSUNIL_ALLOW_PLACEHOLDER_BUILD_INFO=1 only for a static-hash-only diagnostic`);
+      }
       return { commitSha: build.commitSha, builtAt: build.builtAt, mode: "static_manifest_verified_fallback" };
     }
     if (expectedCommitSha && build.commitSha !== expectedCommitSha) throw new Error(`commit ${build.commitSha} != ${expectedCommitSha}`);
@@ -636,7 +641,10 @@ function requiredActions(result) {
     });
   }
   const buildInfo = byId.get("web_build_info");
-  if (buildInfo?.detail?.mode === "static_manifest_verified_fallback") {
+  if (
+    buildInfo?.detail?.mode === "static_manifest_verified_fallback" ||
+    (buildInfo && !buildInfo.ok && /build-info placeholder|generated-at-build|expected commit/.test(buildInfo.message || ""))
+  ) {
     actions.push({
       id: "publish_build_metadata",
       owner: "operator",

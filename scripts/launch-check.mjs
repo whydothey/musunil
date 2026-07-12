@@ -1580,13 +1580,15 @@ if (
   !/generated-at-build/.test(webDeployCheck) ||
   !/staticManifestVerified/.test(webDeployCheck) ||
   !/web_build_info_placeholder/.test(webDeployCheck) ||
+  !/MUSUNIL_ALLOW_PLACEHOLDER_BUILD_INFO/.test(webDeployCheck) ||
+  !/expectedCommitSha && !allowPlaceholderBuildInfo/.test(webDeployCheck) ||
   !/MUSUNIL_EXPECTED_API_BASE_URL/.test(webDeployCheck) ||
   !/parseWebConfig/.test(webDeployCheck) ||
   !/Content-Security-Policy/.test(webDeployCheck) ||
   !/Permissions-Policy/.test(webDeployCheck) ||
   !/X-Frame-Options/.test(webDeployCheck)
 ) {
-  failures.push("web deploy check must verify static manifest freshness, deployed apiBaseUrl, and live security headers before tolerating tracked build-info placeholders");
+  failures.push("web deploy check must verify static manifest freshness, deployed apiBaseUrl, live security headers, and reject tracked build-info placeholders during expected-commit checks unless an explicit hash-only override is set");
 }
 if (
   !/static-manifest\.json/.test(webDeployCheck) ||
