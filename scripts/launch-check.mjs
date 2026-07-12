@@ -105,6 +105,7 @@ for (const phrase of [
   "공개 집회/교통 자료"
 ]) {
   if (userFacingDocs.includes(phrase)) failures.push(`non-protest source/domain wording must not reappear in launch docs: ${phrase}`);
+  if (readme.includes(phrase)) failures.push(`non-protest source/domain wording must not reappear in README: ${phrase}`);
 }
 for (const pattern of ["config/*.local.yaml", "config/*.secret.yaml", ".env", ".env.*", "*.pem", "*.key", "docs/cloudflare-dns-records.local.md", "infra/cloudflare/dns-records.local.tfvars"]) {
   if (!gitignore.split("\n").includes(pattern)) failures.push(`.gitignore must block local secret pattern: ${pattern}`);

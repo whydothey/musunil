@@ -172,7 +172,7 @@ Render 배포가 끝난 뒤 로컬 셸 없이 검증하려면 GitHub Actions `po
 - Expo 앱 내 촬영, Play Integrity, App Attest.
 - S3/R2 원본 미디어 암호화 저장.
 - 얼굴/차량번호 자동 마스킹 모델.
-- 공개 집회/교통 원천 자동 수집 worker와 PDF 구조화 파서.
+- 공개 집회·시위 원천 자동 수집 worker와 PDF 구조화 파서.
 - AI 모델 호출.
 - FCM/APNs 실제 발송.
 - 결제/후원 provider.
