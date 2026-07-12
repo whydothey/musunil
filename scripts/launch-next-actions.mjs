@@ -118,6 +118,7 @@ function parseReport(source, refreshMetadata = { attempted: false }) {
       "pnpm launch:apply -- --apply",
       "pnpm launch:apply -- --apply --deploy-web",
       "pnpm launch:apply -- --apply --cloudflare-headers",
+      "pnpm launch:apply -- --apply --cloudflare-headers-only",
       "pnpm render:api-settings",
       "pnpm render:web-settings",
       "pnpm render:apply",
@@ -190,7 +191,7 @@ function prerequisiteForStage(stage) {
     return "Render API token과 Cloudflare token이 있으면 `pnpm launch:apply -- --apply`가 api.musunil.com custom domain 생성, Render onrender.com target 파생, Cloudflare DNS 적용을 한 번에 처리한다. token이 없으면 dry-run 출력의 requiredEnv만 채운다.";
   }
   if (stage === "apply_static_headers") {
-    return "Render API token이 있으면 `pnpm launch:apply -- --apply --deploy-web`으로 musunil-web Headers를 적용하고 배포까지 요청한다. Render headers가 live에 계속 없으면 `pnpm launch:apply -- --apply --cloudflare-headers`로 Web 전용 Cloudflare fallback을 추가한다.";
+    return "Render API token이 있으면 `pnpm launch:apply -- --apply --deploy-web`으로 musunil-web Headers를 적용하고 배포까지 요청한다. Render headers가 live에 계속 없거나 Render token 없이 Web header만 먼저 고치려면 `pnpm launch:apply -- --apply --cloudflare-headers-only`로 Web 전용 Cloudflare fallback을 추가한다.";
   }
   if (stage === "publish_build_metadata") {
     return "Render musunil-web Build Command가 pnpm build:web-static:render인지 먼저 확인하고 Clear build cache & deploy로 새 산출물을 publish한다.";

@@ -597,8 +597,8 @@ function requiredActions(result) {
     actions.push({
       id: "apply_static_headers",
       owner: "operator",
-      action: "pnpm launch:apply 출력대로 Render Web header 적용 계획을 확인한다. Render API token이 있으면 pnpm launch:apply -- --apply --deploy-web으로 musunil-web Headers를 적용하고 배포까지 요청한다. Render headers가 live 응답에 계속 반영되지 않거나 Cloudflare proxy가 켜져 있으면 pnpm launch:apply -- --apply --cloudflare-headers로 Web 전용 Response Header Transform Rule을 추가한다. 하위 확인은 pnpm cloudflare:headers와 pnpm cloudflare:check를 사용한다.",
-      verify: "pnpm launch:apply && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy",
+      action: "pnpm launch:apply 출력대로 Render Web header 적용 계획을 확인한다. Render API token이 있으면 pnpm launch:apply -- --apply --deploy-web으로 musunil-web Headers를 적용하고 배포까지 요청한다. Render headers가 live 응답에 계속 반영되지 않거나 Render token 없이 Web header만 먼저 고치려면 pnpm launch:apply -- --apply --cloudflare-headers-only로 Web 전용 Response Header Transform Rule만 추가한다. 하위 확인은 pnpm cloudflare:headers와 pnpm cloudflare:check를 사용한다.",
+      verify: "pnpm launch:apply -- --cloudflare-headers-only && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy",
       reference: "docs/launch-cutover-runbook.md#2-render-static-site"
     });
   }

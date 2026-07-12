@@ -8,9 +8,13 @@ const json = args.includes("--json");
 const deployWeb = args.includes("--deploy-web") || args.includes("--deploy-all");
 const deployApi = args.includes("--deploy-api") || args.includes("--deploy-all");
 const verifyDomains = args.includes("--verify-domains");
-const cloudflareHeaders = args.includes("--cloudflare-headers");
+const cloudflareHeadersOnly = args.includes("--cloudflare-headers-only") || args.includes("--headers-only");
+const cloudflareHeaders = args.includes("--cloudflare-headers") || cloudflareHeadersOnly;
 const skipRender = args.includes("--skip-render");
 const skipCloudflare = args.includes("--skip-cloudflare");
+const renderRequested = !skipRender && !cloudflareHeadersOnly;
+const cloudflareRequested = !skipCloudflare;
+const cloudflareDnsRequested = cloudflareRequested && !cloudflareHeadersOnly;
 
 const base = {
   checked: "launch_apply_plan",
@@ -22,12 +26,14 @@ const base = {
     "https://developers.cloudflare.com/rules/transform/response-header-modification/create-api/"
   ],
   requested: {
-    render: !skipRender,
-    cloudflare: !skipCloudflare,
+    render: renderRequested,
+    cloudflare: cloudflareRequested,
+    cloudflareDns: cloudflareDnsRequested,
     deployWeb,
     deployApi,
     verifyDomains,
-    cloudflareHeaders
+    cloudflareHeaders,
+    cloudflareHeadersOnly
   },
   safety: [
     "dry_run is default; pass --apply before any Render or Cloudflare write",
@@ -39,7 +45,7 @@ const base = {
 
 const steps = [];
 let renderData = null;
-if (!skipRender) {
+if (renderRequested) {
   const renderArgs = [
     "--api-domain",
     "--web-headers",
@@ -65,13 +71,15 @@ const cloudflareEnv = {
     : {})
 };
 
-if (!skipCloudflare) {
-  const dnsStep = runNode("cloudflare_dns_apply", "scripts/cloudflare-apply.mjs", [
-    "--dns",
-    "--json",
-    ...(apply ? ["--apply"] : [])
-  ], cloudflareEnv);
-  steps.push(dnsStep);
+if (cloudflareRequested) {
+  if (cloudflareDnsRequested) {
+    const dnsStep = runNode("cloudflare_dns_apply", "scripts/cloudflare-apply.mjs", [
+      "--dns",
+      "--json",
+      ...(apply ? ["--apply"] : [])
+    ], cloudflareEnv);
+    steps.push(dnsStep);
+  }
   if (cloudflareHeaders) {
     const headerStep = runNode("cloudflare_header_apply", "scripts/cloudflare-apply.mjs", [
       "--headers",
@@ -207,6 +215,8 @@ function operatorInputs(value) {
         ? value.targetSource.api === "render_api_service_url"
           ? "derived_from_render_api"
           : "configured"
+        : value.requested.cloudflareHeadersOnly
+          ? "not_required_for_header_rule"
         : "missing_manual_fallback",
       env: ["MUSUNIL_RENDER_API_DNS_TARGET"],
       alternatives: ["RENDER_API_TOKEN"],
@@ -214,17 +224,17 @@ function operatorInputs(value) {
     });
     inputs.push({
       id: "render_web_dns_target",
-      required: value.requested.cloudflareHeaders && !value.derivedTargets.web,
+      required: false,
       status: value.derivedTargets.web
         ? value.targetSource.web === "render_api_service_url"
           ? "derived_from_render_api"
           : "configured"
-        : value.requested.cloudflareHeaders
-          ? "missing"
+        : value.requested.cloudflareHeadersOnly
+          ? "not_required_for_header_rule"
           : "not_required_for_current_request",
       env: ["MUSUNIL_RENDER_WEB_DNS_TARGET"],
       alternatives: ["RENDER_API_TOKEN"],
-      purpose: "Manual fallback CNAME target for musunil.com when Web DNS/header fallback is being applied"
+      purpose: "Manual fallback CNAME target for musunil.com when a Web DNS record is being applied"
     });
   }
   return inputs;
@@ -236,7 +246,7 @@ function nextCommands(value) {
   if (missingRequired.length > 0) {
     commands.push(`Fill required launch inputs: ${missingRequired.join(", ")}.`);
   }
-  if (!value.derivedTargets.api) {
+  if (!value.requested.cloudflareHeadersOnly && !value.derivedTargets.api) {
     commands.push("Set RENDER_API_TOKEN so pnpm launch:apply can derive the Render API onrender.com target, or set MUSUNIL_RENDER_API_DNS_TARGET manually.");
   }
   if (value.steps.some((step) => step.id === "render_apply" && !step.ok)) {
@@ -245,7 +255,11 @@ function nextCommands(value) {
   if (value.steps.some((step) => step.id === "cloudflare_dns_apply" && !step.ok)) {
     commands.push("Set CLOUDFLARE_API_TOKEN. If the token cannot read zones by name, also set CLOUDFLARE_ZONE_ID, then rerun pnpm launch:apply -- --apply.");
   }
-  commands.push("After apply succeeds, run pnpm launch:final-gate.");
+  if (value.requested.cloudflareHeadersOnly) {
+    commands.push("After header apply succeeds, run strict Web header verification; final gate still requires API DNS/live API sync.");
+  } else {
+    commands.push("After apply succeeds, run pnpm launch:final-gate.");
+  }
   return commands;
 }
 

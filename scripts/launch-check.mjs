@@ -319,6 +319,10 @@ if (
   !/item\.env\.join\(" or "\)/.test(launchApply) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET/.test(launchApply) ||
   !/--cloudflare-headers/.test(launchApply) ||
+  !/--cloudflare-headers-only/.test(launchApply) ||
+  !/cloudflareHeadersOnly/.test(launchApply) ||
+  !/cloudflareDns/.test(launchApply) ||
+  !/not_required_for_header_rule/.test(launchApply) ||
   !/--deploy-web/.test(launchApply) ||
   !/--apply/.test(launchApply) ||
   !/dry_run/.test(launchApply) ||
@@ -427,8 +431,11 @@ if (
   !/MUSUNIL_RENDER_API_DNS_TARGET:\?set exact Render API target from Render first/.test(launchNextActions) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET:\?set exact Render API target from Render first/.test(launchCutoverPlan) ||
   !/pnpm launch:apply -- --apply/.test(launchNextActions) ||
+  !/pnpm launch:apply -- --apply --cloudflare-headers-only/.test(launchNextActions) ||
   !/pnpm launch:apply -- --apply/.test(launchCutoverRehearsal) ||
+  !/pnpm launch:apply -- --apply --cloudflare-headers-only/.test(launchCutoverRehearsal) ||
   !/pnpm launch:apply -- --apply/.test(serviceWatch)
+  || !/pnpm launch:apply -- --apply --cloudflare-headers-only/.test(serviceWatch)
 ) {
   failures.push("Operator DNS helpers must derive the real Render API target from Render API serviceDetails.url, keep a manual MUSUNIL_RENDER_API_DNS_TARGET fallback, and expose strict DNS verification");
 }
@@ -511,6 +518,7 @@ if (
   !/Required launch inputs from current dry-run/.test(launchOperatorBriefDoc) ||
   !/RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET/.test(launchOperatorBriefDoc) ||
   !/pnpm launch:apply -- --apply/.test(launchOperatorBriefDoc) ||
+  !/pnpm launch:apply -- --apply --cloudflare-headers-only/.test(launchOperatorBriefDoc) ||
   !/pnpm render:apply -- --web-headers --apply/.test(launchOperatorBriefDoc) ||
   !/pnpm render:apply -- --api-domain --apply/.test(launchOperatorBriefDoc) ||
   !/Cloudflare/.test(launchOperatorBriefDoc) ||
@@ -926,6 +934,7 @@ if (
   !/render:api-settings/.test(serviceWatch) ||
   !/cloudflare:dns/.test(serviceWatch) ||
   !/apply_static_headers/.test(serviceWatch) ||
+  !/--cloudflare-headers-only/.test(serviceWatch) ||
   !/cloudflare:headers/.test(serviceWatch) ||
   !/cloudflare:check/.test(serviceWatch) ||
   !/deploy_latest_static/.test(serviceWatch) ||
