@@ -104,6 +104,7 @@ function buildSummary(results) {
     failedChecks: failedChecks.map(slimCheck),
     skippedChecks: skippedChecks.map(slimCheck),
     requiredActions,
+    nextOperatorPrerequisite: nextOperatorPrerequisite(stage),
     nextOperatorCommand: nextOperatorCommand(stage, requiredActions),
     cutover: {
       domains: cutoverData.domains || { web: "https://musunil.com", api: "https://api.musunil.com" },
@@ -187,6 +188,22 @@ function nextOperatorCommand(stage, actions) {
   return "pnpm launch:blockers -- --refresh";
 }
 
+function nextOperatorPrerequisite(stage) {
+  if (stage === "connect_api_endpoint") {
+    return "Render musunil-api > Settings > Custom Domains에서 api.musunil.com의 DNS target을 복사해 현재 셸의 MUSUNIL_RENDER_API_DNS_TARGET에 먼저 export한다. 문서 placeholder, 괄호 예시, 추측한 .onrender.com 값은 쓰지 않는다.";
+  }
+  if (stage === "apply_static_headers") {
+    return "Render musunil-web의 Header application mode를 확인한다. 수동 Static Site이면 Render Dashboard Headers에 pnpm render:web-settings 출력값을 그대로 입력하고, Cloudflare fallback은 Web 전용으로만 적용한다.";
+  }
+  if (stage === "publish_build_metadata") {
+    return "Render musunil-web Build Command가 pnpm build:web-static:render인지 확인하고 Clear build cache & deploy 뒤 build-info를 다시 검증한다.";
+  }
+  if (stage === "restore_live_issue_sync") {
+    return "Web config.js가 https://api.musunil.com을 보고 있고 api.musunil.com /health, /ready가 응답하는 상태에서 live issue sync를 검증한다.";
+  }
+  return "";
+}
+
 function printMarkdown(value) {
   console.log("# Musunil Launch Cutover Rehearsal");
   console.log("");
@@ -198,6 +215,9 @@ function printMarkdown(value) {
   console.log(`Service watch: ${value.report.lastChecked || "unknown"} (${value.report.stale ? "stale" : "fresh"})`);
   console.log(`Checks: ${value.counts.pass} ok, ${value.counts.fail} fail, ${value.counts.skip} skip, ${value.counts.requiredActions} actions`);
   console.log("");
+  if (value.nextOperatorPrerequisite) {
+    console.log(`Before next command: ${value.nextOperatorPrerequisite}`);
+  }
   console.log(`Next command: \`${value.nextOperatorCommand}\``);
   console.log("");
 

@@ -284,6 +284,9 @@ if (
   !/goalState/.test(launchNextActions) ||
   !/launchState/.test(launchNextActions) ||
   !/blockerStage/.test(launchNextActions) ||
+  !/nextOperatorPrerequisite/.test(launchNextActions) ||
+  !/Before next command/.test(launchNextActions) ||
+  !/Custom Domains에서 api\.musunil\.com의 DNS target/.test(launchNextActions) ||
   !/nextOperatorCommand/.test(launchNextActions) ||
   !/Launch readiness/.test(launchNextActions) ||
   !/Current stage/.test(launchNextActions) ||
@@ -344,6 +347,9 @@ if (
   !/Active goal/.test(launchCutoverRehearsal) ||
   !/Launch readiness/.test(launchCutoverRehearsal) ||
   !/releaseBlocked/.test(launchCutoverRehearsal) ||
+  !/nextOperatorPrerequisite/.test(launchCutoverRehearsal) ||
+  !/Before next command/.test(launchCutoverRehearsal) ||
+  !/Custom Domains에서 api\.musunil\.com의 DNS target/.test(launchCutoverRehearsal) ||
   !/nextOperatorCommand/.test(launchCutoverRehearsal) ||
   !/Ordered Operator Actions/.test(launchCutoverRehearsal) ||
   !/connect_api_endpoint/.test(launchCutoverRehearsal) ||
@@ -370,6 +376,10 @@ if (
   !/pnpm launch:operator-brief -- --refresh/.test(launchOperatorBrief) ||
   !/goalState/.test(launchOperatorBrief) ||
   !/launchState/.test(launchOperatorBrief) ||
+  !/nextOperatorPrerequisite/.test(launchOperatorBrief) ||
+  !/Before next command/.test(launchOperatorBrief) ||
+  !/Before next command/.test(launchOperatorBriefDoc) ||
+  !/Custom Domains에서 api\.musunil\.com의 DNS target/.test(launchOperatorBriefDoc) ||
   !/Active goal/.test(launchOperatorBrief) ||
   !/Launch readiness/.test(launchOperatorBrief) ||
   !/오래된 Git SHA나 blocker 상태를 출시 판단 증거로 쓰지 않는다/.test(launchOperatorBrief) ||

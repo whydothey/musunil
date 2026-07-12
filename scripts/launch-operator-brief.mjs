@@ -60,6 +60,7 @@ function buildBrief() {
     launchState: rehearsalData.launchState || (helperFailures.length > 0 || Boolean(rehearsalData.releaseBlocked) ? "blocked" : "ready_for_final_gate"),
     releaseBlocked: helperFailures.length > 0 || Boolean(rehearsalData.releaseBlocked),
     stage: rehearsalData.stage || "unknown",
+    nextOperatorPrerequisite: rehearsalData.nextOperatorPrerequisite || "",
     nextOperatorCommand: rehearsalData.nextOperatorCommand || "pnpm launch:cutover-rehearsal -- --refresh",
     serviceWatch: rehearsalData.report || {
       lastChecked: null,
@@ -107,6 +108,7 @@ function renderMarkdown(value) {
     `- Release blocked: ${value.releaseBlocked ? "yes" : "no"}`,
     `- Service watch: ${value.serviceWatch.lastChecked || "unknown"} (${value.serviceWatch.stale ? "stale" : "fresh"})`,
     `- Checks: ${value.counts.pass} ok, ${value.counts.fail} fail, ${value.counts.skip} skip, ${value.counts.requiredActions} actions`,
+    value.nextOperatorPrerequisite ? `- Before next command: ${value.nextOperatorPrerequisite}` : "",
     `- Next command: \`${value.nextOperatorCommand}\``,
     "",
     ...helperFailureSection(value.helperFailures),

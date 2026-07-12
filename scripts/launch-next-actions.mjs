@@ -81,6 +81,7 @@ function parseReport(source, refreshMetadata = { attempted: false }) {
     goalNote: "Codex active goal continues until final launch evidence passes; this helper tracks deploy readiness only.",
     launchState: releaseBlocked ? "blocked" : "ready_for_final_gate",
     blockerStage,
+    nextOperatorPrerequisite: prerequisiteForStage(blockerStage),
     nextOperatorCommand: nextCommandForStage(blockerStage, actions),
     lastChecked,
     reportAgeMinutes: freshness.ageMinutes,
@@ -161,6 +162,22 @@ function nextCommandForStage(stage, actions) {
   return "pnpm launch:blockers -- --refresh";
 }
 
+function prerequisiteForStage(stage) {
+  if (stage === "connect_api_endpoint") {
+    return "Render musunil-api > Settings > Custom Domains에서 api.musunil.com의 DNS target을 복사해 현재 셸의 MUSUNIL_RENDER_API_DNS_TARGET에 먼저 export한다. 문서 placeholder, 괄호 예시, 추측한 .onrender.com 값은 쓰지 않는다.";
+  }
+  if (stage === "apply_static_headers") {
+    return "Render musunil-web이 수동 Static Site인지 Blueprint 관리인지 확인한 뒤, 수동이면 Dashboard Headers에 render:web-settings 출력값을 그대로 입력한다.";
+  }
+  if (stage === "publish_build_metadata") {
+    return "Render musunil-web Build Command가 pnpm build:web-static:render인지 먼저 확인하고 Clear build cache & deploy로 새 산출물을 publish한다.";
+  }
+  if (stage === "restore_live_issue_sync") {
+    return "api.musunil.com DNS와 Web config.js의 apiBaseUrl이 https://api.musunil.com으로 맞은 상태에서 live API 응답을 확인한다.";
+  }
+  return "";
+}
+
 function parseTable(source, firstHeader, nextHeading) {
   const lines = source.split("\n");
   const start = lines.findIndex((line) => line.startsWith("| ") && line.includes(`| ${firstHeader} |`));
@@ -216,6 +233,9 @@ function printMarkdown(summary) {
   console.log(`Service watch status: ${summary.status}`);
   console.log(`Checks: ${summary.passCount} ok, ${summary.failCount} fail, ${summary.skipCount} skip`);
   console.log("");
+  if (summary.nextOperatorPrerequisite) {
+    console.log(`Before next command: ${summary.nextOperatorPrerequisite}`);
+  }
   console.log(`Next command: \`${summary.nextOperatorCommand}\``);
   console.log("");
   if (summary.stale) {
