@@ -606,9 +606,11 @@ function requiredActions(result) {
     actions.push({
       id: "stop_live_visual_surface_regression",
       owner: "lead",
-      action: nonLiveDataState || emptyLiveIssueFeed
+      action: emptyLiveIssueFeed
         ? "실제 musunil.com이 live issue feed를 받지 못하고 있다. API DNS/CORS/Web config와 `/home.issueCards` 연결을 고쳐 `serviceSyncState=live`이고 홈 이슈 3개 이상이 렌더링될 때까지 배포 승급을 중단한다."
-        : "실제 musunil.com 렌더링 회귀다. 홈 이슈 수, 상세 전환, 인증영상/지도/제보 표면, 모바일 overflow와 하단 내비 겹침을 수정하기 전까지 배포 승급을 중단한다.",
+        : nonLiveDataState
+          ? "실제 musunil.com은 fallback 이슈 피드를 렌더링하지만 live API 동기화가 아니다. API DNS/CORS/Web config와 `/home.issueCards` 연결을 고쳐 `serviceSyncState=live`가 될 때까지 배포 승급을 중단한다."
+          : "실제 musunil.com 렌더링 회귀다. 홈 이슈 수, 상세 전환, 인증영상/지도/제보 표면, 모바일 overflow와 하단 내비 겹침을 수정하기 전까지 배포 승급을 중단한다.",
       verify: finalGateVerify,
       reference: nonLiveDataState || emptyLiveIssueFeed ? "docs/launch-cutover-runbook.md#3-render-api" : "docs/commercial-splus-redesign.md"
     });
