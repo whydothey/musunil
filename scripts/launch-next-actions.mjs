@@ -192,11 +192,11 @@ function splitApplyPaths({ failed, actions }) {
     paths.push({
       id: "web_headers_only",
       clears: ["web_header_contract"],
-      requires: ["CLOUDFLARE_API_TOKEN"],
+      requires: ["CLOUDFLARE_API_TOKEN", "Cloudflare proxied Web record for musunil.com/www"],
       dryRun: "pnpm launch:apply -- --cloudflare-headers-only",
       apply: "pnpm launch:apply -- --apply --cloudflare-headers-only",
-      verify: "MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy",
-      note: "Render target/API DNS 없이 Web 보안 헤더 blocker만 먼저 줄인다. 최종 출시는 API DNS와 live API sync가 별도로 통과해야 한다."
+      verify: "pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy",
+      note: "Render target/API DNS 없이 Web 보안 헤더 blocker만 먼저 줄인다. Cloudflare Response Header Transform Rule은 proxied Web record에서만 실제 응답에 적용된다. 최종 출시는 API DNS와 live API sync가 별도로 통과해야 한다."
     });
   }
   if (actionIds.has("connect_api_endpoint") || actionIds.has("connect_api_dns") || failedIds.has("api_endpoint_preflight")) {
@@ -221,7 +221,7 @@ function prerequisiteForStage(stage) {
     return "Render API token과 Cloudflare token이 있으면 `pnpm launch:apply -- --apply`가 api.musunil.com custom domain 생성, Render onrender.com target 파생, Cloudflare DNS 적용을 한 번에 처리한다. token이 없으면 dry-run 출력의 requiredEnv만 채운다.";
   }
   if (stage === "apply_static_headers") {
-    return "Render API token이 있으면 `pnpm launch:apply -- --apply --deploy-web`으로 musunil-web Headers를 적용하고 배포까지 요청한다. Render headers가 live에 계속 없거나 Render token 없이 Web header만 먼저 고치려면 `pnpm launch:apply -- --apply --cloudflare-headers-only`로 Web 전용 Cloudflare fallback을 추가한다.";
+    return "Render API token이 있으면 `pnpm launch:apply -- --apply --deploy-web`으로 musunil-web Headers를 적용하고 배포까지 요청한다. Render headers가 live에 계속 없거나 Render token 없이 Web header만 먼저 고치려면 `pnpm cloudflare:check`에서 `web_proxy_mode.proxyObserved=true`를 확인한 뒤 `pnpm launch:apply -- --apply --cloudflare-headers-only`로 Web 전용 Cloudflare fallback을 추가한다.";
   }
   if (stage === "publish_build_metadata") {
     return "Render musunil-web Build Command가 pnpm build:web-static:render인지 먼저 확인하고 Clear build cache & deploy로 새 산출물을 publish한다.";

@@ -31,8 +31,8 @@ const plan = {
     {
       id: "static_headers",
       owner: "operator",
-      action: "Run pnpm launch:apply. If RENDER_API_TOKEN is available, pnpm launch:apply -- --apply --deploy-web applies Render headers and requests a Web deploy. If Render headers still do not appear on live responses, or if only CLOUDFLARE_API_TOKEN is available, apply pnpm launch:apply -- --apply --cloudflare-headers-only for the Web-only response header fallback.",
-      verify: "pnpm launch:apply -- --cloudflare-headers-only && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy"
+      action: "Run pnpm launch:apply. If RENDER_API_TOKEN is available, pnpm launch:apply -- --apply --deploy-web applies Render headers and requests a Web deploy. If Render headers still do not appear on live responses, or if only CLOUDFLARE_API_TOKEN is available, confirm pnpm cloudflare:check reports web_proxy_mode.proxyObserved=true, then apply pnpm launch:apply -- --apply --cloudflare-headers-only for the Web-only response header fallback.",
+      verify: "pnpm launch:apply -- --cloudflare-headers-only && pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy"
     },
     {
       id: "build_metadata",

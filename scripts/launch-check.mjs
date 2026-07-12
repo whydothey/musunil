@@ -406,6 +406,15 @@ if (
 ) {
   failures.push("Launch blockers helper must summarize service watch freshness, required actions, and Web/API/laws verification commands");
 }
+if (
+  !/web_proxy_mode/.test(cloudflareDnsCheck) ||
+  !/proxyObserved/.test(cloudflareDnsCheck) ||
+  !/Response Header Transform Rules require proxied Web DNS records/.test(cloudflareDnsCheck) ||
+  !/pnpm cloudflare:check/.test(cloudflareResponseHeadersDoc) ||
+  !/web_proxy_mode\.proxyObserved/.test(cloudflareResponseHeadersDoc)
+) {
+  failures.push("Cloudflare header fallback must expose Web proxy mode because response header transform rules only affect proxied Web records");
+}
 const operatorCommandSurfaces = [
   ["scripts/launch-next-actions.mjs", launchNextActions],
   ["scripts/launch-cutover-rehearsal.mjs", launchCutoverRehearsal],
@@ -471,7 +480,8 @@ if (
   !/deploy_latest_static/.test(launchCutoverPlan) ||
   !/cloudflare:dns/.test(launchCutoverRehearsal) ||
   !/apply_static_headers/.test(launchCutoverRehearsal) ||
-  !/cloudflare:headers/.test(launchCutoverRehearsal) ||
+  !/cloudflare:check/.test(launchCutoverRehearsal) ||
+  !/web_proxy_mode\.proxyObserved=true/.test(launchCutoverRehearsal) ||
   !/restore_live_issue_sync/.test(launchCutoverRehearsal) ||
   !/Launch Ready Plan/.test(launchCutoverRehearsal) ||
   !/External Smoke Proofs/.test(launchCutoverRehearsal) ||
@@ -945,7 +955,8 @@ if (
   !/cloudflare:dns/.test(serviceWatch) ||
   !/apply_static_headers/.test(serviceWatch) ||
   !/--cloudflare-headers-only/.test(serviceWatch) ||
-  !/cloudflare:headers/.test(serviceWatch) ||
+  !/cloudflare:check/.test(serviceWatch) ||
+  !/web_proxy_mode\.proxyObserved=true/.test(serviceWatch) ||
   !/cloudflare:check/.test(serviceWatch) ||
   !/deploy_latest_static/.test(serviceWatch) ||
   !/publish_build_metadata/.test(serviceWatch) ||

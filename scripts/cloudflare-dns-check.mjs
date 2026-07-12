@@ -61,6 +61,22 @@ await check("web_https", async () => {
     server: response.headers.get("server") || ""
   };
 });
+await check("web_proxy_mode", async () => {
+  const response = await fetchWithTimeout(`${webBaseUrl}/`);
+  const server = response.headers.get("server") || "";
+  const cfCacheStatus = response.headers.get("cf-cache-status") || "";
+  const cfRay = response.headers.get("cf-ray") || "";
+  const proxyObserved = /cloudflare/i.test(server) || Boolean(cfCacheStatus || cfRay);
+  return {
+    proxyObserved,
+    server,
+    cfCacheStatus,
+    cfRayPresent: Boolean(cfRay),
+    note: proxyObserved
+      ? "Cloudflare edge is observable for Web responses; Response Header Transform Rules can affect this host."
+      : "Cloudflare edge is not observable. Response Header Transform Rules require proxied Web DNS records; otherwise use Render Static headers."
+  };
+});
 await check("web_config", async () => {
   const response = await fetchWithTimeout(`${webBaseUrl}/config.js`);
   if (response.status !== 200) throw new Error(`expected 200, got ${response.status}`);
@@ -202,6 +218,7 @@ function requiredActions(items) {
   const failedIds = new Set(items.filter((item) => !item.ok && !item.skipped).map((item) => item.id));
   const skippedIds = new Set(items.filter((item) => item.skipped).map((item) => item.id));
   const apiDnsOk = items.find((item) => item.id === "api_dns")?.ok === true;
+  const webProxyObserved = items.find((item) => item.id === "web_proxy_mode")?.detail?.proxyObserved === true;
   const actions = [];
   if (failedIds.has("render_target_inputs")) {
     actions.push({
@@ -241,7 +258,9 @@ function requiredActions(items) {
   if (failedIds.has("web_header_smoke")) {
     actions.push({
       id: "apply_static_headers",
-      action: "Render musunil-web Settings > Headers에 Cache-Control, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options를 적용한다. Render Static headers가 live 응답에 계속 반영되지 않거나 Cloudflare proxy를 쓰는 경우 pnpm cloudflare:headers 출력의 Web 전용 Response Header Transform Rule을 적용하고 캐시 우회를 확인한다.",
+      action: webProxyObserved
+        ? "Web 응답이 Cloudflare edge를 지나고 있으므로 Render Static headers가 live 응답에 계속 반영되지 않으면 pnpm cloudflare:headers 출력의 Web 전용 Response Header Transform Rule을 적용한다. 적용 뒤 Cache-Control, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options를 strict 검증한다."
+        : "Web 응답에서 Cloudflare edge가 관측되지 않는다. Render musunil-web Settings > Headers에 보안 헤더를 직접 적용하거나, Web 레코드만 proxied로 전환한 뒤 pnpm cloudflare:headers 출력의 Response Header Transform Rule을 적용한다. API 레코드는 계속 DNS only로 둔다.",
       verify: "pnpm render:web-settings && pnpm cloudflare:headers && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy"
     });
   }

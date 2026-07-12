@@ -1,6 +1,6 @@
 # Cloudflare Response Header Rules
 
-이 문서는 `musunil.com` Web 응답 헤더가 Render Static Site Dashboard에서 적용되지 않을 때, Cloudflare edge에서 같은 보안 헤더를 적용하기 위한 운영 템플릿이다. Cloudflare proxied Web record에서만 동작하므로 API 레코드는 `/health`, `/ready`, CORS, media smoke 통과 전까지 DNS only를 유지하고, Web 레코드에만 적용한다.
+이 문서는 `musunil.com` Web 응답 헤더가 Render Static Site Dashboard에서 적용되지 않을 때, Cloudflare edge에서 같은 보안 헤더를 적용하기 위한 운영 템플릿이다. Cloudflare proxied Web record에서만 동작하므로 API 레코드는 `/health`, `/ready`, CORS, media smoke 통과 전까지 DNS only를 유지하고, Web 레코드에만 적용한다. 적용 전 `pnpm cloudflare:check`의 `web_proxy_mode.proxyObserved`가 `true`인지 먼저 본다.
 
 Cloudflare 공식 문서 기준 Response Header Transform Rules는 방문자에게 나가는 HTTP 응답 헤더를 수정할 수 있고, Dashboard에서는 `Set static`으로 같은 이름의 기존 헤더를 덮어쓸 수 있다. Terraform 예시는 `phase = "http_response_headers_transform"`, `action = "rewrite"`, header `operation = "set"` 구조를 사용한다.
 
@@ -55,8 +55,10 @@ Use [response-headers.tf.example](/Users/mk/Documents/Musunil/infra/cloudflare/r
 
 ```bash
 : "${CLOUDFLARE_API_TOKEN:?set Cloudflare API token first}"
+pnpm cloudflare:check
 pnpm cloudflare:apply -- --headers
 pnpm cloudflare:apply -- --headers --apply
+pnpm cloudflare:check
 MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy
 ```
 
