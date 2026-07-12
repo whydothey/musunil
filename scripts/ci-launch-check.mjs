@@ -168,6 +168,7 @@ moderation:
   run(["launch:check"], launchEnv);
   assertLaunchApplyBlocksMissingInputs();
   assertLaunchApplyBlocksBadRenderToken();
+  assertLaunchApplyManualTargetSkipsRenderWrites();
 } catch (error) {
   exitCode = 1;
   console.error(error instanceof Error ? error.message : String(error));
@@ -252,6 +253,30 @@ function assertLaunchApplyBlocksBadRenderToken() {
   }
   if (result.renderTargetDerivation?.failed !== true || !/401|Unauthorized/.test(result.renderTargetDerivation?.apiError || "")) {
     throw new Error(`launch:apply --apply must expose Render target derivation failure, got ${JSON.stringify(result.renderTargetDerivation)}`);
+  }
+}
+
+function assertLaunchApplyManualTargetSkipsRenderWrites() {
+  const result = runNodeJsonExpectFailure(
+    ["scripts/launch-apply.mjs", "--", "--apply"],
+    launchApplyPreflightEnv({
+      MUSUNIL_RENDER_API_DNS_TARGET: "musunil-api.onrender.com",
+      CLOUDFLARE_API_TOKEN: "dummy"
+    })
+  );
+  if (result.applyBlocked !== false || result.renderSkippedReason !== "manual_api_dns_target_without_render_token") {
+    throw new Error(`launch:apply manual target path must skip Render automation without blocking preflight: ${JSON.stringify({ applyBlocked: result.applyBlocked, renderSkippedReason: result.renderSkippedReason })}`);
+  }
+  if (result.requested?.render !== false) {
+    throw new Error("launch:apply manual target path must not request Render writes without a Render token");
+  }
+  const preflightIds = (result.preflight?.steps || []).map((step) => step.id);
+  const applyIds = (result.steps || []).map((step) => step.id);
+  if (preflightIds.includes("render_apply") || applyIds.includes("render_apply")) {
+    throw new Error(`launch:apply manual target path must not run render_apply, got preflight=${preflightIds.join(",")} apply=${applyIds.join(",")}`);
+  }
+  if (!preflightIds.includes("cloudflare_dns_apply") || !applyIds.includes("cloudflare_dns_apply")) {
+    throw new Error(`launch:apply manual target path must run only Cloudflare DNS apply, got preflight=${preflightIds.join(",")} apply=${applyIds.join(",")}`);
   }
 }
 

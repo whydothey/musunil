@@ -12,9 +12,19 @@ const cloudflareHeadersOnly = args.includes("--cloudflare-headers-only") || args
 const cloudflareHeaders = args.includes("--cloudflare-headers") || cloudflareHeadersOnly;
 const skipRender = args.includes("--skip-render");
 const skipCloudflare = args.includes("--skip-cloudflare");
-const renderRequested = !skipRender && !cloudflareHeadersOnly;
+const renderTokenConfigured = Boolean(process.env.RENDER_API_TOKEN || process.env.MUSUNIL_RENDER_API_TOKEN);
+const manualApiTargetConfigured = Boolean(process.env.MUSUNIL_RENDER_API_DNS_TARGET);
+const renderWriteOrInspectRequired = deployWeb || deployApi || verifyDomains || !manualApiTargetConfigured;
+const renderRequested = !skipRender && !cloudflareHeadersOnly && (renderTokenConfigured || renderWriteOrInspectRequired);
 const cloudflareRequested = !skipCloudflare;
 const cloudflareDnsRequested = cloudflareRequested && !cloudflareHeadersOnly;
+const renderSkippedReason = !renderRequested && !skipRender && !cloudflareHeadersOnly && manualApiTargetConfigured && !renderTokenConfigured
+  ? "manual_api_dns_target_without_render_token"
+  : skipRender
+    ? "skip_render_flag"
+    : cloudflareHeadersOnly
+      ? "cloudflare_headers_only"
+      : "";
 
 const base = {
   checked: "launch_apply_plan",
@@ -35,6 +45,7 @@ const base = {
     cloudflareHeaders,
     cloudflareHeadersOnly
   },
+  renderSkippedReason,
   safety: [
     "dry_run is default; pass --apply before any Render or Cloudflare write",
     "Render service onrender.com hosts are derived only from Render API serviceDetails.url",
@@ -197,9 +208,9 @@ function renderTargetDerivationStatus(renderData, targets) {
   const inspected = renderData?.inspected || {};
   const apiError = inspected.api?.ok === false ? inspected.api.error || "unknown Render API error" : "";
   const webError = inspected.web?.ok === false ? inspected.web.error || "unknown Render API error" : "";
-  const failed = Boolean(process.env.RENDER_API_TOKEN || process.env.MUSUNIL_RENDER_API_TOKEN) && !targets.api && Boolean(apiError || webError);
+  const failed = renderTokenConfigured && !targets.api && Boolean(apiError || webError);
   return {
-    attempted: Boolean(process.env.RENDER_API_TOKEN || process.env.MUSUNIL_RENDER_API_TOKEN),
+    attempted: renderTokenConfigured,
     ok: Boolean(targets.api) || !failed,
     failed,
     apiError,

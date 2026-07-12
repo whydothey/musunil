@@ -338,6 +338,11 @@ if (
   !/CLOUDFLARE_ZONE_ID/.test(launchApply) ||
   !/render-apply\.mjs/.test(launchApply) ||
   !/cloudflare-apply\.mjs/.test(launchApply) ||
+  !/renderTokenConfigured/.test(launchApply) ||
+  !/manualApiTargetConfigured/.test(launchApply) ||
+  !/renderWriteOrInspectRequired/.test(launchApply) ||
+  !/renderSkippedReason/.test(launchApply) ||
+  !/manual_api_dns_target_without_render_token/.test(launchApply) ||
   !/deriveTargets/.test(launchApply) ||
   !/runLaunchSteps/.test(launchApply) ||
   !/runCloudflareSteps/.test(launchApply) ||
