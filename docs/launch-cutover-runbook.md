@@ -3,6 +3,7 @@
 이 문서는 `musunil.com`을 실제 공개 서비스로 넘길 때 마지막에 사람이 입력해야 하는 값을 한곳에 모은다. 세부 값은 `render.yaml`과 `config/musunil.user-inputs.local.yaml`을 기준으로 하며, 복사 가능한 최신 출력은 항상 아래 명령을 먼저 본다.
 
 ```bash
+pnpm launch:missing-inputs -- --refresh
 pnpm launch:operator-brief
 pnpm launch:cutover-rehearsal
 pnpm launch:blockers
@@ -17,6 +18,7 @@ pnpm cloudflare:apply
 pnpm cloudflare:check
 ```
 
+`pnpm launch:missing-inputs -- --refresh`는 실제 secret 값을 출력하지 않고 즉시 필요한 Render/Cloudflare apply 입력, provider smoke 입력, Runtime secret, proof marker를 [launch-missing-inputs.md](/Users/mk/Documents/Musunil/docs/launch-missing-inputs.md)에 갱신한다. 이 파일은 “무엇을 채워야 하는지”만 본다.
 `pnpm launch:operator-brief -- --refresh`는 위 명령들의 핵심 출력과 현재 blocker를 [launch-operator-brief.md](/Users/mk/Documents/Musunil/docs/launch-operator-brief.md)에 합쳐 쓰는 운영자용 단일 브리프다. Render/Cloudflare 화면을 열기 직전에는 반드시 refresh한 이 파일을 먼저 본다. 기존 파일의 오래된 Git SHA나 blocker 상태는 출시 판단 증거가 아니다.
 `pnpm launch:apply`는 기본 dry-run이다. 출력의 `operatorInputs`와 `requiredEnv`가 마지막에 채워야 할 값이며, 핵심 묶음은 `RENDER_API_TOKEN` 또는 `MUSUNIL_RENDER_API_DNS_TARGET`, `CLOUDFLARE_API_TOKEN`이다. `RENDER_API_TOKEN`이 있으면 Render 서비스의 `onrender.com` target을 API에서 파생하고, `CLOUDFLARE_API_TOKEN`과 `--apply`가 있을 때 Render custom domain, Render Web headers, Cloudflare DNS를 한 번에 적용한다. Cloudflare zone은 기본적으로 `musunil.com` 이름으로 조회하며, token 권한 때문에 조회가 실패할 때만 `CLOUDFLARE_ZONE_ID`를 추가한다. Render headers가 live에 계속 반영되지 않을 때는 `pnpm cloudflare:check`에서 `web_proxy_mode.proxyObserved=true`를 확인한 뒤 `--cloudflare-headers-only`를 추가해 Web 전용 Cloudflare response header fallback만 적용할 수 있다. 이 경로는 Render target을 요구하지 않는다.
 `pnpm render:apply`는 기본 dry-run이다. `RENDER_API_TOKEN`이 있을 때 `--apply --web-headers` 또는 `--apply --api-domain`을 붙이면 Render API로 `musunil-web` Headers와 `musunil-api` custom domain을 생성/갱신한다. 이 명령은 Render env var나 secret file을 교체하지 않는다.

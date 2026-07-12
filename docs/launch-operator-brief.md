@@ -6,14 +6,14 @@
 
 ## Current State
 
-- Generated: 2026-07-12T06:39:58.752Z
-- Git SHA: 992cdf9451c4381228c1edc20a04de5e3abcbec0
+- Generated: 2026-07-12T06:50:04.615Z
+- Git SHA: 3b46e838f905ade94e14ad3cad81d33fb87b72bc
 - Refresh command: `pnpm launch:operator-brief -- --refresh`
 - Active goal: active
 - Launch readiness: blocked
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T06:40:11.567Z (fresh)
+- Service watch: 2026-07-12T06:50:21.233Z (fresh)
 - Checks: 4 ok, 3 fail, 13 skip, 4 actions
 - Before next command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Next command: `pnpm launch:apply`
@@ -205,6 +205,8 @@ Cache rules:
 ## User Inputs
 
 사용자가 마지막에 채울 값의 우선순위다. Static Web에는 secret을 넣지 않고, API/Secret File에만 주입한다.
+
+- 정확한 누락 입력값과 proof marker는 `pnpm launch:missing-inputs -- --refresh`로 `docs/launch-missing-inputs.md`를 갱신해 확인한다.
 
 - app.support_email
 - organization.legal_name/operator_name/privacy_officer_*/location_info_manager_*

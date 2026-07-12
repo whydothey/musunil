@@ -42,11 +42,13 @@ const externalSmoke = readFileSync(resolve(cwd, "scripts/external-smoke.mjs"), "
 const launchFinalGate = readFileSync(resolve(cwd, "scripts/launch-final-gate.mjs"), "utf8");
 const launchCutoverRehearsal = readFileSync(resolve(cwd, "scripts/launch-cutover-rehearsal.mjs"), "utf8");
 const launchOperatorBrief = readFileSync(resolve(cwd, "scripts/launch-operator-brief.mjs"), "utf8");
+const launchMissingInputs = readFileSync(resolve(cwd, "scripts/launch-missing-inputs.mjs"), "utf8");
 const cloudflareDnsTemplate = readFileSync(resolve(cwd, "scripts/cloudflare-dns-template.mjs"), "utf8");
 const cloudflareResponseHeaders = readFileSync(resolve(cwd, "scripts/cloudflare-response-headers-template.mjs"), "utf8");
 const cloudflareApply = readFileSync(resolve(cwd, "scripts/cloudflare-apply.mjs"), "utf8");
 const launchCutoverRunbook = readFileSync(resolve(cwd, "docs/launch-cutover-runbook.md"), "utf8");
 const launchOperatorBriefDoc = readFileSync(resolve(cwd, "docs/launch-operator-brief.md"), "utf8");
+const launchMissingInputsDoc = readFileSync(resolve(cwd, "docs/launch-missing-inputs.md"), "utf8");
 const userInputsManual = readFileSync(resolve(cwd, "docs/user-inputs-manual.md"), "utf8");
 const serviceWatchDoc = readFileSync(resolve(cwd, "docs/splus-service-watch.md"), "utf8");
 const cloudflareDnsRecordsDoc = readFileSync(resolve(cwd, "docs/cloudflare-dns-records.md"), "utf8");
@@ -596,6 +598,8 @@ if (
   !/cloudflare-dns-records\.local\.md/.test(launchOperatorBrief) ||
   !/cloudflare-dns-records\.local\.md/.test(launchOperatorBriefDoc) ||
   !/User Inputs/.test(launchOperatorBriefDoc) ||
+  !/launch:missing-inputs -- --refresh/.test(launchOperatorBrief) ||
+  !/launch:missing-inputs -- --refresh/.test(launchOperatorBriefDoc) ||
   !/pnpm launch:final-gate/.test(launchOperatorBriefDoc) ||
   !/api\.musunil\.com/.test(launchOperatorBriefDoc) ||
   !/MUSUNIL_USER_INPUTS_B64/.test(launchOperatorBriefDoc)
@@ -616,6 +620,31 @@ if (
   )
 ) {
   failures.push("Launch operator brief must be refreshed after live static deploy clears so it points to connect_api_endpoint, not deploy_latest_static");
+}
+if (
+  !/"launch:missing-inputs"/.test(packageJson) ||
+  !/launch-missing-inputs\.mjs/.test(packageJson) ||
+  !/launch_missing_inputs/.test(launchMissingInputs) ||
+  !/docs\/launch-missing-inputs\.md/.test(launchMissingInputs) ||
+  !/launch-next-actions\.mjs/.test(launchMissingInputs) ||
+  !/operational-readiness-diagnostics\.mjs/.test(launchMissingInputs) ||
+  !/launch-ready\.mjs/.test(launchMissingInputs) ||
+  !/external-smoke\.mjs/.test(launchMissingInputs) ||
+  !/Immediate Apply Inputs/.test(launchMissingInputsDoc) ||
+  !/Provider Smoke Inputs/.test(launchMissingInputsDoc) ||
+  !/Runtime Secrets/.test(launchMissingInputsDoc) ||
+  !/RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET/.test(launchMissingInputsDoc) ||
+  !/CLOUDFLARE_API_TOKEN/.test(launchMissingInputsDoc) ||
+  !/storage_put_delete/.test(launchMissingInputsDoc) ||
+  !/redaction_engine_smoke/.test(launchMissingInputsDoc) ||
+  !/mobile_integrity_provider_dry_run/.test(launchMissingInputsDoc) ||
+  !/identity_portone_verified_lookup/.test(launchMissingInputsDoc) ||
+  !/laws_dry_run/.test(launchMissingInputsDoc) ||
+  !/MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID/.test(launchMissingInputsDoc) ||
+  !/Static Web에는 넣지 않는다/.test(launchMissingInputsDoc) ||
+  !/실제 값을 담지 않는다/.test(launchMissingInputsDoc)
+) {
+  failures.push("Launch missing-inputs helper must generate a secret-safe final input checklist with apply, provider smoke, runtime secret, and proof-marker requirements");
 }
 if (
   !/"launch:final-gate"/.test(packageJson) ||

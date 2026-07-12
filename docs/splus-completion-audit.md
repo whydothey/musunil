@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-12 10:08 KST
+Last updated: 2026-07-12 15:49 KST
 
 Status: 완료 아님.
 
@@ -57,6 +57,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - `pnpm launch:ready -- --list`로 actual input 단계와 sample gate 단계를 구분
 - `pnpm launch:external-smoke -- --list`
 - `pnpm launch:cutover-rehearsal`로 현재 stage, 다음 operator 명령, final gate 순서를 한 화면에 확인
+- `pnpm launch:missing-inputs -- --refresh`로 secret 값을 출력하지 않고 마지막 입력 필드, provider smoke proof marker, Runtime secret 범위를 확인
 - `pnpm render:api-settings`
 - API/runtime/web smoke 경계 검증
 

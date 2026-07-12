@@ -228,6 +228,8 @@ function renderMarkdown(value) {
     "",
     "사용자가 마지막에 채울 값의 우선순위다. Static Web에는 secret을 넣지 않고, API/Secret File에만 주입한다.",
     "",
+    "- 정확한 누락 입력값과 proof marker는 `pnpm launch:missing-inputs -- --refresh`로 `docs/launch-missing-inputs.md`를 갱신해 확인한다.",
+    "",
     ...listLines(value.userInputPriority),
     "",
     "## Launch Ready Plan",

@@ -66,6 +66,7 @@
     "launch:cutover-plan": "node scripts/launch-cutover-plan.mjs",
     "launch:cutover-rehearsal": "node scripts/launch-cutover-rehearsal.mjs",
     "launch:operator-brief": "node scripts/launch-operator-brief.mjs",
+    "launch:missing-inputs": "node scripts/launch-missing-inputs.mjs",
     "launch:next-actions": "node scripts/launch-next-actions.mjs",
     "launch:blockers": "node scripts/launch-next-actions.mjs",
     "launch:blockers:strict": "node scripts/launch-next-actions.mjs -- --fail-on-blockers",
