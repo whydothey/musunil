@@ -15,9 +15,17 @@ await check("web_dns", async () => dnsSummary(new URL(webBaseUrl).hostname));
 await check("api_dns", async () => dnsSummary(new URL(apiBaseUrl).hostname));
 await check("render_target_inputs", async () => {
   const placeholderInputs = [renderApiTargetInput, renderWebTargetInput].filter((input) => input.placeholder);
+  const invalidInputs = [renderApiTargetInput, renderWebTargetInput].filter((input) => input.invalidReason);
   if (placeholderInputs.length > 0) {
     throw new Error(
       `Render DNS target placeholder is not valid input: ${placeholderInputs.map((input) => input.env).join(", ")}`
+    );
+  }
+  if (invalidInputs.length > 0) {
+    throw new Error(
+      `Render DNS target must be a hostname only, copied without URL scheme, path, port, or dashboard label: ${
+        invalidInputs.map((input) => `${input.env} (${input.invalidReason})`).join(", ")
+      }`
     );
   }
   if (strict && !expectedRenderApiTarget) {
@@ -268,11 +276,13 @@ function normalizeDnsTarget(value) {
 function readRenderTargetInput(env) {
   const raw = typeof process.env[env] === "string" ? process.env[env].trim() : "";
   const placeholder = Boolean(raw && isPlaceholderRenderTarget(raw));
+  const invalidReason = placeholder ? "" : invalidRenderTargetReason(raw);
   return {
     env,
     rawConfigured: Boolean(raw),
     placeholder,
-    value: placeholder ? "" : normalizeDnsTarget(raw)
+    invalidReason,
+    value: placeholder || invalidReason ? "" : normalizeDnsTarget(raw)
   };
 }
 
@@ -286,4 +296,17 @@ function isPlaceholderRenderTarget(value) {
     text.includes("copy from render") ||
     text.includes("srv-actual-")
   );
+}
+
+function invalidRenderTargetReason(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  if (/^https?:\/\//i.test(text)) return "URL scheme present";
+  if (/[/?#]/.test(text)) return "path or query present";
+  if (/\s/.test(text)) return "space or dashboard label present";
+  if (/:/.test(text)) return "port or label separator present";
+  if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+\.?$/i.test(text)) {
+    return "not a DNS hostname";
+  }
+  return "";
 }

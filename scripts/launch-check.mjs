@@ -506,7 +506,12 @@ if (
   !/api_render_target/.test(cloudflareDnsCheck) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET/.test(cloudflareDnsCheck) ||
   !/isPlaceholderRenderTarget/.test(cloudflareDnsCheck) ||
+  !/invalidRenderTargetReason/.test(cloudflareDnsCheck) ||
   !/Render DNS target placeholder is not valid input/.test(cloudflareDnsCheck) ||
+  !/Render DNS target must be a hostname only/.test(cloudflareDnsCheck) ||
+  !/URL scheme present/.test(cloudflareDnsCheck) ||
+  !/path or query present/.test(cloudflareDnsCheck) ||
+  !/port or label separator present/.test(cloudflareDnsCheck) ||
   !/resolveCname/.test(cloudflareDnsCheck) ||
   !/expectedRenderTargets/.test(cloudflareDnsCheck) ||
   !/web_config/.test(cloudflareDnsCheck) ||
@@ -534,7 +539,10 @@ if (
   !/MUSUNIL_RENDER_WEB_DNS_TARGET/.test(cloudflareDnsTemplate) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET/.test(cloudflareDnsTemplate) ||
   !/placeholderRejected/.test(cloudflareDnsTemplate) ||
+  !/invalidReason/.test(cloudflareDnsTemplate) ||
   !/isPlaceholderRenderTarget/.test(cloudflareDnsTemplate) ||
+  !/invalidRenderTargetReason/.test(cloudflareDnsTemplate) ||
+  !/hostname only/.test(cloudflareDnsTemplate) ||
   !/srv-actual-/.test(cloudflareDnsTemplate) ||
   !/Render musunil-api custom-domain target/.test(cloudflareDnsTemplate) ||
   !/web_record_proxied/.test(cloudflareDnsTemplate) ||
@@ -543,6 +551,8 @@ if (
   !/render_api_target/.test(cloudflareDnsRecordsTerraform) ||
   !/Cloudflare DNS Records/.test(cloudflareDnsRecordsDoc) ||
   !/api\.musunil\.com/.test(cloudflareDnsRecordsDoc) ||
+  !/호스트명만 허용/.test(cloudflareDnsRecordsDoc) ||
+  !/`https:\/\/`, 경로, 포트/.test(cloudflareDnsRecordsDoc) ||
   !/DNS only/.test(cloudflareDnsRecordsDoc) ||
   !/pnpm cloudflare:check/.test(cloudflareDnsRecordsDoc) ||
   !/pnpm check:cloudflare-dns-template/.test(JSON.parse(packageJson).scripts["check:release"] ?? "")

@@ -1,6 +1,7 @@
 # Cloudflare DNS Records
 
 이 문서는 `musunil.com` 출시 컷오버 때 Cloudflare DNS에 입력할 레코드 템플릿이다. Render Dashboard가 각 custom domain에 대해 보여주는 target을 그대로 복사해야 하며, 임의로 `.onrender.com` 주소를 추측해 넣지 않는다.
+Target 값은 호스트명만 허용한다. `https://`, 경로, 포트, `DNS target:` 같은 Dashboard 라벨이 섞이면 `pnpm cloudflare:dns`와 strict check가 실패한다.
 추적 문서는 placeholder를 유지한다. 실제 target을 복사한 뒤에는 아래 로컬 환경변수로 검증용 산출물을 만들고 strict check를 실행한다.
 
 ## Dashboard Records

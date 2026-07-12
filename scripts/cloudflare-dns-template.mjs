@@ -43,6 +43,7 @@ const terraform = renderTerraform(result);
 const localMarkdown = renderMarkdown({ ...result, records: localRecords }, { local: true });
 const localTfvars = renderLocalTfvars();
 const hasConfiguredTarget = Boolean(targetInputs.web.value || targetInputs.api.value);
+const invalidTargetInputs = Object.values(targetInputs).filter((input) => input.placeholder || input.invalidReason);
 
 if (json) {
   console.log(JSON.stringify(result, null, 2));
@@ -62,6 +63,14 @@ if (json) {
   }
   console.log(JSON.stringify({ ...result, ok: true }, null, 2));
 } else {
+  if (invalidTargetInputs.length > 0) {
+    console.error("Render DNS target must be a hostname only, copied without URL scheme, path, port, or dashboard label.");
+    for (const input of invalidTargetInputs) {
+      const reason = input.placeholder ? "placeholder value" : input.invalidReason;
+      console.error(`- ${input.env}: ${reason}`);
+    }
+    process.exit(1);
+  }
   writeFileSync(docsPath, markdown);
   writeFileSync(terraformPath, terraform);
   console.log(`Wrote ${result.docsPath}`);
@@ -115,8 +124,9 @@ function renderMarkdown(value, options = {}) {
     local ? "# Cloudflare DNS Records Local Copy" : "# Cloudflare DNS Records",
     "",
     "이 문서는 `musunil.com` 출시 컷오버 때 Cloudflare DNS에 입력할 레코드 템플릿이다. Render Dashboard가 각 custom domain에 대해 보여주는 target을 그대로 복사해야 하며, 임의로 `.onrender.com` 주소를 추측해 넣지 않는다.",
+    "Target 값은 호스트명만 허용한다. `https://`, 경로, 포트, `DNS target:` 같은 Dashboard 라벨이 섞이면 `pnpm cloudflare:dns`와 strict check가 실패한다.",
     local
-      ? "이 파일은 로컬 전용 산출물이며 git에 커밋하지 않는다. 값이 비어 있으면 Render Dashboard에서 target을 다시 확인한다."
+      ? "이 파일은 로컬 전용 산출물이며 git에 커밋하지 않는다. 값이 비어 있거나 hostname-only 형식이 아니면 Render Dashboard에서 target을 다시 확인한다."
       : "추적 문서는 placeholder를 유지한다. 실제 target을 복사한 뒤에는 아래 로컬 환경변수로 검증용 산출물을 만들고 strict check를 실행한다.",
     "",
     "## Dashboard Records",
@@ -235,6 +245,7 @@ function targetInputSummary(input) {
     configured: Boolean(input.value),
     rawProvided: input.rawConfigured,
     placeholderRejected: input.placeholder,
+    invalidReason: input.invalidReason,
     purpose: input.env.includes("_API_") ? "api.musunil.com CNAME exact target check" : "musunil.com Render custom-domain target copy aid"
   };
 }
@@ -242,17 +253,20 @@ function targetInputSummary(input) {
 function normalizeRenderTarget(value) {
   if (typeof value !== "string") return "";
   const raw = value.trim();
-  if (isPlaceholderRenderTarget(raw)) return "";
+  if (isPlaceholderRenderTarget(raw) || invalidRenderTargetReason(raw)) return "";
   return raw.replace(/\.$/, "");
 }
 
 function renderTargetInput(env) {
   const raw = typeof process.env[env] === "string" ? process.env[env].trim() : "";
+  const placeholder = Boolean(raw && isPlaceholderRenderTarget(raw));
+  const invalidReason = placeholder ? "" : invalidRenderTargetReason(raw);
   return {
     env,
     rawConfigured: Boolean(raw),
-    placeholder: Boolean(raw && isPlaceholderRenderTarget(raw)),
-    value: normalizeRenderTarget(raw)
+    placeholder,
+    invalidReason,
+    value: placeholder || invalidReason ? "" : normalizeRenderTarget(raw)
   };
 }
 
@@ -266,4 +280,17 @@ function isPlaceholderRenderTarget(value) {
     text.includes("copy from render") ||
     text.includes("srv-actual-")
   );
+}
+
+function invalidRenderTargetReason(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  if (/^https?:\/\//i.test(text)) return "URL scheme present";
+  if (/[/?#]/.test(text)) return "path or query present";
+  if (/\s/.test(text)) return "space or dashboard label present";
+  if (/:/.test(text)) return "port or label separator present";
+  if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+\.?$/i.test(text)) {
+    return "not a DNS hostname";
+  }
+  return "";
 }
