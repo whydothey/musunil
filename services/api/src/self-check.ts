@@ -1430,6 +1430,9 @@ assert.equal(mapBody.geojson.presenceAreas.features.length >= 1, true);
 const publicSourceBody = {
   targetType: "occurrence",
   targetId: "occ_1",
+  sourceId: "daegu_today_assembly",
+  sourceCheckedAt: "2026-07-12T00:00:00.000Z",
+  sourceBatchSize: 2,
   sourceProvenance: "government_or_police",
   claimantLabel: "경찰/지자체 공개 안내",
   normalizedStatement: "공개 자료에서 집회 일정 안내가 확인되었습니다.",
@@ -1473,6 +1476,16 @@ assert.equal(
   "갱신된 공공 원천 원문도 공개 응답에 나오면 안 된다"
 );
 assert.equal(JSON.stringify(duplicatePublicSource.body).includes("갱신된 공공 원천 원문도 공개 응답에 나오면 안 된다"), false);
+const refreshedCoverage = await app.handle({ method: "GET", path: "/public-sources/coverage" });
+const refreshedCoverageBody = refreshedCoverage.body as {
+  coverage: {
+    regions: Array<{ code: string; lastCheckedAt: string }>;
+    sourceRefreshes: Array<{ sourceId: string; checkedAt: string; resultCount: number }>;
+  };
+};
+assert.equal(refreshedCoverageBody.coverage.regions.find((region) => region.code === "daegu")?.lastCheckedAt, "2026-07-12T00:00:00.000Z");
+assert.equal(refreshedCoverageBody.coverage.sourceRefreshes.some((refresh) => refresh.sourceId === "daegu_today_assembly" && refresh.checkedAt === "2026-07-12T00:00:00.000Z"), true);
+assert.equal(refreshedCoverageBody.coverage.sourceRefreshes.find((refresh) => refresh.sourceId === "daegu_today_assembly")?.resultCount, 2);
 assert.equal(JSON.stringify(home.body).includes("hazard_area"), false);
 assert.equal(JSON.stringify(home.body).includes("service_disruption"), false);
 
@@ -1516,6 +1529,8 @@ const ingested = await protectedApp.handle({
     type: "static_assembly",
     areaClusterId: "area_daegu",
     regionLabel: "대구",
+    sourceId: "daegu_today_assembly",
+    sourceCheckedAt: "2026-07-12T01:00:00.000Z",
     title: "대구 0710(금) 오늘의 집회 공개 일정",
     startsAt: "2026-07-10T00:00:00.000+09:00",
     lifecycleState: "UPCOMING",

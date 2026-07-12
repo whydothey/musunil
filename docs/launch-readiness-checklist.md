@@ -76,6 +76,7 @@
 - 공개 일정 payload가 `issue_public_regional_schedule`로 들어와도 제목/정규화 문장에 `부정선거`, `선거 검증`, `정보통신망법`, `탄핵` 같은 구체 주제가 있으면 API ingest가 공개자료 묶음이 아니라 주제형 Issue로 재배치한다.
 - `pnpm sources:coverage`에서 18개 시도경찰청 권역이 모두 표시된다.
 - `pnpm sources:coverage`에서 각 권역의 `refreshCadenceHours`, `lastCheckedAt`, `nextRefreshAt`, `gapReason`이 빠지지 않는다.
+- 운영 API `/public-sources/coverage`는 실제 원천 ingest 성공 시 `sourceRefreshes`를 포함하고, 해당 source의 `lastCheckedAt`, `nextRefreshAt`, `freshness`를 registry metadata가 아니라 최신 ingest ledger 기준으로 보정한다.
 - `pnpm sources:diagnose -- --require-operational-readiness`에서 active schedule 18개가 모두 `ingestable`이고 `blockedSourceIds`, `parserMissingSourceIds`, `urlMissingSourceIds`, `postBodyMissingSourceIds`가 비어 있다.
 - 일정 자료 확인 중 권역은 "집회 없음"이 아니라 "공개 자료 확인 중"으로 취급한다.
 - Postgres snapshot 저장은 쓰기 요청 순서대로 직렬화된다.

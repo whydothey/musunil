@@ -139,6 +139,8 @@ function hydrateStore(store: Store): Store {
     session.expiresAt = date(session.expiresAt);
     session.revokedAt = optionalDate(session.revokedAt);
   }
+  store.publicSourceRefreshes ??= [];
+  for (const refresh of store.publicSourceRefreshes) refresh.checkedAt = date(refresh.checkedAt);
   return store;
 }
 

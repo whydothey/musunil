@@ -79,7 +79,9 @@ if (process.argv.includes("--laws")) {
 const sourcePayloads = [];
 for (const source of ingestablePublicAssemblySources()) {
   const html = await fetchSourceHtml(source);
-  const payloads = parseSource(source, html).slice(0, 10);
+  const sourceCheckedAt = new Date().toISOString();
+  const parsedPayloads = parseSource(source, html).slice(0, 10);
+  const payloads = parsedPayloads.map((payload) => ({ ...payload, sourceId: source.id, sourceCheckedAt, sourceBatchSize: parsedPayloads.length }));
   sourcePayloads.push({ source, payloads });
 }
 const payloads = sourcePayloads.flatMap((item) => item.payloads);

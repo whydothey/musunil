@@ -23,6 +23,7 @@ import {
   type LifecycleState,
   type NotificationOutbox,
   type Occurrence,
+  type PublicAssemblySourceRefresh,
   type RiskLevel,
   type SourceProvenance,
   type Subscription,
@@ -51,6 +52,7 @@ export type Store = {
   verifiedUsers: VerifiedUser[];
   identityVerificationSessions: IdentityVerificationSession[];
   userSessions: UserSession[];
+  publicSourceRefreshes: PublicAssemblySourceRefresh[];
 };
 
 export type SeedStoreOptions = {
@@ -177,7 +179,8 @@ export function emptyStore(): Store {
     liveUploads: [],
     verifiedUsers: [],
     identityVerificationSessions: [],
-    userSessions: []
+    userSessions: [],
+    publicSourceRefreshes: []
   };
 }
 
@@ -886,7 +889,7 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
     return getTargetById(store, "continuous_presence", path.split("/")[2], "continuous_presence_not_found");
   }
   if (request.method === "GET" && path === "/area-clusters") return json(200, { areaClusters: store.areaClusters.map(toPublicAreaCluster) });
-  if (request.method === "GET" && path === "/public-sources/coverage") return json(200, { coverage: sourceCoverageReport() });
+  if (request.method === "GET" && path === "/public-sources/coverage") return json(200, { coverage: sourceCoverageReport(store.publicSourceRefreshes) });
   if (request.method === "GET" && path === "/map") return getMap(store);
   if (request.method === "GET" && path === "/me/reports") {
     return withVerifiedUserScope(store, request, options, url.searchParams.get("userId"), (userId) => getMyReports(store, userId));
@@ -2614,6 +2617,7 @@ function postInternalIngest(store: Store, body: unknown): ApiResponse {
   if (existingClaim) {
     const rawText = readOptionalString(data, "rawText");
     if (rawText) existingClaim.statement = rawText;
+    recordPublicSourceRefresh(store, data, 1);
     audit(store, "correction", targetType, targetId, "public source refreshed without duplicate Claim");
     return json(200, { status: "public_source_claim_refreshed", claim: toPublicClaim(existingClaim) });
   }
@@ -2628,6 +2632,7 @@ function postInternalIngest(store: Store, body: unknown): ApiResponse {
     riskLevel: readRiskLevel(data, "riskLevel", "misleading_possible"),
     evidenceIds: []
   });
+  recordPublicSourceRefresh(store, data, 1);
   audit(store, "correction", targetType, targetId, "public source ingested as Claim");
   return json(201, { status: "public_source_claim_received", claim: toPublicClaim(claim) });
 }
@@ -2679,6 +2684,7 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
   if (existingClaim) {
     const rawText = readOptionalString(data, "rawText");
     if (rawText) existingClaim.statement = rawText;
+    recordPublicSourceRefresh(store, data, 1);
     audit(store, "correction", "occurrence", id, "public occurrence refreshed without duplicate Claim");
     return json(200, {
       status: "public_occurrence_refreshed",
@@ -2707,12 +2713,28 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
     evidenceIds: [evidence.id]
   });
   refreshIssueLawLinks(store);
+  recordPublicSourceRefresh(store, data, 1);
   audit(store, created ? "split" : "correction", "occurrence", id, "public occurrence ingested as Claim/Evidence");
   return json(created ? 201 : 200, {
     status: created ? "public_occurrence_created" : "public_occurrence_updated",
     occurrence: toPublicOccurrence(occurrence, publicClaimsForTarget(store, "occurrence", occurrence.id)),
     claim: toPublicClaim(claim)
   });
+}
+
+function recordPublicSourceRefresh(store: Store, data: Record<string, unknown>, resultCount: number): void {
+  const sourceId = readOptionalString(data, "sourceId");
+  if (!sourceId) return;
+  const checkedAt = readOptionalDate(data, "sourceCheckedAt") ?? new Date();
+  const sourceBatchSize = readNumber(data, "sourceBatchSize");
+  const nextResultCount = sourceBatchSize && sourceBatchSize > 0 ? sourceBatchSize : resultCount;
+  const existing = store.publicSourceRefreshes.find((refresh) => refresh.sourceId === sourceId);
+  if (existing) {
+    existing.checkedAt = checkedAt;
+    existing.resultCount = nextResultCount;
+    return;
+  }
+  store.publicSourceRefreshes.push({ sourceId, checkedAt, resultCount: nextResultCount });
 }
 
 function postInternalIngestLaws(store: Store, body: unknown): ApiResponse {

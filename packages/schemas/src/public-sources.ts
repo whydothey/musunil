@@ -44,6 +44,12 @@ export type PublicAssemblySourceDiagnostic = {
   requiredAction?: string;
 };
 
+export type PublicAssemblySourceRefresh = {
+  sourceId: string;
+  checkedAt: string | Date;
+  resultCount?: number;
+};
+
 const registryLastCheckedAt = "2026-07-10T02:22:00.000+09:00";
 const discoveryRefreshCadenceHours = 168;
 
@@ -354,7 +360,7 @@ export function ingestablePublicAssemblySources(): PublicAssemblySource[] {
   return publicAssemblySources.filter((source) => source.kind === "schedule" && source.status === "active" && source.parser);
 }
 
-export function sourceCoverageReport() {
+export function sourceCoverageReport(refreshes: PublicAssemblySourceRefresh[] = []) {
   const regions = policeRegions.map((region) => {
     const sources = publicAssemblySources.filter((source) => source.regionCode === region.code);
     const activeSchedule = sources.find((source) => source.kind === "schedule" && source.status === "active");
@@ -363,7 +369,7 @@ export function sourceCoverageReport() {
     const status: SourceCoverageStatus = activeSchedule ? "schedule_active" : candidateSchedule ? "schedule_candidate" : activeStatistics ? "statistics_only" : "needs_discovery";
     const primarySource = activeSchedule ?? candidateSchedule ?? activeStatistics;
     const refreshCadenceHours = primarySource?.refreshCadenceHours ?? discoveryRefreshCadenceHours;
-    const lastCheckedAt = latestIso(sources.map((source) => source.lastCheckedAt)) ?? registryLastCheckedAt;
+    const lastCheckedAt = latestIso(sources.map((source) => sourceLastCheckedAt(source, refreshes))) ?? registryLastCheckedAt;
     const nextRefreshAt = addHours(lastCheckedAt, refreshCadenceHours);
     return {
       ...region,
@@ -395,7 +401,16 @@ export function sourceCoverageReport() {
     nextRefreshAt,
     totalPoliceRegions: policeRegions.length,
     regions,
-    sources: publicAssemblySources
+    sources: publicAssemblySources.map((source) => ({
+      ...source,
+      lastCheckedAt: sourceLastCheckedAt(source, refreshes),
+      freshness: new Date(addHours(sourceLastCheckedAt(source, refreshes), source.refreshCadenceHours)).getTime() >= Date.now() ? "current" : "overdue"
+    })),
+    sourceRefreshes: refreshes.map((refresh) => ({
+      sourceId: refresh.sourceId,
+      checkedAt: isoString(refresh.checkedAt),
+      resultCount: refresh.resultCount
+    }))
   };
 }
 
@@ -446,6 +461,15 @@ export function sourceOperationalDiagnostics() {
   };
 }
 
+function sourceLastCheckedAt(source: PublicAssemblySource, refreshes: PublicAssemblySourceRefresh[]): string {
+  const matchingRefreshes = refreshes.filter((refresh) => refresh.sourceId === source.id).map((refresh) => isoString(refresh.checkedAt));
+  return latestIso([source.lastCheckedAt, ...matchingRefreshes]) ?? source.lastCheckedAt;
+}
+
+function isoString(value: string | Date): string {
+  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+}
+
 function sourceDiagnostic(source: PublicAssemblySource): PublicAssemblySourceDiagnostic {
   const isSchedule = source.kind === "schedule";
   const parserStatus = isSchedule ? (source.parser ? "connected" : "missing") : "not_required";
@@ -487,7 +511,10 @@ function addHours(iso: string, hours: number): string {
 }
 
 function latestIso(values: string[]): string | undefined {
-  return values.filter(Boolean).sort().at(-1);
+  return values
+    .filter(Boolean)
+    .sort((left, right) => new Date(left).getTime() - new Date(right).getTime())
+    .at(-1);
 }
 
 function coverageGapReason(status: SourceCoverageStatus): string {

@@ -1033,7 +1033,10 @@ if (!/local_dispatch_completed/.test(apiApp) || !/notification\.status = "sent"/
 }
 if (!/postPrivacyPurgeExpired/.test(apiApp) || !/privacy_purge_completed/.test(apiApp)) failures.push("privacy retention purge route is missing");
 if (!/public_source_claim_refreshed/.test(apiApp)) failures.push("public source ingest idempotency guard is missing");
-if (!/public-sources\/coverage/.test(apiApp) || !/sourceCoverageReport/.test(apiApp)) failures.push("public source coverage API is missing");
+if (!/recordPublicSourceRefresh/.test(apiApp) || !/sourceCheckedAt/.test(apiApp) || !/publicSourceRefreshes/.test(apiApp)) {
+  failures.push("public source ingest must persist source refresh metadata for coverage freshness");
+}
+if (!/public-sources\/coverage/.test(apiApp) || !/sourceCoverageReport\(store\.publicSourceRefreshes\)/.test(apiApp)) failures.push("public source coverage API must include live ingest refresh metadata");
 if (!/function homeCardOrderScore/.test(apiApp)) failures.push("API home cards must not rank archive/stat cards first");
 if (!/issueCards\(store, cards\)/.test(apiApp) || !/function issueCards/.test(apiApp) || !/function issueTargets/.test(apiApp) || !/function isPublicSourceBundleIssue/.test(apiApp)) {
   failures.push("API home must expose issue-first cards with linked target groups and exclude public source bundles");
@@ -1069,12 +1072,15 @@ if (!/response\.ok/.test(publicIngestWorker) || !/process\.exit\(1\)/.test(publi
   failures.push("public source ingest worker must fail non-zero when API posts fail");
 }
 if (!/public_source_parse_empty/.test(publicIngestWorker)) failures.push("public source ingest worker must fail when parser returns zero rows");
+if (!/sourceId:\s*source\.id/.test(publicIngestWorker) || !/sourceCheckedAt/.test(publicIngestWorker) || !/sourceBatchSize/.test(publicIngestWorker)) {
+  failures.push("public source ingest worker must attach registry sourceId, sourceCheckedAt, and sourceBatchSize to each posted payload");
+}
 if (!/law_source_parse_empty/.test(publicIngestWorker) || publicIngestWorker.indexOf("law_source_parse_empty") > publicIngestWorker.indexOf("laws_dry_run")) {
   failures.push("law source ingest dry-run must fail when parser returns zero rows");
 }
 if (!/AbortController/.test(publicIngestWorker)) failures.push("public source ingest worker fetch timeout is missing");
 if (!/\/internal\/ingest\/public-occurrence/.test(publicIngestWorker)) failures.push("public source ingest worker must post public occurrences to the occurrence ingest route");
-if (!/policeRegions/.test(publicSourceRegistry) || !/sourceCoverageReport/.test(publicSourceRegistry) || !/sourceOperationalDiagnostics/.test(publicSourceRegistry)) failures.push("public source nationwide coverage registry is missing");
+if (!/policeRegions/.test(publicSourceRegistry) || !/sourceCoverageReport/.test(publicSourceRegistry) || !/PublicAssemblySourceRefresh/.test(publicSourceRegistry) || !/sourceRefreshes/.test(publicSourceRegistry) || !/sourceOperationalDiagnostics/.test(publicSourceRegistry)) failures.push("public source nationwide coverage registry is missing live refresh metadata support");
 if (!/absence_of_public_source_is_not_absence_of_assembly/.test(publicSourceRegistry)) {
   failures.push("public source coverage must not treat source absence as no assembly");
 }
