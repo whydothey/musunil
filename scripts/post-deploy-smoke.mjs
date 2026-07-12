@@ -72,10 +72,10 @@ await check("cors_boundary", async () => {
 
 await check("ready", async () => {
   const response = await raw("GET", "/ready");
-  assert(response.status === 200, `/ready returned ${response.status}`);
-  assert(response.body?.ready === true, "/ready returned ready=false");
-  assert(response.body?.summary?.failedCount === 0, "/ready summary failedCount should be 0");
-  assert(Array.isArray(response.body?.requiredActions) && response.body.requiredActions.length === 0, "/ready requiredActions should be empty");
+  assert(response.status === 200, `/ready returned ${response.status}; ${formatReadinessFailure(response.body)}`);
+  assert(response.body?.ready === true, `/ready returned ready=false; ${formatReadinessFailure(response.body)}`);
+  assert(response.body?.summary?.failedCount === 0, `/ready summary failedCount should be 0; ${formatReadinessFailure(response.body)}`);
+  assert(Array.isArray(response.body?.requiredActions) && response.body.requiredActions.length === 0, `/ready requiredActions should be empty; ${formatReadinessFailure(response.body)}`);
   assertReadyCheck(response.body, "config_source");
   assertReadyCheck(response.body, "postgres");
   assertReadyCheck(response.body, "redis");
@@ -199,7 +199,20 @@ function assertApiSecurityHeaders(headers) {
 function assertReadyCheck(body, id) {
   assert(Array.isArray(body?.checks), "/ready checks missing");
   const item = body.checks.find((check) => check?.id === id);
-  assert(item?.ok === true, `/ready check ${id} is not ok`);
+  assert(item?.ok === true, `/ready check ${id} is not ok; ${formatReadinessFailure(body)}`);
+}
+
+function formatReadinessFailure(body) {
+  const failedIds = Array.isArray(body?.summary?.failedIds) ? body.summary.failedIds : [];
+  const blockingGroups = Array.isArray(body?.summary?.blockingGroups) ? body.summary.blockingGroups : [];
+  const requiredActions = Array.isArray(body?.requiredActions)
+    ? body.requiredActions.map((item) => [item?.id, item?.action].filter(Boolean).join(": "))
+    : [];
+  return [
+    `blockingGroups=${blockingGroups.join(",") || "unknown"}`,
+    `failedIds=${failedIds.join(",") || "unknown"}`,
+    `requiredActions=${requiredActions.join(" | ") || "none"}`
+  ].join("; ");
 }
 
 function assertPublicPayloadSafe(path, body) {

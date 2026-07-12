@@ -228,6 +228,9 @@ if (
   !/\/map/.test(publicApiRoutes) ||
   !/\/ready/.test(postDeploySmoke) ||
   !/assertReadyCheck/.test(postDeploySmoke) ||
+  !/formatReadinessFailure/.test(postDeploySmoke) ||
+  !/blockingGroups/.test(postDeploySmoke) ||
+  !/requiredActions/.test(postDeploySmoke) ||
   !/"config_source"/.test(postDeploySmoke) ||
   !/"postgres"/.test(postDeploySmoke) ||
   !/"redis"/.test(postDeploySmoke) ||
@@ -381,10 +384,14 @@ if (
   !/web_header_smoke/.test(cloudflareDnsCheck) ||
   !/api_health/.test(cloudflareDnsCheck) ||
   !/api_ready/.test(cloudflareDnsCheck) ||
+  !/formatReadinessFailure/.test(cloudflareDnsCheck) ||
+  !/blockingGroups/.test(cloudflareDnsCheck) ||
+  !/requiredActions/.test(cloudflareDnsCheck) ||
   !/connect_api_dns/.test(cloudflareDnsCheck) ||
   !/cloudflare:dns/.test(cloudflareDnsCheck) ||
   !/apply_static_headers/.test(cloudflareDnsCheck) ||
   !/cloudflare:headers/.test(cloudflareDnsCheck) ||
+  !/cloudflare:check/.test(cloudflareDnsCheck) ||
   !/--strict/.test(cloudflareDnsCheck)
 ) {
   failures.push("Cloudflare/DNS preflight helper must check Web/API DNS, Web config, headers, API health/ready, and strict mode");

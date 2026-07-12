@@ -69,7 +69,7 @@ if (checkOk("api_dns")) {
     const response = await fetchWithTimeout(`${apiBaseUrl}/ready`);
     const body = await response.json().catch(() => ({}));
     if (response.status !== 200 || body.ready !== true) {
-      throw new Error(`ready failed: status=${response.status}, ready=${body.ready}`);
+      throw new Error(`ready failed: status=${response.status}, ready=${body.ready}; ${formatReadinessFailure(body)}`);
     }
     return { status: response.status, ready: body.ready };
   });
@@ -175,9 +175,22 @@ function requiredActions(items) {
   if (failedIds.has("api_health") || failedIds.has("api_ready")) {
     actions.push({
       id: "fix_api_runtime",
-      action: "Render musunil-api 환경변수, Secret File, DB/Redis, pre-deploy migration, /ready health check를 확인한다.",
-      verify: "pnpm render:api-settings && pnpm launch:post-deploy-smoke -- --require-laws"
+      action: "Render musunil-api /ready 응답의 summary.blockingGroups와 requiredActions를 먼저 확인한다. DB/Redis, Secret File, PortOne, storage, public source key, migration 중 실패한 운영 묶음을 채운 뒤 재배포한다.",
+      verify: "pnpm render:api-settings && pnpm cloudflare:check && pnpm launch:post-deploy-smoke -- --require-laws"
     });
   }
   return actions;
+}
+
+function formatReadinessFailure(body) {
+  const failedIds = Array.isArray(body?.summary?.failedIds) ? body.summary.failedIds : [];
+  const blockingGroups = Array.isArray(body?.summary?.blockingGroups) ? body.summary.blockingGroups : [];
+  const requiredActions = Array.isArray(body?.requiredActions)
+    ? body.requiredActions.map((item) => [item?.id, item?.action].filter(Boolean).join(": "))
+    : [];
+  return [
+    `blockingGroups=${blockingGroups.join(",") || "unknown"}`,
+    `failedIds=${failedIds.join(",") || "unknown"}`,
+    `requiredActions=${requiredActions.join(" | ") || "none"}`
+  ].join("; ");
 }
