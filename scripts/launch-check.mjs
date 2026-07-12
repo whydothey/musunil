@@ -42,6 +42,7 @@ const launchCutoverRehearsal = readFileSync(resolve(cwd, "scripts/launch-cutover
 const launchOperatorBrief = readFileSync(resolve(cwd, "scripts/launch-operator-brief.mjs"), "utf8");
 const cloudflareDnsTemplate = readFileSync(resolve(cwd, "scripts/cloudflare-dns-template.mjs"), "utf8");
 const cloudflareResponseHeaders = readFileSync(resolve(cwd, "scripts/cloudflare-response-headers-template.mjs"), "utf8");
+const cloudflareApply = readFileSync(resolve(cwd, "scripts/cloudflare-apply.mjs"), "utf8");
 const launchCutoverRunbook = readFileSync(resolve(cwd, "docs/launch-cutover-runbook.md"), "utf8");
 const launchOperatorBriefDoc = readFileSync(resolve(cwd, "docs/launch-operator-brief.md"), "utf8");
 const userInputsManual = readFileSync(resolve(cwd, "docs/user-inputs-manual.md"), "utf8");
@@ -318,6 +319,7 @@ if (
   !/render:web-settings/.test(launchNextActions) ||
   !/cloudflare:dns/.test(launchNextActions) ||
   !/cloudflare:headers/.test(launchNextActions) ||
+  !/cloudflare:apply/.test(launchNextActions) ||
   !/cloudflare:check/.test(launchNextActions) ||
   !/cloudflare:check:strict/.test(launchNextActions) ||
   !/launch:post-deploy-smoke -- --require-laws/.test(launchNextActions)
@@ -497,6 +499,8 @@ if (
   !/"cloudflare:dns"/.test(packageJson) ||
   !/"check:cloudflare-dns-template"/.test(packageJson) ||
   !/"cloudflare:headers"/.test(packageJson) ||
+  !/"cloudflare:apply"/.test(packageJson) ||
+  !/"cloudflare:apply:plan"/.test(packageJson) ||
   !/"check:cloudflare-headers"/.test(packageJson) ||
   !/cloudflare-dns-check\.mjs/.test(packageJson) ||
   !/cloudflare_dns_and_edge_preflight/.test(cloudflareDnsCheck) ||
@@ -531,6 +535,24 @@ if (
   failures.push("Cloudflare/DNS preflight helper must check Web/API DNS, Web config, headers, API health/ready, and strict mode");
 }
 if (
+  !/cloudflare_apply_plan/.test(cloudflareApply) ||
+  !/CLOUDFLARE_API_TOKEN/.test(cloudflareApply) ||
+  !/CLOUDFLARE_ZONE_ID/.test(cloudflareApply) ||
+  !/MUSUNIL_RENDER_API_DNS_TARGET/.test(cloudflareApply) ||
+  !/--apply/.test(cloudflareApply) ||
+  !/dry_run/.test(cloudflareApply) ||
+  !/upsertDnsRecord/.test(cloudflareApply) ||
+  !/upsertResponseHeaderRule/.test(cloudflareApply) ||
+  !/http_response_headers_transform/.test(cloudflareApply) ||
+  !/musunil_web_security_headers/.test(cloudflareApply) ||
+  !/invalidRenderTargetReason/.test(cloudflareApply) ||
+  !/conflicting_record/.test(cloudflareApply) ||
+  !/api\.cloudflare\.com\/client\/v4/.test(cloudflareApply) ||
+  !/Cloudflare API failed/.test(cloudflareApply)
+) {
+  failures.push("Cloudflare apply helper must provide dry-run-first DNS and response header automation through the official Cloudflare API");
+}
+if (
   !/cloudflare_dns_records_template/.test(cloudflareDnsTemplate) ||
   !/docs\/cloudflare-dns-records\.md/.test(cloudflareDnsTemplate) ||
   !/infra\/cloudflare\/dns-records\.tf\.example/.test(cloudflareDnsTemplate) ||
@@ -555,6 +577,7 @@ if (
   !/`https:\/\/`, 경로, 포트/.test(cloudflareDnsRecordsDoc) ||
   !/DNS only/.test(cloudflareDnsRecordsDoc) ||
   !/pnpm cloudflare:check/.test(cloudflareDnsRecordsDoc) ||
+  !/pnpm cloudflare:apply -- --dns --apply/.test(cloudflareDnsRecordsDoc) ||
   !/pnpm check:cloudflare-dns-template/.test(JSON.parse(packageJson).scripts["check:release"] ?? "")
 ) {
   failures.push("Cloudflare DNS template must generate dashboard docs and Terraform example for Web/API records and be wired into release checks");
@@ -567,6 +590,7 @@ if (
   !/infra\/cloudflare\/response-headers\.tf\.example/.test(cloudflareResponseHeaders) ||
   !/Response Header Transform Rule/.test(cloudflareResponseHeadersDoc) ||
   !/Set static/.test(cloudflareResponseHeadersDoc) ||
+  !/pnpm cloudflare:apply -- --headers --apply/.test(cloudflareResponseHeadersDoc) ||
   !/http_response_headers_transform/.test(cloudflareResponseHeadersDoc) ||
   !/Cloudflare proxied/.test(cloudflareResponseHeadersDoc) ||
   !/cloudflare_ruleset/.test(cloudflareResponseHeadersTerraform) ||
@@ -580,6 +604,9 @@ if (
 }
 if (!/pnpm cloudflare:check/.test(readme) || !/pnpm cloudflare:headers/.test(readme) || !/pnpm cloudflare:check/.test(userFacingDocs)) {
   failures.push("Cloudflare/DNS preflight helper must be documented in README and launch readiness docs");
+}
+if (!/pnpm cloudflare:apply/.test(readme) || !/pnpm cloudflare:apply/.test(launchCutoverRunbook) || !/Cloudflare API automation/.test(launchOperatorBrief)) {
+  failures.push("Operator docs must expose dry-run-first Cloudflare API automation for DNS and response headers");
 }
 const completionPassingEvidence = markdownSection(completionAudit, "## Current Local/Static Passing Evidence", "## Current Live Blockers");
 if (!completionPassingEvidence) failures.push("completion audit must separate local/static passing evidence from live blockers");

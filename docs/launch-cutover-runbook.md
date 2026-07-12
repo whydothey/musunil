@@ -11,12 +11,14 @@ pnpm render:api-settings
 pnpm render:web-settings
 pnpm cloudflare:dns
 pnpm cloudflare:headers
+pnpm cloudflare:apply
 pnpm cloudflare:check
 ```
 
 `pnpm launch:operator-brief -- --refresh`는 위 명령들의 핵심 출력과 현재 blocker를 [launch-operator-brief.md](/Users/mk/Documents/Musunil/docs/launch-operator-brief.md)에 합쳐 쓰는 운영자용 단일 브리프다. Render/Cloudflare 화면을 열기 직전에는 반드시 refresh한 이 파일을 먼저 본다. 기존 파일의 오래된 Git SHA나 blocker 상태는 출시 판단 증거가 아니다.
 `pnpm cloudflare:dns`는 Render custom-domain target을 입력할 Cloudflare DNS 레코드 템플릿을 [cloudflare-dns-records.md](/Users/mk/Documents/Musunil/docs/cloudflare-dns-records.md)와 [dns-records.tf.example](/Users/mk/Documents/Musunil/infra/cloudflare/dns-records.tf.example)에 생성한다. Render target을 복사한 뒤 `MUSUNIL_RENDER_WEB_DNS_TARGET`, `MUSUNIL_RENDER_API_DNS_TARGET`을 로컬 셸에 넣으면 git-ignored local copy와 strict CNAME 검증도 함께 쓸 수 있다.
 `pnpm cloudflare:headers`는 Render Static headers가 live에 적용되지 않을 때 쓸 Cloudflare Response Header Transform Rule 템플릿을 [cloudflare-response-headers.md](/Users/mk/Documents/Musunil/docs/cloudflare-response-headers.md)와 [response-headers.tf.example](/Users/mk/Documents/Musunil/infra/cloudflare/response-headers.tf.example)에 생성한다.
+`pnpm cloudflare:apply`는 기본 dry-run이다. `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`, Render target env가 있을 때 `--apply --dns` 또는 `--apply --headers`를 붙이면 Cloudflare API로 DNS Records와 Response Header Transform Rule을 생성/갱신한다.
 
 ## 1. 현재 차단 항목
 
@@ -107,6 +109,18 @@ Cloudflare에는 Render Dashboard가 보여주는 custom-domain target을 그대
 : "${MUSUNIL_RENDER_WEB_DNS_TARGET:?set exact Render Web target from Render first}"
 : "${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}"
 pnpm cloudflare:dns
+pnpm cloudflare:check:strict
+```
+
+Cloudflare API token을 쓰는 경우에는 수동 Dashboard 입력 대신 아래처럼 먼저 dry-run을 보고 적용한다.
+
+```bash
+: "${CLOUDFLARE_API_TOKEN:?set Cloudflare API token first}"
+: "${CLOUDFLARE_ZONE_ID:?set Cloudflare zone id first}"
+pnpm cloudflare:apply -- --dns
+pnpm cloudflare:apply -- --dns --apply
+pnpm cloudflare:apply -- --headers
+pnpm cloudflare:apply -- --headers --apply
 pnpm cloudflare:check:strict
 ```
 

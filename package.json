@@ -55,6 +55,8 @@
     "cloudflare:check:strict": "node scripts/cloudflare-dns-check.mjs -- --strict",
     "cloudflare:dns": "node scripts/cloudflare-dns-template.mjs",
     "cloudflare:headers": "node scripts/cloudflare-response-headers-template.mjs",
+    "cloudflare:apply": "node scripts/cloudflare-apply.mjs",
+    "cloudflare:apply:plan": "node scripts/cloudflare-apply.mjs -- --json",
     "launch:cutover-plan": "node scripts/launch-cutover-plan.mjs",
     "launch:cutover-rehearsal": "node scripts/launch-cutover-rehearsal.mjs",
     "launch:operator-brief": "node scripts/launch-operator-brief.mjs",

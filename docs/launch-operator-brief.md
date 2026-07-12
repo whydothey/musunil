@@ -6,14 +6,14 @@
 
 ## Current State
 
-- Generated: 2026-07-12T03:02:16.642Z
-- Git SHA: f13bb9760f18697630619f0fb20e2edfb0b718f0
+- Generated: 2026-07-12T03:10:48.969Z
+- Git SHA: 81a0ed03e9fb8b59987111c97b37632abbda2dd2
 - Refresh command: `pnpm launch:operator-brief -- --refresh`
 - Active goal: active
 - Launch readiness: blocked
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T03:02:30.398Z (fresh)
+- Service watch: 2026-07-12T03:11:04.566Z (fresh)
 - Checks: 4 ok, 3 fail, 12 skip, 4 actions
 - Before next command: Render musunil-api > Settings > Custom Domains에서 api.musunil.com의 DNS target을 복사해 현재 셸의 MUSUNIL_RENDER_API_DNS_TARGET에 먼저 export한다. 문서 placeholder, 괄호 예시, 추측한 .onrender.com 값은 쓰지 않는다.
 - Next command: `pnpm render:api-settings && : "${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}" && pnpm cloudflare:dns && pnpm cloudflare:check:strict`
@@ -134,6 +134,12 @@ Web headers fallback:
 - Render Static Site Headers가 live 응답에 반영되지 않으면 `pnpm cloudflare:headers`로 Cloudflare Response Header Transform Rule 템플릿을 갱신한다.
 - Web 레코드가 Cloudflare proxied 상태일 때만 Cloudflare response header rule이 적용된다.
 - API 레코드는 `/health`, `/ready`, CORS, media smoke 통과 전까지 DNS only를 유지한다.
+
+Cloudflare API automation:
+
+- `pnpm cloudflare:apply`는 기본 dry-run이며 `--apply` 없이는 Cloudflare에 쓰지 않는다.
+- `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`, Render target env를 넣은 뒤 `pnpm cloudflare:apply -- --dns --apply`와 `pnpm cloudflare:apply -- --headers --apply`를 순서대로 실행할 수 있다.
+- 적용 후에는 `pnpm cloudflare:check:strict`와 `pnpm launch:final-gate`로만 완료를 판단한다.
 
 - `musunil.com`: CNAME or Render-supported apex record -> Render musunil-web custom-domain target shown in Render. Proxy: DNS only when Render headers are applied directly; proxied if using the Cloudflare response header rule, with cache bypass confirmed.
 - `www`: CNAME -> musunil.com or the Render musunil-web custom-domain target. Proxy: same as musunil.com.

@@ -26,6 +26,19 @@ pnpm cloudflare:check:strict
 
 `pnpm cloudflare:dns`는 위 값이 있으면 git-ignored local copy인 `docs/cloudflare-dns-records.local.md`와 `infra/cloudflare/dns-records.local.tfvars`도 쓴다. `MUSUNIL_RENDER_API_DNS_TARGET`이 있으면 strict check는 `api.musunil.com` CNAME이 Render target과 일치하는지 검사한다.
 
+## API Automation
+
+`pnpm cloudflare:apply`는 기본적으로 dry-run 계획만 출력한다. Cloudflare API token과 zone을 준비한 뒤 `--apply`를 붙였을 때만 DNS 레코드를 생성/갱신한다. DNS 적용은 Cloudflare DNS Records API를 사용하고, 기존 같은 이름의 비-CNAME 레코드가 있으면 자동 변경하지 않고 실패한다.
+
+```bash
+: "${CLOUDFLARE_API_TOKEN:?set Cloudflare API token first}"
+: "${CLOUDFLARE_ZONE_ID:?set Cloudflare zone id first}"
+: "${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}"
+pnpm cloudflare:apply -- --dns
+pnpm cloudflare:apply -- --dns --apply
+pnpm cloudflare:check:strict
+```
+
 ## Proxy Policy
 
 - `api.musunil.com`은 API `/health`, `/ready`, CORS, redacted media, identity write boundary smoke가 통과하기 전까지 DNS only로 둔다.
