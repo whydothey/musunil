@@ -443,6 +443,21 @@ if (
 ) {
   failures.push("Launch operator brief must combine current blockers, Render Web/API settings, Cloudflare DNS, user inputs, and final verification into one generated handoff document");
 }
+const serviceWatchStaticReady =
+  /\|\s*web_static_manifest\s*\|\s*ok\s*\|/.test(serviceWatchDoc) &&
+  /\|\s*web_runtime_config\s*\|\s*ok\s*\|/.test(serviceWatchDoc);
+const serviceWatchRequiresApiEndpoint = /\|\s*connect_api_endpoint\s*\|\s*operator\s*\|/.test(serviceWatchDoc);
+if (
+  serviceWatchStaticReady &&
+  serviceWatchRequiresApiEndpoint &&
+  (
+    !/- Stage: connect_api_endpoint/.test(launchOperatorBriefDoc) ||
+    !/1\. connect_api_endpoint \(operator\)/.test(launchOperatorBriefDoc) ||
+    /1\. deploy_latest_static \(operator\)/.test(launchOperatorBriefDoc)
+  )
+) {
+  failures.push("Launch operator brief must be refreshed after live static deploy clears so it points to connect_api_endpoint, not deploy_latest_static");
+}
 if (
   !/"launch:final-gate"/.test(packageJson) ||
   !/launch-final-gate\.mjs/.test(packageJson) ||
