@@ -127,16 +127,27 @@ if (
   !/verification_mode/.test(postDeployWorkflow) ||
   !/web-deploy/.test(postDeployWorkflow) ||
   !/final-gate/.test(postDeployWorkflow) ||
+  !/render_api_dns_target/.test(postDeployWorkflow) ||
+  !/INPUT_RENDER_API_DNS_TARGET/.test(postDeployWorkflow) ||
   !/MUSUNIL_WEB_BASE_URL/.test(postDeployWorkflow) ||
   !/MUSUNIL_API_BASE_URL/.test(postDeployWorkflow) ||
   !/MUSUNIL_EXPECTED_API_BASE_URL/.test(postDeployWorkflow) ||
   !/MUSUNIL_EXPECTED_COMMIT_SHA/.test(postDeployWorkflow) ||
   !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(postDeployWorkflow) ||
+  !/MUSUNIL_RENDER_API_DNS_TARGET=\$render_api_dns_target/.test(postDeployWorkflow) ||
   !/pnpm check:web-deploy/.test(postDeployWorkflow) ||
   !/pnpm launch:final-gate/.test(postDeployWorkflow) ||
   /on:\s*\n\s+push:/.test(postDeployWorkflow)
 ) {
-  failures.push("GitHub Actions post-deploy workflow must be manual-only and verify strict Web deploy or final launch gate against deployed URLs");
+  failures.push("GitHub Actions post-deploy workflow must be manual-only and verify strict Web deploy or final launch gate against deployed URLs, including optional Render API DNS target input for strict CNAME checks");
+}
+if (
+  !/render_api_dns_target/.test(readme) ||
+  !/render_api_dns_target/.test(launchCutoverRunbook) ||
+  !/render_api_dns_target/.test(userFacingDocs) ||
+  !/render_api_dns_target/.test(launchCutoverPlan)
+) {
+  failures.push("post-deploy operator docs must tell the operator to pass Render api.musunil.com DNS target through render_api_dns_target for remote final-gate strict DNS checks");
 }
 if (!/fallback\.issueCards = fallback\.issueCards\.filter\(\(issue\) => !isPreviewIssue\(issue\.id\) && !isMetaPublicSourceIssue\(issue\)\)/.test(web)) {
   failures.push("production Web fallback must not expose public source bundles as issue cards");

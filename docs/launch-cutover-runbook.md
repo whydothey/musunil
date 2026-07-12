@@ -216,7 +216,7 @@ pnpm launch:final-gate
 
 Production `musunil.com` 기준 최종 판정 전에는 strict 리허설로 현재 blocker stage를 확인하고, 최종 판정은 `pnpm launch:final-gate`로 한다. 이 최종 게이트는 공개 원천 preflight 뒤 `pnpm cloudflare:check:strict`를 실행해 Web header와 API CNAME target까지 같은 흐름에서 차단한다. 위처럼 환경변수를 쓰는 형태는 staging/preview 도메인이나 특정 commit 검증을 override할 때만 사용한다.
 
-로컬 셸 없이 배포 직후 확인해야 하면 GitHub Actions `post-deploy` 수동 workflow를 실행한다. Render Web만 확인할 때는 `web-deploy`, Web/API/DNS/Header/원천까지 최종 확인할 때는 `final-gate`를 선택한다.
+로컬 셸 없이 배포 직후 확인해야 하면 GitHub Actions `post-deploy` 수동 workflow를 실행한다. Render Web만 확인할 때는 `web-deploy`, Web/API/DNS/Header/원천까지 최종 확인할 때는 `final-gate`를 선택한다. `final-gate`에서 Render API token을 workflow secret으로 쓰지 않는 경우에는 Render `musunil-api > Custom Domains > api.musunil.com`의 DNS target hostname을 `render_api_dns_target` 입력칸에 넣는다. URL, path, dashboard label 없이 hostname만 넣어야 `pnpm cloudflare:check:strict`의 API CNAME 비교가 로컬과 같은 기준으로 돈다.
 
 ```bash
 pnpm launch:cutover-rehearsal -- --strict

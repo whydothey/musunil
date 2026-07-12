@@ -27,6 +27,10 @@ on:
         description: "Expected deployed Git SHA. Leave blank to use this workflow commit."
         required: false
         default: ""
+      render_api_dns_target:
+        description: "Render API DNS target for api.musunil.com, hostname only. Required for final-gate strict DNS when Render API token is unavailable."
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -48,17 +52,22 @@ jobs:
           INPUT_API_BASE_URL: ${{ inputs.api_base_url }}
           INPUT_EXPECTED_API_BASE_URL: ${{ inputs.expected_api_base_url }}
           INPUT_EXPECTED_COMMIT_SHA: ${{ inputs.expected_commit_sha }}
+          INPUT_RENDER_API_DNS_TARGET: ${{ inputs.render_api_dns_target }}
         run: |
           expected_commit="$INPUT_EXPECTED_COMMIT_SHA"
           if [ -z "$expected_commit" ]; then
             expected_commit="$GITHUB_SHA"
           fi
+          render_api_dns_target="$(printf '%s' "$INPUT_RENDER_API_DNS_TARGET" | tr -d '[:space:]')"
           {
             echo "MUSUNIL_WEB_BASE_URL=$INPUT_WEB_BASE_URL"
             echo "MUSUNIL_API_BASE_URL=$INPUT_API_BASE_URL"
             echo "MUSUNIL_EXPECTED_API_BASE_URL=$INPUT_EXPECTED_API_BASE_URL"
             echo "MUSUNIL_EXPECTED_COMMIT_SHA=$expected_commit"
             echo "MUSUNIL_STRICT_WEB_HEADERS=1"
+            if [ -n "$render_api_dns_target" ]; then
+              echo "MUSUNIL_RENDER_API_DNS_TARGET=$render_api_dns_target"
+            fi
           } >> "$GITHUB_ENV"
       - name: Verify Web deploy
         if: ${{ inputs.verification_mode == 'web-deploy' }}
