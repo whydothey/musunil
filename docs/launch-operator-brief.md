@@ -6,14 +6,14 @@
 
 ## Current State
 
-- Generated: 2026-07-12T00:46:08.498Z
-- Git SHA: fab138be13aeb8cc25d2b288f1a69fcfb1c7421a
+- Generated: 2026-07-12T01:13:48.773Z
+- Git SHA: 44182dbfe056ec3590f0d0b9c1c57095d98bbdb5
 - Refresh command: `pnpm launch:operator-brief -- --refresh`
 - Active goal: active
 - Launch readiness: blocked
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T00:45:33.259Z (fresh)
+- Service watch: 2026-07-12T01:14:04.777Z (fresh)
 - Checks: 4 ok, 3 fail, 12 skip, 4 actions
 - Next command: `pnpm render:api-settings && pnpm cloudflare:dns && pnpm cloudflare:check`
 
@@ -32,7 +32,7 @@
    - Verify: `pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy`
    - Reference: docs/launch-readiness-checklist.md
 4. stop_live_visual_surface_regression (lead)
-   - Action: 실제 musunil.com이 live issue feed를 받지 못하고 있다. API DNS/CORS/Web config와 `/home.issueCards` 연결을 고쳐 `serviceSyncState=live`이고 홈 이슈 3개 이상이 렌더링될 때까지 배포 승급을 중단한다.
+   - Action: 실제 musunil.com은 fallback 이슈 피드를 렌더링하지만 live API 동기화가 아니다. API DNS/CORS/Web config와 `/home.issueCards` 연결을 고쳐 `serviceSyncState=live`가 될 때까지 배포 승급을 중단한다.
    - Verify: `pnpm launch:final-gate`
    - Reference: docs/launch-cutover-runbook.md#3-render-api
 
