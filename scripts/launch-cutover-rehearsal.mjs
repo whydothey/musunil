@@ -106,6 +106,7 @@ function buildSummary(results) {
     failedChecks: failedChecks.map(slimCheck),
     skippedChecks: skippedChecks.map(slimCheck),
     requiredActions,
+    splitApplyPaths: blockersData.splitApplyPaths || [],
     nextOperatorPrerequisite: nextOperatorPrerequisite(stage),
     nextOperatorCommand: nextOperatorCommand(stage, requiredActions),
     cutover: {
@@ -267,6 +268,19 @@ function printMarkdown(value) {
       console.log(`   Action: ${action.action}`);
       console.log(`   Verify: ${action.verify}`);
       if (action.reference && action.reference !== "-") console.log(`   Reference: ${action.reference}`);
+    }
+    console.log("");
+  }
+
+  if (value.splitApplyPaths.length > 0) {
+    console.log("## Split Apply Paths");
+    console.log("");
+    for (const path of value.splitApplyPaths) {
+      console.log(`- ${path.id}: ${path.note}`);
+      console.log(`  - Requires: ${(path.requires || []).map((item) => `\`${item}\``).join(", ")}`);
+      console.log(`  - Dry-run: \`${path.dryRun}\``);
+      console.log(`  - Apply: \`${path.apply}\``);
+      console.log(`  - Verify: \`${path.verify}\``);
     }
     console.log("");
   }

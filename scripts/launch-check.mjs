@@ -374,6 +374,10 @@ if (
   !/actionIds\.has\("deploy_latest_static"\)[\s\S]*return "deploy_latest_static"/.test(launchNextActions) ||
   !/Render onrender\.com target/.test(launchNextActions) ||
   !/nextOperatorCommand/.test(launchNextActions) ||
+  !/splitApplyPaths/.test(launchNextActions) ||
+  !/Split Apply Paths/.test(launchNextActions) ||
+  !/web_headers_only/.test(launchNextActions) ||
+  !/api_dns_and_render_domain/.test(launchNextActions) ||
   !/Launch readiness/.test(launchNextActions) ||
   !/Current stage/.test(launchNextActions) ||
   !/MUSUNIL_LAUNCH_BLOCKERS_STALE_AFTER_MINUTES/.test(launchNextActions) ||
@@ -461,6 +465,8 @@ if (
   !/nextOperatorCommand/.test(launchCutoverRehearsal) ||
   !/launch:apply/.test(launchCutoverRehearsal) ||
   !/Ordered Operator Actions/.test(launchCutoverRehearsal) ||
+  !/Split Apply Paths/.test(launchCutoverRehearsal) ||
+  !/splitApplyPaths/.test(launchCutoverRehearsal) ||
   !/connect_api_endpoint/.test(launchCutoverRehearsal) ||
   !/deploy_latest_static/.test(launchCutoverPlan) ||
   !/cloudflare:dns/.test(launchCutoverRehearsal) ||
@@ -493,6 +499,8 @@ if (
   !/launch-apply\.mjs/.test(launchOperatorBrief) ||
   !/launchApplyPlan/.test(launchOperatorBrief) ||
   !/launchInputLines/.test(launchOperatorBrief) ||
+  !/splitApplyPathLines/.test(launchOperatorBrief) ||
+  !/Split apply paths from current blockers/.test(launchOperatorBrief) ||
   !/render:apply/.test(launchOperatorBrief) ||
   !/launch-ready\.mjs/.test(launchOperatorBrief) ||
   !/external-smoke\.mjs/.test(launchOperatorBrief) ||
@@ -516,6 +524,8 @@ if (
   !/Render API automation/.test(launchOperatorBriefDoc) ||
   !/One Command Apply/.test(launchOperatorBriefDoc) ||
   !/Required launch inputs from current dry-run/.test(launchOperatorBriefDoc) ||
+  !/Split apply paths from current blockers/.test(launchOperatorBriefDoc) ||
+  !/web_headers_only/.test(launchOperatorBriefDoc) ||
   !/RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET/.test(launchOperatorBriefDoc) ||
   !/pnpm launch:apply -- --apply/.test(launchOperatorBriefDoc) ||
   !/pnpm launch:apply -- --apply --cloudflare-headers-only/.test(launchOperatorBriefDoc) ||

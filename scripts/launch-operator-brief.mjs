@@ -84,6 +84,7 @@ function buildBrief() {
     failedChecks,
     skippedChecks,
     requiredActions,
+    splitApplyPaths: rehearsalData.splitApplyPaths || [],
     renderStaticSite: webData,
     renderApiService: apiData,
     launchApply: launchApplyData,
@@ -139,6 +140,10 @@ function renderMarkdown(value) {
     "Required launch inputs from current dry-run:",
     "",
     ...launchInputLines(value.launchApply),
+    "",
+    "Split apply paths from current blockers:",
+    "",
+    ...splitApplyPathLines(value.splitApplyPaths),
     "",
     "## What To Do Now",
     "",
@@ -283,6 +288,17 @@ function launchInputLines(plan) {
     lines.push(`| ${input.id || ""} | ${required} | ${input.status || ""} | ${env || "-"} | ${input.purpose || ""} |`);
   }
   return lines;
+}
+
+function splitApplyPathLines(paths) {
+  if (!paths?.length) return ["- (none)"];
+  return paths.flatMap((path) => [
+    `- ${path.id}: ${path.note || ""}`,
+    `  - Requires: ${(path.requires || []).map((item) => `\`${item}\``).join(", ") || "(none)"}`,
+    `  - Dry-run: \`${path.dryRun}\``,
+    `  - Apply: \`${path.apply}\``,
+    `  - Verify: \`${path.verify}\``
+  ]);
 }
 
 function stepLines(steps) {

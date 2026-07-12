@@ -84,6 +84,7 @@ function parseReport(source, refreshMetadata = { attempted: false }) {
     blockerStage,
     nextOperatorPrerequisite: prerequisiteForStage(blockerStage),
     nextOperatorCommand: nextCommandForStage(blockerStage, actions),
+    splitApplyPaths: splitApplyPaths({ failed, actions }),
     lastChecked,
     reportAgeMinutes: freshness.ageMinutes,
     staleAfterMinutes: freshness.staleAfterMinutes,
@@ -183,6 +184,35 @@ function nextCommandForStage(stage, actions) {
   return "pnpm launch:blockers -- --refresh";
 }
 
+function splitApplyPaths({ failed, actions }) {
+  const actionIds = new Set(actions.map((action) => action.id));
+  const failedIds = new Set(failed.map((check) => check.id));
+  const paths = [];
+  if (actionIds.has("apply_static_headers") || failedIds.has("web_header_contract")) {
+    paths.push({
+      id: "web_headers_only",
+      clears: ["web_header_contract"],
+      requires: ["CLOUDFLARE_API_TOKEN"],
+      dryRun: "pnpm launch:apply -- --cloudflare-headers-only",
+      apply: "pnpm launch:apply -- --apply --cloudflare-headers-only",
+      verify: "MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy",
+      note: "Render target/API DNS 없이 Web 보안 헤더 blocker만 먼저 줄인다. 최종 출시는 API DNS와 live API sync가 별도로 통과해야 한다."
+    });
+  }
+  if (actionIds.has("connect_api_endpoint") || actionIds.has("connect_api_dns") || failedIds.has("api_endpoint_preflight")) {
+    paths.push({
+      id: "api_dns_and_render_domain",
+      clears: ["api_endpoint_preflight", "api_health_ready", "web_visual_surface"],
+      requires: ["RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET", "CLOUDFLARE_API_TOKEN"],
+      dryRun: "pnpm launch:apply",
+      apply: "pnpm launch:apply -- --apply",
+      verify: "pnpm launch:final-gate",
+      note: "Render API custom domain, api.musunil.com DNS, live API 동기화까지 한 번에 검증하는 주 경로다."
+    });
+  }
+  return paths;
+}
+
 function prerequisiteForStage(stage) {
   if (stage === "deploy_latest_static") {
     return "Render musunil-web가 현재 main 커밋을 배포했는지 확인한다. 아직 이전 정적 manifest가 보이면 Render musunil-web에서 Clear build cache & deploy를 실행하고 배포 완료 후 검증한다.";
@@ -266,6 +296,18 @@ function printMarkdown(summary) {
   console.log("");
   printLaunchApplyInputs(summary.launchApply);
   console.log("");
+  if (summary.splitApplyPaths.length > 0) {
+    console.log("## Split Apply Paths");
+    console.log("");
+    for (const path of summary.splitApplyPaths) {
+      console.log(`- ${path.id}: ${path.note}`);
+      console.log(`  - Requires: ${path.requires.map((item) => `\`${item}\``).join(", ")}`);
+      console.log(`  - Dry-run: \`${path.dryRun}\``);
+      console.log(`  - Apply: \`${path.apply}\``);
+      console.log(`  - Verify: \`${path.verify}\``);
+    }
+    console.log("");
+  }
   if (summary.stale) {
     console.log("> This blocker summary is based on stale live evidence. Run `pnpm launch:blockers -- --refresh` before making a launch decision.");
     console.log("");

@@ -6,14 +6,14 @@
 
 ## Current State
 
-- Generated: 2026-07-12T04:45:53.002Z
-- Git SHA: 13d5e72a085df2fe3fb2f3c14c5434e3bdf317d4
+- Generated: 2026-07-12T04:54:48.728Z
+- Git SHA: c8485ffaf208bfd4ff1a5d142fe42bad00a806f6
 - Refresh command: `pnpm launch:operator-brief -- --refresh`
 - Active goal: active
 - Launch readiness: blocked
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T04:46:09.970Z (fresh)
+- Service watch: 2026-07-12T04:46:10.418Z (fresh)
 - Checks: 4 ok, 3 fail, 13 skip, 4 actions
 - Before next command: Render API token과 Cloudflare token이 있으면 `pnpm launch:apply -- --apply`가 api.musunil.com custom domain 생성, Render onrender.com target 파생, Cloudflare DNS 적용을 한 번에 처리한다. token이 없으면 dry-run 출력의 requiredEnv만 채우고, 하위 확인은 `pnpm render:api-settings`와 `pnpm cloudflare:dns`를 사용한다.
 - Next command: `pnpm launch:apply && pnpm launch:final-gate`
@@ -42,6 +42,19 @@ Required launch inputs from current dry-run:
 | cloudflare_zone | no | default_zone_name_lookup | CLOUDFLARE_ZONE_ID<br>alt:CF_ZONE_ID<br>alt:CLOUDFLARE_ZONE_NAME=musunil.com | Optional fallback when the Cloudflare token cannot resolve the musunil.com zone by name |
 | render_api_dns_target | no | missing_manual_fallback | MUSUNIL_RENDER_API_DNS_TARGET<br>alt:RENDER_API_TOKEN | Manual fallback CNAME target for api.musunil.com when Render API target derivation is unavailable |
 | render_web_dns_target | no | not_required_for_current_request | MUSUNIL_RENDER_WEB_DNS_TARGET<br>alt:RENDER_API_TOKEN | Manual fallback CNAME target for musunil.com when a Web DNS record is being applied |
+
+Split apply paths from current blockers:
+
+- web_headers_only: Render target/API DNS 없이 Web 보안 헤더 blocker만 먼저 줄인다. 최종 출시는 API DNS와 live API sync가 별도로 통과해야 한다.
+  - Requires: `CLOUDFLARE_API_TOKEN`
+  - Dry-run: `pnpm launch:apply -- --cloudflare-headers-only`
+  - Apply: `pnpm launch:apply -- --apply --cloudflare-headers-only`
+  - Verify: `MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy`
+- api_dns_and_render_domain: Render API custom domain, api.musunil.com DNS, live API 동기화까지 한 번에 검증하는 주 경로다.
+  - Requires: `RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET`, `CLOUDFLARE_API_TOKEN`
+  - Dry-run: `pnpm launch:apply`
+  - Apply: `pnpm launch:apply -- --apply`
+  - Verify: `pnpm launch:final-gate`
 
 ## What To Do Now
 
