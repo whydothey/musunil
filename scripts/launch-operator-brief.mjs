@@ -294,13 +294,18 @@ function launchInputLines(plan) {
 
 function splitApplyPathLines(paths) {
   if (!paths?.length) return ["- (none)"];
-  return paths.flatMap((path) => [
-    `- ${path.id}: ${path.note || ""}`,
-    `  - Requires: ${(path.requires || []).map((item) => `\`${item}\``).join(", ") || "(none)"}`,
-    `  - Dry-run: \`${path.dryRun}\``,
-    `  - Apply: \`${path.apply}\``,
-    `  - Verify: \`${path.verify}\``
-  ]);
+  return paths.flatMap((path) => {
+    const missing = path.missingInputs || [];
+    return [
+      `- ${path.id}: ${path.note || ""}`,
+      `  - Requires: ${(path.requires || []).map((item) => `\`${item}\``).join(", ") || "(none)"}`,
+      `  - Inputs ready: ${path.inputsReady ? "yes" : "no"}`,
+      ...(!path.inputsReady && missing.length ? [`  - Missing: ${missing.map((item) => `\`${item}\``).join(", ")}`] : []),
+      `  - Dry-run: \`${path.dryRun}\``,
+      `  - Apply: \`${path.apply}\``,
+      `  - Verify: \`${path.verify}\``
+    ];
+  });
 }
 
 function stepLines(steps) {

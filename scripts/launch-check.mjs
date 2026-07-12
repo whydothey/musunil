@@ -572,6 +572,8 @@ if (
   !/launchInputLines/.test(launchOperatorBrief) ||
   !/splitApplyPathLines/.test(launchOperatorBrief) ||
   !/Split apply paths from current blockers/.test(launchOperatorBrief) ||
+  !/Inputs ready/.test(launchOperatorBrief) ||
+  !/missingInputs/.test(launchOperatorBrief) ||
   !/render:apply/.test(launchOperatorBrief) ||
   !/launch-ready\.mjs/.test(launchOperatorBrief) ||
   !/external-smoke\.mjs/.test(launchOperatorBrief) ||
@@ -597,6 +599,8 @@ if (
   !/Required launch inputs from current dry-run/.test(launchOperatorBriefDoc) ||
   !/Split apply paths from current blockers/.test(launchOperatorBriefDoc) ||
   !/web_headers_only/.test(launchOperatorBriefDoc) ||
+  !/Inputs ready/.test(launchOperatorBriefDoc) ||
+  !/Missing:/.test(launchOperatorBriefDoc) ||
   !/RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET/.test(launchOperatorBriefDoc) ||
   !/pnpm launch:apply -- --apply/.test(launchOperatorBriefDoc) ||
   !/pnpm launch:apply -- --apply --cloudflare-headers-only/.test(launchOperatorBriefDoc) ||

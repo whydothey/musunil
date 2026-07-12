@@ -6,14 +6,14 @@
 
 ## Current State
 
-- Generated: 2026-07-12T07:26:33.862Z
-- Git SHA: b9e34d16d0f9993fe218f30cda6d4101b3f54fd4
+- Generated: 2026-07-12T07:37:50.942Z
+- Git SHA: b3c627feb76a7c58e4b879ec4169ded3607c1650
 - Refresh command: `pnpm launch:operator-brief -- --refresh`
 - Active goal: active
 - Launch readiness: blocked
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T07:12:02.521Z (fresh)
+- Service watch: 2026-07-12T07:32:29.279Z (fresh)
 - Checks: 4 ok, 3 fail, 13 skip, 4 actions
 - Before next command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Next command: `pnpm launch:apply`
@@ -47,11 +47,15 @@ Split apply paths from current blockers:
 
 - web_headers_only: Render target/API DNS 없이 Web 보안 헤더 blocker만 먼저 줄인다. Cloudflare Response Header Transform Rule은 proxied Web record에서만 실제 응답에 적용된다. 최종 출시는 API DNS와 live API sync가 별도로 통과해야 한다.
   - Requires: `CLOUDFLARE_API_TOKEN`, `Cloudflare proxied Web record for musunil.com/www`
+  - Inputs ready: no
+  - Missing: `CLOUDFLARE_API_TOKEN`
   - Dry-run: `pnpm launch:apply -- --cloudflare-headers-only`
   - Apply: `pnpm launch:apply -- --apply --cloudflare-headers-only`
   - Verify: `pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy`
 - api_dns_and_render_domain: Render API custom domain, api.musunil.com DNS, live API 동기화까지 한 번에 검증하는 주 경로다.
   - Requires: `RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET`, `CLOUDFLARE_API_TOKEN`
+  - Inputs ready: no
+  - Missing: `RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET`, `CLOUDFLARE_API_TOKEN`
   - Dry-run: `pnpm launch:apply`
   - Apply: `pnpm launch:apply -- --apply`
   - Verify: `pnpm launch:final-gate`
