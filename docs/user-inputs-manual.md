@@ -202,7 +202,15 @@ Android service account JSON은 파일 전체를 base64로 인코딩한다.
 base64 -i play-integrity-service-account.json | tr -d '\n'
 ```
 
-`mobile.integrity_smoke_command`는 성공 시 `mobile_integrity_provider_dry_run`을 출력해야 한다.
+`mobile.integrity_smoke_command`는 성공 시 마지막 줄에 구조화된 JSON proof를 출력해야 한다. marker 문자열만 출력하는 명령은 운영 증거가 아니다.
+
+Android 예시:
+
+```json
+{"checked":"mobile_integrity_provider_dry_run","provider":"play_integrity","packageName":"app.musunil.android","verdict":"ok"}
+```
+
+iOS 예시는 `provider: "app_attest"`, `bundleId`, `teamId`, `verdict`를 포함해야 한다. 서비스 계정 JSON, private key, attestation 원문은 smoke 출력에 남기지 않는다.
 
 ## 8. 법령·의안 공개 원천
 

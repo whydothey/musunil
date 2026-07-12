@@ -50,7 +50,7 @@ mobile:
   ios_team_id: ""
   android_play_integrity_enabled: true
   ios_app_attest_enabled: false
-  integrity_smoke_command: "printf mobile_integrity_provider_dry_run"
+  integrity_smoke_command: "node scripts/mobile-integrity-smoke-fixture.mjs proof app.musunil.android"
 identity:
   provider: "portone"
   portone_store_id: "store-musunil-production"

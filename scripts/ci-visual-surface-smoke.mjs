@@ -216,6 +216,18 @@ async function runViewport(client, viewport, url) {
 
   await selectPrimaryView(client, viewport, "reels");
   await waitForExpression(client, "document.querySelector('#reels-section') && getComputedStyle(document.querySelector('#reels-section')).display !== 'none'");
+  await waitForExpression(client, `(() => {
+    const visible = (node) => {
+      if (!node) return false;
+      const style = getComputedStyle(node);
+      const rect = node.getBoundingClientRect();
+      return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) !== 0 && rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < innerHeight && rect.right > 0 && rect.left < innerWidth;
+    };
+    const labels = [...document.querySelectorAll("[data-reel-action] span, [data-reel-empty-action] span")]
+      .filter(visible)
+      .map((node) => node.textContent.trim());
+    return labels.includes("근거") && labels.some((label) => /위치|지도/.test(label));
+  })()`, 4_000);
   await sleep(220);
   const reels = await evaluate(client, visualMetrics("reels"));
   await captureEvidence(client, `${viewport.id}_reels`);

@@ -1294,6 +1294,26 @@ if (
 if (/process\.(stdout|stderr)\.write\(data\)/.test(mobileIntegritySmoke)) {
   failures.push("mobile integrity smoke must not stream provider output into launch logs");
 }
+const mobileIntegritySmokeSafety = readFileSync(resolve(cwd, "scripts/ci-mobile-integrity-smoke-safety.mjs"), "utf8");
+const mobileIntegritySmokeFixture = readFileSync(resolve(cwd, "scripts/mobile-integrity-smoke-fixture.mjs"), "utf8");
+if (
+  !/parseStructuredProof/.test(mobileIntegritySmoke) ||
+  !/assertProofMatchesConfig/.test(mobileIntegritySmoke) ||
+  !/assertNoSecretLeak/.test(mobileIntegritySmoke) ||
+  !/structured proof JSON/.test(mobileIntegritySmoke) ||
+  !/packageName must match/.test(mobileIntegritySmoke) ||
+  !/"check:mobile-integrity-smoke-safety"/.test(packageJson) ||
+  !/check:mobile-integrity-smoke-safety/.test(JSON.parse(packageJson).scripts["check:release"] ?? "") ||
+  !/mobile_integrity_smoke_safety/.test(mobileIntegritySmokeSafety) ||
+  !/marker_only/.test(mobileIntegritySmokeSafety) ||
+  !/wrong_package/.test(mobileIntegritySmokeSafety) ||
+  !/secret_leak/.test(mobileIntegritySmokeSafety) ||
+  !/MUSUNIL_TEST_PRIVATE_KEY/.test(mobileIntegritySmokeSafety) ||
+  !/wrong-package/.test(mobileIntegritySmokeFixture) ||
+  !/BEGIN PRIVATE KEY/.test(mobileIntegritySmokeFixture)
+) {
+  failures.push("mobile integrity smoke safety check must reject marker-only output, wrong package proof, and provider secret leaks");
+}
 if (!/liveMediaEncryptionKey:\s*runtime\.liveMediaEncryptionKey/.test(apiServer) || !/security\.media_encryption_key/.test(apiServer)) {
   failures.push("production LIVE media encryption key wiring is missing");
 }
@@ -1324,7 +1344,12 @@ const configIndex = readFileSync(resolve(cwd, "packages/config/src/index.ts"), "
 if (!/android_play_integrity_service_account_json_b64/.test(configIndex) || !/requireServiceAccountJsonB64/.test(configIndex) || !/ios_team_id/.test(readFileSync(resolve(cwd, "config/musunil.user-inputs.template.yaml"), "utf8"))) {
   failures.push("mobile integrity verifier launch credentials are missing");
 }
-if (!/"mobile:integrity-smoke"/.test(packageJson) || !/mobile_integrity_provider_dry_run/.test(readFileSync(resolve(cwd, "scripts/mobile-integrity-smoke.mjs"), "utf8")) || !/integrity_smoke_command/.test(configIndex)) {
+if (
+  !/"mobile:integrity-smoke"/.test(packageJson) ||
+  !/mobile_integrity_provider_dry_run/.test(readFileSync(resolve(cwd, "scripts/mobile-integrity-smoke.mjs"), "utf8")) ||
+  !/integrity_smoke_command/.test(configIndex) ||
+  !/STRUCTURED_mobile_integrity_provider_dry_run_JSON/.test(readFileSync(resolve(cwd, "config/musunil.user-inputs.template.yaml"), "utf8"))
+) {
   failures.push("mobile integrity verifier launch smoke command is missing");
 }
 const adminClaimReview = apiApp.match(/function patchAdminClaim[\s\S]*?function postReconcileLifecycle/);

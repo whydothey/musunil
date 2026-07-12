@@ -67,7 +67,7 @@ mobile:
   ios_app_attest_enabled: false
   ios_bundle_id: ""
   ios_team_id: ""
-  integrity_smoke_command: "CHANGE_ME_MOBILE_INTEGRITY_DRY_RUN_COMMAND_PRINTING_mobile_integrity_provider_dry_run"
+  integrity_smoke_command: "CHANGE_ME_MOBILE_INTEGRITY_DRY_RUN_COMMAND_PRINTING_STRUCTURED_mobile_integrity_provider_dry_run_JSON"
 
 identity:
   provider: "portone"

@@ -235,7 +235,7 @@ PG 계약 후에만 아래 값을 입력하고 `payments.operating_support_enabl
 - `pnpm launch:external-smoke`가 storage PUT/DELETE, redaction proof, 모바일 무결성 dry-run, PortOne 본인확인 결과 조회, 법 원천 1건 이상 dry-run을 한 번에 통과한다.
 - 외부 credential 입력 직후 `pnpm ops:diagnose`로 metadata 누락을 먼저 확인하고, `readyForExternalSmoke`가 false이면 `requiredActions` 순서대로 수정한 뒤 실제 smoke를 실행한다.
 - storage/redaction/mobile smoke는 private storage key나 provider raw output을 운영 로그에 그대로 남기지 않는다.
-- `pnpm mobile:integrity-smoke`가 실제 모바일 verifier dry-run을 실행하고 `mobile_integrity_provider_dry_run` proof marker를 출력한다.
+- `pnpm mobile:integrity-smoke`가 실제 모바일 verifier dry-run을 실행하고 `mobile_integrity_provider_dry_run` structured proof JSON을 출력한다. marker 문자열만 출력하거나 package/bundle이 운영 설정과 다르면 실패해야 한다.
 - 실제 PortOne 본인확인을 1회 완료한 뒤 완료된 verification id를 로컬 셸의 `MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID`에만 넣고 `pnpm identity:smoke`를 실행한다. 이 값은 YAML, Git, 문서에 저장하지 않는다.
 - storage bucket credential로 `pnpm storage:smoke`가 실제 PUT/DELETE dry-run에 성공한다. `MUSUNIL_STORAGE_SMOKE_KEY` override는 `private/live/smoke/` prefix만 허용되므로 운영 원본 media key를 넣지 않는다.
 - 비식별 엔진 command로 `pnpm redaction:smoke`가 입력 파일을 처리해 공개본 후보 파일과 proof hash를 만든다. 단순 copy처럼 샘플 민감 토큰을 그대로 남기는 command는 실패해야 한다.
