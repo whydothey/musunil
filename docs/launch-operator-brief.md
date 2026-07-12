@@ -6,14 +6,14 @@
 
 ## Current State
 
-- Generated: 2026-07-12T06:50:04.615Z
-- Git SHA: 3b46e838f905ade94e14ad3cad81d33fb87b72bc
+- Generated: 2026-07-12T07:26:33.862Z
+- Git SHA: b9e34d16d0f9993fe218f30cda6d4101b3f54fd4
 - Refresh command: `pnpm launch:operator-brief -- --refresh`
 - Active goal: active
 - Launch readiness: blocked
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T06:50:21.233Z (fresh)
+- Service watch: 2026-07-12T07:12:02.521Z (fresh)
 - Checks: 4 ok, 3 fail, 13 skip, 4 actions
 - Before next command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Next command: `pnpm launch:apply`

@@ -110,8 +110,8 @@ function buildSummary(results) {
     launchApplyInputsReady: launchApplyInputsReady(launchApplyPlan),
     requiredLaunchInputsMissing: requiredLaunchInputsMissing(launchApplyPlan),
     splitApplyPaths: blockersData.splitApplyPaths || [],
-    nextOperatorPrerequisite: nextOperatorPrerequisite(stage, launchApplyPlan),
-    nextOperatorCommand: nextOperatorCommand(stage, requiredActions, launchApplyPlan),
+    nextOperatorPrerequisite: blockersData.nextOperatorPrerequisite || nextOperatorPrerequisite(stage, launchApplyPlan),
+    nextOperatorCommand: blockersData.nextOperatorCommand || nextOperatorCommand(stage, requiredActions, launchApplyPlan),
     cutover: {
       domains: cutoverData.domains || { web: "https://musunil.com", api: "https://api.musunil.com" },
       renderStaticSite: cutoverData.renderStaticSite || null,
@@ -302,6 +302,8 @@ function printMarkdown(value) {
     for (const path of value.splitApplyPaths) {
       console.log(`- ${path.id}: ${path.note}`);
       console.log(`  - Requires: ${(path.requires || []).map((item) => `\`${item}\``).join(", ")}`);
+      console.log(`  - Inputs ready: ${path.inputsReady ? "yes" : "no"}`);
+      if (!path.inputsReady && path.missingInputs?.length) console.log(`  - Missing: ${path.missingInputs.map((item) => `\`${item}\``).join(", ")}`);
       console.log(`  - Dry-run: \`${path.dryRun}\``);
       console.log(`  - Apply: \`${path.apply}\``);
       console.log(`  - Verify: \`${path.verify}\``);

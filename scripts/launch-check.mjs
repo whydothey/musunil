@@ -514,16 +514,20 @@ if (
   !/Launch readiness/.test(launchCutoverRehearsal) ||
   !/releaseBlocked/.test(launchCutoverRehearsal) ||
   !/nextOperatorPrerequisite/.test(launchCutoverRehearsal) ||
+  !/blockersData\.nextOperatorPrerequisite/.test(launchCutoverRehearsal) ||
   !/Before next command/.test(launchCutoverRehearsal) ||
   !/deploy_latest_static/.test(launchCutoverRehearsal) ||
   !/actionIds\.has\("deploy_latest_static"\)[\s\S]*return "deploy_latest_static"/.test(launchCutoverRehearsal) ||
   !/"deploy_latest_static"[\s\S]*"connect_api_endpoint"/.test(launchCutoverRehearsal) ||
   !/Render onrender\.com target/.test(launchCutoverRehearsal) ||
   !/nextOperatorCommand/.test(launchCutoverRehearsal) ||
+  !/blockersData\.nextOperatorCommand/.test(launchCutoverRehearsal) ||
   !/launch:apply/.test(launchCutoverRehearsal) ||
   !/Ordered Operator Actions/.test(launchCutoverRehearsal) ||
   !/Split Apply Paths/.test(launchCutoverRehearsal) ||
   !/splitApplyPaths/.test(launchCutoverRehearsal) ||
+  !/Inputs ready/.test(launchCutoverRehearsal) ||
+  !/missingInputs/.test(launchCutoverRehearsal) ||
   !/connect_api_endpoint/.test(launchCutoverRehearsal) ||
   !/deploy_latest_static/.test(launchCutoverPlan) ||
   !/cloudflare:dns/.test(launchCutoverRehearsal) ||

@@ -166,6 +166,7 @@ GET /ready -> 200
 - 2026-07-12 09:22 홈 빈 상태의 운영 문구를 `새 이슈를 확인 중입니다`와 `다시 확인/지역 보기`로 낮췄다. 이는 API 미연결 상태에서도 사용자가 다음 행동을 이해하게 하는 UX guard이며, `serviceSyncState=live` 또는 `/home.issueCards` 운영 데이터 연결 완료 증거가 아니다.
 - 2026-07-12 16:17 `launch:blockers`가 Web header-only 경로와 API DNS+Render domain 경로의 입력 준비 상태를 분리했다. 현재 `web_headers_only` 누락값은 `CLOUDFLARE_API_TOKEN`만이고, 전체 API 경로는 `RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET`와 `CLOUDFLARE_API_TOKEN`을 요구한다. 실제 token 적용과 live 재검증 전 운영 준비 완료가 아니다.
 - 2026-07-12 16:25 `CLOUDFLARE_API_TOKEN`만 있는 부분 입력 상태에서는 `launch:blockers`의 `Next command`가 `pnpm launch:apply -- --apply --cloudflare-headers-only`로 바뀐다. Web header blocker를 API DNS 입력과 독립적으로 먼저 줄일 수 있지만, 실제 적용·strict Web header 검증·API DNS/live sync 전 운영 준비 완료가 아니다.
+- 2026-07-12 16:26 `launch:cutover-rehearsal`과 `launch:operator-brief`가 `launch:blockers`의 split apply 판단을 그대로 쓰게 했다. `CLOUDFLARE_API_TOKEN`만 있는 상태에서는 두 경로 모두 Web header-only 명령을 안내하지만, 실제 Cloudflare 적용·strict Web header 검증·API DNS/live sync 전 운영 준비 완료가 아니다.
 
 ## Next Active Goal Order
 
