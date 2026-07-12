@@ -116,6 +116,9 @@ function storageGroup(component = {}) {
     id: "storage",
     title: "원본 영상 저장소",
     readyForSmoke: Boolean(component.readyForSmoke),
+    notes: [
+      "MUSUNIL_STORAGE_SMOKE_KEY를 직접 지정해야 할 때도 private/live/smoke/ prefix 아래 값만 허용한다. 기존 원본 미디어 key를 smoke key로 쓰지 않는다."
+    ],
     fields: [
       field("storage.provider", component.providerStatus),
       field("storage.bucket", component.bucketStatus),
@@ -346,6 +349,7 @@ function providerGroupLines(groups) {
     `- Status: ${group.readyForSmoke ? "ready_for_smoke" : "missing_inputs"}`,
     `- Command: \`${group.command}\``,
     `- Proof marker: \`${group.proof}\``,
+    ...(group.notes || []).map((note) => `- ${note}`),
     "",
     "| Field | Status |",
     "|---|---|",

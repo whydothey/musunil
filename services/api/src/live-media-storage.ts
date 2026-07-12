@@ -35,7 +35,11 @@ export function createLiveMediaStorage(config: Record<string, unknown>): LiveMed
 }
 
 export function storageSmokeKey(): string {
-  return `private/live/smoke/${Date.now()}-${Math.random().toString(36).slice(2)}.txt`;
+  return `${storageSmokePrefix()}${Date.now()}-${Math.random().toString(36).slice(2)}.txt`;
+}
+
+export function storageSmokePrefix(): string {
+  return "private/live/smoke/";
 }
 
 function storageUrl(endpoint: string, bucket: string, storageKey: string): URL {

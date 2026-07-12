@@ -246,6 +246,7 @@ function renderMarkdown(value) {
     "## External Smoke Proofs",
     "",
     "실제 운영 직전에는 아래 proof marker가 각 명령 출력에 있어야 한다. 이 단계는 mock 성공이나 문서상 준비 상태가 아니라 provider 연결 증거를 요구한다.",
+    "storage smoke는 실제 PUT/DELETE를 수행한다. `MUSUNIL_STORAGE_SMOKE_KEY`를 직접 지정해야 할 때도 `private/live/smoke/` prefix 아래 값만 허용하고, 기존 원본 미디어 key를 쓰지 않는다.",
     "",
     ...stepLines(value.externalSmoke.steps),
     "",

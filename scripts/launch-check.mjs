@@ -244,6 +244,24 @@ if (!/delete:\s*async/.test(liveMediaStorage) || !/method:\s*"DELETE"/.test(live
 if (!/createLiveMediaStorage/.test(storageSmoke) || !/storage_put_delete/.test(storageSmoke) || !/storage:smoke/.test(packageJson)) {
   failures.push("storage PUT/DELETE launch smoke command is missing");
 }
+if (
+  !/storageSmokePrefix/.test(liveMediaStorage) ||
+  !/private\/live\/smoke\//.test(liveMediaStorage) ||
+  !/assertStorageSmokeKey/.test(storageSmoke) ||
+  !/MUSUNIL_STORAGE_SMOKE_KEY must stay under/.test(storageSmoke) ||
+  !/value\.startsWith\(prefix\)/.test(storageSmoke) ||
+  !/value\.includes\("\.\."\)/.test(storageSmoke)
+) {
+  failures.push("storage smoke must constrain any custom smoke key to the private/live/smoke/ prefix before PUT/DELETE");
+}
+if (
+  !/MUSUNIL_STORAGE_SMOKE_KEY/.test(userFacingDocs) ||
+  !/private\/live\/smoke\//.test(userFacingDocs) ||
+  !/MUSUNIL_STORAGE_SMOKE_KEY/.test(userInputsManual) ||
+  !/기존 원본 미디어 key를 넣지 않는다/.test(userInputsManual)
+) {
+  failures.push("operator docs must warn that storage smoke key overrides are restricted to private/live/smoke/ and must not reuse real media keys");
+}
 if (/checked:\s*"storage_put_delete"[\s\S]*storageKey/.test(storageSmoke)) {
   failures.push("storage smoke must not print private storage keys");
 }

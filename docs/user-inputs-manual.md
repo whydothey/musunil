@@ -101,6 +101,7 @@ domestic_operation:
    - `storage.endpoint`
    - `storage.access_key_id`
    - `storage.secret_access_key`
+   - 실제 credential 입력 후 `pnpm storage:smoke`를 실행한다. `MUSUNIL_STORAGE_SMOKE_KEY`를 직접 지정할 때도 `private/live/smoke/` 아래 값만 사용하고, 기존 원본 미디어 key를 넣지 않는다.
 
 4. 영상 비식별 엔진
    - `redaction.engine_smoke_command`

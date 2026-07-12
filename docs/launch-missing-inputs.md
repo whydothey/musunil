@@ -5,12 +5,12 @@
 
 ## Current Gate
 
-- Generated: 2026-07-12T09:09:19.942Z
+- Generated: 2026-07-12T09:16:35.398Z
 - Source: local_file
 - Launch state: blocked
 - Current stage: connect_api_endpoint
 - Release blocked: yes
-- Blocker report: 2026-07-12T09:09:18.374Z (0m old, refresh after 15m)
+- Blocker report: 2026-07-12T09:16:33.541Z (0m old, refresh after 15m)
 - Report freshness: fresh
 - Before apply command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Immediate safe command: `pnpm launch:apply`
@@ -34,6 +34,7 @@
 - Status: missing_inputs
 - Command: `pnpm storage:smoke`
 - Proof marker: `storage_put_delete`
+- MUSUNIL_STORAGE_SMOKE_KEY를 직접 지정해야 할 때도 private/live/smoke/ prefix 아래 값만 허용한다. 기존 원본 미디어 key를 smoke key로 쓰지 않는다.
 
 | Field | Status |
 |---|---|
