@@ -51,6 +51,8 @@ const launchOperatorBriefDoc = readFileSync(resolve(cwd, "docs/launch-operator-b
 const launchMissingInputsDoc = readFileSync(resolve(cwd, "docs/launch-missing-inputs.md"), "utf8");
 const userInputsManual = readFileSync(resolve(cwd, "docs/user-inputs-manual.md"), "utf8");
 const serviceWatchDoc = readFileSync(resolve(cwd, "docs/splus-service-watch.md"), "utf8");
+const serviceWatchLastChecked = serviceWatchDoc.match(/^Last checked:\s*(.+)$/m)?.[1]?.trim() || "";
+const launchMissingInputsBlockerReport = launchMissingInputsDoc.match(/^- Blocker report:\s*([^\s(]+).*$/m)?.[1]?.trim() || "";
 const cloudflareDnsRecordsDoc = readFileSync(resolve(cwd, "docs/cloudflare-dns-records.md"), "utf8");
 const cloudflareDnsRecordsTerraform = readFileSync(resolve(cwd, "infra/cloudflare/dns-records.tf.example"), "utf8");
 const cloudflareResponseHeadersDoc = readFileSync(resolve(cwd, "docs/cloudflare-response-headers.md"), "utf8");
@@ -700,6 +702,9 @@ if (
   !/실제 값을 담지 않는다/.test(launchMissingInputsDoc)
 ) {
   failures.push("Launch missing-inputs helper must generate a secret-safe final input checklist with apply, provider smoke, runtime secret, and proof-marker requirements");
+}
+if (!serviceWatchLastChecked || !launchMissingInputsBlockerReport || serviceWatchLastChecked !== launchMissingInputsBlockerReport) {
+  failures.push("docs/launch-missing-inputs.md must be refreshed from the latest docs/splus-service-watch.md blocker report. Run pnpm launch:missing-inputs -- --refresh.");
 }
 if (
   !/"launch:final-gate"/.test(packageJson) ||

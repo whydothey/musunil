@@ -173,6 +173,7 @@ GET /ready -> 200
 - 2026-07-12 16:51 `launch:apply -- --apply`가 실제 Render/Cloudflare write 전에 dry-run preflight를 먼저 실행한다. 필수 입력 누락, 잘못된 Render token, target 파생 실패가 있으면 `applyBlocked=true`와 `No Render or Cloudflare writes were attempted`를 출력하므로, 부분 입력 상태의 실적용 오작동을 완료 증거로 오해하지 않는다.
 - 2026-07-12 16:59 `MUSUNIL_RENDER_API_DNS_TARGET`와 `CLOUDFLARE_API_TOKEN`만 있는 수동 target 경로에서는 `launch:apply -- --apply`가 Render API write를 건너뛰고 Cloudflare DNS apply만 실행한다. 이 경로는 Render Dashboard에서 custom domain target을 이미 확인한 경우의 적용 보조이며, Cloudflare apply와 strict DNS/final gate 통과 전 운영 준비 완료가 아니다.
 - 2026-07-12 17:08 `launch:blockers`와 `service:watch` Required Action이 수동 Render target 경로를 직접 표시한다. `Render automation: skipped (manual_api_dns_target_without_render_token)`와 split path note는 operator 안내가 실제 apply 동작과 일치한다는 증거지만, 실제 Cloudflare DNS 적용과 `serviceSyncState=live` 전 운영 준비 완료가 아니다.
+- 2026-07-12 17:13 `docs/launch-missing-inputs.md`를 최신 live blocker report로 다시 생성했고, `launch-check`가 `docs/splus-service-watch.md`의 `Last checked`와 입력 체크리스트의 `Blocker report` 시각이 다르면 실패하게 했다. 이는 오래된 사용자 입력 체크리스트를 완료 증거로 쓰지 않기 위한 guard이며, 실제 Cloudflare DNS/Web header/API live sync 전 운영 준비 완료가 아니다.
 
 ## Next Active Goal Order
 
