@@ -28,7 +28,7 @@ pnpm cloudflare:check
 
 ## 1. 현재 차단 항목
 
-2026-07-12 04:05 KST live 감시 기준으로 최신 UI 정적 파일은 `musunil.com`에 반영됐다. `web_static_manifest`, `web_runtime_config`, `web_build_info`, `web_forbidden_ui_absent`는 통과했고, `config.js`도 `https://api.musunil.com`을 가리킨다.
+2026-07-12 21:15 KST live 감시 기준으로 `web_static_manifest`, `web_runtime_config`, `web_forbidden_ui_absent`는 통과했고, `config.js`도 `https://api.musunil.com`을 가리킨다. 하지만 출시 차단 항목은 아직 남아 있다. `web_build_info`는 placeholder, `web_header_contract`는 보안 헤더 미적용, `web_visual_surface`는 `serviceSyncState=delayed`, `api_endpoint_preflight`는 `api.musunil.com` DNS 미연결 상태다.
 
 출시 직전 완료 전까지 남는 차단 항목은 아래 순서로 처리한다.
 
@@ -36,8 +36,8 @@ pnpm cloudflare:check
 |---|---|---|---|---|
 | 1 | API DNS | `api_endpoint_preflight` 실패: `getaddrinfo ENOTFOUND api.musunil.com` | `pnpm launch:apply` 출력대로 Render/Cloudflare token과 서비스 target 상태를 확인한다. Render API token과 Cloudflare token이 있으면 `pnpm launch:apply -- --apply`가 `api.musunil.com` custom domain 생성, Render `onrender.com` target 파생, Cloudflare DNS 적용을 한 번에 처리한다. Render token 없이 Dashboard target을 직접 복사한 경우에는 `MUSUNIL_RENDER_API_DNS_TARGET`와 `CLOUDFLARE_API_TOKEN`만 넣고 같은 명령을 실행한다. 이때 `renderSkippedReason=manual_api_dns_target_without_render_token`이면 Render API write는 건너뛰고 Cloudflare `api` CNAME만 DNS only로 적용한다. | `pnpm launch:apply && pnpm launch:blockers -- --refresh` |
 | 2 | Static headers | `/`, `/config.js`, `/build-info.json`에 CSP, Permissions, Referrer, nosniff, X-Frame-Options가 없고 Cache-Control이 `no-store`가 아니다. | `pnpm launch:apply` 출력대로 Render Web header 적용 계획을 확인한다. Render API token이 있으면 `pnpm launch:apply -- --apply --deploy-web`으로 Headers를 적용하고 배포까지 요청한다. Render headers가 live 응답에 계속 반영되지 않거나 Cloudflare token만 먼저 쓸 수 있으면 `pnpm cloudflare:check`에서 `web_proxy_mode.proxyObserved=true`를 확인한 뒤 `pnpm launch:apply -- --apply --cloudflare-headers-only`로 Web 전용 Response Header Transform Rule만 추가한다. | `pnpm launch:apply -- --cloudflare-headers-only && pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy` |
-| 3 | Live issue data sync | `web_visual_surface` 실패: 화면 구조는 렌더링되지만 `serviceSyncState=delayed`이며 최신 첫 이슈는 `정보통신망법 개정 관련 집회`, source bundle first는 `0/4`다. | API DNS, CORS, `/ready`, public payload가 연결되어 Web이 live 상태로 동기화되게 한다. API 연결 뒤 `/home.issueCards`는 실제 주제형 Issue를 3개 이상 포함하고 첫 항목이 공개자료 묶음이면 안 된다. | `pnpm launch:final-gate` |
-| 4 | Build metadata | `build-info.json`은 placeholder지만 static manifest hash로 최신 UI 파일은 확인됐다. | Render가 build command output을 publish하는지 확인한다. 정적 해시만 확인하는 진단은 `MUSUNIL_ALLOW_PLACEHOLDER_BUILD_INFO=1`로 따로 실행할 수 있지만, 출시 검증은 실제 commit SHA가 build-info에 있어야 통과한다. | `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy` |
+| 3 | Build metadata | `build-info.json`은 placeholder지만 static manifest hash로 최신 UI 파일은 확인됐다. | Render Dashboard를 바꾸기 전 `pnpm check:web-render-build-command`로 실제 Render build contract를 로컬에서 먼저 통과시킨다. 그 다음 Render가 `pnpm build:web-static:render` output을 publish하는지 확인한다. 정적 해시만 확인하는 진단은 `MUSUNIL_ALLOW_PLACEHOLDER_BUILD_INFO=1`로 따로 실행할 수 있지만, 출시 검증은 실제 commit SHA가 build-info에 있어야 통과한다. | `pnpm check:web-render-build-command && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy` |
+| 4 | Live issue data sync | `web_visual_surface` 실패: 화면 구조는 렌더링되지만 `serviceSyncState=delayed`이며 최신 첫 이슈는 `정보통신망법 개정 관련 집회`, source bundle first는 `0/4`다. | API DNS, CORS, `/ready`, public payload가 연결되어 Web이 live 상태로 동기화되게 한다. API 연결 뒤 `/home.issueCards`는 실제 주제형 Issue를 3개 이상 포함하고 첫 항목이 공개자료 묶음이면 안 된다. | `pnpm launch:final-gate` |
 
 통합 감시 문서는 매번 아래 명령으로 갱신한다.
 

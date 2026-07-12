@@ -189,6 +189,7 @@ GET /ready -> 200
 - 2026-07-12 18:41 `mobile:integrity-smoke`는 이제 marker 문자열만으로 통과하지 않고 provider, packageName 또는 bundleId/teamId, verdict가 들어간 structured proof JSON을 요구한다. `check:mobile-integrity-smoke-safety`가 정상 proof, marker-only, wrong-package, secret-leak fixture를 실행하지만, 실제 Play Integrity/App Attest provider dry-run 전 운영 모바일 무결성 준비 완료가 아니다.
 - 2026-07-12 20:39 개발용 예시 현장/claim/evidence ID를 `_sample` 경계로 정리하고 production strip, Web fallback filter, service-watch public payload gate가 `_mock`, `_sample`, `preview-only` 노출을 실패 처리한다. 이 guard는 운영 화면이 예시/미리보기 데이터처럼 보이는 회귀를 막지만, 실제 live API 동기화와 사용자 수락 전 S+ 완료 증거는 아니다.
 - 2026-07-12 20:47 `pnpm launch:verify-inputs`가 템플릿 대비 로컬 YAML 구조 drift를 먼저 검사한다. 이 guard는 오래된 입력 파일에 새 운영 섹션이 빠지는 문제를 줄이지만, 실제 PortOne/storage/redaction/mobile/law credential 입력과 provider smoke 통과 전 운영 준비 완료 증거는 아니다.
+- 2026-07-12 21:15 `service:watch`, `launch:blockers`, `launch:cutover-plan`, `launch:cutover-rehearsal`, `launch-cutover-runbook`의 build metadata 조치가 모두 `pnpm check:web-render-build-command` 선검증을 요구하게 했다. 이 guard는 Render Dashboard 수정을 local preflight 없이 진행하는 오판을 줄이지만, 실제 Render build-info SHA, Web headers, API DNS, live sync 통과 전 운영 준비 완료가 아니다.
 
 ## Next Active Goal Order
 

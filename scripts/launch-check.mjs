@@ -1260,6 +1260,7 @@ if (
   !/cloudflare:dns/.test(launchCutoverRunbook) ||
   !/cloudflare:headers/.test(launchCutoverRunbook) ||
   !/check:visual-surface:live/.test(launchCutoverRunbook) ||
+  !/check:web-render-build-command/.test(launchCutoverRunbook) ||
   !/identity_required/.test(launchCutoverRunbook) ||
   !/Header 적용 방식/.test(launchCutoverRunbook) ||
   !/수동 Static Site/.test(launchCutoverRunbook) ||
@@ -1269,6 +1270,9 @@ if (
 }
 if (/sourceBundleFirst=4\/4/.test(launchCutoverRunbook) || /첫 카드가 `지역별 집회 공개 일정`/.test(launchCutoverRunbook)) {
   failures.push("launch cutover runbook current blockers must reflect the latest live issue-feed state, not stale source-bundle-first evidence");
+}
+if (/web_build_info`, `web_forbidden_ui_absent`는 통과/.test(launchCutoverRunbook) || /web_build_info.*통과했고/.test(launchCutoverRunbook)) {
+  failures.push("launch cutover runbook current blockers must not claim web_build_info passed while live build-info placeholder remains a blocker");
 }
 if (
   !/api_endpoint_preflight/.test(serviceWatch) ||
