@@ -128,6 +128,9 @@ if (
   !/web-deploy/.test(postDeployWorkflow) ||
   !/final-gate/.test(postDeployWorkflow) ||
   !/render_api_dns_target/.test(postDeployWorkflow) ||
+  !/github_environment/.test(postDeployWorkflow) ||
+  !/default:\s*"production"/.test(postDeployWorkflow) ||
+  !/environment:\s*\n\s+name:\s*\$\{\{\s*inputs\.github_environment\s*\}\}/.test(postDeployWorkflow) ||
   !/INPUT_RENDER_API_DNS_TARGET/.test(postDeployWorkflow) ||
   !/RENDER_API_TOKEN:\s*\$\{\{\s*secrets\.RENDER_API_TOKEN\s*\}\}/.test(postDeployWorkflow) ||
   !/MUSUNIL_RENDER_API_TOKEN:\s*\$\{\{\s*secrets\.MUSUNIL_RENDER_API_TOKEN\s*\}\}/.test(postDeployWorkflow) ||
@@ -146,17 +149,20 @@ if (
 }
 if (
   !/render_api_dns_target/.test(readme) ||
+  !/github_environment/.test(readme) ||
   !/RENDER_API_TOKEN/.test(readme) ||
   !/MUSUNIL_INTERNAL_API_KEY/.test(readme) ||
   !/render_api_dns_target/.test(launchCutoverRunbook) ||
+  !/github_environment/.test(launchCutoverRunbook) ||
   !/RENDER_API_TOKEN/.test(launchCutoverRunbook) ||
   !/MUSUNIL_INTERNAL_API_KEY/.test(launchCutoverRunbook) ||
   !/render_api_dns_target/.test(userFacingDocs) ||
+  !/github_environment/.test(userFacingDocs) ||
   !/RENDER_API_TOKEN/.test(userFacingDocs) ||
   !/MUSUNIL_INTERNAL_API_KEY/.test(userFacingDocs) ||
   !/render_api_dns_target/.test(launchCutoverPlan)
 ) {
-  failures.push("post-deploy operator docs must tell the operator to pass Render api.musunil.com DNS target through render_api_dns_target and document optional RENDER_API_TOKEN/MUSUNIL_INTERNAL_API_KEY secrets for remote final-gate strict DNS/source checks");
+  failures.push("post-deploy operator docs must tell the operator to pass Render api.musunil.com DNS target through render_api_dns_target, use github_environment for environment secrets, and document optional RENDER_API_TOKEN/MUSUNIL_INTERNAL_API_KEY secrets for remote final-gate strict DNS/source checks");
 }
 if (!/fallback\.issueCards = fallback\.issueCards\.filter\(\(issue\) => !isPreviewIssue\(issue\.id\) && !isMetaPublicSourceIssue\(issue\)\)/.test(web)) {
   failures.push("production Web fallback must not expose public source bundles as issue cards");

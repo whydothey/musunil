@@ -178,6 +178,7 @@ GET /ready -> 200
 - 2026-07-12 17:29 운영 브리프의 하드코딩 Git SHA를 제거했다. 문서를 커밋하면 기록된 SHA는 구조적으로 stale해지므로, 이제 배포 직전 `git rev-parse HEAD`를 실행해 확인하도록 안내하고 `launch-check`가 `- Git SHA: <40hex>` 회귀를 실패 처리한다. 이는 stale commit 기준 배포 오판을 막는 guard이며, live 배포 완료 증거가 아니다.
 - 2026-07-12 17:37 GitHub Actions `post-deploy` 수동 workflow가 `render_api_dns_target` 입력을 받아 `MUSUNIL_RENDER_API_DNS_TARGET`으로 넘기게 했다. Render API token 없이 Dashboard에서 복사한 API DNS target만 쓰는 경로도 원격 `final-gate`에서 strict CNAME 검증을 실행할 수 있지만, 실제 DNS 적용·API readiness·`serviceSyncState=live` 전 운영 준비 완료가 아니다.
 - 2026-07-12 17:45 GitHub Actions `post-deploy` 수동 workflow가 선택적 `RENDER_API_TOKEN`/`MUSUNIL_RENDER_API_TOKEN`/`MUSUNIL_INTERNAL_API_KEY` secrets를 원격 `launch:final-gate`에 전달하게 했다. secret이 있으면 Render target 자동 파생과 공개 원천 refresh 회복을 원격에서도 시도할 수 있지만, secret 입력·DNS 적용·API readiness·`serviceSyncState=live` 전 운영 준비 완료가 아니다.
+- 2026-07-12 17:50 GitHub Actions `post-deploy` 수동 workflow에 `github_environment` 입력과 기본 `production` job environment를 추가했다. Environment secret에 둔 Render/API 운영 secret도 원격 final-gate에서 접근 가능하지만, 실제 secret 입력·DNS 적용·API readiness·`serviceSyncState=live` 전 운영 준비 완료가 아니다.
 
 ## Next Active Goal Order
 

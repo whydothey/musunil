@@ -31,6 +31,10 @@ on:
         description: "Render API DNS target for api.musunil.com, hostname only. Required for final-gate strict DNS when Render API token is unavailable."
         required: false
         default: ""
+      github_environment:
+        description: "GitHub Environment exposing post-deploy secrets. Use production unless secrets are repository-level only."
+        required: false
+        default: "production"
 
 permissions:
   contents: read
@@ -38,6 +42,8 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.github_environment }}
     env:
       RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
       MUSUNIL_RENDER_API_TOKEN: ${{ secrets.MUSUNIL_RENDER_API_TOKEN }}
