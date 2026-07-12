@@ -239,10 +239,15 @@ if (
   !/readyForExternalSmoke/.test(operationalDiagnostics) ||
   !/MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID/.test(operationalDiagnostics) ||
   !/pnpm identity:smoke/.test(operationalDiagnostics) ||
+  !/lawSources/.test(operationalDiagnostics) ||
+  !/lawOperationalDiagnostics/.test(operationalDiagnostics) ||
+  !/pnpm sources:laws/.test(operationalDiagnostics) ||
+  !/laws_dry_run/.test(operationalDiagnostics) ||
+  !/laws_disabled/.test(operationalDiagnostics) ||
   !/commandEchoSuppressed/.test(operationalDiagnostics) ||
   !/smokeCommandEchoSuppressed/.test(operationalDiagnostics)
 ) {
-  failures.push("operational diagnostics must expose safe metadata for storage, redaction, mobile integrity, and identity");
+  failures.push("operational diagnostics must expose safe metadata for storage, redaction, mobile integrity, identity, and law sources");
 }
 if (/access_key_id/.test(operationalDiagnostics) || /secret_access_key/.test(operationalDiagnostics) || /portone_api_secret/.test(operationalDiagnostics)) {
   failures.push("operational diagnostics must not print raw secret field names that invite copying into logs");

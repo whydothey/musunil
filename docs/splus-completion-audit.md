@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-12 16:01 KST
+Last updated: 2026-07-12 16:07 KST
 
 Status: 완료 아님.
 
@@ -54,6 +54,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - `pnpm check:law-diagnostics`
 - `pnpm check:ops-diagnostics`
 - `pnpm ops:diagnose`
+- `pnpm ops:diagnose -- --template`에서 `lawSources.readyForSmoke=false`와 법안 원천 `requiredActions`를 확인
 - `pnpm launch:ready -- --list`로 actual input 단계와 sample gate 단계를 구분
 - `pnpm launch:external-smoke -- --list`
 - `pnpm launch:cutover-rehearsal`로 현재 stage, 다음 operator 명령, final gate 순서를 한 화면에 확인

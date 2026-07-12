@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 import { loadUserInputs, validateLaunchConfig } from "../packages/config/src/index.ts";
+import { lawOperationalDiagnostics, readLawRuntime } from "../workers/public-source-ingest/src/laws.ts";
 
 const cwd = resolve(import.meta.dirname, "..");
 const { config, source } = loadUserInputs({ cwd, allowTemplate: true, preferTemplate: process.argv.includes("--template") });
@@ -20,7 +21,8 @@ const diagnostics = {
     storage: storageDiagnostics(),
     redaction: redactionDiagnostics(),
     mobileIntegrity: mobileIntegrityDiagnostics(),
-    identity: identityDiagnostics()
+    identity: identityDiagnostics(),
+    lawSources: lawSourceDiagnostics()
   }
 };
 
@@ -28,13 +30,15 @@ diagnostics.readyForMetadataCheck = [
   diagnostics.components.storage.metadataReady,
   diagnostics.components.redaction.metadataReady,
   diagnostics.components.mobileIntegrity.metadataReady,
-  diagnostics.components.identity.metadataReady
+  diagnostics.components.identity.metadataReady,
+  diagnostics.components.lawSources.metadataReady
 ].every(Boolean);
 diagnostics.readyForExternalSmoke = [
   diagnostics.components.storage.readyForSmoke,
   diagnostics.components.redaction.readyForSmoke,
   diagnostics.components.mobileIntegrity.readyForSmoke,
-  diagnostics.components.identity.readyForSmoke
+  diagnostics.components.identity.readyForSmoke,
+  diagnostics.components.lawSources.readyForSmoke
 ].every(Boolean);
 diagnostics.summary.requiredActions = requiredActions();
 
@@ -137,6 +141,26 @@ function identityDiagnostics() {
   };
 }
 
+function lawSourceDiagnostics() {
+  const diagnostics = lawOperationalDiagnostics(readLawRuntime(config, {}));
+  const summary = diagnostics.summary;
+  const assembly = diagnostics.providers.find((provider) => provider.id === "assembly_bill");
+  const law = diagnostics.providers.find((provider) => provider.id === "law_effective");
+  return {
+    credentialStatus: summary.credentialConfigured ? "configured" : "missing",
+    assemblyBillCredentialStatus: assembly?.credentialStatus ?? "missing",
+    lawGoKrCredentialStatus: law?.credentialStatus ?? "missing",
+    officialEndpointCount: summary.officialEndpointCount,
+    keywordCount: summary.keywordCount,
+    requiredActions: summary.requiredActions,
+    smokeCommand: "pnpm sources:laws",
+    smokeMarkerRequired: "laws_dry_run",
+    smokeForbiddenMarker: "laws_disabled",
+    metadataReady: diagnostics.readyForMetadataCheck,
+    readyForSmoke: diagnostics.readyForOperationalIngest
+  };
+}
+
 function requiredActions() {
   const actions = [];
   if (!diagnostics.components.storage.readyForSmoke) actions.push("storage.*와 security.media_encryption_key를 실제 값으로 채운 뒤 pnpm storage:smoke를 실행한다.");
@@ -144,6 +168,13 @@ function requiredActions() {
   if (!diagnostics.components.mobileIntegrity.readyForSmoke) actions.push("Play Integrity 또는 App Attest 값과 mobile.integrity_smoke_command를 채운 뒤 pnpm mobile:integrity-smoke를 실행한다.");
   if (!diagnostics.components.identity.readyForProductionAuth) actions.push("PortOne 본인확인 store/channel/API secret/cookie domain을 채우고 인증 리허설을 수행한다.");
   else if (!diagnostics.components.identity.readyForSmoke) actions.push("실제 PortOne 본인확인을 1회 완료한 뒤 MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID를 현재 셸에 넣고 pnpm identity:smoke를 실행한다.");
+  if (!diagnostics.components.lawSources.readyForSmoke) {
+    if (diagnostics.components.lawSources.requiredActions.length > 0) {
+      actions.push(...diagnostics.components.lawSources.requiredActions.map((action) => `${action} 이후 pnpm sources:laws를 실행한다.`));
+    } else {
+      actions.push("public_data_sources.national_assembly_bill_api_key 또는 public_data_sources.law_go_kr_oc를 실제 값으로 채운 뒤 pnpm sources:laws를 실행한다.");
+    }
+  }
   return actions;
 }
 

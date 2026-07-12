@@ -4,7 +4,7 @@
 
 ## Current Gate
 
-- Generated: 2026-07-12T07:00:50.547Z
+- Generated: 2026-07-12T07:07:38.428Z
 - Source: local_file
 - Launch state: blocked
 - Current stage: connect_api_endpoint
@@ -137,3 +137,4 @@
 - redaction.engine_smoke_command에 {input}/{output}을 받는 실제 비식별 엔진 명령을 넣고 pnpm redaction:smoke를 실행한다.
 - Play Integrity 또는 App Attest 값과 mobile.integrity_smoke_command를 채운 뒤 pnpm mobile:integrity-smoke를 실행한다.
 - PortOne 본인확인 store/channel/API secret/cookie domain을 채우고 인증 리허설을 수행한다.
+- 국회 의안 API key 또는 법제처 OC 중 하나를 입력한다. 이후 pnpm sources:laws를 실행한다.
