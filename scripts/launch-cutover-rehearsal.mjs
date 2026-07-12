@@ -83,6 +83,8 @@ function buildSummary(results) {
     generatedAt: new Date().toISOString(),
     refreshAttempted: refresh,
     strict,
+    goalState: blockersData.goalState || "active",
+    launchState: blockersData.launchState || (releaseBlocked ? "blocked" : "ready_for_final_gate"),
     releaseBlocked,
     stage,
     report: {
@@ -187,6 +189,8 @@ function printMarkdown(value) {
   console.log("# Musunil Launch Cutover Rehearsal");
   console.log("");
   console.log(`Generated: ${value.generatedAt}`);
+  console.log(`Active goal: ${value.goalState}`);
+  console.log(`Launch readiness: ${value.launchState}`);
   console.log(`Stage: ${value.stage}`);
   console.log(`Release blocked: ${value.releaseBlocked ? "yes" : "no"}`);
   console.log(`Service watch: ${value.report.lastChecked || "unknown"} (${value.report.stale ? "stale" : "fresh"})`);

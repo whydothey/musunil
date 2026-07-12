@@ -6,12 +6,14 @@
 
 ## Current State
 
-- Generated: 2026-07-12T00:36:00.671Z
-- Git SHA: 32cbcfd799d375441eaaa19abce0c67add10ec62
+- Generated: 2026-07-12T00:46:08.498Z
+- Git SHA: fab138be13aeb8cc25d2b288f1a69fcfb1c7421a
 - Refresh command: `pnpm launch:operator-brief -- --refresh`
+- Active goal: active
+- Launch readiness: blocked
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T00:21:22.405Z (fresh)
+- Service watch: 2026-07-12T00:45:33.259Z (fresh)
 - Checks: 4 ok, 3 fail, 12 skip, 4 actions
 - Next command: `pnpm render:api-settings && pnpm cloudflare:dns && pnpm cloudflare:check`
 

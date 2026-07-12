@@ -278,6 +278,12 @@ if (
   !/"launch:blockers:refresh-strict":\s*"node scripts\/launch-next-actions\.mjs -- --refresh --fail-on-blockers"/.test(packageJson) ||
   !/--fail-on-blockers/.test(packageJson) ||
   !/Report freshness/.test(launchNextActions) ||
+  !/goalState/.test(launchNextActions) ||
+  !/launchState/.test(launchNextActions) ||
+  !/blockerStage/.test(launchNextActions) ||
+  !/nextOperatorCommand/.test(launchNextActions) ||
+  !/Launch readiness/.test(launchNextActions) ||
+  !/Current stage/.test(launchNextActions) ||
   !/MUSUNIL_LAUNCH_BLOCKERS_STALE_AFTER_MINUTES/.test(launchNextActions) ||
   !/refreshRequired/.test(launchNextActions) ||
   !/refreshServiceWatch/.test(launchNextActions) ||
@@ -301,6 +307,10 @@ if (
   !/launch:blockers/.test(launchCutoverRehearsal) ||
   !/launch:cutover-plan/.test(launchCutoverRehearsal) ||
   !/launch:final-gate --list/.test(launchCutoverRehearsal) ||
+  !/goalState/.test(launchCutoverRehearsal) ||
+  !/launchState/.test(launchCutoverRehearsal) ||
+  !/Active goal/.test(launchCutoverRehearsal) ||
+  !/Launch readiness/.test(launchCutoverRehearsal) ||
   !/releaseBlocked/.test(launchCutoverRehearsal) ||
   !/nextOperatorCommand/.test(launchCutoverRehearsal) ||
   !/Ordered Operator Actions/.test(launchCutoverRehearsal) ||
@@ -326,6 +336,10 @@ if (
   !/render-web-settings\.mjs/.test(launchOperatorBrief) ||
   !/render-api-settings\.mjs/.test(launchOperatorBrief) ||
   !/pnpm launch:operator-brief -- --refresh/.test(launchOperatorBrief) ||
+  !/goalState/.test(launchOperatorBrief) ||
+  !/launchState/.test(launchOperatorBrief) ||
+  !/Active goal/.test(launchOperatorBrief) ||
+  !/Launch readiness/.test(launchOperatorBrief) ||
   !/오래된 Git SHA나 blocker 상태를 출시 판단 증거로 쓰지 않는다/.test(launchOperatorBrief) ||
   !/Header application mode/.test(launchOperatorBrief) ||
   !/Static Web에는 DB\/Redis/.test(launchOperatorBrief) ||

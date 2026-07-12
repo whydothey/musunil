@@ -65,8 +65,23 @@ function parseReport(source, refreshMetadata = { attempted: false }) {
   const failed = checks.filter((item) => item.result === "fail");
   const skipped = checks.filter((item) => item.result === "skip");
   const ok = checks.filter((item) => item.result === "ok");
+  const releaseBlocked = refreshFailed || freshness.stale || status !== "S+ Guard" || failed.length > 0 || skipped.length > 0 || actions.length > 0;
+  const blockerStage = determineBlockerStage({
+    refreshFailed,
+    freshness,
+    status,
+    failed,
+    skipped,
+    actions,
+    releaseBlocked
+  });
   return {
     checked: "launch_next_actions",
+    goalState: "active",
+    goalNote: "Codex active goal continues until final launch evidence passes; this helper tracks deploy readiness only.",
+    launchState: releaseBlocked ? "blocked" : "ready_for_final_gate",
+    blockerStage,
+    nextOperatorCommand: nextCommandForStage(blockerStage, actions),
     lastChecked,
     reportAgeMinutes: freshness.ageMinutes,
     staleAfterMinutes: freshness.staleAfterMinutes,
@@ -85,7 +100,7 @@ function parseReport(source, refreshMetadata = { attempted: false }) {
         }
       : { attempted: false },
     status,
-    releaseBlocked: refreshFailed || freshness.stale || status !== "S+ Guard" || failed.length > 0 || skipped.length > 0 || actions.length > 0,
+    releaseBlocked,
     passCount: ok.length,
     failCount: failed.length,
     skipCount: skipped.length,
@@ -109,6 +124,38 @@ function parseReport(source, refreshMetadata = { attempted: false }) {
       "pnpm launch:final-gate"
     ]
   };
+}
+
+function determineBlockerStage({ refreshFailed, freshness, status, failed, skipped, actions, releaseBlocked }) {
+  if (refreshFailed) return "refresh_live_evidence_failed";
+  if (freshness.stale) return "refresh_live_evidence";
+  const actionIds = new Set(actions.map((action) => action.id));
+  if (actionIds.has("connect_api_endpoint") || actionIds.has("connect_api_dns")) return "connect_api_endpoint";
+  if (actionIds.has("apply_static_headers")) return "apply_static_headers";
+  if (actionIds.has("publish_build_metadata")) return "publish_build_metadata";
+  if (actionIds.has("stop_live_visual_surface_regression")) return "restore_live_issue_sync";
+  if (actionIds.has("restore_issue_first_api_payload") || actionIds.has("restore_issue_first_live_data")) return "restore_issue_first_data";
+  if (actionIds.has("fix_api_readiness")) return "fix_api_readiness";
+  if (skipped.length > 0) return "clear_skipped_checks";
+  if (failed.length > 0) return failed[0].id || "clear_failed_checks";
+  if (status !== "S+ Guard") return "service_watch_not_green";
+  if (releaseBlocked) return "clear_remaining_blockers";
+  return "ready_for_final_gate";
+}
+
+function nextCommandForStage(stage, actions) {
+  if (stage === "refresh_live_evidence" || stage === "refresh_live_evidence_failed") return "pnpm launch:blockers -- --refresh";
+  if (stage === "connect_api_endpoint") return "pnpm render:api-settings && pnpm cloudflare:dns && pnpm cloudflare:check";
+  if (stage === "apply_static_headers") {
+    return "pnpm render:web-settings && pnpm cloudflare:headers && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy";
+  }
+  if (stage === "publish_build_metadata") {
+    return "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy";
+  }
+  if (stage === "restore_live_issue_sync" || stage === "restore_issue_first_data" || stage === "fix_api_readiness") return "pnpm launch:final-gate";
+  if (actions[0]?.verify) return actions[0].verify;
+  if (stage === "ready_for_final_gate") return "pnpm launch:final-gate";
+  return "pnpm launch:blockers -- --refresh";
 }
 
 function parseTable(source, firstHeader, nextHeading) {
@@ -160,8 +207,13 @@ function printMarkdown(summary) {
   } else {
     console.log(`Report freshness: unknown (run pnpm launch:blockers -- --refresh)`);
   }
-  console.log(`Status: ${summary.status}`);
+  console.log(`Active goal: ${summary.goalState}`);
+  console.log(`Launch readiness: ${summary.launchState}`);
+  console.log(`Current stage: ${summary.blockerStage}`);
+  console.log(`Service watch status: ${summary.status}`);
   console.log(`Checks: ${summary.passCount} ok, ${summary.failCount} fail, ${summary.skipCount} skip`);
+  console.log("");
+  console.log(`Next command: \`${summary.nextOperatorCommand}\``);
   console.log("");
   if (summary.stale) {
     console.log("> This blocker summary is based on stale live evidence. Run `pnpm launch:blockers -- --refresh` before making a launch decision.");
