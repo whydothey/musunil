@@ -9,6 +9,7 @@ const cwd = resolve(import.meta.dirname, "..");
 const failures = [];
 const scenarios = [];
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
+const productionFallbackMode = args.includes("--production-fallback") || process.env.MUSUNIL_VISUAL_PRODUCTION_FALLBACK === "1";
 let server;
 let chrome;
 
@@ -27,10 +28,11 @@ async function main() {
   if (!appUrl) {
     const webPort = await freePort();
     const deadApiPort = await freePort();
+    const apiBaseUrl = productionFallbackMode ? "https://api.musunil.com" : `http://localhost:${deadApiPort}`;
     const env = {
       ...process.env,
       PORT: String(webPort),
-      MUSUNIL_WEB_API_BASE_URL: `http://localhost:${deadApiPort}`
+      MUSUNIL_WEB_API_BASE_URL: apiBaseUrl
     };
 
     run("node", ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", "scripts/write-web-config.mjs", "--static"], env);
@@ -99,8 +101,9 @@ async function main() {
   const payload = {
     checked: "commercial_visual_surface",
     ok: failures.length === 0,
-    mode: visualBaseUrl ? "live_url" : "local_static",
+    mode: visualBaseUrl ? "live_url" : productionFallbackMode ? "local_static_production_fallback" : "local_static",
     baseUrl: appUrl,
+    productionFallbackMode,
     serviceStates,
     serviceBannerVisibleCount: scenarios.filter((item) => item.detail?.serviceBannerVisible).length,
     scenarios,
@@ -157,6 +160,9 @@ async function runViewport(client, viewport, url) {
     () => assert(home.storyCount >= 3, `expected at least 3 issue story rings, got ${home.storyCount}`),
     () => assert(home.issueCount >= 3, `expected at least 3 issue cards, got ${home.issueCount}`),
     () => assert(home.firstIssueTitle.length >= 6, "first issue title is missing"),
+    () => assert(!productionFallbackMode || home.serviceSyncState === "delayed", `production fallback visual smoke must exercise delayed API sync, got ${home.serviceSyncState}`),
+    () => assert(!productionFallbackMode || home.firstIssueTitle === "정보통신망법 개정 관련 집회", `production fallback first issue changed: ${home.firstIssueTitle}`),
+    () => assert(!productionFallbackMode || !home.issueEmptyStateVisible, "production fallback must render topic issues instead of the empty state"),
     () => assert(!home.sourceBundleFirst, `first issue is a public source bundle, not a topic issue: ${home.firstIssueTitle}`),
     () => assert(/일시/.test(home.firstIssueDeck) && /자료 기준/.test(home.firstIssueDeck), `first issue where/time/source line missing: ${home.firstIssueDeck}`),
     () => assert(/위치/.test(home.firstIssueSummary) && /현장/.test(home.firstIssueSummary) && /공식자료/.test(home.firstIssueSummary) && /현장영상/.test(home.firstIssueSummary) && /반론\/정정/.test(home.firstIssueSummary), `first issue evidence line missing fixed summary units: ${home.firstIssueSummary}`),

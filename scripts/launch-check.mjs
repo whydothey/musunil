@@ -511,12 +511,15 @@ if (
 }
 if (
   !/"check:visual-surface"/.test(packageJson) ||
+  !/"check:visual-surface:production-fallback"/.test(packageJson) ||
   !/"check:visual-surface:live"/.test(packageJson) ||
   !/ci-visual-surface-smoke\.mjs/.test(packageJson) ||
+  !/--production-fallback/.test(packageJson) ||
   !/--base-url https:\/\/musunil\.com/.test(packageJson) ||
-  !/pnpm check:visual-surface/.test(JSON.parse(packageJson).scripts["check:release"] ?? "")
+  !/pnpm check:visual-surface/.test(JSON.parse(packageJson).scripts["check:release"] ?? "") ||
+  !/pnpm check:visual-surface:production-fallback/.test(JSON.parse(packageJson).scripts["check:release"] ?? "")
 ) {
-  failures.push("Commercial visual surface smoke must be wired into release checks and have a live URL verification command");
+  failures.push("Commercial visual surface smoke must be wired into release checks and have production fallback and live URL verification commands");
 }
 if (
   !/mobile_390/.test(visualSurfaceSmoke) ||
@@ -525,6 +528,9 @@ if (
   !/desktop_1440/.test(visualSurfaceSmoke) ||
   !/visualBaseUrlFromArgs/.test(visualSurfaceSmoke) ||
   !/MUSUNIL_VISUAL_BASE_URL/.test(visualSurfaceSmoke) ||
+  !/productionFallbackMode/.test(visualSurfaceSmoke) ||
+  !/local_static_production_fallback/.test(visualSurfaceSmoke) ||
+  !/정보통신망법 개정 관련 집회/.test(visualSurfaceSmoke) ||
   !/dashboardVisible/.test(visualSurfaceSmoke) ||
   !/navOverlap/.test(visualSurfaceSmoke) ||
   !/mapSheetHeight/.test(visualSurfaceSmoke) ||
