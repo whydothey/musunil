@@ -118,6 +118,16 @@ async function checkWeb(port) {
     assert(index.includes(`id: "${id}"`), `official public-source fallback issue missing: ${id}`);
     assert(index.includes(title), `official public-source fallback issue title missing: ${title}`);
   }
+  for (const [id, title] of [
+    ["issue_seed_network_law", "정보통신망법 개정 관련 집회"],
+    ["issue_seed_impeachment", "대통령 탄핵 관련 집회"],
+    ["issue_seed_election_process", "선거 절차 관련 집회"]
+  ]) {
+    assert(index.includes(`id: "${id}"`), `production topic fallback issue missing: ${id}`);
+    assert(index.includes(title), `production topic fallback title missing: ${title}`);
+  }
+  assert(index.includes("occ_seed_network_law_seoul"), "production fallback occurrence missing");
+  assert(index.includes('chips: ["위치 확인 중", "근거 확인 중"]'), "production fallback must not invent precise public locations");
   assert(index.includes("issue-card-actions"), "issue card action hub missing");
   assert(index.includes('data-issue-empty-state="sync-waiting"'), "home issue empty sync state missing");
   assert(index.includes("새 이슈를 확인 중입니다"), "home issue empty state must use user-facing status copy");
