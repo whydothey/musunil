@@ -251,7 +251,13 @@ if (!/"vary": "Origin"/.test(apiServer)) failures.push("API Vary: Origin header 
 if (!/x-musunil-user-id/.test(apiServer)) failures.push("API CORS user scope header is missing");
 if (!/x-musunil-user-token/.test(apiServer)) failures.push("API CORS user token header is missing");
 if (!/userTokenSecret/.test(apiServer)) failures.push("API user token secret runtime wiring is missing");
-if (!/includeMockData/.test(apiServer) || !/stripPreviewData/.test(apiServer)) failures.push("production mock-data strip wiring is missing");
+if (
+  !/includeMockData/.test(apiServer) ||
+  !/stripPreviewData/.test(apiServer) ||
+  !/id\.includes\("_sample"\)/.test(apiApp)
+) {
+  failures.push("production mock-data strip wiring is missing");
+}
 if (!/sendPublicRedactedMedia/.test(apiServer) || !/publicRedactedMediaRoot/.test(apiServer) || !/publicRedactedMediaPrefix/.test(apiServer)) {
   failures.push("API public redacted media route is missing");
 }
@@ -397,7 +403,10 @@ if (
   !/\/comments/.test(postDeploySmoke) ||
   !/\/donations/.test(postDeploySmoke) ||
   !/hazard_area/.test(postDeploySmoke) ||
-  !/service_disruption/.test(postDeploySmoke)
+  !/service_disruption/.test(postDeploySmoke) ||
+  !/"preview-only"/.test(postDeploySmoke) ||
+  !/"mock"/.test(postDeploySmoke) ||
+  !/"_sample"/.test(postDeploySmoke)
 ) {
   failures.push("post-deploy smoke command must verify deployed Web/API alignment, strict Web headers, readiness, coverage, laws, and admin auth boundary");
 }
@@ -1262,6 +1271,9 @@ if (
   !/route_checkpoint/.test(serviceWatch) ||
   !/hazard_area/.test(serviceWatch) ||
   !/service_disruption/.test(serviceWatch) ||
+  !/"preview-only"/.test(serviceWatch) ||
+  !/"mock"/.test(serviceWatch) ||
+  !/"_sample"/.test(serviceWatch) ||
   !/web_visual_surface/.test(serviceWatch) ||
   !/publicPayloadRoutes/.test(serviceWatch) ||
   !/assertHomeIssueFirstPayload/.test(serviceWatch) ||
@@ -1608,7 +1620,12 @@ if (!/isLocalPage/.test(web) || !/storedApi = isLocalPage/.test(web) || !/apiPar
 if (!/MUSUNIL_WEB_API_BASE_URL/.test(webServer) || !/allowLocal:\s*true/.test(webServer) || !/pathname === "\/config\.js"/.test(webServer)) {
   failures.push("serve-web must support safe runtime web config override for local smoke");
 }
-if (!/isPreviewApiBase/.test(web) || !/fallback\.cards = fallback\.cards\.filter\(\(card\) => !isPreviewCard/.test(web) || !/isPreviewIssue/.test(web)) {
+if (
+  !/isPreviewApiBase/.test(web) ||
+  !/fallback\.cards = fallback\.cards\.filter\(\(card\) => !isPreviewCard/.test(web) ||
+  !/isPreviewIssue/.test(web) ||
+  !/id\.includes\("_sample"\)/.test(web)
+) {
   failures.push("web production fallback must hide preview/mock data");
 }
 if (!/data-time-filter="now"/.test(web) || !/function matchesCardFilters/.test(web) || !/function cardOrderScore/.test(web)) {

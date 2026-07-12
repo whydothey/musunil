@@ -25,14 +25,15 @@ const app = createApp(store, {
 });
 const productionSeed = createSeedStore({ includeMockData: false });
 assert.equal(productionSeed.occurrences.some((item) => item.id === "occ_daegu_0709_public"), true);
-assert.equal(productionSeed.occurrences.some((item) => item.id === "occ_1" || item.id.includes("_mock")), false);
-assert.equal(productionSeed.claims.some((item) => item.id.includes("_mock") || item.targetId === "occ_1"), false);
+assert.equal(productionSeed.occurrences.some((item) => item.id === "occ_1" || item.id.includes("_mock") || item.id.includes("_sample")), false);
+assert.equal(productionSeed.claims.some((item) => item.id.includes("_mock") || item.id.includes("_sample") || item.targetId === "occ_1"), false);
 assert.equal(productionSeed.areaClusters.some((item) => item.id === "area_busan" || item.id === "area_seoul"), false);
 assert.equal(productionSeed.lawItems.length, 0);
 assert.equal(productionSeed.issueLawLinks.length, 0);
 const productionSeedText = JSON.stringify(productionSeed);
 for (const previewToken of [
   "_mock",
+  "_sample",
   "preview-",
   "law_info_network_amendment",
   "law_national_assembly_impeachment",
@@ -153,7 +154,7 @@ const missingPublicPosterEvidence = missingPublicPosterStore.evidence.find((item
 if (missingPublicPosterEvidence) missingPublicPosterEvidence.publicPosterKey = undefined;
 const missingPublicPosterClaims = await createApp(missingPublicPosterStore).handle({ method: "GET", path: "/targets/occurrence/occ_1/live-claims" });
 assert.equal((missingPublicPosterClaims.body as { liveClaims: unknown[] }).liveClaims.length, 0);
-for (const evidenceId of ["ev_occ_live_1", "ev_presence_1", "ev_daejeon_live_mock"]) {
+for (const evidenceId of ["ev_occ_live_1", "ev_presence_1", "ev_sample_daejeon_live"]) {
   const evidence = missingPublicRedactionStore.evidence.find((item) => item.id === evidenceId);
   if (evidence) evidence.publicStorageKey = undefined;
 }
@@ -167,7 +168,7 @@ assert.equal(
 assert.equal(JSON.stringify(missingPublishableIssue.body).includes("공개 Claim"), false);
 assert.equal(JSON.stringify(missingPublishableIssue.body).includes("현장 Claim"), false);
 const missingPublishablePosterStore = createSeedStore();
-for (const evidenceId of ["ev_occ_live_1", "ev_presence_1", "ev_daejeon_live_mock"]) {
+for (const evidenceId of ["ev_occ_live_1", "ev_presence_1", "ev_sample_daejeon_live"]) {
   const evidence = missingPublishablePosterStore.evidence.find((item) => item.id === evidenceId);
   if (evidence) evidence.publicPosterKey = undefined;
 }
@@ -1271,7 +1272,7 @@ assert.equal(JSON.stringify(home.body).includes("서울 시청·종각 일대 �
 assert.equal(JSON.stringify(home.body).includes("\"title\":\"부산 서면-해운대 행진 가능성\""), false);
 assert.equal(JSON.stringify(home.body).includes("집회·시위 현장 요약"), false);
 assert.equal(JSON.stringify(home.body).includes("\"title\":\"이동·교통 영향\""), false);
-assert.equal(JSON.stringify(home.body).includes("issue_mock_mobility"), true);
+assert.equal(JSON.stringify(home.body).includes("issue_sample_impeachment_march"), true);
 assert.equal(JSON.stringify(home.body).includes("위치 인증 제보 있음"), true);
 assert.equal(JSON.stringify(home.body).includes("부산 도심 행진 가능성"), true);
 assert.equal(JSON.stringify(home.body).includes("인파 밀집 신호"), false);

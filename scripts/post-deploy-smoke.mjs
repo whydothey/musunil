@@ -285,7 +285,8 @@ function assertPublicPayloadSafe(path, body) {
     "hazard_area",
     "service_disruption",
     "preview-only",
-    "mock"
+    "mock",
+    "_sample"
   ]) {
     assert(!text.includes(token), `${path} leaked forbidden token: ${token}`);
   }

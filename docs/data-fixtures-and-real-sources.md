@@ -32,7 +32,7 @@
 - 대전: 장기 현장
 - 법 탭: 정보통신망법 개정안, 국회법 탄핵 절차, 공직선거법 관련 프리뷰 법령/의안 메타데이터
 
-이 데이터는 UI/UX 검증용이다. 운영에서는 `preview.use_mock_data: false`와 production runtime gate로 비활성화되어야 하며, 실제 서비스 응답에 섞이면 안 된다. 모든 항목은 Event가 아니라 Claim/Evidence로 붙는다. 공개 지도에는 자료 위치 핀과 현장 인증 영역만 표시한다. 사용자 원문은 공개 응답에 노출하지 않는다.
+이 데이터는 UI/UX 검증용 sample fixture다. 운영에서는 `preview.use_mock_data: false`와 production runtime gate로 비활성화되어야 하며, 실제 서비스 응답에 섞이면 안 된다. production 공개 응답에 `_mock`, `_sample`, `preview-only` 경계가 보이면 release/service-watch 실패로 본다. 모든 항목은 Event가 아니라 Claim/Evidence로 붙는다. 공개 지도에는 자료 위치 핀과 현장 인증 영역만 표시한다. 사용자 원문은 공개 응답에 노출하지 않는다.
 
 production seed에서는 법 탭 프리뷰 항목도 제거된다. 실제 법령·의안 ingest 전에는 `/laws`가 빈 목록을 반환해야 하며, preview 법령을 운영 화면에 보여주지 않는다.
 

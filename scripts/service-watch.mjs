@@ -80,7 +80,10 @@ const forbiddenPublicPayloadTokens = [
   "route_segment",
   "route_checkpoint",
   "hazard_area",
-  "service_disruption"
+  "service_disruption",
+  "preview-only",
+  "mock",
+  "_sample"
 ];
 const webHeaderContract = [
   {

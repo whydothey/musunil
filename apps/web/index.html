@@ -6429,7 +6429,7 @@
 	            chips: ["관련 현장 2건", "1개 지역", "출처 확인 중"]
           },
           {
-            id: "issue_mock_mobility",
+            id: "issue_sample_impeachment_march",
             targetType: "issue",
             title: "대통령 탄핵 요구 행진",
             lifecycleState: "UNKNOWN",
@@ -6608,8 +6608,8 @@
             proof: 8
           },
 	          {
-	            id: "occ_busan_march_mock",
-	            issueId: "issue_mock_mobility",
+	            id: "occ_sample_busan_march",
+	            issueId: "issue_sample_impeachment_march",
 	            targetType: "occurrence",
 	            title: "부산 도심 행진 가능성",
 	            regionLabel: "부산 서면 일대",
@@ -6701,11 +6701,11 @@
       let reportLocateInFlight = false;
 
       function isPreviewCard(id) {
-        return id.includes("_mock") || ["occ_1", "presence_1"].includes(id);
+        return id.includes("_mock") || id.includes("_sample") || ["occ_1", "presence_1"].includes(id);
       }
 
       function isPreviewIssue(id) {
-        return id.includes("_mock") || id === "issue_1";
+        return id.includes("_mock") || id.includes("_sample") || id === "issue_1";
       }
 
       function isPreviewLaw(id) {

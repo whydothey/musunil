@@ -248,7 +248,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       lastUpdatedAt: now
     },
     {
-      id: "issue_mock_mobility",
+      id: "issue_sample_impeachment_march",
       title: "대통령 탄핵 요구 행진",
       normalizedTopicKey: "presidential-impeachment-demand",
       topicTags: ["대통령 탄핵", "행진", "집회"],
@@ -297,7 +297,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
   );
   store.issueLawLinks.push(
     { issueId: "issue_1", lawItemId: "law_info_network_amendment", matchBasis: "keyword", confidence: "high", claimIds: [] },
-    { issueId: "issue_mock_mobility", lawItemId: "law_national_assembly_impeachment", matchBasis: "keyword", confidence: "high", claimIds: [] }
+    { issueId: "issue_sample_impeachment_march", lawItemId: "law_national_assembly_impeachment", matchBasis: "keyword", confidence: "high", claimIds: [] }
   );
   store.occurrences.push({
     id: "occ_police_national_stats_2023",
@@ -383,8 +383,8 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     claimIds: [],
     evidenceIds: []
   }, {
-    id: "occ_busan_march_mock",
-    issueId: "issue_mock_mobility",
+    id: "occ_sample_busan_march",
+    issueId: "issue_sample_impeachment_march",
     type: "march",
     areaClusterId: "area_busan",
     regionLabel: "부산",
@@ -406,7 +406,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     claimIds: [],
     evidenceIds: []
   }, {
-    id: "presence_daejeon_mock",
+    id: "presence_sample_daejeon",
     issueId: "issue_1",
     areaClusterId: "area_daejeon",
     regionLabel: "대전",
@@ -433,10 +433,10 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     { targetType: "continuous_presence", targetId: "presence_1" }
   );
   findAreaCluster(store, "area_busan")?.targetRefs.push(
-    { targetType: "occurrence", targetId: "occ_busan_march_mock" }
+    { targetType: "occurrence", targetId: "occ_sample_busan_march" }
   );
   findAreaCluster(store, "area_daejeon")?.targetRefs.push(
-    { targetType: "continuous_presence", targetId: "presence_daejeon_mock" }
+    { targetType: "continuous_presence", targetId: "presence_sample_daejeon" }
   );
   store.evidence.push(
     {
@@ -536,13 +536,13 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       hash: "preview-live-presence-1"
     },
     {
-      id: "ev_busan_media_mock",
+      id: "ev_sample_busan_media",
       evidenceType: "media_link",
       uploadedAt: new Date("2026-07-07T08:35:00.000Z"),
       proofOfPresenceStatus: "material_only"
     },
     {
-      id: "ev_busan_live_mock",
+      id: "ev_sample_busan_live",
       evidenceType: "live_media",
       uploadedAt: new Date("2026-07-07T08:50:00.000Z"),
       capturedAt: new Date("2026-07-07T08:48:00.000Z"),
@@ -558,7 +558,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       deviceIntegrityCheckedAt: new Date("2026-07-07T08:51:00.000Z"),
       deviceIntegrityProofHash: "sha256-previewdeviceintegritybusan",
       proofOfPresenceStatus: "pass",
-      storageKey: "private/live/2026/ev_busan_live_mock/original.mp4",
+      storageKey: "private/live/2026/ev_sample_busan_live/original.mp4",
       publicStorageKey: "/media/redacted/preview-busan-live.webm",
       publicPosterKey: "/media/redacted/preview-busan-live-poster.png",
       redactionStatus: "completed",
@@ -572,7 +572,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       hash: "preview-live-busan"
     },
     {
-      id: "ev_daejeon_live_mock",
+      id: "ev_sample_daejeon_live",
       evidenceType: "live_media",
       uploadedAt: new Date("2026-07-07T08:43:00.000Z"),
       capturedAt: new Date("2026-07-07T08:40:00.000Z"),
@@ -588,7 +588,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       deviceIntegrityCheckedAt: new Date("2026-07-07T08:44:00.000Z"),
       deviceIntegrityProofHash: "sha256-previewdeviceintegritydaejeon",
       proofOfPresenceStatus: "pass",
-      storageKey: "private/live/2026/ev_daejeon_live_mock/original.mp4",
+      storageKey: "private/live/2026/ev_sample_daejeon_live/original.mp4",
       publicStorageKey: "/media/redacted/preview-daejeon-live.webm",
       publicPosterKey: "/media/redacted/preview-daejeon-live-poster.png",
       redactionStatus: "completed",
@@ -716,9 +716,9 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       disputedByClaimIds: []
     },
     {
-      id: "claim_busan_march_media_mock",
+      id: "claim_sample_busan_march_media",
       targetType: "occurrence",
-      targetId: "occ_busan_march_mock",
+      targetId: "occ_sample_busan_march",
       sourceProvenance: "media_report",
       claimantLabel: "지역 보도",
       statement: "",
@@ -726,13 +726,13 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       evidenceStrength: "single_source",
       riskLevel: "misleading_possible",
       createdAt: new Date("2026-07-07T08:35:00.000Z"),
-      evidenceIds: ["ev_busan_media_mock"],
+      evidenceIds: ["ev_sample_busan_media"],
       disputedByClaimIds: []
     },
     {
-      id: "claim_busan_march_live_mock",
+      id: "claim_sample_busan_march_live",
       targetType: "occurrence",
-      targetId: "occ_busan_march_mock",
+      targetId: "occ_sample_busan_march",
       sourceProvenance: "verified_citizen_report",
       claimantLabel: "위치 인증 제보",
       statement: "",
@@ -740,13 +740,13 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       evidenceStrength: "media_time_location_crosscheck",
       riskLevel: "rights_risk",
       createdAt: new Date("2026-07-07T08:50:00.000Z"),
-      evidenceIds: ["ev_busan_live_mock"],
+      evidenceIds: ["ev_sample_busan_live"],
       disputedByClaimIds: []
     },
     {
-      id: "claim_daejeon_presence_mock",
+      id: "claim_sample_daejeon_presence",
       targetType: "continuous_presence",
-      targetId: "presence_daejeon_mock",
+      targetId: "presence_sample_daejeon",
       sourceProvenance: "verified_citizen_report",
       claimantLabel: "위치 인증 제보",
       statement: "",
@@ -754,7 +754,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       evidenceStrength: "media_time_location_crosscheck",
       riskLevel: "rights_risk",
       createdAt: new Date("2026-07-07T08:43:00.000Z"),
-      evidenceIds: ["ev_daejeon_live_mock"],
+      evidenceIds: ["ev_sample_daejeon_live"],
       disputedByClaimIds: []
     }
   );
@@ -772,12 +772,12 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
   findOccurrence(store, "occ_daegu_0704_0705_public")?.evidenceIds.push("ev_daegu_weekend_public");
   findOccurrence(store, "occ_1")?.claimIds.push("claim_occ_live_1");
   findOccurrence(store, "occ_1")?.evidenceIds.push("ev_occ_live_1");
-  findOccurrence(store, "occ_busan_march_mock")?.claimIds.push("claim_busan_march_media_mock", "claim_busan_march_live_mock");
-  findOccurrence(store, "occ_busan_march_mock")?.evidenceIds.push("ev_busan_media_mock", "ev_busan_live_mock");
+  findOccurrence(store, "occ_sample_busan_march")?.claimIds.push("claim_sample_busan_march_media", "claim_sample_busan_march_live");
+  findOccurrence(store, "occ_sample_busan_march")?.evidenceIds.push("ev_sample_busan_media", "ev_sample_busan_live");
   store.continuousPresences[0]?.claimIds.push("claim_presence_1");
   store.continuousPresences[0]?.evidenceIds.push("ev_presence_1");
-  store.continuousPresences[1]?.claimIds.push("claim_daejeon_presence_mock");
-  store.continuousPresences[1]?.evidenceIds.push("ev_daejeon_live_mock");
+  store.continuousPresences[1]?.claimIds.push("claim_sample_daejeon_presence");
+  store.continuousPresences[1]?.evidenceIds.push("ev_sample_daejeon_live");
   store.crowdEstimates.push({
     id: "estimate_issue_1_preview",
     targetType: "issue",
@@ -829,6 +829,7 @@ function cleanRefs(item: { claimIds: string[]; evidenceIds: string[] }, claimIds
 function isPreviewSeedId(id: string): boolean {
   return (
     id.includes("_mock") ||
+    id.includes("_sample") ||
     [
       "area_seoul",
       "area_busan",
