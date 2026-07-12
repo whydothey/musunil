@@ -166,6 +166,7 @@ if (
   !/MUSUNIL_EXPECTED_COMMIT_SHA/.test(postDeployWorkflow) ||
   !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(postDeployWorkflow) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET=\$render_api_dns_target/.test(postDeployWorkflow) ||
+  !/pnpm check:web-render-build-command/.test(postDeployWorkflow) ||
   !/pnpm check:web-deploy/.test(postDeployWorkflow) ||
   !/pnpm launch:final-gate/.test(postDeployWorkflow) ||
   /on:\s*\n\s+push:/.test(postDeployWorkflow)
@@ -179,18 +180,21 @@ if (
   !/workflow\/branch\/commit/.test(readme) ||
   !/RENDER_API_TOKEN/.test(readme) ||
   !/MUSUNIL_INTERNAL_API_KEY/.test(readme) ||
+  !/check:web-render-build-command/.test(readme) ||
   !/render_api_dns_target/.test(launchCutoverRunbook) ||
   !/github_environment/.test(launchCutoverRunbook) ||
   !/pnpm launch:post-deploy-workflow/.test(launchCutoverRunbook) ||
   !/workflow\/branch\/commit/.test(launchCutoverRunbook) ||
   !/RENDER_API_TOKEN/.test(launchCutoverRunbook) ||
   !/MUSUNIL_INTERNAL_API_KEY/.test(launchCutoverRunbook) ||
+  !/check:web-render-build-command/.test(launchCutoverRunbook) ||
   !/render_api_dns_target/.test(userFacingDocs) ||
   !/github_environment/.test(userFacingDocs) ||
   !/pnpm launch:post-deploy-workflow/.test(userFacingDocs) ||
   !/workflow\/branch\/commit/.test(userFacingDocs) ||
   !/RENDER_API_TOKEN/.test(userFacingDocs) ||
   !/MUSUNIL_INTERNAL_API_KEY/.test(userFacingDocs) ||
+  !/check:web-render-build-command/.test(userFacingDocs) ||
   !/render_api_dns_target/.test(launchCutoverPlan) ||
   !/launch:post-deploy-workflow -- --mode=final-gate/.test(launchCutoverPlan)
 ) {

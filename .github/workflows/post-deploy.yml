@@ -56,6 +56,8 @@ jobs:
           package-manager-cache: false
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
+      - name: Verify Render Web build contract
+        run: pnpm check:web-render-build-command
       - name: Prepare verification env
         env:
           INPUT_WEB_BASE_URL: ${{ inputs.web_base_url }}

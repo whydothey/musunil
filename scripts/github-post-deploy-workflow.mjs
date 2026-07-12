@@ -97,6 +97,7 @@ function buildPlan(options, env) {
       "For final-gate, keep github_environment=production unless you intentionally store secrets at repository level only.",
       "If GitHub cannot read RENDER_API_TOKEN or MUSUNIL_RENDER_API_TOKEN, fill render_api_dns_target with the Render api.musunil.com DNS target hostname.",
       "Set expected_commit_sha to the Git SHA deployed by Render, not an old handoff document value.",
+      "The workflow runs pnpm check:web-render-build-command before live verification, so the deployed commit's Render Static build contract is checked remotely as well.",
       "The watch command resolves the workflow_dispatch run id by workflow, branch, and expected_commit_sha before watching it."
     ]
   };
