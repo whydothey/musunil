@@ -87,7 +87,7 @@ function parseReport(source, refreshMetadata = { attempted: false }) {
     headerApplyInputsReady: launchApplyInputsReady(headerApplyPlan),
     requiredLaunchInputsMissing: requiredLaunchInputsMissing(launchApplyPlan),
     requiredHeaderInputsMissing: requiredLaunchInputsMissing(headerApplyPlan),
-    nextOperatorPrerequisite: prerequisiteForStage(blockerStage, launchApplyPlan),
+    nextOperatorPrerequisite: prerequisiteForStage(blockerStage, actions, launchApplyPlan, headerApplyPlan),
     nextOperatorCommand: nextCommandForStage(blockerStage, actions, launchApplyPlan, headerApplyPlan),
     splitApplyPaths: splitApplyPaths({ failed, actions, launchApplyPlan, headerApplyPlan }),
     lastChecked,
@@ -176,6 +176,7 @@ function nextCommandForStage(stage, actions, launchApplyPlan, headerApplyPlan) {
     return "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy";
   }
   if (stage === "connect_api_endpoint") {
+    if (!launchApplyInputsReady(launchApplyPlan) && canApplyHeaderOnly(actions, headerApplyPlan)) return "pnpm launch:apply -- --apply --cloudflare-headers-only";
     if (!launchApplyInputsReady(launchApplyPlan)) return "pnpm launch:apply";
     return "pnpm launch:apply -- --apply && pnpm launch:final-gate";
   }
@@ -225,11 +226,14 @@ function splitApplyPaths({ failed, actions, launchApplyPlan, headerApplyPlan }) 
   return paths;
 }
 
-function prerequisiteForStage(stage, launchApplyPlan = null) {
+function prerequisiteForStage(stage, actions, launchApplyPlan = null, headerApplyPlan = null) {
   if (stage === "deploy_latest_static") {
     return "Render musunil-web가 현재 main 커밋을 배포했는지 확인한다. 아직 이전 정적 manifest가 보이면 Render musunil-web에서 Clear build cache & deploy를 실행하고 배포 완료 후 검증한다.";
   }
   if (stage === "connect_api_endpoint") {
+    if (!launchApplyInputsReady(launchApplyPlan) && canApplyHeaderOnly(actions, headerApplyPlan)) {
+      return "전체 API DNS 적용 입력은 아직 부족하지만 Web header-only 경로는 준비됐다. 먼저 Web 보안 헤더 blocker를 줄인 뒤 `pnpm launch:blockers -- --refresh`로 남은 API DNS/live sync blocker를 다시 확인한다.";
+    }
     if (!launchApplyInputsReady(launchApplyPlan)) {
       return "먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.";
     }
@@ -252,6 +256,10 @@ function prerequisiteForStage(stage, launchApplyPlan = null) {
 
 function launchApplyInputsReady(plan) {
   return !requiredLaunchInputsMissing(plan);
+}
+
+function canApplyHeaderOnly(actions, headerApplyPlan) {
+  return actions.some((action) => action.id === "apply_static_headers") && launchApplyInputsReady(headerApplyPlan);
 }
 
 function requiredLaunchInputsMissing(plan) {

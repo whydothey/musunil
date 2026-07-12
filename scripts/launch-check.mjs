@@ -409,6 +409,9 @@ if (
   !/nextOperatorPrerequisite/.test(launchNextActions) ||
   !/Before next command/.test(launchNextActions) ||
   !/필수 입력이 비어 있으면/.test(launchNextActions) ||
+  !/canApplyHeaderOnly/.test(launchNextActions) ||
+  !/전체 API DNS 적용 입력은 아직 부족하지만 Web header-only 경로는 준비됐다/.test(launchNextActions) ||
+  !/pnpm launch:apply -- --apply --cloudflare-headers-only/.test(launchNextActions) ||
   !/deploy_latest_static/.test(launchNextActions) ||
   !/actionIds\.has\("deploy_latest_static"\)[\s\S]*return "deploy_latest_static"/.test(launchNextActions) ||
   !/Render onrender\.com target/.test(launchNextActions) ||
