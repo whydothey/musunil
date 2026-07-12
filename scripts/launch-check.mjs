@@ -669,12 +669,17 @@ if (
   !/upsertResponseHeaderRule/.test(cloudflareApply) ||
   !/http_response_headers_transform/.test(cloudflareApply) ||
   !/musunil_web_security_headers/.test(cloudflareApply) ||
+  !/inspectWebProxyMode/.test(cloudflareApply) ||
+  !/webProxyMode/.test(cloudflareApply) ||
+  !/canApplyHeadersToProxiedWeb/.test(cloudflareApply) ||
+  !/Response Header Transform Rule requires Cloudflare proxied Web responses/.test(cloudflareApply) ||
+  !/MUSUNIL_CLOUDFLARE_WEB_PROXIED=1/.test(cloudflareApply) ||
   !/invalidRenderTargetReason/.test(cloudflareApply) ||
   !/conflicting_record/.test(cloudflareApply) ||
   !/api\.cloudflare\.com\/client\/v4/.test(cloudflareApply) ||
   !/Cloudflare API failed/.test(cloudflareApply)
 ) {
-  failures.push("Cloudflare apply helper must provide dry-run-first DNS and response header automation through the official Cloudflare API");
+  failures.push("Cloudflare apply helper must provide dry-run-first DNS and response header automation through the official Cloudflare API, and must guard header apply behind proxied Web responses");
 }
 if (
   !/cloudflare_dns_records_template/.test(cloudflareDnsTemplate) ||
@@ -715,6 +720,7 @@ if (
   !/Response Header Transform Rule/.test(cloudflareResponseHeadersDoc) ||
   !/Set static/.test(cloudflareResponseHeadersDoc) ||
   !/pnpm cloudflare:apply -- --headers --apply/.test(cloudflareResponseHeadersDoc) ||
+  !/web_proxy_mode\.proxyObserved=true/.test(cloudflareResponseHeadersDoc) ||
   !/http_response_headers_transform/.test(cloudflareResponseHeadersDoc) ||
   !/Cloudflare proxied/.test(cloudflareResponseHeadersDoc) ||
   !/cloudflare_ruleset/.test(cloudflareResponseHeadersTerraform) ||

@@ -13,6 +13,10 @@ const zoneIdInput = process.env.CLOUDFLARE_ZONE_ID || process.env.CF_ZONE_ID || 
 const webTarget = renderTargetInput("MUSUNIL_RENDER_WEB_DNS_TARGET");
 const apiTarget = renderTargetInput("MUSUNIL_RENDER_API_DNS_TARGET");
 const webProxied = /^(1|true|yes)$/i.test(process.env.MUSUNIL_CLOUDFLARE_WEB_PROXIED || "");
+const webBaseUrl = process.env.MUSUNIL_WEB_BASE_URL || "https://musunil.com";
+const webProxyMode = headersRequested && apply
+  ? await inspectWebProxyMode(webBaseUrl)
+  : { checked: false, proxyObserved: false, note: "checked only for --apply --headers" };
 const dnsRecords = buildDnsRecords();
 const responseHeaderRule = buildResponseHeaderRule();
 
@@ -35,6 +39,7 @@ const plan = {
     web: targetInputSummary(webTarget),
     api: targetInputSummary(apiTarget)
   },
+  webProxyMode,
   dnsRecords,
   responseHeaderRule,
   requiredEnv: requiredEnv(),
@@ -42,6 +47,7 @@ const plan = {
     "dry_run is default; pass --apply before any Cloudflare write",
     "api.musunil.com remains DNS only",
     "Web proxied mode is opt-in via MUSUNIL_CLOUDFLARE_WEB_PROXIED=1",
+    "Response Header Transform Rules require an observable proxied Web record or this command must apply a proxied Web DNS record first",
     "Render DNS targets must be hostname-only values"
   ]
 };
@@ -159,7 +165,46 @@ function validateApplyInputs() {
   if (dnsRequested && dnsRecords.length === 0 && !apiTarget.rawConfigured && !webTarget.rawConfigured) {
     failures.push("No DNS records can be applied without hostname-only Render targets");
   }
+  if (headersRequested && !canApplyHeadersToProxiedWeb()) {
+    failures.push("Response Header Transform Rule requires Cloudflare proxied Web responses. Run pnpm cloudflare:check and confirm web_proxy_mode.proxyObserved=true, or apply Web DNS with MUSUNIL_CLOUDFLARE_WEB_PROXIED=1 in the same command.");
+  }
   return failures;
+}
+
+function canApplyHeadersToProxiedWeb() {
+  if (webProxyMode.proxyObserved) return true;
+  return dnsRequested && Boolean(webTarget.value) && webProxied;
+}
+
+async function inspectWebProxyMode(baseUrl) {
+  try {
+    const response = await fetch(`${baseUrl.replace(/\/$/, "")}/`, {
+      method: "GET",
+      signal: AbortSignal.timeout(10_000)
+    });
+    const server = response.headers.get("server") || "";
+    const cfCacheStatus = response.headers.get("cf-cache-status") || "";
+    const cfRay = response.headers.get("cf-ray") || "";
+    const proxyObserved = /cloudflare/i.test(server) || Boolean(cfCacheStatus || cfRay);
+    return {
+      checked: true,
+      proxyObserved,
+      status: response.status,
+      server,
+      cfCacheStatus,
+      cfRayPresent: Boolean(cfRay),
+      note: proxyObserved
+        ? "Cloudflare edge is observable for Web responses; response header transforms can affect this host."
+        : "Cloudflare edge is not observable for Web responses; response header transforms will not affect this host until the Web record is proxied."
+    };
+  } catch (error) {
+    return {
+      checked: true,
+      proxyObserved: false,
+      error: error instanceof Error ? error.message : String(error),
+      note: "Web proxy mode could not be verified before Cloudflare header apply."
+    };
+  }
 }
 
 async function resolveZoneId() {

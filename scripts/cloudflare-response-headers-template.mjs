@@ -88,7 +88,7 @@ function renderMarkdown(value) {
     "",
     "## API Automation",
     "",
-    "`pnpm cloudflare:apply`는 기본적으로 dry-run 계획만 출력한다. Cloudflare API token을 준비한 뒤 `--apply --headers`를 붙였을 때만 `http_response_headers_transform` phase의 zone ruleset을 생성하거나, `musunil_web_security_headers` rule을 갱신한다. 기본 zone은 `musunil.com` 이름으로 조회하며, token이 zone name 조회 권한을 갖지 못한 경우에만 `CLOUDFLARE_ZONE_ID`를 fallback으로 넣는다.",
+    "`pnpm cloudflare:apply`는 기본적으로 dry-run 계획만 출력한다. Cloudflare API token을 준비한 뒤 `--apply --headers`를 붙였을 때만 `http_response_headers_transform` phase의 zone ruleset을 생성하거나, `musunil_web_security_headers` rule을 갱신한다. 실제 적용 전에는 Web 응답에서 Cloudflare edge가 관측되는지 검사하며, `web_proxy_mode.proxyObserved=true`가 아니면 header rule 적용을 중단한다. 기본 zone은 `musunil.com` 이름으로 조회하며, token이 zone name 조회 권한을 갖지 못한 경우에만 `CLOUDFLARE_ZONE_ID`를 fallback으로 넣는다.",
     "",
     "```bash",
     ": \"${CLOUDFLARE_API_TOKEN:?set Cloudflare API token first}\"",
