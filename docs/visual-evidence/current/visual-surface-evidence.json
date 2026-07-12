@@ -2,7 +2,7 @@
   "checked": "commercial_visual_surface",
   "ok": true,
   "mode": "local_static",
-  "baseUrl": "http://localhost:52970/",
+  "baseUrl": "http://localhost:53973/",
   "productionFallbackMode": false,
   "serviceStates": [
     "delayed"

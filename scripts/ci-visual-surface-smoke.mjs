@@ -204,7 +204,7 @@ async function runViewport(client, viewport, url) {
     () => assert(detail.scrollWidth <= viewport.width, `detail overflows horizontally: ${detail.scrollWidth} > ${viewport.width}`),
     () => assert(detail.forbidden.length === 0, `forbidden detail copy: ${detail.forbidden.join(", ")}`),
     () => assert(detail.detailTitle.length >= 6, "detail title is missing"),
-    () => assert(/일시/.test(detail.detailConfirmSummary) && /자료 기준/.test(detail.detailConfirmSummary), `detail summary must separate assembly time and source basis: ${detail.detailConfirmSummary}`),
+    () => assert(!/자료 기준/.test(detail.detailConfirmSummary) && /(기준|일정|\d{1,2}월)/.test(detail.detailConfirmSummary), `detail summary exposes operational time/source copy: ${detail.detailConfirmSummary}`),
     () => assert(detail.detailTabs.join("/") === "개요/근거/영상/흐름/반론", `detail tab labels changed: ${detail.detailTabs.join("/")}`),
     () => assert(detail.detailActions.join("/") === "근거/영상/지도", `detail quick actions changed: ${detail.detailActions.join("/")}`),
     () => assert(!viewport.mobile || !detail.detailSummaryVisible, "mobile detail should not repeat the long summary above the overview tab"),
@@ -238,7 +238,7 @@ async function runViewport(client, viewport, url) {
     () => assert(map.forbidden.length === 0, `forbidden map copy: ${map.forbidden.join(", ")}`),
     () => assert(map.mapRect.height >= (viewport.mobile ? 300 : 360), `map is too short: ${map.mapRect.height}`),
     () => assert(map.mapKeyLabels.join("/") === "자료 위치/인증 범위", `map key changed: ${map.mapKeyLabels.join("/")}`),
-    () => assert(/일시/.test(map.mapSummary) && /자료 기준/.test(map.mapSummary), `map summary must keep issue time/source context: ${map.mapSummary}`),
+    () => assert(!/자료 기준/.test(map.mapSummary) && /(기준|일정|\d{1,2}월)/.test(map.mapSummary), `map summary exposes operational time/source copy: ${map.mapSummary}`),
     () => assert(map.mapKeyHiddenCount === 0, `map key labels are not readable: hidden=${map.mapKeyHiddenCount}`),
     () => assert(map.mapSheetHeight <= (viewport.mobile ? 260 : 220), `map sheet too tall: ${map.mapSheetHeight}`),
     () => assert(!viewport.mobile || !map.navOverlap, "mobile map sheet overlaps bottom navigation")

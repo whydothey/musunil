@@ -326,7 +326,8 @@ async function checkWeb(port) {
   assert(index.includes("issueContextFacts"), "compact issue context facts missing");
   assert(index.includes("return issueConfirmedSummaryLine(issue);"), "issue context should reuse confirmed summary line");
   assert(index.includes("일시 확인 중"), "assembly time summary label missing");
-  assert(index.includes("기준 ${basis}"), "source basis summary label missing");
+  assert(index.includes("${basis} 기준"), "public basis date summary label missing");
+  assert(!index.includes("자료 기준 ${basis}"), "operational source basis summary copy present");
   assert(index.includes("위치 ${locationCount}곳"), "compact location count label missing");
   assert(index.includes("영상 확인 중"), "compact field-video status label missing");
   assert(!index.includes(">LOAD<"), "demo-style loading label must not appear in public UI");

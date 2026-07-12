@@ -6823,7 +6823,7 @@
 
       function issueSourceBasisText(issue) {
         const basis = publicDate(issue?.updatedAt || issue?.lastUpdatedAt);
-        return basis ? `자료 기준 ${basis}` : "자료 기준 확인 중";
+        return basis ? `${basis} 기준` : "기준일 확인 중";
       }
 
       function issueTargetCountText(issue, cards = issueRelatedCards(issue)) {
@@ -6850,7 +6850,9 @@
         const cards = issueRelatedCards(issue);
         const regions = issueRegions(issue, cards);
         const place = regions.length ? regions.slice(0, 2).join(" · ") : "지역 확인 중";
-        return [place, issueAssemblyTimeText(issue, cards), issueSourceBasisText(issue)].join(" · ");
+        const date = issueDateText(issue, cards);
+        const when = /확인 중|예정|진행/.test(date) ? issueSourceBasisText(issue) : date;
+        return [place, when].join(" · ");
       }
 
       function issueConfirmedEvidenceLine(issue) {
@@ -8586,7 +8588,17 @@
 
       function cardSourceBasisText(card) {
         const basis = publicDate(card?.updatedAt || card?.lastUpdatedAt);
-        return basis ? `자료 기준 ${basis}` : "자료 기준 확인 중";
+        return basis ? `${basis} 기준` : "기준일 확인 중";
+      }
+
+      function cardPublicWhenText(card) {
+        const date = dateFromText(cardDisplayTitle(card));
+        if (date) return date;
+        return cardSourceBasisText(card);
+      }
+
+      function cardPlaceWhenText(card) {
+        return [card?.regionLabel || "지역 확인 중", cardPublicWhenText(card)].join(" · ");
       }
 
       function cardVideoSummaryText(card) {
@@ -8598,9 +8610,7 @@
         const proof = Number(card?.proof || 0);
         const dispute = Number(issue?.disputeCount || 0);
         return [
-          card?.regionLabel || "지역 확인 중",
-          cardAssemblyTimeText(card),
-          cardSourceBasisText(card),
+          cardPlaceWhenText(card),
           "위치 1곳",
           proof ? `공개근거 ${proof}건` : "공개근거 확인 중",
           cardVideoSummaryText(card),
@@ -9028,7 +9038,7 @@
         $("map-context").textContent = presenceArea
           ? "표시 중: 자료 위치 + 현장 인증 범위"
           : "표시 중: 자료 위치";
-        $("map-impact").textContent = [card.regionLabel || "전국", cardAssemblyTimeText(card), "공개 위치 1곳"].join(" · ");
+        $("map-impact").textContent = [cardPlaceWhenText(card), "공개 위치 1곳"].join(" · ");
         $("map-proof").textContent = presenceArea
           ? `${presenceCount}건의 현장 인증 자료로 공개 범위를 계산했습니다.`
           : Number(card.proof || 0) > 0
@@ -9040,58 +9050,58 @@
         $("map-risk").textContent = needsVerification(card) ? "출처나 현장 자료를 더 확인해야 합니다." : "공개 근거가 있는 위치만 표시합니다.";
       }
 
-	      async function renderDetail(card) {
-	        detailMode = "target";
-	        $("state-chip").textContent = labelState(card.lifecycleState);
-	        $("state-chip").className = `chip ${stateClass(card.lifecycleState)}`;
-	        renderMapSelectionContext(card);
-	        $("detail-title").textContent = cardDisplayTitle(card);
-	        $("updated-at").textContent = "최근 정리됨";
-	        const cardIssue = loadedIssueCards.find((issue) => issue.id === card.issueId);
-	        $("detail-confirm-summary").textContent = cardConfirmedSummaryLine(card, cardIssue);
-	        $("stat-current").textContent = objectiveFact(card);
-	        $("stat-peak").textContent = [card.regionLabel || "전국", cardAssemblyTimeText(card), cardSourceBasisText(card)].join(" · ");
-	        $("stat-proof").textContent = cardEvidenceText(card);
-          $("stat-current-label").textContent = "무슨 일";
-          $("stat-peak-label").textContent = "장소·시간";
-          $("stat-proof-label").textContent = "확인 근거";
-	        const claims = await loadClaims(card);
-	        $("detail-summary").textContent = trustSummary(claims, card);
-	        $("detail-source-badges").innerHTML = renderSourceBadges(sourceBadgesForClaims(claims).length ? sourceBadgesForClaims(claims) : sourceBadgesForCard(card));
-	        $("summary-tab").innerHTML = renderSummary(claims, card);
-	        $("video-tab").innerHTML = renderLiveClaims(await loadLiveClaims(card.targetType, card.id));
-	        $("timeline-tab").innerHTML = renderTimeline(claims);
-	        $("evidence-tab").innerHTML = renderEvidence(claims, card);
-	        $("dispute-tab").innerHTML = renderDisputes(claims);
-	        $("map-risk").textContent = `${bestEvidenceLabel(claims)} 기준으로 표시합니다.`;
-	      }
+      async function renderDetail(card) {
+        detailMode = "target";
+        $("state-chip").textContent = labelState(card.lifecycleState);
+        $("state-chip").className = `chip ${stateClass(card.lifecycleState)}`;
+        renderMapSelectionContext(card);
+        $("detail-title").textContent = cardDisplayTitle(card);
+        $("updated-at").textContent = "최근 정리됨";
+        const cardIssue = loadedIssueCards.find((issue) => issue.id === card.issueId);
+        $("detail-confirm-summary").textContent = cardConfirmedSummaryLine(card, cardIssue);
+        $("stat-current").textContent = objectiveFact(card);
+        $("stat-peak").textContent = cardPlaceWhenText(card);
+        $("stat-proof").textContent = cardEvidenceText(card);
+        $("stat-current-label").textContent = "무슨 일";
+        $("stat-peak-label").textContent = "장소·시간";
+        $("stat-proof-label").textContent = "확인 근거";
+        const claims = await loadClaims(card);
+        $("detail-summary").textContent = trustSummary(claims, card);
+        $("detail-source-badges").innerHTML = renderSourceBadges(sourceBadgesForClaims(claims).length ? sourceBadgesForClaims(claims) : sourceBadgesForCard(card));
+        $("summary-tab").innerHTML = renderSummary(claims, card);
+        $("video-tab").innerHTML = renderLiveClaims(await loadLiveClaims(card.targetType, card.id));
+        $("timeline-tab").innerHTML = renderTimeline(claims);
+        $("evidence-tab").innerHTML = renderEvidence(claims, card);
+        $("dispute-tab").innerHTML = renderDisputes(claims);
+        $("map-risk").textContent = `${bestEvidenceLabel(claims)} 기준으로 표시합니다.`;
+      }
 
-	      async function renderIssueDetail(issue) {
-	        detailMode = "issue";
-	        const cards = issueRelatedCards(issue);
-	        const visibleCount = visibleCards(loadedCards).length;
-	        $("state-chip").textContent = issueStatusLabel(issue);
-	        $("state-chip").className = `chip ${stateClass(issue.lifecycleState)}`;
-	        $("map-state").textContent = "이슈";
-          $("map-mode").textContent = "위치 맥락";
-	        $("detail-title").textContent = issue.title;
-	        $("updated-at").textContent = "최근 정리됨";
-	        $("detail-confirm-summary").textContent = issueConfirmedSummaryLine(issue);
-	        $("stat-current").textContent = issueConfirmedWhereWhenLine(issue);
-	        $("stat-peak").textContent = issueConfirmedEvidenceLine(issue);
-	        $("stat-proof").textContent = issueUncertaintyText(issue);
-          $("stat-current-label").textContent = "장소·시간";
-          $("stat-peak-label").textContent = "확인 근거";
-	        $("stat-proof-label").textContent = "아직 확인";
-	        $("map-title").textContent = "이슈 관련 지역";
-	        $("map-summary").textContent = issueConfirmedSummaryLine(issue);
-          $("map-context").textContent = "표시 중: 자료 위치 + 공개 가능한 인증 범위";
-	        $("map-impact").textContent = cards.length
-            ? `${issueConfirmedWhereWhenLine(issue)} · ${issueTargetCountText(issue, cards)}`
-            : "연결된 공개 위치를 확인하는 중입니다.";
-	        $("map-proof").textContent = `${issueOfficialSummaryText(issue)} · ${issueVideoSummaryText(issue)}`;
-	        $("map-update").textContent = "지역이나 시간이 다르면 별도 현장으로 유지합니다.";
-	        $("map-risk").textContent = Number(issue.needsVerificationCount || 0) ? "일부 자료는 출처나 현장 확인이 더 필요합니다." : "공개 근거가 있는 위치만 표시합니다.";
+      async function renderIssueDetail(issue) {
+        detailMode = "issue";
+        const cards = issueRelatedCards(issue);
+        const visibleCount = visibleCards(loadedCards).length;
+        $("state-chip").textContent = issueStatusLabel(issue);
+        $("state-chip").className = `chip ${stateClass(issue.lifecycleState)}`;
+        $("map-state").textContent = "이슈";
+        $("map-mode").textContent = "위치 맥락";
+        $("detail-title").textContent = issue.title;
+        $("updated-at").textContent = "최근 정리됨";
+        $("detail-confirm-summary").textContent = issueConfirmedSummaryLine(issue);
+        $("stat-current").textContent = issueConfirmedWhereWhenLine(issue);
+        $("stat-peak").textContent = issueConfirmedEvidenceLine(issue);
+        $("stat-proof").textContent = issueUncertaintyText(issue);
+        $("stat-current-label").textContent = "장소·시간";
+        $("stat-peak-label").textContent = "확인 근거";
+        $("stat-proof-label").textContent = "아직 확인";
+        $("map-title").textContent = "이슈 관련 지역";
+        $("map-summary").textContent = issueConfirmedSummaryLine(issue);
+        $("map-context").textContent = "표시 중: 자료 위치 + 공개 가능한 인증 범위";
+        $("map-impact").textContent = cards.length
+          ? `${issueConfirmedWhereWhenLine(issue)} · ${issueTargetCountText(issue, cards)}`
+          : "연결된 공개 위치를 확인하는 중입니다.";
+        $("map-proof").textContent = `${issueOfficialSummaryText(issue)} · ${issueVideoSummaryText(issue)}`;
+        $("map-update").textContent = "지역이나 시간이 다르면 별도 현장으로 유지합니다.";
+        $("map-risk").textContent = Number(issue.needsVerificationCount || 0) ? "일부 자료는 출처나 현장 확인이 더 필요합니다." : "공개 근거가 있는 위치만 표시합니다.";
 
 	        const detail = await loadIssueDetail(issue);
 	        const claims = issueClaimsFromDetail(issue, detail);
