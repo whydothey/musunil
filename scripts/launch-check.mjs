@@ -590,6 +590,8 @@ if (
   !/Render automation: skipped/.test(launchNextActions) ||
   !/Render Dashboard target을 수동 입력한 경로다/.test(launchNextActions) ||
   !/deploy_latest_static/.test(launchNextActions) ||
+  !/retry_live_static_manifest/.test(launchNextActions) ||
+  !/actionIds\.has\("retry_live_static_manifest"\)[\s\S]*return "retry_live_static_manifest"/.test(launchNextActions) ||
   !/actionIds\.has\("deploy_latest_static"\)[\s\S]*return "deploy_latest_static"/.test(launchNextActions) ||
   !/check:web-render-build-command/.test(launchNextActions) ||
   !/Render onrender\.com target/.test(launchNextActions) ||
@@ -713,6 +715,8 @@ if (
   !/blockersData\.nextOperatorPrerequisite/.test(launchCutoverRehearsal) ||
   !/Before next command/.test(launchCutoverRehearsal) ||
   !/deploy_latest_static/.test(launchCutoverRehearsal) ||
+  !/retry_live_static_manifest/.test(launchCutoverRehearsal) ||
+  !/actionIds\.has\("retry_live_static_manifest"\)[\s\S]*return "retry_live_static_manifest"/.test(launchCutoverRehearsal) ||
   !/actionIds\.has\("deploy_latest_static"\)[\s\S]*return "deploy_latest_static"/.test(launchCutoverRehearsal) ||
   !/"deploy_latest_static"[\s\S]*"connect_api_endpoint"/.test(launchCutoverRehearsal) ||
   !/Render onrender\.com target/.test(launchCutoverRehearsal) ||
@@ -722,6 +726,12 @@ if (
   !/Ordered Operator Actions/.test(launchCutoverRehearsal) ||
   !/Split Apply Paths/.test(launchCutoverRehearsal) ||
   !/splitApplyPaths/.test(launchCutoverRehearsal) ||
+  !/staleDecisionWarning/.test(launchCutoverRehearsal) ||
+  !/actionsAdvisoryOnly/.test(launchCutoverRehearsal) ||
+  !/STALE LIVE EVIDENCE/.test(launchCutoverRehearsal) ||
+  !/diagnostic only/.test(launchCutoverRehearsal) ||
+  !/Do not change Render\/Cloudflare settings/.test(launchCutoverRehearsal) ||
+  !/Ordered Operator Actions \(stale evidence\)/.test(launchCutoverRehearsal) ||
   !/Inputs ready/.test(launchCutoverRehearsal) ||
   !/missingInputs/.test(launchCutoverRehearsal) ||
   !/connect_api_endpoint/.test(launchCutoverRehearsal) ||
@@ -785,6 +795,14 @@ if (
   !/nextOperatorCommandScope/.test(launchOperatorBrief) ||
   !/nextApplyCommand/.test(launchOperatorBrief) ||
   !/operatorCommandLines/.test(launchOperatorBrief) ||
+  !/staleDecisionWarning/.test(launchOperatorBrief) ||
+  !/actionsAdvisoryOnly/.test(launchOperatorBrief) ||
+  !/staleEvidenceSection/.test(launchOperatorBrief) ||
+  !/STALE LIVE EVIDENCE/.test(launchOperatorBrief) ||
+  !/diagnostic only/.test(launchOperatorBrief) ||
+  !/Do not change Render\/Cloudflare settings/.test(launchOperatorBrief) ||
+  !/Split apply paths from current blockers \(stale evidence\)/.test(launchOperatorBrief) ||
+  !/What To Do Now \(stale evidence\)/.test(launchOperatorBrief) ||
   !/Immediate safe command/.test(launchOperatorBrief) ||
   !/Apply command after inputs/.test(launchOperatorBrief) ||
   !/Before apply command/.test(launchOperatorBrief) ||
@@ -892,6 +910,10 @@ if (
   !/nextOperatorCommandScope/.test(launchMissingInputs) ||
   !/nextApplyCommand/.test(launchMissingInputs) ||
   !/operatorCommandLines/.test(launchMissingInputs) ||
+  !/staleDecisionWarning/.test(launchMissingInputs) ||
+  !/actionsAdvisoryOnly/.test(launchMissingInputs) ||
+  !/STALE LIVE EVIDENCE/.test(launchMissingInputs) ||
+  !/진단 참고로만 취급/.test(launchMissingInputs) ||
   !/Immediate safe command/.test(launchMissingInputs) ||
   !/Apply command after inputs/.test(launchMissingInputs) ||
   !/Before apply command/.test(launchMissingInputs) ||
@@ -1353,6 +1375,10 @@ if (
   !/web_proxy_mode\.proxyObserved=true/.test(serviceWatch) ||
   !/cloudflare:check/.test(serviceWatch) ||
   !/deploy_latest_static/.test(serviceWatch) ||
+  !/retry_live_static_manifest/.test(serviceWatch) ||
+  !/isTransientNetworkError/.test(serviceWatch) ||
+  !/staticManifest\.transient/.test(serviceWatch) ||
+  !/manifest mismatch가 재현되는지 먼저 확인/.test(serviceWatch) ||
   !/publish_build_metadata/.test(serviceWatch) ||
   !/fix_api_readiness/.test(serviceWatch) ||
   !/stop_public_payload_regression/.test(serviceWatch) ||

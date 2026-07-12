@@ -167,6 +167,7 @@ function determineBlockerStage({ refreshFailed, freshness, status, failed, skipp
   if (refreshFailed) return "refresh_live_evidence_failed";
   if (freshness.stale) return "refresh_live_evidence";
   const actionIds = new Set(actions.map((action) => action.id));
+  if (actionIds.has("retry_live_static_manifest")) return "retry_live_static_manifest";
   if (actionIds.has("deploy_latest_static")) return "deploy_latest_static";
   if (actionIds.has("connect_api_endpoint") || actionIds.has("connect_api_dns")) return "connect_api_endpoint";
   if (actionIds.has("apply_static_headers")) return "apply_static_headers";
@@ -183,6 +184,7 @@ function determineBlockerStage({ refreshFailed, freshness, status, failed, skipp
 
 function nextCommandForStage(stage, actions, launchApplyPlan, headerApplyPlan) {
   if (stage === "refresh_live_evidence" || stage === "refresh_live_evidence_failed") return "pnpm launch:blockers -- --refresh";
+  if (stage === "retry_live_static_manifest") return "pnpm launch:blockers -- --refresh";
   if (stage === "deploy_latest_static") {
     return "pnpm check:web-render-build-command && pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy";
   }
@@ -274,6 +276,9 @@ function manualApiTargetPath(plan) {
 function prerequisiteForStage(stage, actions, launchApplyPlan = null, headerApplyPlan = null) {
   if (stage === "deploy_latest_static") {
     return "`pnpm check:web-render-build-command`로 Render 전용 build contract가 로컬에서 통과하는지 먼저 확인한다. 이후 Render musunil-web가 현재 main 커밋을 배포했는지 확인한다. 아직 이전 정적 manifest가 보이면 Render musunil-web에서 Clear build cache & deploy를 실행하고 배포 완료 후 검증한다.";
+  }
+  if (stage === "retry_live_static_manifest") {
+    return "live static manifest 확인이 timeout으로 끝난 상태다. 구버전 배포로 단정하지 말고 `pnpm launch:blockers -- --refresh` 또는 `pnpm check:web-deploy`를 다시 실행해 같은 mismatch가 재현되는지 먼저 확인한다.";
   }
   if (stage === "connect_api_endpoint") {
     if (!launchApplyInputsReady(launchApplyPlan) && canApplyHeaderOnly(actions, headerApplyPlan)) {

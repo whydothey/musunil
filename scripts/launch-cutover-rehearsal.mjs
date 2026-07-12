@@ -97,6 +97,10 @@ function buildSummary(results) {
       staleAfterMinutes: blockersData.staleAfterMinutes ?? null,
       status: blockersData.status || "unknown"
     },
+    staleDecisionWarning: blockersData.staleDecisionWarning || (blockersData.stale
+      ? "STALE LIVE EVIDENCE: run pnpm launch:cutover-rehearsal -- --refresh before applying operator actions or declaring blockers cleared."
+      : ""),
+    actionsAdvisoryOnly: Boolean(blockersData.actionsAdvisoryOnly || blockersData.stale),
     counts: {
       pass: blockersData.passCount ?? 0,
       fail: blockersData.failCount ?? failedChecks.length,
@@ -141,6 +145,7 @@ function determineStage({ helperFailures, blockersData, requiredActions, skipped
   if (helperFailures.length > 0) return "helper_failure";
   if (blockersData.stale) return "refresh_live_evidence";
   const actionIds = new Set(requiredActions.map((action) => action.id));
+  if (actionIds.has("retry_live_static_manifest")) return "retry_live_static_manifest";
   if (actionIds.has("deploy_latest_static")) return "deploy_latest_static";
   if (actionIds.has("connect_api_endpoint") || actionIds.has("connect_api_dns")) return "connect_api_endpoint";
   if (actionIds.has("apply_static_headers")) return "apply_static_headers";
@@ -153,6 +158,7 @@ function determineStage({ helperFailures, blockersData, requiredActions, skipped
 
 function prioritizeActions(actions) {
   const order = [
+    "retry_live_static_manifest",
     "deploy_latest_static",
     "connect_api_endpoint",
     "connect_api_dns",
@@ -190,6 +196,7 @@ function slimCheck(check) {
 
 function nextOperatorCommand(stage, actions, launchApplyPlan) {
   if (stage === "refresh_live_evidence") return "pnpm launch:cutover-rehearsal -- --refresh";
+  if (stage === "retry_live_static_manifest") return "pnpm launch:blockers -- --refresh";
   if (stage === "deploy_latest_static") {
     return "pnpm check:web-render-build-command && pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy";
   }
@@ -226,6 +233,9 @@ function nextApplyCommandForStage(stage, launchApplyPlan) {
 function nextOperatorPrerequisite(stage, launchApplyPlan = null) {
   if (stage === "deploy_latest_static") {
     return "`pnpm check:web-render-build-command`로 Render 전용 build contract가 로컬에서 통과하는지 먼저 확인한다. 이후 Render musunil-web가 현재 main 커밋을 배포했는지 확인한다. live static manifest가 local manifest와 다르면 Clear build cache & deploy를 실행하고 완료 후 다시 검증한다.";
+  }
+  if (stage === "retry_live_static_manifest") {
+    return "live static manifest 확인이 timeout으로 끝난 상태다. 구버전 배포로 단정하지 말고 `pnpm launch:blockers -- --refresh` 또는 `pnpm check:web-deploy`를 다시 실행해 같은 mismatch가 재현되는지 먼저 확인한다.";
   }
   if (stage === "connect_api_endpoint") {
     if (!launchApplyInputsReady(launchApplyPlan)) {
@@ -271,7 +281,16 @@ function printMarkdown(value) {
   console.log(`Release blocked: ${value.releaseBlocked ? "yes" : "no"}`);
   console.log(`Service watch: ${value.report.lastChecked || "unknown"} (${value.report.stale ? "stale" : "fresh"})`);
   console.log(`Checks: ${value.counts.pass} ok, ${value.counts.fail} fail, ${value.counts.skip} skip, ${value.counts.requiredActions} actions`);
+  if (value.staleDecisionWarning) console.log(`Evidence warning: ${value.staleDecisionWarning}`);
   console.log("");
+  if (value.actionsAdvisoryOnly) {
+    console.log("## Stale Evidence Warning");
+    console.log("");
+    console.log(`- ${value.staleDecisionWarning}`);
+    console.log("- Treat ordered actions, split apply paths, and blocking checks below as diagnostic only until refreshed.");
+    console.log("- Do not change Render/Cloudflare settings or mark launch blockers cleared from this stale rehearsal.");
+    console.log("");
+  }
   if (value.nextOperatorPrerequisite) {
     const label = value.nextOperatorCommandScope === "dry_run_only" ? "Before apply command" : "Before next command";
     console.log(`${label}: ${value.nextOperatorPrerequisite}`);
@@ -292,7 +311,7 @@ function printMarkdown(value) {
   }
 
   if (value.failedChecks.length > 0) {
-    console.log("## Blocking Checks");
+    console.log(value.actionsAdvisoryOnly ? "## Blocking Checks (stale evidence)" : "## Blocking Checks");
     console.log("");
     for (const check of value.failedChecks) console.log(`- ${check.id}: ${check.detail}`);
     console.log("");
@@ -306,7 +325,7 @@ function printMarkdown(value) {
   }
 
   if (value.requiredActions.length > 0) {
-    console.log("## Ordered Operator Actions");
+    console.log(value.actionsAdvisoryOnly ? "## Ordered Operator Actions (stale evidence)" : "## Ordered Operator Actions");
     console.log("");
     for (const action of value.requiredActions) {
       console.log(`${action.order}. ${action.id} (${action.owner})`);
@@ -318,7 +337,7 @@ function printMarkdown(value) {
   }
 
   if (value.splitApplyPaths.length > 0) {
-    console.log("## Split Apply Paths");
+    console.log(value.actionsAdvisoryOnly ? "## Split Apply Paths (stale evidence)" : "## Split Apply Paths");
     console.log("");
     for (const path of value.splitApplyPaths) {
       console.log(`- ${path.id}: ${path.note}`);

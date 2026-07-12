@@ -120,6 +120,7 @@
 - `pnpm cloudflare:check`는 `api.musunil.com` DNS가 없을 때 API `/health`와 `/ready`를 실패가 아니라 `skipped: API DNS failed`로 표시해 DNS 문제와 API 런타임 문제를 섞지 않는다.
 - 운영 API 미연결이나 `/home.issueCards` 공백으로 홈 이슈가 0개일 때도 빈 화면처럼 보이면 안 된다. 홈에는 `새 이슈를 확인 중입니다`, `다시 확인`, `지역 보기` 회복 경로가 표시되어야 하며, visual smoke는 이 controlled empty state를 실패 detail에 기록해야 한다.
 - `pnpm launch:blockers`가 `docs/splus-service-watch.md`의 실패 checks, skipped checks, Required Actions, Render/API/Web 검증 명령을 한 화면에 요약한다. 같은 화면은 `pnpm launch:next-actions`로도 열 수 있어야 한다. 출력에는 `Report freshness`가 포함되어야 하며, 기본 15분보다 오래된 보고서는 stale로 표시하고 출시 판단에 쓰지 않는다. stale 상태에서는 `STALE LIVE EVIDENCE` 상단 경고가 떠야 하며, Split Apply Paths, Blocking Checks, Required Actions는 refresh 전 진단 참고로만 취급한다. 최신 live 상태로 갱신하려면 `pnpm launch:blockers -- --refresh`를 사용한다.
+- 같은 stale 경고는 `pnpm launch:cutover-rehearsal`, `pnpm launch:operator-brief`, `pnpm launch:missing-inputs`에도 전파되어야 한다. 운영자가 브리프나 입력 체크리스트만 보는 경우에도 stale snapshot의 Apply/Required Action은 실행 지시가 아니라 진단 참고로 읽혀야 한다.
 - 자동화나 최종 출시 gate에서는 `pnpm launch:blockers:strict`를 사용한다. 이 명령은 stale 보고서, 실패 check, skipped check, 남은 Required Actions가 하나라도 있으면 non-zero로 종료해야 한다.
 - 배포 직후 최종 판정 자동화에서는 `pnpm launch:blockers:refresh-strict`를 사용한다. 이 명령은 먼저 live `service:watch:visual`을 갱신한 뒤 같은 strict 기준으로 실패해야 하므로, 오래된 문서와 실제 live 상태를 혼동하지 않는다. refresh 시도 뒤 `docs/splus-service-watch.md`의 `Last checked`가 바뀌지 않으면 보고서 미갱신으로 보고 차단해야 한다.
 - 컷오버 리허설에는 `pnpm launch:cutover-rehearsal -- --refresh`를 사용한다. 이 명령은 live blocker 보고서를 갱신한 뒤 현재 stage와 `Next command`를 출력하므로, 운영자가 API DNS, Static headers, live issue sync 중 어디에서 막혔는지 한 번에 확인할 수 있어야 한다.
@@ -132,6 +133,7 @@
 - Render Static Site 수동 설정값은 `pnpm render:web-settings`로 출력한 Branch, Root Directory, Build Command, Publish Directory, Headers를 기준으로 맞춘다.
 - 출시 컷오버는 `pnpm launch:cutover-plan`, `pnpm cloudflare:dns`, [cloudflare-dns-records.md](/Users/mk/Documents/Musunil/docs/cloudflare-dns-records.md), [launch-cutover-runbook.md](/Users/mk/Documents/Musunil/docs/launch-cutover-runbook.md)를 기준으로 API DNS, Cloudflare DNS, Render Static headers, 검증 순서를 한 번에 확인한다.
 - production Web은 `build-info.json`의 `commitSha`가 배포 대상 Git SHA와 같아야 한다. `/static-manifest.json`과 live HTML/config/media SHA-256 일치는 최신 정적 파일 확인용 보조 증거지만, 출시 검증에서 build metadata placeholder를 대체하지 않는다.
+- live static manifest 확인이 timeout이면 구버전 배포로 단정하지 않는다. `service:watch`는 이 경우 `retry_live_static_manifest`를 남기고, 실제 manifest schema/hash mismatch가 확인될 때만 `deploy_latest_static`을 안내해야 한다.
 - Render Static Site는 repo root에서 `pnpm build:web-static:render`를 실행하고 `apps/web`만 publish한다. 이 단일 명령은 운영 API base 주입, 실제 build-info 작성, 정적 manifest 생성, Render output 검사, web smoke를 모두 포함한다. Dashboard 값을 바꾸기 전 `pnpm check:web-render-build-command`가 같은 계약을 로컬에서 통과해야 한다.
 - Render 배포 뒤에는 `pnpm check:visual-surface:live`로 실제 `musunil.com` 화면의 이슈 스토리, 이슈 카드, 상세, 인증영상 대기/영상, 지도, 제보 첫 행동이 390px, 430px, 768px, 1440px에서 모두 유지되는지 확인한다.
 - 운영 감시 문서까지 갱신하려면 `pnpm service:watch:visual`을 실행한다.

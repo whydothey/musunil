@@ -166,3 +166,7 @@
 | 2026-07-12T12:10:53.418Z | Active | web_build_info, web_header_contract, web_visual_surface, api_endpoint_preflight |
 | 2026-07-12T12:15:51.072Z | Active | web_build_info, web_header_contract, web_visual_surface, api_endpoint_preflight |
 | 2026-07-12T12:32:02.144Z | Active | web_build_info, web_header_contract, web_visual_surface, api_endpoint_preflight |
+| 2026-07-12T13:05:18.083Z | Active | web_build_info, web_header_contract, web_visual_surface, api_endpoint_preflight |
+| 2026-07-12T13:07:35.714Z | Active | web_static_manifest, web_build_info, web_header_contract, web_visual_surface, api_endpoint_preflight |
+| 2026-07-12T13:10:01.933Z | Active | web_build_info, web_header_contract, web_visual_surface, api_endpoint_preflight |
+| 2026-07-12T13:10:23.459Z | Active | web_build_info, web_header_contract, web_visual_surface, api_endpoint_preflight |

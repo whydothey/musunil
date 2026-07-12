@@ -94,6 +94,10 @@ function buildSummary() {
       refreshAttempted: Boolean(blockerData.refresh?.attempted),
       refreshReportUpdated: blockerData.refresh?.reportUpdated ?? null
     },
+    staleDecisionWarning: blockerData.staleDecisionWarning || (blockerData.stale
+      ? "STALE LIVE EVIDENCE: run pnpm launch:missing-inputs -- --refresh before applying operator actions or declaring blockers cleared."
+      : ""),
+    actionsAdvisoryOnly: Boolean(blockerData.actionsAdvisoryOnly || blockerData.stale),
     immediateApplyInputs,
     requiredEnv: launchApply.requiredEnv || [],
     providerGroups: [
@@ -263,9 +267,10 @@ function renderMarkdown(value) {
     `- Release blocked: ${value.releaseBlocked ? "yes" : "no"}`,
     `- Blocker report: ${blockerReportLine(value.blockerReport)}`,
     `- Report freshness: ${value.blockerReport?.stale ? "stale" : "fresh"}`,
+    ...(value.staleDecisionWarning ? [`- Evidence warning: ${value.staleDecisionWarning}`] : []),
     ...operatorCommandLines(value),
     "",
-    ...staleReportLines(value.blockerReport),
+    ...staleReportLines(value.blockerReport, value),
     ...helperFailureLines(value.helperFailures),
     "## Immediate Apply Inputs",
     "",
@@ -319,10 +324,14 @@ function blockerReportLine(report = {}) {
   return `${lastChecked} (${age}, ${staleAfter})`;
 }
 
-function staleReportLines(report = {}) {
-  if (!report.stale) return [];
+function staleReportLines(report = {}, value = {}) {
+  if (!report.stale && !value.actionsAdvisoryOnly) return [];
   return [
-    "> 이 입력 체크리스트는 stale live blocker report를 기준으로 한다. 출시 판단이나 실제 적용 전에는 `pnpm launch:missing-inputs -- --refresh`를 다시 실행한다.",
+    "## Stale Evidence Warning",
+    "",
+    `- ${value.staleDecisionWarning || "STALE LIVE EVIDENCE: refresh live blockers before applying operator actions."}`,
+    "- 이 입력 체크리스트는 stale live blocker report를 기준으로 한다. 출시 판단이나 실제 적용 전에는 `pnpm launch:missing-inputs -- --refresh`를 다시 실행한다.",
+    "- Immediate Apply Inputs와 Required Actions는 refresh 전 진단 참고로만 취급한다.",
     ""
   ];
 }

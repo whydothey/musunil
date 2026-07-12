@@ -82,6 +82,10 @@ function buildBrief() {
       staleAfterMinutes: null,
       status: "unknown"
     },
+    staleDecisionWarning: rehearsalData.staleDecisionWarning || (rehearsalData.report?.stale
+      ? "STALE LIVE EVIDENCE: run pnpm launch:handoff before applying operator actions or declaring blockers cleared."
+      : ""),
+    actionsAdvisoryOnly: Boolean(rehearsalData.actionsAdvisoryOnly || rehearsalData.report?.stale),
     counts: rehearsalData.counts || {
       pass: 0,
       fail: failedChecks.length,
@@ -131,8 +135,10 @@ function renderMarkdown(value) {
     "- Push CI: run `pnpm ci:status` after every push. `queued` means GitHub has accepted the workflow but has not assigned a runner yet; use the printed watch command for the final result.",
     `- Service watch: ${value.serviceWatch.lastChecked || "unknown"} (${value.serviceWatch.stale ? "stale" : "fresh"})`,
     `- Checks: ${value.counts.pass} ok, ${value.counts.fail} fail, ${value.counts.skip} skip, ${value.counts.requiredActions} actions`,
+    ...(value.staleDecisionWarning ? [`- Evidence warning: ${value.staleDecisionWarning}`] : []),
     ...operatorCommandLines(value),
     "",
+    ...staleEvidenceSection(value),
     ...helperFailureSection(value.helperFailures),
     "## One Command Apply",
     "",
@@ -148,11 +154,11 @@ function renderMarkdown(value) {
     "",
     ...launchInputLines(value.launchApply),
     "",
-    "Split apply paths from current blockers:",
+    value.actionsAdvisoryOnly ? "Split apply paths from current blockers (stale evidence):" : "Split apply paths from current blockers:",
     "",
     ...splitApplyPathLines(value.splitApplyPaths),
     "",
-    "## What To Do Now",
+    value.actionsAdvisoryOnly ? "## What To Do Now (stale evidence)" : "## What To Do Now",
     "",
     ...actionLines(value.requiredActions),
     "",
@@ -274,6 +280,18 @@ function operatorCommandLines(value) {
     value.nextOperatorPrerequisite ? `- Before next command: ${value.nextOperatorPrerequisite}` : "",
     `- Next command: \`${value.nextOperatorCommand}\``
   ].filter(Boolean);
+}
+
+function staleEvidenceSection(value) {
+  if (!value.actionsAdvisoryOnly) return [];
+  return [
+    "## Stale Evidence Warning",
+    "",
+    `- ${value.staleDecisionWarning}`,
+    "- Treat the commands, split apply paths, and ordered actions below as diagnostic only until `pnpm launch:handoff` refreshes live evidence.",
+    "- Do not change Render/Cloudflare settings or mark launch blockers cleared from this stale operator brief.",
+    ""
+  ];
 }
 
 function helperFailureSection(items) {

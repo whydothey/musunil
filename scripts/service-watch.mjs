@@ -16,6 +16,7 @@ const expectedCommitSha = process.env.MUSUNIL_EXPECTED_COMMIT_SHA;
 const allowPlaceholderBuildInfo = process.env.MUSUNIL_ALLOW_PLACEHOLDER_BUILD_INFO === "1";
 const reportPath = resolve(process.cwd(), "docs/splus-service-watch.md");
 let webStaticManifestVerified = false;
+let webStaticManifestTransient = false;
 let apiEndpointReachable = false;
 const forbiddenPublicUiTokens = [
   "좋아요",
@@ -145,6 +146,7 @@ do {
 
 async function runChecks() {
   webStaticManifestVerified = false;
+  webStaticManifestTransient = false;
   apiEndpointReachable = false;
   const checks = [];
   await check(checks, "web_static_manifest", async () => {
@@ -161,6 +163,7 @@ async function runChecks() {
     webStaticManifestVerified = true;
     return { ...liveFiles, mode: localManifest ? "matches_local_and_live_hashes" : "live_hashes_only" };
   });
+  webStaticManifestTransient = Boolean(checks.find((item) => item.id === "web_static_manifest")?.transient);
   await check(checks, "web_runtime_config", async () => {
     const source = await getText(`${webBaseUrl}/config.js`);
     assertAbsent(source, ["localhost:4000", "MUSUNIL_USER_INPUTS", "postgres", "redis", "database", "secret", "jwt"]);
@@ -181,7 +184,12 @@ async function runChecks() {
   await check(checks, "web_build_info", async () => {
     const build = await getJson(`${webBaseUrl}/build-info.json`);
     if (build.commitSha === "generated-at-build" || build.source === "placeholder") {
-      if (!webStaticManifestVerified) throw new Error("build-info placeholder deployed and static manifest did not verify freshness");
+      if (!webStaticManifestVerified) {
+        if (webStaticManifestTransient) {
+          throw new Error("build-info placeholder deployed; static manifest freshness unavailable because live static manifest check timed out");
+        }
+        throw new Error("build-info placeholder deployed and static manifest did not verify freshness");
+      }
       if (!allowPlaceholderBuildInfo) {
         const expected = expectedCommitSha ? ` while expected commit ${expectedCommitSha} was required` : "";
         throw new Error(`build-info placeholder deployed${expected}; set MUSUNIL_ALLOW_PLACEHOLDER_BUILD_INFO=1 only for a static-hash-only diagnostic`);
@@ -397,8 +405,14 @@ async function check(checks, id, action) {
       checks.push({ id, ok: false, skipped: true, message: error.message });
       return;
     }
-    checks.push({ id, ok: false, message: error instanceof Error ? error.message : String(error) });
+    const message = error instanceof Error ? error.message : String(error);
+    checks.push({ id, ok: false, transient: isTransientNetworkError(error, message), message });
   }
+}
+
+function isTransientNetworkError(error, message = "") {
+  const name = error instanceof Error ? error.name : "";
+  return /TimeoutError|AbortError/i.test(name) || /timeout|aborted/i.test(message);
 }
 
 function skipIfApiUnreachable() {
@@ -601,13 +615,23 @@ function requiredActions(result) {
   const finalGateVerify = "pnpm launch:final-gate";
   const staticManifest = byId.get("web_static_manifest");
   if (staticManifest && !staticManifest.ok) {
-    actions.push({
-      id: "deploy_latest_static",
-      owner: "operator",
-      action: "Render musunil-web의 Branch, Root Directory, Build Command, Publish Directory가 pnpm render:web-settings 출력과 같은지 맞춘 뒤 Clear build cache & deploy를 실행한다.",
-      verify: "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
-      reference: "docs/launch-cutover-runbook.md#2-render-static-site"
-    });
+    if (staticManifest.transient) {
+      actions.push({
+        id: "retry_live_static_manifest",
+        owner: "operator",
+        action: "live static manifest 확인이 timeout으로 끝났다. 구버전 배포로 단정하지 말고 `pnpm launch:blockers -- --refresh` 또는 `pnpm check:web-deploy`를 다시 실행해 manifest mismatch가 재현되는지 먼저 확인한다.",
+        verify: "pnpm launch:blockers -- --refresh",
+        reference: "docs/launch-readiness-checklist.md"
+      });
+    } else {
+      actions.push({
+        id: "deploy_latest_static",
+        owner: "operator",
+        action: "Render musunil-web의 Branch, Root Directory, Build Command, Publish Directory가 pnpm render:web-settings 출력과 같은지 맞춘 뒤 Clear build cache & deploy를 실행한다.",
+        verify: "pnpm render:web-settings && MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
+        reference: "docs/launch-cutover-runbook.md#2-render-static-site"
+      });
+    }
   }
   const webRuntimeConfig = byId.get("web_runtime_config");
   if (webRuntimeConfig && !webRuntimeConfig.ok) {
