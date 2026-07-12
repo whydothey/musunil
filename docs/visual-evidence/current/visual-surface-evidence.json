@@ -2,7 +2,7 @@
   "checked": "commercial_visual_surface",
   "ok": true,
   "mode": "local_static",
-  "baseUrl": "http://localhost:52483/",
+  "baseUrl": "http://localhost:53321/",
   "productionFallbackMode": false,
   "serviceStates": [
     "delayed"
@@ -71,7 +71,7 @@
     {
       "id": "mobile_390_reels",
       "ok": true,
-      "assertions": 6,
+      "assertions": 7,
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
@@ -161,7 +161,7 @@
     {
       "id": "mobile_430_reels",
       "ok": true,
-      "assertions": 6,
+      "assertions": 7,
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
@@ -251,7 +251,7 @@
     {
       "id": "tablet_768_reels",
       "ok": true,
-      "assertions": 6,
+      "assertions": 7,
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
@@ -341,7 +341,7 @@
     {
       "id": "desktop_1440_reels",
       "ok": true,
-      "assertions": 6,
+      "assertions": 7,
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,

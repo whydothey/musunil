@@ -3497,6 +3497,138 @@
         background: #061014;
       }
 
+      .reel-pending-card {
+        gap: 14px;
+        min-height: auto;
+        padding: 16px;
+        border-color: color-mix(in srgb, var(--brand) 16%, var(--line));
+        background: var(--surface);
+        color: var(--ink);
+        box-shadow: var(--shadow-soft);
+        scroll-snap-align: start;
+      }
+
+      .reel-pending-head {
+        display: grid;
+        gap: 7px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+      }
+
+      .reel-pending-head .chip {
+        width: max-content;
+        max-width: 100%;
+        justify-self: start;
+      }
+
+      .reel-pending-head strong {
+        color: var(--ink);
+        font-size: 20px;
+        line-height: 1.25;
+      }
+
+      .reel-pending-head p {
+        max-width: 44em;
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .reel-pending-frame {
+        display: grid;
+        grid-template-columns: 48px minmax(0, 1fr);
+        gap: 12px;
+        align-items: center;
+        padding: 14px;
+        border: 1px solid color-mix(in srgb, var(--line) 84%, transparent);
+        border-radius: 8px;
+        background:
+          linear-gradient(135deg, color-mix(in srgb, var(--brand) 7%, var(--surface)), var(--surface-3));
+      }
+
+      .reel-pending-mark {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        border: 1px solid color-mix(in srgb, var(--brand) 18%, var(--line));
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--brand) 8%, var(--surface));
+        color: var(--brand-dark);
+      }
+
+      .reel-pending-mark .nav-symbol {
+        width: 19px;
+        height: 19px;
+      }
+
+      .reel-pending-frame strong {
+        display: block;
+        margin-bottom: 3px;
+        color: var(--ink);
+        font-size: 14px;
+        line-height: 1.35;
+      }
+
+      .reel-pending-frame span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .reel-pending-facts {
+        display: grid;
+        gap: 0;
+        border-top: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+      }
+
+      .reel-pending-facts span {
+        display: grid;
+        grid-template-columns: 64px minmax(0, 1fr);
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+      }
+
+      .reel-pending-facts span:last-child {
+        border-bottom: 0;
+      }
+
+      .reel-pending-facts b {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .reel-pending-facts em {
+        color: var(--ink);
+        font-size: 13px;
+        font-style: normal;
+        line-height: 1.45;
+      }
+
+      .reel-pending-card .reel-actions {
+        position: static;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .reel-pending-card .reel-action {
+        border-color: color-mix(in srgb, var(--line) 90%, transparent);
+        background: color-mix(in srgb, var(--surface-2) 80%, var(--surface));
+        color: var(--ink);
+        box-shadow: none;
+        backdrop-filter: none;
+      }
+
+      .reel-pending-card .reel-action:hover {
+        border-color: color-mix(in srgb, var(--brand) 28%, var(--line));
+        background: color-mix(in srgb, var(--brand) 7%, var(--surface));
+      }
+
       .reel-play-badge {
         position: absolute;
         top: 16px;
@@ -9827,17 +9959,26 @@
         const statement = publicDisplayTitle(item.claim?.normalizedStatement || "현장 인증 영상");
         const status = publicFieldStatusLabel(item.fieldVerification?.statusLabel);
         const location = `${item.regionLabel || "지역 확인 중"} · ${item.publicRadiusM ? `공개 위치 반경 ${item.publicRadiusM}m` : "공개 위치 흐림"}`;
+        const duration = formatDuration(item.durationMs);
         return `
-          <article class="reel-card reel-full reel-pending" data-reel-id="${escapeHtml(item.id || "")}" aria-label="검토 대기 현장 영상">
-            <div class="reel-media" aria-label="비식별 공개 전 현장 인증 영상">
-              ${renderPublicVideoReviewSlot("reel")}
-              <span class="reel-play-badge is-pending">공개 전 검토</span>
-            </div>
-            <div class="reel-overlay">
-              <div class="source-badges">${renderSourceBadges([["field", "현장 영상"], ["official", "촬영 위치 확인"]])}</div>
+          <article class="reel-card reel-pending-card" data-reel-id="${escapeHtml(item.id || "")}" aria-label="검토 대기 현장 영상">
+            <div class="reel-pending-head">
+              <span class="chip pending">공개 전 검토</span>
               <strong>${escapeHtml(title)}</strong>
               <p>${escapeHtml(statement)}</p>
-              <span>${escapeHtml(location)} · ${escapeHtml(formatDuration(item.durationMs))} · ${escapeHtml(status)}</span>
+            </div>
+            <div class="reel-pending-frame" aria-label="공개 전 검토 상태">
+              <span class="reel-pending-mark" aria-hidden="true"><svg class="nav-symbol"><use href="#icon-video"></use></svg></span>
+              <span>
+                <strong>현장 영상 공개 준비 중</strong>
+                <span>비식별 처리와 위치 맥락 확인 후 공개됩니다. 공개 전 자료는 재생 가능한 영상처럼 표시하지 않습니다.</span>
+              </span>
+            </div>
+            <div class="source-badges">${renderSourceBadges([["field", "현장 영상"], ["official", "촬영 위치 확인"]])}</div>
+            <div class="reel-pending-facts" aria-label="검토 중 영상 요약">
+              <span><b>위치</b><em>${escapeHtml(location)}</em></span>
+              <span><b>길이</b><em>${escapeHtml(duration)}</em></span>
+              <span><b>상태</b><em>${escapeHtml(status)}</em></span>
             </div>
             <div class="reel-actions" aria-label="영상 검토 상태에서 확인할 항목">
               <button class="reel-action" type="button" data-reel-action="evidence"><svg class="button-symbol" aria-hidden="true"><use href="#icon-stats"></use></svg><span>근거</span></button>

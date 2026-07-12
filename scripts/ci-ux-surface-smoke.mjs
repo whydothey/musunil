@@ -70,6 +70,7 @@ scenario("reels_objective", [
   has('data-reel-action="region"'),
   has('data-reel-action="issue"'),
   has('data-reel-action="dispute"'),
+  has("reel-pending-card"),
   has("<span>근거</span>"),
   has("<span>위치</span>"),
   has("<span>이슈</span>"),

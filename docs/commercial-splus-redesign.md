@@ -1,6 +1,6 @@
 # Commercial S+ Redesign Tracker
 
-Last updated: 2026-07-12 19:43 KST
+Last updated: 2026-07-12 19:53 KST
 
 Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 UX를 완성한다. 사용자 수락 전에는 UX/디자인을 S+로 표기하지 않는다.
 
@@ -33,6 +33,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 - 2026-07-12 15:08 패치로 홈 카드의 첫 줄에서 `자료 기준` 문구를 제거하고 `장소 · 기준일`만 보이게 했다. 카드 요약은 `현장·위치`와 `공식자료·현장영상·반론/정정`으로 압축했고, `인원 미확인`처럼 첫 화면 가치가 낮은 부정 상태는 상세 맥락으로 낮췄다. `pnpm check:web-smoke`, `pnpm check:visual-surface:evidence`는 통과했지만 실제 live API 동기화와 사용자 수락 전에는 S+가 아니다.
 - 2026-07-12 15:22 패치로 홈에서 정리한 기준일 표현을 상세와 지도 선택 요약까지 확장했다. `일시 확인 중 · 자료 기준`처럼 내부 작업 상태와 출처 기준일이 한 줄에서 충돌하던 문구를 제거하고, 사용자는 먼저 `장소 · 기준일`, 다음 줄에서 공식자료·현장영상·반론/정정 흐름을 보게 된다. `pnpm check:visual-surface:evidence`는 상세/지도 요약에 `자료 기준`이 다시 노출되면 실패하지만 실제 live API 동기화와 사용자 수락 전에는 S+가 아니다.
 - 2026-07-12 19:43 독립 Visual Critique/IA Red-Team은 홈의 KPI 문자열, nested 위치 박스, 생성형 story fallback, 모호한 `상세 보기`를 P0로 지적했다. 이번 패치는 홈 제목을 `공개자료 기반 집회·시위`로 낮추고, story fallback을 추상 상태 마크로 바꾸며, 위치 박스를 평면 `지도에서 보기` 행으로 낮추고, primary CTA를 `근거·영상`으로 바꿔 상세 근거 탭에 바로 진입한다. `pnpm check:web-smoke`, `pnpm check:ux-surface`, `pnpm check:web-flow`, `pnpm check:visual-surface:evidence`는 통과했지만 실제 live API 동기화와 사용자 수락 전에는 S+가 아니다.
+- 2026-07-12 19:53 패치로 poster 없는 LIVE Claim을 더 이상 `reel-full`로 보여주지 않는다. 실제 공개 clip+poster가 모두 있을 때만 풀스크린 `<video class="reel-video">`를 쓰고, 공개 전 자료는 `reel-pending-card`로 낮춰 `현장 영상 공개 준비 중`, 위치, 길이, 상태, 근거/위치/반론/이슈 액션만 보여준다. `pnpm check:visual-surface:evidence`는 `reelPendingFullCount=0`을 검사한다. 실제 운영 공개 영상과 사용자 수락 전에는 S+가 아니다.
 - 03:14 패치로 홈 카드의 반복 요약을 줄였다. 첫 카드 흐름은 `제목 → 서울 · 현장 2건 · 위치 1곳 → 영상 1건 · 인원 추정 검토 → 공식 확인 중 · 다른 주장 1건`처럼 줄마다 역할이 나뉘며, 기존 `서울에서 같은 주제로 확인된 현장 2건을 묶어 봅니다` 문장과 같은 수치 반복을 제거했다. 390px/1440px 모두 `scrollWidth=viewport`, 첫 카드 높이 206/216px이다. 아직 데스크톱 홈 지도와 이슈 목록 경쟁, 실제 운영 데이터 품질, 사용자 수락 전 S+는 아니다.
 - 04:43 독립 비평 기준 현재 화면은 S+가 아니다. Visual critique는 A- 공공서비스 프로토타입, IA red-team은 B-로 평가했다. 이번 패치는 `영상/지도/제보`가 선택 이슈 맥락으로 읽히게 하는 1차 보정이며, 상업용 S+ 승급 근거가 아니다.
 - 05:02 패치로 현장 영상 poster를 어두운 야간 placeholder 톤에서 밝은 비식별 공공 현장 프레임으로 재생성했고, 데스크톱 제보 화면에 연결 이슈·선택 현장·공개 위치·현재 단계 상태 패널을 추가했다. 그래도 사용자 수락 전 S+는 아니다.
@@ -155,7 +156,7 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 13 | 사용자 수락 | 대기 | 사용자가 상업용 앱 수준으로 인정 |
 | 14 | 상위 IA 재검증 | Active | `영상/지도/제보`에 선택 이슈 문맥 라인은 생겼지만 독립 red-team은 B- 판정. 10초 위치·시간·규모 이해도와 사용자 수락 필요 |
 | 15 | 모바일 릴스 내비 겹침 제거 | 완료 | 390px에서 릴스 오버레이/액션 bottom 759px, 하단 내비 top 772px, 겹침 없음 |
-| 16 | 영상 표면 placeholder감 완화 | 1차 완료 | 390px 릴스에서 poster `naturalWidth=960`, 밝은 비식별 현장 프레임 표시, 하단 내비 겹침 없음 |
+| 16 | 영상 표면 placeholder감 완화 | 2차 완료 | poster 없는 LIVE Claim은 `reel-pending-card` 검토 카드로 낮추고, 실제 공개 clip+poster가 있을 때만 풀스크린 video player를 사용. 390/430/768/1440px `reelPendingFullCount=0`, 하단 내비 겹침 없음 |
 | 17 | 데스크톱 제보 빈 공간 완화 | 1차 완료 | 1440px 제보 화면에서 context panel visible, panel width 980px, start/action gap 12px, `overflowX=false` |
 | 18 | 지도-first 재배치 | 1차 완료 | 지도 탭에서 map shell이 explore grid보다 먼저 렌더되고, 1440px top 211px/height 700px, 390px top 215px/height 460px로 첫 화면에 보임 |
 | 19 | 10초 위치·시간·규모 보강 | 1차 완료 | 홈 이슈 카드에 `서울·대전 · 7월 7일 기준 · 공개 현장 3건 · 영상 근거 1건` 형식의 빠른 상황 줄이 보임 |
@@ -437,6 +438,9 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 01:52 live visual gate | `pnpm check:visual-surface:live` 통과. 실제 `https://musunil.com`에서 390px, 430px, 768px, 1440px 홈·상세·영상·탐색·제보 20개 상태가 통과했다. |
 | 02:05 integrated live watch | `pnpm service:watch:visual` 추가. 배포 직후 실제 화면 렌더링과 운영 차단 항목을 `docs/splus-service-watch.md` 한 문서에 남길 수 있게 됐다. |
 | 02:09 live sync state gate | `pnpm check:visual-surface`는 local fallback에서 `serviceStates=["delayed"]`, banner visible 20을 출력하며 통과. `pnpm service:watch:visual`은 live fallback 상태를 `web_visual_surface` 실패로 기록한다. |
+| 19:53 mobile pending video card | `docs/visual-evidence/current/mobile_390_reels.png` |
+| 19:53 desktop pending video card | `docs/visual-evidence/current/desktop_1440_reels.png` |
+| 19:53 reels metrics | poster 없는 LIVE Claim은 `reel-card reel-full reel-pending`이 아니라 `reel-pending-card`로 표시된다. 390/430/768/1440px visual smoke에서 `reelPendingFullCount=0`, `navOverlap=false`, forbidden 0. 실제 공개 clip+poster가 있으면 `<video class="reel-video">` 경로를 유지한다. 사용자 수락 전 S+는 아니다. |
 
 ## Non-Negotiable Gates
 

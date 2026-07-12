@@ -228,9 +228,10 @@ async function checkWeb(port) {
   assert(index.includes("data-reel-action=\"dispute\""), "reel dispute action missing");
   assert(index.includes("reelsDefaultIssue"), "reels should choose a video-bearing issue by default");
   assert(index.includes("renderReelsEmptyState"), "professional reels empty state missing");
-  assert(index.includes("renderReelsPendingReview"), "posterless live claims should render as pending full-screen reels");
-  assert(index.includes("reel-full reel-pending"), "posterless review should use full-screen reel styling");
-  assert(index.includes('renderPublicVideoReviewSlot("reel")'), "posterless review should use reel-size review surface");
+  assert(index.includes("renderReelsPendingReview"), "posterless live claims should render as pending review cards");
+  assert(index.includes("reel-pending-card"), "posterless review should use a non-video pending card");
+  assert(!index.includes("reel-full reel-pending"), "posterless review must not look like a playable full-screen reel");
+  assert(!index.includes('renderPublicVideoReviewSlot("reel")'), "posterless review must not use a fake reel-size video surface");
   assert(!index.includes("reels-review-panel"), "legacy posterless review panel returned");
   assert(index.includes('data-reel-empty-action="map"'), "reels empty map recovery action missing");
   assert(index.includes('data-reel-empty-action="evidence"'), "reels empty evidence recovery action missing");

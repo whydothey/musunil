@@ -237,6 +237,7 @@ async function runViewport(client, viewport, url) {
     () => assert(reels.forbidden.length === 0, `forbidden reels copy: ${reels.forbidden.join(", ")}`),
     () => assert(reels.reelActionLabels.includes("근거"), `reels evidence action missing: ${reels.reelActionLabels.join(", ")}`),
     () => assert(reels.reelActionLabels.some((label) => /위치|지도/.test(label)), `reels location action missing: ${reels.reelActionLabels.join(", ")}`),
+    () => assert(reels.reelPendingFullCount === 0, "posterless pending claims should not render as full-screen video reels"),
     () => assert(reels.issueContextTitle.length >= 6, "reels issue context title is missing"),
     () => assert(!viewport.mobile || !reels.navOverlap, "mobile reels action surface overlaps bottom navigation")
   ], serviceDetail(reels));
@@ -373,6 +374,8 @@ function visualMetrics(label) {
       detailActionMinWidth: Math.min(...[...document.querySelectorAll(".detail-action-row button")].filter(visible).map((node) => Math.round(node.getBoundingClientRect().width)), 999),
       detailActionRight: Math.max(0, ...[...document.querySelectorAll(".detail-action-row button")].filter(visible).map((node) => Math.round(node.getBoundingClientRect().right))),
       reelActionLabels: [...document.querySelectorAll("[data-reel-action] span, [data-reel-empty-action] span")].filter(visible).map((node) => node.textContent.trim()),
+      reelPendingCardCount: [...document.querySelectorAll(".reel-pending-card")].filter(visible).length,
+      reelPendingFullCount: [...document.querySelectorAll(".reel-card.reel-full.reel-pending")].filter(visible).length,
       issueContextTitle: document.querySelector("#reels-anchor-title")?.textContent?.trim() || "",
       mapRect: rect(".map-shell"),
       mapSheetHeight: rect(".map-sheet").height,
