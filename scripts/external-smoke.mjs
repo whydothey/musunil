@@ -7,7 +7,12 @@ const listOnly = process.argv.includes("--list");
 const steps = [
   { id: "storage", args: ["storage:smoke"], requireRealOutput: "storage_put_delete" },
   { id: "redaction", args: ["redaction:smoke"], requireRealOutput: "redaction_engine_smoke" },
-  { id: "mobile_integrity", args: ["mobile:integrity-smoke"], requireRealOutput: "mobile_integrity_provider_dry_run" },
+  {
+    id: "mobile_integrity",
+    args: ["mobile:integrity-smoke"],
+    requireRealOutput: "mobile_integrity_provider_dry_run",
+    proofContract: "structured JSON with checked, provider, packageName or bundleId/teamId, and verdict"
+  },
   { id: "identity", args: ["identity:smoke"], requireRealOutput: "identity_portone_verified_lookup" },
   {
     id: postLaws ? "laws_post" : "laws_dry_run",
@@ -20,10 +25,11 @@ const steps = [
 if (listOnly) {
   console.log(JSON.stringify({
     checked: "external_smoke_plan",
-    steps: steps.map(({ id, args, requireRealOutput, forbidOutput }) => ({
+    steps: steps.map(({ id, args, requireRealOutput, proofContract, forbidOutput }) => ({
       id,
       command: [pnpm, ...args].join(" "),
       proofMarker: requireRealOutput,
+      proofContract: proofContract || null,
       forbiddenMarker: forbidOutput || null
     }))
   }, null, 2));

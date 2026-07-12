@@ -164,7 +164,8 @@ function mobileIntegrityGroup(component = {}) {
       field("mobile.integrity_smoke_command", component.smokeCommandStatus)
     ],
     command: component.smokeCommand || "pnpm mobile:integrity-smoke",
-    proof: component.smokeMarkerRequired || "mobile_integrity_provider_dry_run"
+    proof: component.smokeMarkerRequired || "mobile_integrity_provider_dry_run",
+    proofContract: component.smokeProofContract || "structured JSON with checked, provider, packageName or bundleId/teamId, and verdict"
   };
 }
 
@@ -349,6 +350,7 @@ function providerGroupLines(groups) {
     `- Status: ${group.readyForSmoke ? "ready_for_smoke" : "missing_inputs"}`,
     `- Command: \`${group.command}\``,
     `- Proof marker: \`${group.proof}\``,
+    ...(group.proofContract ? [`- Proof contract: ${group.proofContract}`] : []),
     ...(group.notes || []).map((note) => `- ${note}`),
     "",
     "| Field | Status |",
@@ -373,8 +375,9 @@ function stepLines(steps) {
   return steps.map((step) => {
     const command = step.command || "";
     const proof = step.proofMarker ? `, proof: \`${step.proofMarker}\`` : "";
+    const proofContract = step.proofContract ? `, contract: ${step.proofContract}` : "";
     const forbidden = step.forbiddenMarker ? `, forbidden: \`${step.forbiddenMarker}\`` : "";
-    return `- ${step.id}: \`${command}\`${proof}${forbidden}`;
+    return `- ${step.id}: \`${command}\`${proof}${proofContract}${forbidden}`;
   });
 }
 

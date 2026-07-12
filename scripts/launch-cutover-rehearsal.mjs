@@ -361,6 +361,7 @@ function compact(value, maxLength = 240) {
 
 function formatStep(step) {
   const proof = step.proofMarker ? `, proof: \`${step.proofMarker}\`` : "";
+  const proofContract = step.proofContract ? `, contract: ${step.proofContract}` : "";
   const forbidden = step.forbiddenMarker ? `, forbidden: \`${step.forbiddenMarker}\`` : "";
-  return `${step.id}: \`${step.command}\`${proof}${forbidden}`;
+  return `${step.id}: \`${step.command}\`${proof}${proofContract}${forbidden}`;
 }

@@ -652,9 +652,13 @@ if (
   !/Launch Ready Plan/.test(launchCutoverRehearsal) ||
   !/External Smoke Proofs/.test(launchCutoverRehearsal) ||
   !/proofMarker/.test(launchCutoverRehearsal) ||
+  !/proofContract/.test(launchCutoverRehearsal) ||
+  !/contract:/.test(launchCutoverRehearsal) ||
+  !/proofContract/.test(externalSmoke) ||
   !/storage_put_delete/.test(externalSmoke) ||
   !/redaction_engine_smoke/.test(externalSmoke) ||
   !/mobile_integrity_provider_dry_run/.test(externalSmoke) ||
+  !/structured JSON with checked, provider, packageName or bundleId\/teamId, and verdict/.test(externalSmoke) ||
   !/identity_portone_verified_lookup/.test(externalSmoke) ||
   !/--refresh/.test(launchCutoverRehearsal) ||
   !/--strict/.test(launchCutoverRehearsal) ||
@@ -737,6 +741,7 @@ if (
   !/proof: `storage_put_delete`/.test(launchOperatorBriefDoc) ||
   !/proof: `redaction_engine_smoke`/.test(launchOperatorBriefDoc) ||
   !/proof: `mobile_integrity_provider_dry_run`/.test(launchOperatorBriefDoc) ||
+  !/contract: structured JSON with checked, provider, packageName or bundleId\/teamId, and verdict/.test(launchOperatorBriefDoc) ||
   !/proof: `identity_portone_verified_lookup`/.test(launchOperatorBriefDoc) ||
   !/cloudflare:dns/.test(launchOperatorBriefDoc) ||
   !/cloudflare:headers/.test(launchOperatorBriefDoc) ||
@@ -820,6 +825,7 @@ if (
   !/storage_put_delete/.test(launchMissingInputsDoc) ||
   !/redaction_engine_smoke/.test(launchMissingInputsDoc) ||
   !/mobile_integrity_provider_dry_run/.test(launchMissingInputsDoc) ||
+  !/Proof contract: structured JSON with checked, provider, packageName or bundleId\/teamId, and verdict/.test(launchMissingInputsDoc) ||
   !/identity_portone_verified_lookup/.test(launchMissingInputsDoc) ||
   !/laws_dry_run/.test(launchMissingInputsDoc) ||
   !/public_data_sources\.national_assembly_bill_api_key/.test(launchMissingInputsDoc) ||

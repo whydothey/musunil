@@ -5,12 +5,12 @@
 
 ## Current Gate
 
-- Generated: 2026-07-12T09:16:35.398Z
+- Generated: 2026-07-12T09:53:54.708Z
 - Source: local_file
 - Launch state: blocked
 - Current stage: connect_api_endpoint
 - Release blocked: yes
-- Blocker report: 2026-07-12T09:16:33.541Z (0m old, refresh after 15m)
+- Blocker report: 2026-07-12T09:53:52.890Z (0m old, refresh after 15m)
 - Report freshness: fresh
 - Before apply command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Immediate safe command: `pnpm launch:apply`
@@ -62,6 +62,7 @@
 - Status: missing_inputs
 - Command: `pnpm mobile:integrity-smoke`
 - Proof marker: `mobile_integrity_provider_dry_run`
+- Proof contract: structured JSON with checked, provider, packageName or bundleId/teamId, and verdict
 
 | Field | Status |
 |---|---|
@@ -132,7 +133,7 @@
 
 - storage: `pnpm storage:smoke`, proof: `storage_put_delete`
 - redaction: `pnpm redaction:smoke`, proof: `redaction_engine_smoke`
-- mobile_integrity: `pnpm mobile:integrity-smoke`, proof: `mobile_integrity_provider_dry_run`
+- mobile_integrity: `pnpm mobile:integrity-smoke`, proof: `mobile_integrity_provider_dry_run`, contract: structured JSON with checked, provider, packageName or bundleId/teamId, and verdict
 - identity: `pnpm identity:smoke`, proof: `identity_portone_verified_lookup`
 - laws_dry_run: `pnpm sources:laws`, proof: `laws_dry_run`, forbidden: `laws_disabled`
 

@@ -102,6 +102,7 @@ function mobileIntegrityDiagnostics() {
     iosTeamStatus: iosEnabled ? status("mobile.ios_team_id") : "not_required",
     smokeCommandStatus: commandStatus(readString("mobile.integrity_smoke_command")),
     smokeMarkerRequired: "mobile_integrity_provider_dry_run",
+    smokeProofContract: "structured JSON with checked, provider, packageName or bundleId/teamId, and verdict",
     smokeCommandEchoSuppressed: true,
     smokeCommand: "pnpm mobile:integrity-smoke",
     metadataReady: androidEnabled || iosEnabled,
