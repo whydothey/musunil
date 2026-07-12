@@ -935,6 +935,15 @@ if (
   !/Referrer-Policy/.test(serviceWatch) ||
   !/X-Content-Type-Options/.test(serviceWatch) ||
   !/X-Frame-Options/.test(serviceWatch) ||
+  !/forbiddenPublicUiTokens/.test(serviceWatch) ||
+  !/forbiddenPublicPayloadTokens/.test(serviceWatch) ||
+  !/web_forbidden_ui_absent/.test(serviceWatch) ||
+  !/transit_occurrence/.test(serviceWatch) ||
+  !/crowd_density_signal/.test(serviceWatch) ||
+  !/route_segment/.test(serviceWatch) ||
+  !/route_checkpoint/.test(serviceWatch) ||
+  !/hazard_area/.test(serviceWatch) ||
+  !/service_disruption/.test(serviceWatch) ||
   !/web_visual_surface/.test(serviceWatch) ||
   !/publicPayloadRoutes/.test(serviceWatch) ||
   !/assertHomeIssueFirstPayload/.test(serviceWatch) ||

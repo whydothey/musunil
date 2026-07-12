@@ -16,6 +16,71 @@ const expectedCommitSha = process.env.MUSUNIL_EXPECTED_COMMIT_SHA;
 const reportPath = resolve(process.cwd(), "docs/splus-service-watch.md");
 let webStaticManifestVerified = false;
 let apiEndpointReachable = false;
+const forbiddenPublicUiTokens = [
+  "좋아요",
+  "댓글",
+  "찬반",
+  "추천",
+  "비추천",
+  "팔로우",
+  "localhost:4000",
+  "traffic_control",
+  "WEAKLY_OBSERVED",
+  "transit_occurrence",
+  "crowd_density_signal",
+  "route_segment",
+  "route_checkpoint",
+  "hazard_area",
+  "service_disruption",
+  "🪧",
+  "📊",
+  "⛺",
+  "🚇",
+  "👥",
+  "🚧",
+  "➰"
+];
+const forbiddenPublicPayloadTokens = [
+  '"statement"',
+  "private/live/",
+  '"mediaBase64"',
+  '"storageKey"',
+  '"publicStorageKey"',
+  '"publicPosterKey"',
+  '"privateLng"',
+  '"privateLat"',
+  '"geoCell"',
+  '"foregroundGps"',
+  '"captureMode"',
+  '"gpsAccuracyM"',
+  '"distanceToTargetM"',
+  '"deviceAttestationBucket"',
+  '"deviceIntegrityProvider"',
+  '"deviceIntegrityProofHash"',
+  '"deviceIntegrityCheckedAt"',
+  '"redactionProofHash"',
+  '"redactionCheckedAt"',
+  '"reviewTargetClaimId"',
+  '"rawText"',
+  '"userId"',
+  '"tokenHash"',
+  "identityProvider\":\"portone\"",
+  '"identityVerificationId"',
+  '"ciHash"',
+  '"diHash"',
+  '"subjectHash"',
+  '"phone"',
+  '"name"',
+  '"birthDate"',
+  "traffic_control",
+  "WEAKLY_OBSERVED",
+  "transit_occurrence",
+  "crowd_density_signal",
+  "route_segment",
+  "route_checkpoint",
+  "hazard_area",
+  "service_disruption"
+];
 const webHeaderContract = [
   {
     id: "cache-control",
@@ -140,8 +205,8 @@ async function runChecks() {
   });
   await check(checks, "web_forbidden_ui_absent", async () => {
     const html = await getText(`${webBaseUrl}/`);
-    assertAbsent(html, ["좋아요", "댓글", "찬반", "추천", "비추천", "팔로우", "localhost:4000", "traffic_control", "WEAKLY_OBSERVED"]);
-    return { bytes: html.length };
+    assertAbsent(html, forbiddenPublicUiTokens);
+    return { bytes: html.length, tokenCount: forbiddenPublicUiTokens.length };
   });
   await check(checks, "web_visual_surface", async () => {
     if (!withVisualSurface) throw new SkipCheck("skipped: run service-watch with --with-visual or MUSUNIL_SERVICE_WATCH_VISUAL=1");
@@ -397,39 +462,7 @@ function assertAbsent(text, tokens) {
 
 function assertPublicPayloadSafe(body) {
   const text = JSON.stringify(body);
-  assertAbsent(text, [
-    '"statement"',
-    "private/live/",
-    '"mediaBase64"',
-    '"storageKey"',
-    '"publicStorageKey"',
-    '"publicPosterKey"',
-    '"privateLng"',
-    '"privateLat"',
-    '"geoCell"',
-    '"foregroundGps"',
-    '"captureMode"',
-    '"gpsAccuracyM"',
-    '"distanceToTargetM"',
-    '"deviceAttestationBucket"',
-    '"deviceIntegrityProvider"',
-    '"deviceIntegrityProofHash"',
-    '"deviceIntegrityCheckedAt"',
-    '"redactionProofHash"',
-    '"redactionCheckedAt"',
-    '"reviewTargetClaimId"',
-    '"rawText"',
-    '"userId"',
-    '"tokenHash"',
-    "identityProvider\":\"portone\"",
-    '"identityVerificationId"',
-    '"ciHash"',
-    '"diHash"',
-    '"subjectHash"',
-    '"phone"',
-    '"name"',
-    '"birthDate"'
-  ]);
+  assertAbsent(text, forbiddenPublicPayloadTokens);
 }
 
 function assertPublicSourceRefreshesCurrent(coverage) {

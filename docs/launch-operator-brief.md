@@ -6,14 +6,14 @@
 
 ## Current State
 
-- Generated: 2026-07-12T05:25:55.179Z
-- Git SHA: 63669ff2e23aaeffae48df3d61a415674448b68f
+- Generated: 2026-07-12T05:35:10.053Z
+- Git SHA: 6c908a3ee02c6067750b88a03fe753dea7835e1d
 - Refresh command: `pnpm launch:operator-brief -- --refresh`
 - Active goal: active
 - Launch readiness: blocked
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T05:26:08.902Z (fresh)
+- Service watch: 2026-07-12T05:35:23.648Z (fresh)
 - Checks: 4 ok, 3 fail, 13 skip, 4 actions
 - Before next command: Render API token과 Cloudflare token이 있으면 `pnpm launch:apply -- --apply`가 api.musunil.com custom domain 생성, Render onrender.com target 파생, Cloudflare DNS 적용을 한 번에 처리한다. token이 없으면 dry-run 출력의 requiredEnv만 채우고, 하위 확인은 `pnpm render:api-settings`와 `pnpm cloudflare:dns`를 사용한다.
 - Next command: `pnpm launch:apply && pnpm launch:final-gate`

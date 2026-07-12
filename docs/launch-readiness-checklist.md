@@ -146,7 +146,7 @@
 - `apps/web/static-manifest.json`은 `index.html`, `config.js`, `_headers`, 공개 poster/clip의 SHA-256과 byte size를 담는다. 배포 후 `pnpm check:web-deploy`와 `pnpm service:watch -- --once`는 manifest의 모든 live 파일을 다시 받아 hash/byte size가 현재 repo 산출물과 같은지 확인한다.
 - 배포 후 `pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes`가 live Web config 정합성, strict Web headers, API smoke, 법안 원천, 공개 집회 원천 refresh ledger를 함께 통과해야 한다. build-info placeholder fallback과 static hash 검증은 이어지는 `check:web-deploy`에서 처리하며, static hash 불일치는 실패다.
 - 헤더까지 strict하게 닫으려면 `MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy`가 통과해야 한다. 이때 live `config.js`의 `apiBaseUrl`도 `https://api.musunil.com`과 일치해야 한다.
-- 공개 홈 카드에는 `WEAKLY_OBSERVED`, `traffic_control` 같은 내부 enum 원문이 보이지 않는다.
+- 공개 홈 카드와 live public payload에는 `WEAKLY_OBSERVED`, `traffic_control`, `transit_occurrence`, `crowd_density_signal`, `route_segment`, `route_checkpoint`, `hazard_area`, `service_disruption` 같은 내부 enum/제거된 도메인 원문이 보이지 않는다.
 - 내부/admin 라우트는 `x-musunil-internal-key` 없이는 막히고 constant-time 비교를 사용한다.
 - 내부 risk dashboard는 사용자/기기 군집을 bucket으로만 표시하고 raw userId/device attestation을 노출하지 않는다.
 - 공개 API가 보낸 `deviceIntegrityStatus: pass`는 서버 검증값으로 저장하지 않고 `unknown` 검토 신호로 남긴다.
