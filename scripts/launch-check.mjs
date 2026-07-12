@@ -258,6 +258,7 @@ if (!/"render:api-settings"/.test(packageJson) || !/render-api-settings\.mjs/.te
   failures.push("Render API settings helper command is missing");
 }
 if (
+  !/"launch:next-actions":\s*"node scripts\/launch-next-actions\.mjs"/.test(packageJson) ||
   !/"launch:blockers"/.test(packageJson) ||
   !/"launch:blockers:strict"/.test(packageJson) ||
   !/"launch:blockers:refresh-strict"/.test(packageJson) ||
