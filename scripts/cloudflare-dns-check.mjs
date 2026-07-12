@@ -249,7 +249,7 @@ function requiredActions(items) {
     actions.push({
       id: "fix_api_runtime",
       action: "Render musunil-api /ready 응답의 summary.blockingGroups와 requiredActions를 먼저 확인한다. DB/Redis, Secret File, PortOne, storage, public source key, migration 중 실패한 운영 묶음을 채운 뒤 재배포한다.",
-      verify: "pnpm render:api-settings && pnpm cloudflare:check && pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes"
+      verify: "pnpm render:api-settings && pnpm cloudflare:check && pnpm sources:refresh-preflight && pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes"
     });
   }
   return actions;

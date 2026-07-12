@@ -76,7 +76,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 pnpm launch:ready -- config/musunil.user-inputs.local.yaml
 pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws
 pnpm cloudflare:check:strict
-pnpm sources:assemblies:post
+pnpm sources:refresh-preflight
 pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes
 pnpm launch:cutover-rehearsal -- --strict
 pnpm launch:final-gate
@@ -168,7 +168,7 @@ GET /ready -> 200
 2. 실제 운영 입력 YAML을 채운다.
 3. `pnpm launch:ready -- <yaml>`를 통과시킨다.
 4. `pnpm launch:ready -- <yaml> --post-laws`를 staging 또는 운영 전 리허설에서 통과시킨다.
-5. Render 배포 후 `pnpm sources:assemblies:post`를 실행해 공개 집회 원천 refresh ledger를 남긴다.
+5. Render 배포 후 `pnpm sources:refresh-preflight`로 공개 집회 원천 refresh ledger를 확인한다. ledger가 부족하고 `MUSUNIL_INTERNAL_API_KEY`가 있으면 이 단계가 `sources:assemblies:post`를 자동 실행한다.
 6. Render 배포 후 `pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes`를 production 기본 URL 기준으로 통과시킨다. staging/preview 도메인은 env override로만 검증한다.
 7. `pnpm launch:final-gate`를 통과시킨다.
 8. Element Execution Board의 Active row를 증거 기반으로 Guard 또는 S+로 승급한다.

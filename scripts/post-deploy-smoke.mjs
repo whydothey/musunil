@@ -193,7 +193,7 @@ function assertSourceRefreshesCurrent(coverage) {
   const missing = activeSourceIds.filter((sourceId) => !refreshBySource.has(sourceId));
   assert(
     missing.length === 0,
-    `sourceRefreshes missing active schedule sources: ${missing.join(", ")}; run pnpm sources:assemblies:post before final gate`
+    `sourceRefreshes missing active schedule sources: ${missing.join(", ")}; run pnpm sources:refresh-preflight before final gate`
   );
 
   const invalid = activeSourceIds.filter((sourceId) => {

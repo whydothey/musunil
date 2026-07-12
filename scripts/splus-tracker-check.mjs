@@ -141,7 +141,7 @@ if (!launch.includes("`pnpm identity:smoke`")) failures.push("launch checklist m
 if (!launch.includes("`pnpm launch:ready`")) failures.push("launch checklist missing unified launch-ready command");
 if (!launch.includes("`pnpm launch:post-deploy-smoke`")) failures.push("launch checklist missing post-deploy smoke command");
 if (!launch.includes("`pnpm launch:final-gate`")) failures.push("launch checklist missing final gate command");
-for (const term of ["pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws", "pnpm sources:assemblies:post", "pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes", "pnpm launch:final-gate"]) {
+for (const term of ["pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws", "pnpm sources:refresh-preflight", "pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes", "pnpm launch:final-gate"]) {
   if (!userInputsManual.includes(term)) failures.push(`user inputs manual missing final launch command: ${term}`);
 }
 for (const term of ["pnpm launch:ready", "pnpm launch:post-deploy-smoke", "pnpm launch:final-gate", "sample gate", "실제 `pnpm storage:smoke`", "실제 `pnpm redaction:smoke`", "실제 `pnpm mobile:integrity-smoke`", "실제 `pnpm identity:smoke`", "운영 DB/Redis/Render `/ready`"]) {

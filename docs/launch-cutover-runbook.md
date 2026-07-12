@@ -192,7 +192,7 @@ MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com \
 MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) \
 pnpm check:web-deploy
 
-pnpm sources:assemblies:post
+pnpm sources:refresh-preflight
 pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes
 
 MUSUNIL_WEB_BASE_URL=https://musunil.com \

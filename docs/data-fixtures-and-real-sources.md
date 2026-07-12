@@ -100,6 +100,12 @@ pnpm sources:assemblies
 pnpm sources:assemblies:post
 ```
 
+출시 전 refresh preflight:
+
+```bash
+pnpm sources:refresh-preflight
+```
+
 API 확인:
 
 ```bash
@@ -120,9 +126,9 @@ coverage report는 각 권역마다 아래 필드를 가진다.
 
 diagnose report는 외부 사이트 fetch 없이 원천 registry만 검사한다. active schedule 원천은 모두 `readiness=ingestable`이어야 하며, `blockedSourceIds`, `parserMissingSourceIds`, `urlMissingSourceIds`, `postBodyMissingSourceIds`가 비어 있어야 한다. POST JSON/HTML 원천은 `bodyStatus=present`, EUC-KR 원천은 `encoding=euc-kr`로 명시되어야 한다.
 
-`pnpm sources:assemblies`는 외부 원천 fetch/parse까지만 검증하고 API에 쓰지 않는다. `pnpm sources:assemblies:post`는 같은 결과를 운영 API `/internal/ingest/public-occurrence`에 전송한다.
+`pnpm sources:assemblies`는 외부 원천 fetch/parse까지만 검증하고 API에 쓰지 않는다. `pnpm sources:assemblies:post`는 같은 결과를 운영 API `/internal/ingest/public-occurrence`에 전송한다. `pnpm sources:refresh-preflight`는 운영 API의 기존 `sourceRefreshes`를 먼저 확인하고, 부족하며 `MUSUNIL_INTERNAL_API_KEY`가 있으면 `sources:assemblies:post`를 자동 실행한 뒤 다시 확인한다.
 
-운영 API의 `/public-sources/coverage`는 정적 registry의 `lastCheckedAt`만 보지 않는다. 공개 원천 worker가 payload에 registry `sourceId`와 `sourceCheckedAt`를 붙이고, API가 성공적으로 ingest한 원천별 갱신 시간을 `sourceRefreshes`로 저장한다. coverage의 `lastCheckedAt`, `nextRefreshAt`, `freshness`는 registry 기준 시간과 실제 ingest ledger 중 최신 값을 사용한다. 따라서 `18/18 parser 준비`는 구조 준비 증거이고, `sourceRefreshes`와 freshness는 실제 cron 성공 증거다. 출시 전 `pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes`는 18개 활성 일정 원천 모두의 refresh ledger를 요구한다.
+운영 API의 `/public-sources/coverage`는 정적 registry의 `lastCheckedAt`만 보지 않는다. 공개 원천 worker가 payload에 registry `sourceId`와 `sourceCheckedAt`를 붙이고, API가 성공적으로 ingest한 원천별 갱신 시간을 `sourceRefreshes`로 저장한다. coverage의 `lastCheckedAt`, `nextRefreshAt`, `freshness`는 registry 기준 시간과 실제 ingest ledger 중 최신 값을 사용한다. 따라서 `18/18 parser 준비`는 구조 준비 증거이고, `sourceRefreshes`와 freshness는 실제 cron 성공 증거다. 출시 전 `pnpm sources:refresh-preflight`와 `pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes`는 18개 활성 일정 원천 모두의 refresh ledger를 요구한다.
 
 웹 상단 상태에는 `일정 <active>/<total> · 후보 <candidate>`가 표시된다. 현재는 18개 시도경찰청 권역 모두 일정 parser가 활성 상태라 `18/18`이 정상이다. 접힌 coverage 패널을 열면 권역별 공개 일정 원천, 다음 점검 시각, 갱신 상태를 확인할 수 있다.
 

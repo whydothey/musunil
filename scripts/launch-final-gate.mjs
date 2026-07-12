@@ -7,6 +7,11 @@ const launchEnv = deriveLaunchEnv(process.env);
 
 const steps = [
   {
+    id: "public_source_refresh_preflight",
+    scope: "live_public_sources",
+    args: ["sources:refresh-preflight"]
+  },
+  {
     id: "post_deploy_smoke",
     scope: "live_web_api",
     args: ["launch:post-deploy-smoke", "--", "--require-laws", "--require-source-refreshes"]

@@ -89,13 +89,13 @@ pnpm cloudflare:check:strict
 배포 후에는 아래 명령으로 API와 Web이 같은 최신 커밋을 보고 있는지 확인한다.
 
 ```bash
-pnpm sources:assemblies:post
+pnpm sources:refresh-preflight
 pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes
 ```
 
 이 smoke는 production 기본값으로 `https://musunil.com`, `https://api.musunil.com`, 현재 Git SHA를 보정한다. staging/preview 도메인을 검증할 때만 `MUSUNIL_WEB_BASE_URL`, `MUSUNIL_API_BASE_URL`, `MUSUNIL_EXPECTED_API_BASE_URL`, `MUSUNIL_EXPECTED_COMMIT_SHA`를 override한다.
 이 검증이 실패하면 Render가 다른 브랜치/Root/Build Command/Publish Directory를 보고 있거나, Static Site headers/Cloudflare 캐시가 구버전을 반환하는 상태다.
-최종 출시 판정은 `pnpm launch:final-gate`를 실행한다. 이 명령은 production 기본값으로 `musunil.com`, `api.musunil.com`, 현재 Git SHA를 보정한 뒤 법안·공개 집회 원천 refresh를 요구하는 post-deploy smoke와 live service watch blocker 갱신을 순서대로 실행한다. 법안·공개 집회 원천·API·정적 해시·live visual sync 중 하나라도 남으면 실패한다.
+최종 출시 판정은 `pnpm launch:final-gate`를 실행한다. 이 명령은 production 기본값으로 `musunil.com`, `api.musunil.com`, 현재 Git SHA를 보정한 뒤 공개 집회 원천 refresh preflight, 법안·공개 집회 원천 refresh를 요구하는 post-deploy smoke, live service watch blocker 갱신을 순서대로 실행한다. 법안·공개 집회 원천·API·정적 해시·live visual sync 중 하나라도 남으면 실패한다.
 
 ## 현재 구현 범위
 

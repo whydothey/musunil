@@ -41,7 +41,7 @@ const settings = {
     ': "${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}"',
     "pnpm cloudflare:dns",
     "pnpm cloudflare:check:strict",
-    "pnpm sources:assemblies:post",
+    "pnpm sources:refresh-preflight",
     "pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes",
     "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once",
     "pnpm launch:final-gate"

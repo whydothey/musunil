@@ -59,6 +59,7 @@ const visualSurfaceSmoke = readFileSync(resolve(cwd, "scripts/ci-visual-surface-
 const publicApiRoutes = readFileSync(resolve(cwd, "scripts/public-api-routes.mjs"), "utf8");
 const webStaticManifestScript = readFileSync(resolve(cwd, "scripts/write-web-static-manifest.mjs"), "utf8");
 const postDeploySmokeRunner = readFileSync(resolve(cwd, "scripts/post-deploy-smoke-runner.mjs"), "utf8");
+const publicSourceRefreshPreflight = readFileSync(resolve(cwd, "scripts/public-source-refresh-preflight.mjs"), "utf8");
 const rootPackageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
 const ciWorkflow = readFileSync(resolve(cwd, ".github/workflows/ci.yml"), "utf8");
 const gitignore = readFileSync(resolve(cwd, ".gitignore"), "utf8");
@@ -274,7 +275,7 @@ if (
   !/sourceRefreshes/.test(postDeploySmoke) ||
   !/activeScheduleSourceId/.test(postDeploySmoke) ||
   !/resultCount/.test(postDeploySmoke) ||
-  !/pnpm sources:assemblies:post/.test(postDeploySmoke) ||
+  !/pnpm sources:refresh-preflight/.test(postDeploySmoke) ||
   !/admin\/review-queue/.test(postDeploySmoke) ||
   !/forbidden_engagement_surface_absent/.test(postDeploySmoke) ||
   !/\/comments/.test(postDeploySmoke) ||
@@ -389,7 +390,7 @@ if (
   !/cloudflare:apply/.test(launchNextActions) ||
   !/cloudflare:check/.test(launchNextActions) ||
   !/cloudflare:check:strict/.test(launchNextActions) ||
-  !/pnpm sources:assemblies:post/.test(launchNextActions) ||
+  !/pnpm sources:refresh-preflight/.test(launchNextActions) ||
   !/launch:post-deploy-smoke -- --require-laws --require-source-refreshes/.test(launchNextActions)
 ) {
   failures.push("Launch blockers helper must summarize service watch freshness, required actions, and Web/API/laws verification commands");
@@ -549,6 +550,8 @@ if (
   !/"launch:final-gate"/.test(packageJson) ||
   !/launch-final-gate\.mjs/.test(packageJson) ||
   !/launch_final_gate_plan/.test(launchFinalGate) ||
+  !/sources:refresh-preflight/.test(launchFinalGate) ||
+  !/public_source_refresh_preflight/.test(launchFinalGate) ||
   !/launch:post-deploy-smoke/.test(launchFinalGate) ||
   !/--require-laws/.test(launchFinalGate) ||
   !/--require-source-refreshes/.test(launchFinalGate) ||
@@ -558,9 +561,9 @@ if (
   !/gitHead\(\)/.test(launchFinalGate) ||
   !/scope:\s*step\.scope/.test(launchFinalGate) ||
   !/command:\s*stepCommands\.get\(step\.id\)/.test(launchFinalGate) ||
-  !/post_deploy_smoke[\s\S]*live_blocker_refresh_strict/.test(launchFinalGate)
+  !/public_source_refresh_preflight[\s\S]*post_deploy_smoke[\s\S]*live_blocker_refresh_strict/.test(launchFinalGate)
 ) {
-  failures.push("Launch final gate must run post-deploy smoke with laws and refresh-strict blockers in one ordered command");
+  failures.push("Launch final gate must run public source refresh preflight, post-deploy smoke with laws, and refresh-strict blockers in one ordered command");
 }
 if (
   !/api\.musunil\.com/.test(renderApiSettings) ||
@@ -572,7 +575,7 @@ if (
   !/render:apply -- --api-domain --apply/.test(renderApiSettings) ||
   !/cloudflare:dns/.test(renderApiSettings) ||
   !/cloudflare:check:strict/.test(renderApiSettings) ||
-  !/pnpm sources:assemblies:post/.test(renderApiSettings) ||
+  !/pnpm sources:refresh-preflight/.test(renderApiSettings) ||
   !/pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes/.test(renderApiSettings) ||
   !/pnpm launch:final-gate/.test(renderApiSettings) ||
   !/launch:post-deploy-smoke/.test(renderApiSettings) ||
@@ -893,7 +896,7 @@ if (
   !/sourceRefreshes/.test(serviceWatch) ||
   !/resultCount/.test(serviceWatch) ||
   !/refresh_public_source_ingest/.test(serviceWatch) ||
-  !/pnpm sources:assemblies:post/.test(serviceWatch) ||
+  !/pnpm sources:refresh-preflight/.test(serviceWatch) ||
   !/at least 3 topic Issues/.test(serviceWatch) ||
   !/public source bundle/.test(serviceWatch) ||
   !/serviceStates/.test(serviceWatch) ||
@@ -1105,8 +1108,23 @@ if (!/seoul_assembly_control/.test(publicSourceRegistry) || !/sejong_today_assem
 if (!/--diagnose/.test(publicIngestWorker) || !/--require-operational-readiness/.test(publicIngestWorker)) {
   failures.push("public source ingest worker must expose metadata-only operational diagnostics");
 }
-if (!/"sources:assemblies"/.test(rootPackageJson) || !/"sources:assemblies:post"/.test(rootPackageJson)) {
-  failures.push("package scripts must expose public assembly source dry-run and post commands");
+if (
+  !/"sources:assemblies"/.test(rootPackageJson) ||
+  !/"sources:assemblies:post"/.test(rootPackageJson) ||
+  !/"sources:refresh-preflight"/.test(rootPackageJson)
+) {
+  failures.push("package scripts must expose public assembly source dry-run, post, and refresh preflight commands");
+}
+if (
+  !/public_source_refresh_preflight/.test(publicSourceRefreshPreflight) ||
+  !/\/public-sources\/coverage/.test(publicSourceRefreshPreflight) ||
+  !/sourceRefreshes/.test(publicSourceRefreshPreflight) ||
+  !/sources:assemblies:post/.test(publicSourceRefreshPreflight) ||
+  !/MUSUNIL_INTERNAL_API_KEY/.test(publicSourceRefreshPreflight) ||
+  !/resultCount/.test(publicSourceRefreshPreflight) ||
+  !/overdueRegions/.test(publicSourceRefreshPreflight)
+) {
+  failures.push("public source refresh preflight must verify existing sourceRefreshes and post live public sources when an internal key is available");
 }
 if (!/"sources:diagnose"/.test(rootPackageJson) || !/"check:source-diagnostics"/.test(rootPackageJson) || !/check:source-diagnostics/.test(JSON.parse(rootPackageJson).scripts["check:release"] ?? "")) {
   failures.push("release check must include public source operational diagnostics");
