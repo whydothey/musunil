@@ -7,10 +7,10 @@
 - `pnpm check:release` 통과.
 - `pnpm launch:ready` 통과.
 - `pnpm launch:ready`는 external smoke 전에 `pnpm ops:diagnose -- --require-external-smoke-ready`를 실행한다.
-- `pnpm launch:post-deploy-smoke` 통과.
+- `pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes` 통과.
 - `pnpm launch:cutover-rehearsal` 실행. 이 명령은 `launch:blockers`, `launch:cutover-plan`, `launch:final-gate --list`를 묶어 현재 컷오버 stage, 다음 operator 명령, 남은 Required Actions를 한 화면에 보여준다. 최종 차단 게이트로 쓸 때는 `pnpm launch:cutover-rehearsal -- --strict`를 실행한다.
 - `pnpm launch:operator-brief` 실행. 이 명령은 현재 live blocker 보고서, Render Web/API 설정값, Cloudflare DNS, 사용자 입력 우선순위, 검증 순서를 [launch-operator-brief.md](/Users/mk/Documents/Musunil/docs/launch-operator-brief.md)에 갱신한다. 운영자가 마지막에 입력할 값은 이 브리프를 먼저 보고 처리한다.
-- `pnpm launch:final-gate` 통과. 이 명령은 배포 후 `pnpm launch:post-deploy-smoke -- --require-laws`와 `pnpm launch:blockers:refresh-strict`를 순서대로 실행하고, 앞 단계가 실패해도 live blocker 갱신까지 시도한 뒤 최종 실패한다.
+- `pnpm launch:final-gate` 통과. 이 명령은 배포 후 `pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes`와 `pnpm launch:blockers:refresh-strict`를 순서대로 실행하고, 앞 단계가 실패해도 live blocker 갱신까지 시도한 뒤 최종 실패한다.
 - Render/Cloudflare 연결 직후 `pnpm cloudflare:check`가 DNS, Web HTTPS, `config.js` API base, Web header smoke, API `/health`, `/ready`를 분리 진단한다. 최종 차단 게이트로 쓸 때는 `pnpm cloudflare:check:strict`를 실행한다.
 - Cloudflare DNS 입력 전 Render Dashboard가 보여주는 custom-domain target을 로컬 셸의 `MUSUNIL_RENDER_WEB_DNS_TARGET`, `MUSUNIL_RENDER_API_DNS_TARGET`에 넣고 `pnpm cloudflare:dns`를 실행한다. 추적 문서 [cloudflare-dns-records.md](/Users/mk/Documents/Musunil/docs/cloudflare-dns-records.md)와 [dns-records.tf.example](/Users/mk/Documents/Musunil/infra/cloudflare/dns-records.tf.example)는 placeholder 템플릿이고, 실제 target copy는 git-ignored local 파일에만 쓴다. API 레코드는 `/health`, `/ready`, CORS, media smoke 통과 전까지 DNS only로 두며, `pnpm cloudflare:check:strict`로 API CNAME target을 검증한다.
 - Render Static headers가 live 응답에 적용되지 않으면 `pnpm cloudflare:headers`를 실행해 Cloudflare Response Header Transform Rule 템플릿을 갱신한다. 이 템플릿은 Web 레코드 전용 대체 경로이며, API 레코드는 `/health`, `/ready`, CORS, media smoke 통과 전까지 DNS only로 둔다.
@@ -49,7 +49,8 @@
 - `/health` 200.
 - `/ready` 200, `config_source`, `postgres`, `redis` check가 모두 ok.
 - `/ready` 응답은 `summary.failedIds`, `summary.blockingGroups`, `requiredActions`를 포함한다. 실패 시 이 값으로 DB/Redis/스토리지/본인확인/법 원천/모바일 무결성 등 막힌 묶음을 바로 식별해야 한다.
-- 배포 후 `pnpm launch:post-deploy-smoke -- --require-laws` 통과. 이 명령은 production 기본값으로 `https://musunil.com`, `https://api.musunil.com`, 현재 Git SHA를 보정한다. staging/preview 도메인을 검증할 때만 `MUSUNIL_WEB_BASE_URL`, `MUSUNIL_API_BASE_URL`, `MUSUNIL_EXPECTED_API_BASE_URL`, `MUSUNIL_EXPECTED_COMMIT_SHA`를 override한다. Web `config.js`가 같은 API를 가리키는지, 요청 timeout과 redirect 수동 처리, API 보안 헤더, CORS 경계, `/home.issueCards` 주제형 Issue 3개 이상과 첫 항목 공개자료 묶음 금지, `/issues`, 첫 이슈 상세, 첫 이슈 live-claims, `/area-clusters`, `/map`, `/public-sources/coverage`, `/laws`, 첫 법안 상세 공개 응답 안전성을 함께 확인한다.
+- 배포 후 `pnpm sources:assemblies:post`를 실행해 18개 활성 공개 집회 원천을 실제 API에 ingest한다. 이 명령은 원천 fetch 실패, 0건 파싱, API POST 실패 시 non-zero로 종료해야 한다.
+- 배포 후 `pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes` 통과. 이 명령은 production 기본값으로 `https://musunil.com`, `https://api.musunil.com`, 현재 Git SHA를 보정한다. staging/preview 도메인을 검증할 때만 `MUSUNIL_WEB_BASE_URL`, `MUSUNIL_API_BASE_URL`, `MUSUNIL_EXPECTED_API_BASE_URL`, `MUSUNIL_EXPECTED_COMMIT_SHA`를 override한다. Web `config.js`가 같은 API를 가리키는지, 요청 timeout과 redirect 수동 처리, API 보안 헤더, CORS 경계, `/home.issueCards` 주제형 Issue 3개 이상과 첫 항목 공개자료 묶음 금지, `/issues`, 첫 이슈 상세, 첫 이슈 live-claims, `/area-clusters`, `/map`, `/public-sources/coverage.sourceRefreshes`, `/laws`, 첫 법안 상세 공개 응답 안전성을 함께 확인한다.
 - 배포 후 `pnpm launch:post-deploy-smoke`는 API `/media/redacted/preview-occ-live-1-poster.png`가 200 `image/png`, `/media/redacted/preview-occ-live-1.webm`이 200 `video/webm`으로 열리고 encoded traversal가 차단되는지 확인한다.
 - Render API health check path가 `/ready`다.
 - Render API build에서 `pnpm check`, `pnpm build:web-config`, `pnpm launch:check`가 실행된다.
@@ -142,7 +143,7 @@
 - `scripts/write-web-config.mjs`는 `MUSUNIL_WRITE_BUILD_INFO=1`뿐 아니라 Render 공식 build/deploy env(`RENDER`, `RENDER_GIT_COMMIT`, `RENDER_EXTERNAL_URL`, `RENDER_SERVICE_ID` 등)를 감지하면 build-info를 실제 배포 SHA로 쓴다. 따라서 Render Build Command가 `pnpm build:web-static`만 실행돼도 Render env가 주입되는 한 placeholder가 남지 않아야 한다.
 - 로컬 `check:release`와 smoke 명령은 tracked build-info placeholder를 변경하지 않아야 한다. 실제 build metadata 작성은 Render 또는 `MUSUNIL_WRITE_BUILD_INFO=1`에서만 허용한다.
 - `apps/web/static-manifest.json`은 `index.html`, `config.js`, `_headers`, 공개 poster/clip의 SHA-256과 byte size를 담는다. 배포 후 `pnpm check:web-deploy`와 `pnpm service:watch -- --once`는 manifest의 모든 live 파일을 다시 받아 hash/byte size가 현재 repo 산출물과 같은지 확인한다.
-- 배포 후 `pnpm launch:post-deploy-smoke -- --require-laws`가 live Web config 정합성과 API smoke를 함께 통과해야 한다. build-info placeholder fallback과 static hash 검증은 이어지는 `check:web-deploy`에서 처리하며, static hash 불일치는 실패다.
+- 배포 후 `pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes`가 live Web config 정합성, API smoke, 법안 원천, 공개 집회 원천 refresh ledger를 함께 통과해야 한다. build-info placeholder fallback과 static hash 검증은 이어지는 `check:web-deploy`에서 처리하며, static hash 불일치는 실패다.
 - 헤더까지 strict하게 닫으려면 `MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy`가 통과해야 한다. 이때 live `config.js`의 `apiBaseUrl`도 `https://api.musunil.com`과 일치해야 한다.
 - 공개 홈 카드에는 `WEAKLY_OBSERVED`, `traffic_control` 같은 내부 enum 원문이 보이지 않는다.
 - 내부/admin 라우트는 `x-musunil-internal-key` 없이는 막히고 constant-time 비교를 사용한다.

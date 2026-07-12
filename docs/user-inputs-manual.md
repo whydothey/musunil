@@ -380,10 +380,11 @@ GET /ready -> 200
 배포 URL 기준 비파괴 smoke:
 
 ```bash
-pnpm launch:post-deploy-smoke -- --require-laws
+pnpm sources:assemblies:post
+pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes
 ```
 
-이 명령은 production 기본값으로 `https://musunil.com`, `https://api.musunil.com`, 현재 Git SHA를 보정한다. staging/preview 도메인을 검증할 때만 `MUSUNIL_WEB_BASE_URL`과 `MUSUNIL_API_BASE_URL`을 실제 HTTPS 배포 URL로 override한다. localhost, 127.0.0.1, `.local`, HTTP URL은 최종 운영 smoke로 인정하지 않는다.
+이 smoke는 production 기본값으로 `https://musunil.com`, `https://api.musunil.com`, 현재 Git SHA를 보정한다. staging/preview 도메인을 검증할 때만 `MUSUNIL_WEB_BASE_URL`과 `MUSUNIL_API_BASE_URL`을 실제 HTTPS 배포 URL로 override한다. localhost, 127.0.0.1, `.local`, HTTP URL은 최종 운영 smoke로 인정하지 않는다.
 
 배포 후 최종 판정:
 
@@ -391,7 +392,7 @@ pnpm launch:post-deploy-smoke -- --require-laws
 pnpm launch:final-gate
 ```
 
-`pnpm launch:final-gate`는 production 기본값으로 `musunil.com`, `api.musunil.com`, 현재 Git SHA를 보정한다. post-deploy smoke를 법안 필수 조건으로 실행한 뒤 live service watch를 새로 갱신하고 blocker가 하나라도 남아 있으면 실패한다. 앞 검증이 실패해도 blocker 갱신은 시도하므로, 이 명령이 실패하면 출력된 단계별 결과와 `docs/splus-service-watch.md`의 Required Actions를 기준으로 고친다.
+`pnpm launch:final-gate`는 production 기본값으로 `musunil.com`, `api.musunil.com`, 현재 Git SHA를 보정한다. post-deploy smoke를 법안과 공개 집회 원천 refresh 필수 조건으로 실행한 뒤 live service watch를 새로 갱신하고 blocker가 하나라도 남아 있으면 실패한다. 앞 검증이 실패해도 blocker 갱신은 시도하므로, 이 명령이 실패하면 출력된 단계별 결과와 `docs/splus-service-watch.md`의 Required Actions를 기준으로 고친다.
 
 Render Static Site 수동 설정값 확인:
 

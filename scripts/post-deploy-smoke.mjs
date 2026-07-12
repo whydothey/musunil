@@ -5,6 +5,7 @@ const config = safeConfig();
 const apiBaseUrl = (process.env.MUSUNIL_API_BASE_URL ?? readString(config, "api.public_base_url") ?? "").replace(/\/$/, "");
 const webBaseUrl = (process.env.MUSUNIL_WEB_BASE_URL ?? readString(config, "app.public_base_url") ?? "").replace(/\/$/, "");
 const requireLaws = process.argv.includes("--require-laws");
+const requireSourceRefreshes = process.argv.includes("--require-source-refreshes");
 const requestTimeoutMs = 10_000;
 const checks = [];
 
@@ -108,8 +109,12 @@ await check("public_payload_safety", async () => {
 await check("coverage", async () => {
   const response = await raw("GET", "/public-sources/coverage");
   assert(response.status === 200, `/public-sources/coverage returned ${response.status}`);
-  assert(response.body?.coverage?.fullScheduleCoverage === true, "coverage is not fullScheduleCoverage=true");
-  assert(response.body?.coverage?.activeScheduleRegions === 18, "activeScheduleRegions must be 18");
+  const coverage = response.body?.coverage ?? {};
+  assert(coverage.fullScheduleCoverage === true, "coverage is not fullScheduleCoverage=true");
+  assert(coverage.activeScheduleRegions === 18, "activeScheduleRegions must be 18");
+  assert(Array.isArray(coverage.regions), "coverage regions missing");
+  assert(Array.isArray(coverage.sourceRefreshes), "coverage sourceRefreshes missing");
+  if (requireSourceRefreshes) assertSourceRefreshesCurrent(coverage);
 });
 
 await check("laws", async () => {
@@ -180,6 +185,31 @@ async function check(id, run) {
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function assertSourceRefreshesCurrent(coverage) {
+  const activeSourceIds = coverage.regions.map((region) => region?.activeScheduleSourceId).filter(Boolean);
+  const refreshBySource = new Map(coverage.sourceRefreshes.map((refresh) => [refresh?.sourceId, refresh]));
+  const missing = activeSourceIds.filter((sourceId) => !refreshBySource.has(sourceId));
+  assert(
+    missing.length === 0,
+    `sourceRefreshes missing active schedule sources: ${missing.join(", ")}; run pnpm sources:assemblies:post before final gate`
+  );
+
+  const invalid = activeSourceIds.filter((sourceId) => {
+    const refresh = refreshBySource.get(sourceId);
+    return !refresh?.checkedAt || Number.isNaN(new Date(refresh.checkedAt).getTime()) || !(Number(refresh.resultCount) > 0);
+  });
+  assert(
+    invalid.length === 0,
+    `sourceRefreshes invalid for active sources: ${invalid.join(", ")}; each active source needs checkedAt and resultCount > 0`
+  );
+
+  const overdueRegions = coverage.regions
+    .filter((region) => region?.activeScheduleSourceId && region.freshness === "overdue")
+    .map((region) => region.code)
+    .filter(Boolean);
+  assert(overdueRegions.length === 0, `coverage active regions still overdue after source ingest: ${overdueRegions.join(", ")}`);
 }
 
 function errorMessage(error) {

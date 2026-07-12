@@ -269,6 +269,12 @@ if (
   !/\/media\/redacted\/preview-occ-live-1\.webm/.test(postDeploySmoke) ||
   !/video\/webm/.test(postDeploySmoke) ||
   !/--require-laws/.test(postDeploySmoke) ||
+  !/requireSourceRefreshes/.test(postDeploySmoke) ||
+  !/--require-source-refreshes/.test(postDeploySmoke) ||
+  !/sourceRefreshes/.test(postDeploySmoke) ||
+  !/activeScheduleSourceId/.test(postDeploySmoke) ||
+  !/resultCount/.test(postDeploySmoke) ||
+  !/pnpm sources:assemblies:post/.test(postDeploySmoke) ||
   !/admin\/review-queue/.test(postDeploySmoke) ||
   !/forbidden_engagement_surface_absent/.test(postDeploySmoke) ||
   !/\/comments/.test(postDeploySmoke) ||
@@ -383,7 +389,8 @@ if (
   !/cloudflare:apply/.test(launchNextActions) ||
   !/cloudflare:check/.test(launchNextActions) ||
   !/cloudflare:check:strict/.test(launchNextActions) ||
-  !/launch:post-deploy-smoke -- --require-laws/.test(launchNextActions)
+  !/pnpm sources:assemblies:post/.test(launchNextActions) ||
+  !/launch:post-deploy-smoke -- --require-laws --require-source-refreshes/.test(launchNextActions)
 ) {
   failures.push("Launch blockers helper must summarize service watch freshness, required actions, and Web/API/laws verification commands");
 }
@@ -544,6 +551,7 @@ if (
   !/launch_final_gate_plan/.test(launchFinalGate) ||
   !/launch:post-deploy-smoke/.test(launchFinalGate) ||
   !/--require-laws/.test(launchFinalGate) ||
+  !/--require-source-refreshes/.test(launchFinalGate) ||
   !/launch:blockers:refresh-strict/.test(launchFinalGate) ||
   !/deriveLaunchEnv/.test(launchFinalGate) ||
   !/MUSUNIL_EXPECTED_COMMIT_SHA/.test(launchFinalGate) ||
@@ -564,7 +572,8 @@ if (
   !/render:apply -- --api-domain --apply/.test(renderApiSettings) ||
   !/cloudflare:dns/.test(renderApiSettings) ||
   !/cloudflare:check:strict/.test(renderApiSettings) ||
-  !/pnpm launch:post-deploy-smoke -- --require-laws/.test(renderApiSettings) ||
+  !/pnpm sources:assemblies:post/.test(renderApiSettings) ||
+  !/pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes/.test(renderApiSettings) ||
   !/pnpm launch:final-gate/.test(renderApiSettings) ||
   !/launch:post-deploy-smoke/.test(renderApiSettings) ||
   !/service:watch/.test(renderApiSettings) ||
@@ -1089,6 +1098,9 @@ if (!/seoul_assembly_control/.test(publicSourceRegistry) || !/sejong_today_assem
 }
 if (!/--diagnose/.test(publicIngestWorker) || !/--require-operational-readiness/.test(publicIngestWorker)) {
   failures.push("public source ingest worker must expose metadata-only operational diagnostics");
+}
+if (!/"sources:assemblies"/.test(rootPackageJson) || !/"sources:assemblies:post"/.test(rootPackageJson)) {
+  failures.push("package scripts must expose public assembly source dry-run and post commands");
 }
 if (!/"sources:diagnose"/.test(rootPackageJson) || !/"check:source-diagnostics"/.test(rootPackageJson) || !/check:source-diagnostics/.test(JSON.parse(rootPackageJson).scripts["check:release"] ?? "")) {
   failures.push("release check must include public source operational diagnostics");

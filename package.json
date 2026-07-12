@@ -72,6 +72,8 @@
     "launch:verify-inputs": "node scripts/check-launch-inputs.mjs",
     "sources:coverage": "pnpm --filter @musunil/public-source-ingest dev -- --coverage",
     "sources:diagnose": "pnpm --filter @musunil/public-source-ingest dev -- --diagnose",
+    "sources:assemblies": "pnpm --filter @musunil/public-source-ingest dev",
+    "sources:assemblies:post": "pnpm --filter @musunil/public-source-ingest dev -- --post",
     "sources:laws-diagnose": "pnpm --filter @musunil/public-source-ingest dev -- --laws-diagnose",
     "sources:laws": "pnpm --filter @musunil/public-source-ingest dev -- --laws",
     "admin:privacy": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/admin-review.mjs privacy",

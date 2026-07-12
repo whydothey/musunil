@@ -9,7 +9,7 @@ const steps = [
   {
     id: "post_deploy_smoke",
     scope: "live_web_api",
-    args: ["launch:post-deploy-smoke", "--", "--require-laws"]
+    args: ["launch:post-deploy-smoke", "--", "--require-laws", "--require-source-refreshes"]
   },
   {
     id: "live_blocker_refresh_strict",
