@@ -235,6 +235,12 @@ async function runChecks() {
       return summaryFor(path, body);
     });
   }
+  await check(checks, "public_source_refresh_freshness", async () => {
+    skipIfApiUnreachable();
+    const body = await getJson(`${apiBaseUrl}/public-sources/coverage`);
+    assertPublicPayloadSafe(body);
+    return assertPublicSourceRefreshesCurrent(body.coverage ?? {});
+  });
   await check(checks, "identity_public_read_write_boundary", async () => {
     skipIfApiUnreachable();
     const read = await getJson(`${apiBaseUrl}/me`);
@@ -426,6 +432,47 @@ function assertPublicPayloadSafe(body) {
   ]);
 }
 
+function assertPublicSourceRefreshesCurrent(coverage) {
+  if (coverage.fullScheduleCoverage !== true) throw new Error("coverage is not fullScheduleCoverage=true");
+  if (coverage.activeScheduleRegions !== 18) {
+    throw new Error(`activeScheduleRegions must be 18, got ${coverage.activeScheduleRegions ?? "(missing)"}`);
+  }
+  if (!Array.isArray(coverage.regions)) throw new Error("coverage regions missing");
+  if (!Array.isArray(coverage.sourceRefreshes)) throw new Error("coverage sourceRefreshes missing");
+
+  const activeSourceIds = coverage.regions.map((region) => region?.activeScheduleSourceId).filter(Boolean);
+  const refreshBySource = new Map(coverage.sourceRefreshes.map((refresh) => [refresh?.sourceId, refresh]));
+  const missing = activeSourceIds.filter((sourceId) => !refreshBySource.has(sourceId));
+  const invalid = activeSourceIds.filter((sourceId) => {
+    const refresh = refreshBySource.get(sourceId);
+    return !refresh?.checkedAt || Number.isNaN(new Date(refresh.checkedAt).getTime()) || !(Number(refresh.resultCount) > 0);
+  });
+  const overdueRegions = coverage.regions
+    .filter((region) => region?.activeScheduleSourceId && region.freshness === "overdue")
+    .map((region) => region.code)
+    .filter(Boolean);
+  if (missing.length || invalid.length || overdueRegions.length) {
+    throw new Error([
+      "public source refresh ledger is not launch-ready",
+      `missing=${missing.join(",") || "-"}`,
+      `invalid=${invalid.join(",") || "-"}`,
+      `overdueRegions=${overdueRegions.join(",") || "-"}`,
+      "run pnpm sources:assemblies:post or verify the Render public-source ingest cron"
+    ].join("; "));
+  }
+
+  const checkedAtValues = activeSourceIds
+    .map((sourceId) => refreshBySource.get(sourceId)?.checkedAt)
+    .filter((value) => typeof value === "string");
+  return {
+    activeScheduleSources: activeSourceIds.length,
+    refreshedActiveSources: activeSourceIds.length - missing.length,
+    latestCheckedAt: latestIso(checkedAtValues),
+    sourceRefreshes: coverage.sourceRefreshes.length,
+    overdueRegions: overdueRegions.length
+  };
+}
+
 function assertHomeIssueFirstPayload(body) {
   const issues = Array.isArray(body?.issueCards) ? body.issueCards : [];
   if (issues.length === 0) {
@@ -459,6 +506,14 @@ function publicIssueTitle(issue) {
   return String(issue?.title || issue?.id || "(untitled)").slice(0, 120);
 }
 
+function latestIso(values) {
+  const times = values
+    .map((value) => new Date(value).getTime())
+    .filter((time) => !Number.isNaN(time));
+  if (times.length === 0) return null;
+  return new Date(Math.max(...times)).toISOString();
+}
+
 function summaryFor(path, body) {
   if (path === "/home") {
     const issues = Array.isArray(body?.issueCards) ? body.issueCards : [];
@@ -473,7 +528,11 @@ function summaryFor(path, body) {
   if (path === "/issues") return { issues: body.issues?.length ?? 0 };
   if (path === "/map") return { pins: body.geojson?.pins?.features?.length ?? 0, areas: body.geojson?.presenceAreas?.features?.length ?? 0 };
   if (path === "/laws") return { laws: body.laws?.length ?? 0 };
-  if (path === "/public-sources/coverage") return { activeScheduleRegions: body.coverage?.activeScheduleRegions, nextRefreshAt: body.coverage?.nextRefreshAt };
+  if (path === "/public-sources/coverage") return {
+    activeScheduleRegions: body.coverage?.activeScheduleRegions,
+    nextRefreshAt: body.coverage?.nextRefreshAt,
+    sourceRefreshes: Array.isArray(body.coverage?.sourceRefreshes) ? body.coverage.sourceRefreshes.length : 0
+  };
   if (path === "/transparency/logs") return { logs: body.logs?.length ?? 0 };
   return {};
 }
@@ -581,6 +640,16 @@ function requiredActions(result) {
       action: "공개 payload 안전성 회귀다. 사용자 원문, 정밀 GPS, storage key, identity hash, private media field 노출 여부를 먼저 막고 배포를 중단한다.",
       verify: finalGateVerify,
       reference: "AGENTS.md"
+    });
+  }
+  const publicSourceRefresh = byId.get("public_source_refresh_freshness");
+  if (publicSourceRefresh && !publicSourceRefresh.ok && !publicSourceRefresh.skipped) {
+    actions.push({
+      id: "refresh_public_source_ingest",
+      owner: "operator",
+      action: "공개 집회 원천 parser 준비만으로는 출시할 수 없다. `pnpm sources:assemblies:post`를 실행하거나 Render `musunil-public-source-ingest` cron이 성공했는지 확인해 `/public-sources/coverage.sourceRefreshes`에 18개 활성 일정 원천의 실제 갱신 시각과 resultCount가 남게 한다.",
+      verify: "pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes",
+      reference: "docs/data-fixtures-and-real-sources.md"
     });
   }
   const visualSurface = byId.get("web_visual_surface");

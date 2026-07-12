@@ -1,6 +1,6 @@
 # S+ Service Watch
 
-Last checked: 2026-07-12T03:54:42.138Z
+Last checked: 2026-07-12T04:20:45.688Z
 
 Status: Active
 
@@ -24,6 +24,7 @@ Status: Active
 | public_payload_laws | skip | skipped: API endpoint preflight failed |
 | public_payload_transparency_logs | skip | skipped: API endpoint preflight failed |
 | public_payload_transparency_monthly | skip | skipped: API endpoint preflight failed |
+| public_source_refresh_freshness | skip | skipped: API endpoint preflight failed |
 | identity_public_read_write_boundary | skip | skipped: API endpoint preflight failed |
 
 ## Required Actions

@@ -78,6 +78,7 @@
 - `pnpm sources:coverage`에서 18개 시도경찰청 권역이 모두 표시된다.
 - `pnpm sources:coverage`에서 각 권역의 `refreshCadenceHours`, `lastCheckedAt`, `nextRefreshAt`, `gapReason`이 빠지지 않는다.
 - 운영 API `/public-sources/coverage`는 실제 원천 ingest 성공 시 `sourceRefreshes`를 포함하고, 해당 source의 `lastCheckedAt`, `nextRefreshAt`, `freshness`를 registry metadata가 아니라 최신 ingest ledger 기준으로 보정한다.
+- `pnpm service:watch -- --once`와 `pnpm service:watch:visual`은 API가 연결된 뒤 `public_source_refresh_freshness`를 확인한다. 18개 활성 일정 원천의 `sourceRefreshes.checkedAt`, `resultCount > 0`, overdue 부재가 확인되지 않으면 `refresh_public_source_ingest` Required Action을 남기고 final gate 전 해결 대상으로 둔다.
 - `pnpm sources:diagnose -- --require-operational-readiness`에서 active schedule 18개가 모두 `ingestable`이고 `blockedSourceIds`, `parserMissingSourceIds`, `urlMissingSourceIds`, `postBodyMissingSourceIds`가 비어 있다.
 - 일정 자료 확인 중 권역은 "집회 없음"이 아니라 "공개 자료 확인 중"으로 취급한다.
 - Postgres snapshot 저장은 쓰기 요청 순서대로 직렬화된다.

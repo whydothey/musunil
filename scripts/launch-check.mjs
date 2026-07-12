@@ -888,6 +888,12 @@ if (
   !/web_visual_surface/.test(serviceWatch) ||
   !/publicPayloadRoutes/.test(serviceWatch) ||
   !/assertHomeIssueFirstPayload/.test(serviceWatch) ||
+  !/public_source_refresh_freshness/.test(serviceWatch) ||
+  !/assertPublicSourceRefreshesCurrent/.test(serviceWatch) ||
+  !/sourceRefreshes/.test(serviceWatch) ||
+  !/resultCount/.test(serviceWatch) ||
+  !/refresh_public_source_ingest/.test(serviceWatch) ||
+  !/pnpm sources:assemblies:post/.test(serviceWatch) ||
   !/at least 3 topic Issues/.test(serviceWatch) ||
   !/public source bundle/.test(serviceWatch) ||
   !/serviceStates/.test(serviceWatch) ||
