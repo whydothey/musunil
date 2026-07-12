@@ -176,8 +176,9 @@ async function runViewport(client, viewport, url) {
     () => assert(!productionFallbackMode || home.firstIssueTitle === "정보통신망법 개정 관련 집회", `production fallback first issue changed: ${home.firstIssueTitle}`),
     () => assert(!productionFallbackMode || !home.issueEmptyStateVisible, "production fallback must render topic issues instead of the empty state"),
     () => assert(!home.sourceBundleFirst, `first issue is a public source bundle, not a topic issue: ${home.firstIssueTitle}`),
-    () => assert(/일시/.test(home.firstIssueDeck) && /자료 기준/.test(home.firstIssueDeck), `first issue where/time/source line missing: ${home.firstIssueDeck}`),
+    () => assert(!/자료 기준/.test(home.firstIssueDeck) && /(기준|일정|기록|\d{1,2}월)/.test(home.firstIssueDeck), `first issue public place/time line is too operational: ${home.firstIssueDeck}`),
     () => assert(/위치/.test(home.firstIssueSummary) && /현장/.test(home.firstIssueSummary) && /공식자료/.test(home.firstIssueSummary) && /현장영상/.test(home.firstIssueSummary) && /반론\/정정/.test(home.firstIssueSummary), `first issue evidence line missing fixed summary units: ${home.firstIssueSummary}`),
+    () => assert(!/인원 미확인/.test(home.firstIssueSummary), `first issue summary exposes low-value negative scale copy: ${home.firstIssueSummary}`),
     () => assert(/상세 보기/.test(home.firstIssueActions.join(" ")), `first issue primary path missing: ${home.firstIssueActions.join(", ")}`),
     () => assert(home.firstIssueActionCount >= 1 && home.firstIssueActionCount <= 2, `first issue has too many visible action labels: ${home.firstIssueActionCount}`),
     () => assert(home.firstIssuePrimaryActionCount === 1, `first issue must have exactly one primary action, got ${home.firstIssuePrimaryActionCount}`),
@@ -342,7 +343,7 @@ function visualMetrics(label) {
       firstIssueTitle: firstIssue?.querySelector(".issue-feed-title .title")?.textContent?.trim() || "",
       firstIssueDeck: firstIssue?.querySelector(".issue-card-deck")?.textContent?.trim() || "",
       firstIssueSummary: [
-        ...[...(firstIssue?.querySelectorAll(".issue-card-proof-row span") || [])].map((node) => node.textContent.trim())
+        ...[...(firstIssue?.querySelectorAll(".issue-card-proof-row em") || [])].map((node) => node.textContent.trim())
       ].filter(Boolean).join(" · "),
       sourceBundleFirst: /공개\\s*(일정|자료)|신고[·\\s-]*개최|신고\\s*통계|집회\\s*신고\\s*통계/.test(firstIssue?.querySelector(".issue-feed-title .title")?.textContent?.trim() || ""),
       firstIssueActions: [...(firstIssue?.querySelectorAll(".issue-card-action-label") || [])].filter((node) => visible(node)).map((node) => node.textContent.trim()),

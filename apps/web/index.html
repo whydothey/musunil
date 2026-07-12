@@ -8376,25 +8376,28 @@
       function issueCardPlaceLine(issue) {
         const cards = issueRelatedCards(issue);
         const regions = issueRegions(issue, cards);
-        const locationCount = Number(issue?.regionCount || regions.length || 0);
         const place = regions.length ? regions.slice(0, 2).join(" · ") : "지역 확인 중";
-        return [place, locationCount ? `위치 ${locationCount}곳` : "위치 확인 중"].join(" · ");
+        return place;
       }
 
       function issueCardMainFactLine(issue) {
         const cards = issueRelatedCards(issue);
+        const regions = issueRegions(issue, cards);
+        const locationCount = Number(issue?.regionCount || regions.length || 0);
         return [
           issueTargetCountText(issue, cards),
-          issueOfficialSummaryText(issue),
-          issueVideoSummaryText(issue),
-          issueDisputeSummaryText(issue)
+          locationCount ? `위치 ${locationCount}곳` : "위치 확인 중"
         ].join(" · ");
       }
 
       function issueCardEvidenceLine(issue) {
-        return issueScaleStatusText(issue)
-          .replace("규모 추정 검토 중", "인원 추정 검토")
-          .replace("인원 규모 확인 중", "인원 미확인");
+        const estimate = Number(issue?.sourceSummary?.estimate || issue?.estimateCount || 0);
+        return [
+          issueOfficialSummaryText(issue),
+          issueVideoSummaryText(issue),
+          issueDisputeSummaryText(issue),
+          estimate > 0 ? "인원 추정 검토" : ""
+        ].filter(Boolean).join(" · ");
       }
 
       function issueCardStatusText(issue) {
@@ -8411,7 +8414,13 @@
           const place = regions.length ? regions.slice(0, 2).join(" · ") : "지역 확인 중";
           return `${place} · 기록 보관`;
         }
-        return issueConfirmedWhereWhenLine(issue);
+        const cards = issueRelatedCards(issue);
+        const regions = issueRegions(issue, cards);
+        const place = regions.length ? regions.slice(0, 2).join(" · ") : "지역 확인 중";
+        const date = issueDateText(issue, cards);
+        const basis = publicDate(issue?.updatedAt || issue?.lastUpdatedAt);
+        const when = /확인 중|예정|진행/.test(date) ? (basis ? `${basis} 기준` : "일정 확인 중") : date;
+        return `${place} · ${when}`;
       }
 
       function issueCardProofText(issue) {
