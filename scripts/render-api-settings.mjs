@@ -35,6 +35,7 @@ const settings = {
     proxy: "DNS only until /health, /ready, CORS, media, and identity boundary smoke pass"
   },
   afterSave: [
+    "Optional API automation: RENDER_API_TOKEN=... pnpm render:apply -- --api-domain --apply",
     "Deploy musunil-api after MUSUNIL_USER_INPUTS_B64 and generated secrets are present.",
     "Attach api.musunil.com in Render Custom Domains and copy the Render target to Cloudflare DNS.",
     ': "${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}"',

@@ -25,14 +25,14 @@ const plan = {
     {
       id: "api_dns",
       owner: "operator",
-      action: "Run pnpm render:api-settings and pnpm cloudflare:dns, attach api.musunil.com as a custom domain on the Render musunil-api service, copy the Render target into MUSUNIL_RENDER_API_DNS_TARGET, then create the matching Cloudflare DNS record from the generated template.",
+      action: "Run pnpm render:api-settings and pnpm render:apply -- --api-domain. If RENDER_API_TOKEN is available, add api.musunil.com to the Render musunil-api service with pnpm render:apply -- --api-domain --apply. Copy the Render target into MUSUNIL_RENDER_API_DNS_TARGET, then create the matching Cloudflare DNS record from the generated template.",
       verify: ': "${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}" && pnpm cloudflare:check:strict'
     },
     {
       id: "static_headers",
       owner: "operator",
-      action: "Check pnpm render:web-settings Header application mode. For a manual Static Site, copy every header into Render musunil-web Settings > Headers; for Blueprint-managed, sync render.yaml. If Render headers still do not appear on live responses or the Web record is proxied by Cloudflare, apply the pnpm cloudflare:headers Response Header Transform Rule for Web only. Then Clear build cache & deploy or purge the Web edge cache as applicable.",
-      verify: "pnpm cloudflare:headers && pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy"
+      action: "Check pnpm render:web-settings Header application mode and pnpm render:apply -- --web-headers. If RENDER_API_TOKEN is available, apply Render headers with pnpm render:apply -- --web-headers --apply. Otherwise copy every header into Render musunil-web Settings > Headers. If Render headers still do not appear on live responses or the Web record is proxied by Cloudflare, apply the pnpm cloudflare:headers Response Header Transform Rule for Web only. Then Clear build cache & deploy or purge the Web edge cache as applicable.",
+      verify: "pnpm render:apply -- --web-headers && pnpm cloudflare:headers && pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy"
     },
     {
       id: "build_metadata",
@@ -104,6 +104,7 @@ const plan = {
   renderHeaderApplication: [
     "Manual Static Site: custom response headers must be entered in the Render Dashboard.",
     "Blueprint-managed service: render.yaml musunil-web.headers can be synced by Blueprint.",
+    "Render API automation: RENDER_API_TOKEN=... pnpm render:apply -- --web-headers --apply can create or update musunil-web header rules.",
     "Reference: https://render.com/docs/static-site-headers and https://render.com/docs/blueprint-spec#static-sites"
   ],
   userInputPriority: [
@@ -122,6 +123,8 @@ const plan = {
     "pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws",
     "pnpm render:api-settings",
     "pnpm render:web-settings",
+    "pnpm render:apply -- --api-domain",
+    "pnpm render:apply -- --web-headers",
     ': "${MUSUNIL_RENDER_WEB_DNS_TARGET:?set exact Render Web target from Render first}"',
     ': "${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}"',
     "pnpm cloudflare:dns",

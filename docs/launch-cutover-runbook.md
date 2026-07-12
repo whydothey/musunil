@@ -9,6 +9,7 @@ pnpm launch:blockers
 pnpm launch:cutover-plan
 pnpm render:api-settings
 pnpm render:web-settings
+pnpm render:apply
 pnpm cloudflare:dns
 pnpm cloudflare:headers
 pnpm cloudflare:apply
@@ -16,6 +17,7 @@ pnpm cloudflare:check
 ```
 
 `pnpm launch:operator-brief -- --refresh`는 위 명령들의 핵심 출력과 현재 blocker를 [launch-operator-brief.md](/Users/mk/Documents/Musunil/docs/launch-operator-brief.md)에 합쳐 쓰는 운영자용 단일 브리프다. Render/Cloudflare 화면을 열기 직전에는 반드시 refresh한 이 파일을 먼저 본다. 기존 파일의 오래된 Git SHA나 blocker 상태는 출시 판단 증거가 아니다.
+`pnpm render:apply`는 기본 dry-run이다. `RENDER_API_TOKEN`이 있을 때 `--apply --web-headers` 또는 `--apply --api-domain`을 붙이면 Render API로 `musunil-web` Headers와 `musunil-api` custom domain을 생성/갱신한다. 이 명령은 Render env var나 secret file을 교체하지 않는다.
 `pnpm cloudflare:dns`는 Render custom-domain target을 입력할 Cloudflare DNS 레코드 템플릿을 [cloudflare-dns-records.md](/Users/mk/Documents/Musunil/docs/cloudflare-dns-records.md)와 [dns-records.tf.example](/Users/mk/Documents/Musunil/infra/cloudflare/dns-records.tf.example)에 생성한다. Render target을 복사한 뒤 `MUSUNIL_RENDER_WEB_DNS_TARGET`, `MUSUNIL_RENDER_API_DNS_TARGET`을 로컬 셸에 넣으면 git-ignored local copy와 strict CNAME 검증도 함께 쓸 수 있다.
 `pnpm cloudflare:headers`는 Render Static headers가 live에 적용되지 않을 때 쓸 Cloudflare Response Header Transform Rule 템플릿을 [cloudflare-response-headers.md](/Users/mk/Documents/Musunil/docs/cloudflare-response-headers.md)와 [response-headers.tf.example](/Users/mk/Documents/Musunil/infra/cloudflare/response-headers.tf.example)에 생성한다.
 `pnpm cloudflare:apply`는 기본 dry-run이다. `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`, Render target env가 있을 때 `--apply --dns` 또는 `--apply --headers`를 붙이면 Cloudflare API로 DNS Records와 Response Header Transform Rule을 생성/갱신한다.
@@ -28,8 +30,8 @@ pnpm cloudflare:check
 
 | 우선순위 | 항목 | 현재 증거 | 해야 할 일 | 검증 |
 |---|---|---|---|---|
-| 1 | API DNS | `api_endpoint_preflight` 실패: `getaddrinfo ENOTFOUND api.musunil.com` | `pnpm render:api-settings`와 `pnpm cloudflare:dns` 출력대로 Render `musunil-api` 설정과 env source를 확인한다. `api.musunil.com` custom domain을 추가한 뒤 Render가 표시한 target을 `MUSUNIL_RENDER_API_DNS_TARGET`에 넣고 Cloudflare `api` CNAME을 DNS only로 연결한다. | `: "${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}" && pnpm cloudflare:check:strict` |
-| 2 | Static headers | `/`, `/config.js`, `/build-info.json`에 CSP, Permissions, Referrer, nosniff, X-Frame-Options가 없고 Cache-Control이 `no-store`가 아니다. | `pnpm render:web-settings` 출력의 Header application mode를 먼저 확인한다. 수동 Static Site이면 Render Dashboard의 `musunil-web > Settings > Headers`에 모든 header를 직접 입력하고 `Clear build cache & deploy`를 실행한다. Blueprint-managed이면 `render.yaml` headers sync를 확인한다. Render headers가 live 응답에 계속 반영되지 않거나 Cloudflare proxy가 켜져 있으면 `pnpm cloudflare:headers`로 생성되는 Web 전용 Response Header Transform Rule을 적용하고 `/`, `/config.js`, `/build-info.json` 캐시 우회를 확인한다. | `pnpm render:web-settings && pnpm cloudflare:headers && pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy` |
+| 1 | API DNS | `api_endpoint_preflight` 실패: `getaddrinfo ENOTFOUND api.musunil.com` | `pnpm render:api-settings`와 `pnpm cloudflare:dns` 출력대로 Render `musunil-api` 설정과 env source를 확인한다. Render API token이 있으면 `pnpm render:apply -- --api-domain --apply`로 `api.musunil.com` custom domain을 추가한다. 그 뒤 Render가 표시한 target을 `MUSUNIL_RENDER_API_DNS_TARGET`에 넣고 Cloudflare `api` CNAME을 DNS only로 연결한다. | `: "${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}" && pnpm cloudflare:check:strict` |
+| 2 | Static headers | `/`, `/config.js`, `/build-info.json`에 CSP, Permissions, Referrer, nosniff, X-Frame-Options가 없고 Cache-Control이 `no-store`가 아니다. | `pnpm render:web-settings` 출력의 Header application mode를 먼저 확인한다. Render API token이 있으면 `pnpm render:apply -- --web-headers --apply`로 Headers를 적용한다. 토큰이 없거나 수동 Static Site이면 Render Dashboard의 `musunil-web > Settings > Headers`에 모든 header를 직접 입력하고 `Clear build cache & deploy`를 실행한다. Render headers가 live 응답에 계속 반영되지 않거나 Cloudflare proxy가 켜져 있으면 `pnpm cloudflare:headers`로 생성되는 Web 전용 Response Header Transform Rule을 적용하고 `/`, `/config.js`, `/build-info.json` 캐시 우회를 확인한다. | `pnpm render:apply -- --web-headers && pnpm render:web-settings && pnpm cloudflare:headers && pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy` |
 | 3 | Live issue data sync | `web_visual_surface` 실패: 화면 구조는 렌더링되지만 `serviceSyncState=delayed`이며 최신 첫 이슈는 `정보통신망법 개정 관련 집회`, source bundle first는 `0/4`다. | API DNS, CORS, `/ready`, public payload가 연결되어 Web이 live 상태로 동기화되게 한다. API 연결 뒤 `/home.issueCards`는 실제 주제형 Issue를 3개 이상 포함하고 첫 항목이 공개자료 묶음이면 안 된다. | `pnpm launch:final-gate` |
 | 4 | Build metadata | `build-info.json`은 placeholder지만 static manifest hash로 최신 UI 파일은 확인됐다. | Render가 build command output을 publish하는지 확인한다. 계속 수동 Static Site를 유지하면 static manifest 검증을 fallback warning으로 인정하되, 최신성 판정은 hash로 한다. | `MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy` |
 
@@ -52,6 +54,7 @@ Render Static Site를 수동으로 만든 경우 Dashboard 값은 `pnpm render:w
 
 ```bash
 pnpm render:web-settings
+pnpm render:apply -- --web-headers
 ```
 
 Header 적용 방식은 둘 중 하나만 믿는다.
@@ -73,6 +76,7 @@ Header 적용 방식은 둘 중 하나만 믿는다.
 - Environment Variables: `NODE_VERSION=24`, `MUSUNIL_RUNTIME_ENV=production`만 둔다. Static Web에는 DB/Redis URL, 사용자 입력 YAML, token secret, encryption key, internal API key를 넣지 않는다.
 - Headers: `Cache-Control`, `Content-Security-Policy`, `Permissions-Policy`, `Referrer-Policy`, `X-Content-Type-Options`, `X-Frame-Options`
 - Portable Headers File: `apps/web/_headers`. `pnpm build:web-static`이 `render.yaml`의 `musunil-web.headers`에서 생성한다. Cloudflare Pages/Netlify류 정적 호스트에서는 이 파일을 사용할 수 있지만, Render 수동 Static Site에서는 Dashboard Headers 입력을 대체하지 않는다.
+- Render API token이 있으면 `RENDER_API_TOKEN=... pnpm render:apply -- --web-headers --apply`로 Headers를 적용할 수 있다.
 
 주의:
 
@@ -88,6 +92,7 @@ Header 적용 방식은 둘 중 하나만 믿는다.
 
 ```bash
 pnpm render:api-settings
+pnpm render:apply -- --api-domain
 ```
 
 - Health Check Path: `/ready`
@@ -98,6 +103,7 @@ pnpm render:api-settings
 - `DATABASE_URL`, `REDIS_URL`은 Render 관리형 Postgres/Key Value에서 주입
 - `MUSUNIL_INTERNAL_API_KEY`, `MUSUNIL_USER_TOKEN_SECRET`, `MUSUNIL_ENCRYPTION_KEY`는 Render generated value
 - `MUSUNIL_USER_INPUTS_B64`는 API 서비스에만 입력
+- Render API token이 있으면 `RENDER_API_TOKEN=... pnpm render:apply -- --api-domain --apply`로 `api.musunil.com` custom domain을 생성할 수 있다. DNS 적용 뒤 `pnpm render:apply -- --api-domain --verify-domains --apply`로 Render verification을 요청한다.
 
 ## 4. Cloudflare
 

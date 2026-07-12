@@ -525,11 +525,11 @@ function requiredActions(result) {
       id: "connect_api_endpoint",
       owner: "operator",
       action: apiPreflight.message?.includes("ENOTFOUND")
-        ? "pnpm render:api-settings와 pnpm cloudflare:dns 출력대로 Render musunil-api 설정과 환경변수를 확인한다. Custom Domains에 api.musunil.com을 추가하고, Render가 표시한 target을 MUSUNIL_RENDER_API_DNS_TARGET에 넣은 뒤 Cloudflare DNS의 api 레코드에 DNS only로 연결한다."
+        ? "pnpm render:api-settings와 pnpm render:apply -- --api-domain 출력대로 Render musunil-api 설정과 환경변수를 확인한다. Render API token이 있으면 pnpm render:apply -- --api-domain --apply로 api.musunil.com custom domain을 추가한다. 그 뒤 Render가 표시한 target을 MUSUNIL_RENDER_API_DNS_TARGET에 넣고 Cloudflare DNS의 api 레코드에 DNS only로 연결한다."
         : "api.musunil.com의 TLS 인증서, Render musunil-api 서비스 상태, /health 응답을 확인한다.",
       verify: withVisualSurface
-        ? `pnpm render:api-settings && : "\${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}" && pnpm cloudflare:dns && pnpm cloudflare:check:strict && ${finalGateVerify}`
-        : 'pnpm render:api-settings && : "${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}" && pnpm cloudflare:dns && pnpm cloudflare:check:strict && MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once',
+        ? `pnpm render:apply -- --api-domain && pnpm render:api-settings && : "\${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}" && pnpm cloudflare:dns && pnpm cloudflare:check:strict && ${finalGateVerify}`
+        : 'pnpm render:apply -- --api-domain && pnpm render:api-settings && : "${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}" && pnpm cloudflare:dns && pnpm cloudflare:check:strict && MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once',
       reference: "docs/launch-cutover-runbook.md#3-render-api"
     });
   }
@@ -538,8 +538,8 @@ function requiredActions(result) {
     actions.push({
       id: "apply_static_headers",
       owner: "operator",
-      action: "pnpm render:web-settings 출력의 Header application mode를 먼저 확인한다. 수동 Static Site이면 Render musunil-web Settings > Headers에 Cache-Control, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options를 그대로 입력하고 Clear build cache & deploy를 실행한다. Render headers가 live 응답에 계속 반영되지 않거나 Cloudflare proxy가 켜져 있으면 pnpm cloudflare:headers로 생성되는 Web 전용 Response Header Transform Rule을 적용하고 /, /config.js, /build-info.json 캐시 우회도 확인한다.",
-      verify: "pnpm render:web-settings && pnpm cloudflare:headers && pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy",
+      action: "pnpm render:web-settings와 pnpm render:apply -- --web-headers 출력의 Header application mode를 먼저 확인한다. Render API token이 있으면 pnpm render:apply -- --web-headers --apply로 musunil-web Headers를 생성·갱신한다. 토큰이 없으면 Render musunil-web Settings > Headers에 Cache-Control, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options를 그대로 입력하고 Clear build cache & deploy를 실행한다. Render headers가 live 응답에 계속 반영되지 않거나 Cloudflare proxy가 켜져 있으면 pnpm cloudflare:headers로 생성되는 Web 전용 Response Header Transform Rule을 적용하고 /, /config.js, /build-info.json 캐시 우회도 확인한다.",
+      verify: "pnpm render:apply -- --web-headers && pnpm render:web-settings && pnpm cloudflare:headers && pnpm cloudflare:check && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy",
       reference: "docs/launch-cutover-runbook.md#2-render-static-site"
     });
   }

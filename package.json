@@ -51,6 +51,8 @@
     "ops:diagnose": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/operational-readiness-diagnostics.mjs",
     "render:api-settings": "node scripts/render-api-settings.mjs",
     "render:web-settings": "node scripts/render-web-settings.mjs",
+    "render:apply": "node scripts/render-apply.mjs",
+    "render:apply:plan": "node scripts/render-apply.mjs -- --json",
     "cloudflare:check": "node scripts/cloudflare-dns-check.mjs",
     "cloudflare:check:strict": "node scripts/cloudflare-dns-check.mjs -- --strict",
     "cloudflare:dns": "node scripts/cloudflare-dns-template.mjs",

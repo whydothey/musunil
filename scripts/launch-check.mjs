@@ -32,6 +32,7 @@ const webHeaderWriter = readFileSync(resolve(cwd, "scripts/write-web-headers.mjs
 const webServer = readFileSync(resolve(cwd, "scripts/serve-web.mjs"), "utf8");
 const webDeployCheck = readFileSync(resolve(cwd, "scripts/check-web-deploy.mjs"), "utf8");
 const renderWebSettings = readFileSync(resolve(cwd, "scripts/render-web-settings.mjs"), "utf8");
+const renderApply = readFileSync(resolve(cwd, "scripts/render-apply.mjs"), "utf8");
 const launchCutoverPlan = readFileSync(resolve(cwd, "scripts/launch-cutover-plan.mjs"), "utf8");
 const cloudflareDnsCheck = readFileSync(resolve(cwd, "scripts/cloudflare-dns-check.mjs"), "utf8");
 const launchNextActions = readFileSync(resolve(cwd, "scripts/launch-next-actions.mjs"), "utf8");
@@ -286,6 +287,29 @@ if (!/"render:api-settings"/.test(packageJson) || !/render-api-settings\.mjs/.te
   failures.push("Render API settings helper command is missing");
 }
 if (
+  !/"render:apply"/.test(packageJson) ||
+  !/"render:apply:plan"/.test(packageJson) ||
+  !/render-apply\.mjs/.test(packageJson) ||
+  !/render_apply_plan/.test(renderApply) ||
+  !/RENDER_API_TOKEN/.test(renderApply) ||
+  !/MUSUNIL_RENDER_WEB_SERVICE_ID/.test(renderApply) ||
+  !/MUSUNIL_RENDER_API_SERVICE_ID/.test(renderApply) ||
+  !/--apply/.test(renderApply) ||
+  !/dry_run/.test(renderApply) ||
+  !/upsertWebHeaders/.test(renderApply) ||
+  !/ensureCustomDomain/.test(renderApply) ||
+  !/verifyCustomDomain/.test(renderApply) ||
+  !/triggerDeploy/.test(renderApply) ||
+  !/\/services\?\$\{query\}/.test(renderApply) ||
+  !/\/headers/.test(renderApply) ||
+  !/\/custom-domains/.test(renderApply) ||
+  !/\/deploys/.test(renderApply) ||
+  !/The script does not replace service environment variables or upload secret files/.test(renderApply) ||
+  !/Render API failed/.test(renderApply)
+) {
+  failures.push("Render apply helper must provide dry-run-first Web header, API custom-domain, and deploy automation through the official Render API");
+}
+if (
   !/"launch:next-actions":\s*"node scripts\/launch-next-actions\.mjs"/.test(packageJson) ||
   !/"launch:blockers"/.test(packageJson) ||
   !/"launch:blockers:strict"/.test(packageJson) ||
@@ -304,7 +328,7 @@ if (
   !/Before next command/.test(launchNextActions) ||
   !/deploy_latest_static/.test(launchNextActions) ||
   !/actionIds\.has\("deploy_latest_static"\)[\s\S]*return "deploy_latest_static"/.test(launchNextActions) ||
-  !/Custom Domains에서 api\.musunil\.com의 DNS target/.test(launchNextActions) ||
+  !/api\.musunil\.com[\s\S]*DNS target/.test(launchNextActions) ||
   !/nextOperatorCommand/.test(launchNextActions) ||
   !/Launch readiness/.test(launchNextActions) ||
   !/Current stage/.test(launchNextActions) ||
@@ -317,6 +341,9 @@ if (
   !/service:watch:visual/.test(launchNextActions) ||
   !/render:api-settings/.test(launchNextActions) ||
   !/render:web-settings/.test(launchNextActions) ||
+  !/render:apply/.test(launchNextActions) ||
+  !/render:apply -- --api-domain --apply/.test(launchNextActions) ||
+  !/render:apply -- --web-headers --apply/.test(launchNextActions) ||
   !/cloudflare:dns/.test(launchNextActions) ||
   !/cloudflare:headers/.test(launchNextActions) ||
   !/cloudflare:apply/.test(launchNextActions) ||
@@ -373,8 +400,10 @@ if (
   !/deploy_latest_static/.test(launchCutoverRehearsal) ||
   !/actionIds\.has\("deploy_latest_static"\)[\s\S]*return "deploy_latest_static"/.test(launchCutoverRehearsal) ||
   !/"deploy_latest_static"[\s\S]*"connect_api_endpoint"/.test(launchCutoverRehearsal) ||
-  !/Custom Domains에서 api\.musunil\.com의 DNS target/.test(launchCutoverRehearsal) ||
+  !/api\.musunil\.com[\s\S]*DNS target/.test(launchCutoverRehearsal) ||
   !/nextOperatorCommand/.test(launchCutoverRehearsal) ||
+  !/render:apply -- --api-domain/.test(launchCutoverRehearsal) ||
+  !/render:apply -- --web-headers/.test(launchCutoverRehearsal) ||
   !/Ordered Operator Actions/.test(launchCutoverRehearsal) ||
   !/connect_api_endpoint/.test(launchCutoverRehearsal) ||
   !/deploy_latest_static/.test(launchCutoverPlan) ||
@@ -405,6 +434,7 @@ if (
   !/launch-cutover-plan\.mjs/.test(launchOperatorBrief) ||
   !/render-web-settings\.mjs/.test(launchOperatorBrief) ||
   !/render-api-settings\.mjs/.test(launchOperatorBrief) ||
+  !/render:apply/.test(launchOperatorBrief) ||
   !/launch-ready\.mjs/.test(launchOperatorBrief) ||
   !/external-smoke\.mjs/.test(launchOperatorBrief) ||
   !/pnpm launch:operator-brief -- --refresh/.test(launchOperatorBrief) ||
@@ -413,7 +443,7 @@ if (
   !/nextOperatorPrerequisite/.test(launchOperatorBrief) ||
   !/Before next command/.test(launchOperatorBrief) ||
   !/Before next command/.test(launchOperatorBriefDoc) ||
-  !/Custom Domains에서 api\.musunil\.com의 DNS target/.test(launchOperatorBriefDoc) ||
+  !/api\.musunil\.com[\s\S]*DNS target/.test(launchOperatorBriefDoc) ||
   !/Active goal/.test(launchOperatorBrief) ||
   !/Launch readiness/.test(launchOperatorBrief) ||
   !/오래된 Git SHA나 blocker 상태를 출시 판단 증거로 쓰지 않는다/.test(launchOperatorBrief) ||
@@ -424,6 +454,9 @@ if (
   !/오래된 Git SHA나 blocker 상태를 출시 판단 증거로 쓰지 않는다/.test(launchOperatorBriefDoc) ||
   !/Render Web Static Site/.test(launchOperatorBriefDoc) ||
   !/Render API Service/.test(launchOperatorBriefDoc) ||
+  !/Render API automation/.test(launchOperatorBriefDoc) ||
+  !/pnpm render:apply -- --web-headers --apply/.test(launchOperatorBriefDoc) ||
+  !/pnpm render:apply -- --api-domain --apply/.test(launchOperatorBriefDoc) ||
   !/Cloudflare/.test(launchOperatorBriefDoc) ||
   !/Launch Ready Plan/.test(launchOperatorBriefDoc) ||
   !/External Smoke Proofs/.test(launchOperatorBriefDoc) ||
@@ -483,6 +516,7 @@ if (
   !/Render generated/.test(renderApiSettings) ||
   !/Cloudflare DNS/.test(renderApiSettings) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET/.test(renderApiSettings) ||
+  !/render:apply -- --api-domain --apply/.test(renderApiSettings) ||
   !/cloudflare:dns/.test(renderApiSettings) ||
   !/cloudflare:check:strict/.test(renderApiSettings) ||
   !/pnpm launch:post-deploy-smoke -- --require-laws/.test(renderApiSettings) ||
@@ -730,6 +764,7 @@ if (
   !/Manual Static Site/.test(renderWebSettings) ||
   !/Blueprint-managed/.test(renderWebSettings) ||
   !/render\.com\/docs\/static-site-headers/.test(renderWebSettings) ||
+  !/render:apply -- --web-headers --apply/.test(renderWebSettings) ||
   !/cloudflare:headers/.test(renderWebSettings) ||
   !/cloudflare:check/.test(renderWebSettings)
 ) {
@@ -750,6 +785,8 @@ if (
   !/dns-records\.local\.tfvars/.test(launchCutoverPlan) ||
   !/render:api-settings/.test(launchCutoverPlan) ||
   !/render:web-settings/.test(launchCutoverPlan) ||
+  !/render:apply -- --api-domain/.test(launchCutoverPlan) ||
+  !/render:apply -- --web-headers/.test(launchCutoverPlan) ||
   !/build:web-static:render/.test(launchCutoverPlan) ||
   !/MUSUNIL_EXPECTED_API_BASE_URL/.test(launchCutoverPlan) ||
   !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(launchCutoverPlan) ||
