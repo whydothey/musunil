@@ -215,6 +215,8 @@ Active goal: 상업용 앱 수준의 시민용 집회·시위 정보 서비스 U
 | 23:59 surface56 desktop detail | `docs/commercial-splus-surface56-detail-desktop-1440-2026-07-11.png` |
 | 23:59 surface56 desktop map | `docs/commercial-splus-surface56-map-desktop-1440-2026-07-11.png` |
 | 23:59 surface56 metrics | 상세 overview cards 0, answer rows 5, disclosure 2, 데스크톱 상세 상태 map sheet 62px, 탐색 지도 sheet 114px/62px, `overflowX=false`, forbidden 0 |
+| 11:44 surface68 mobile detail compact | `docs/commercial-splus-surface68-mobile-detail-compact-390-2026-07-12.png` |
+| 11:44 surface68 metrics | 390px 상세 시트 상단에서 중복 장문 설명을 숨기고 확인 요약/핵심 사실/근거·영상·지도만 남김. 실제 브라우저 캡처 `hero=292px`, `actionRow=340px`, `detailSummaryVisible=false`, `scrollWidth=390`; `pnpm check:visual-surface`가 모바일 상세 과밀 회귀를 검사 |
 | 11:25 surface67 home location strip | `pnpm check:visual-surface` |
 | 11:25 surface67 metrics | 390px/430px/768px/1440px CDP 렌더링 모두 `issue-location-strip`이 보이고 홈 카드 decorative mini-map count 0, area count 0. 첫 카드 높이는 390/430/768/1440px 모두 visual smoke 기준 안에 들어감 |
 | 03:14 surface64 mobile card flow | `docs/commercial-splus-surface64-home-card-flow-mobile-390-2026-07-12.png` |

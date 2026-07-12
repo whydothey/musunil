@@ -193,6 +193,10 @@ async function runViewport(client, viewport, url) {
     () => assert(/일시/.test(detail.detailConfirmSummary) && /자료 기준/.test(detail.detailConfirmSummary), `detail summary must separate assembly time and source basis: ${detail.detailConfirmSummary}`),
     () => assert(detail.detailTabs.join("/") === "개요/근거/영상/흐름/반론", `detail tab labels changed: ${detail.detailTabs.join("/")}`),
     () => assert(detail.detailActions.join("/") === "근거/영상/지도", `detail quick actions changed: ${detail.detailActions.join("/")}`),
+    () => assert(!viewport.mobile || !detail.detailSummaryVisible, "mobile detail should not repeat the long summary above the overview tab"),
+    () => assert(!viewport.mobile || detail.detailHeroRect.height <= 300, `mobile detail hero is too tall: ${detail.detailHeroRect.height}`),
+    () => assert(!viewport.mobile || detail.detailActionMinWidth >= 92, `mobile detail action buttons are too narrow: ${detail.detailActionMinWidth}`),
+    () => assert(!viewport.mobile || detail.detailActionRight <= viewport.width - 10, `mobile detail action row clips at viewport edge: right=${detail.detailActionRight}`),
     () => assert(!viewport.mobile || !detail.navOverlap, "mobile detail controls overlap bottom navigation")
   ], serviceDetail(detail));
 
@@ -319,8 +323,12 @@ function visualMetrics(label) {
       firstIssueChipCount: [...(firstIssue?.querySelectorAll(".chip") || [])].filter(visible).length,
       detailTitle: document.querySelector("#detail-title")?.textContent?.trim() || "",
       detailConfirmSummary: document.querySelector("#detail-confirm-summary")?.textContent?.trim() || "",
+      detailSummaryVisible: visible(document.querySelector("#detail-summary")),
+      detailHeroRect: rect(".hero-status"),
       detailTabs: [...document.querySelectorAll("#record-section .tabs button")].filter(visible).map((node) => node.textContent.trim()),
       detailActions: [...document.querySelectorAll(".detail-action-row button span")].filter(visible).map((node) => node.textContent.trim()),
+      detailActionMinWidth: Math.min(...[...document.querySelectorAll(".detail-action-row button")].filter(visible).map((node) => Math.round(node.getBoundingClientRect().width)), 999),
+      detailActionRight: Math.max(0, ...[...document.querySelectorAll(".detail-action-row button")].filter(visible).map((node) => Math.round(node.getBoundingClientRect().right))),
       reelActionLabels: [...document.querySelectorAll("[data-reel-action] span, [data-reel-empty-action] span")].filter(visible).map((node) => node.textContent.trim()),
       issueContextTitle: document.querySelector("#reels-anchor-title")?.textContent?.trim() || "",
       mapRect: rect(".map-shell"),
