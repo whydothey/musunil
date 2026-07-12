@@ -239,6 +239,7 @@ function renderMarkdown(value) {
     "# Launch Missing Inputs",
     "",
     "이 문서는 실제 값을 담지 않는다. 사용자가 마지막에 채울 필드명, 현재 상태, 검증 명령만 보여준다.",
+    "운영 브리프와 같은 live blocker 스냅샷으로 갱신하려면 `pnpm launch:handoff`를 실행한다.",
     "",
     "## Current Gate",
     "",

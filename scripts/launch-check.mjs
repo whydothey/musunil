@@ -43,6 +43,7 @@ const launchFinalGate = readFileSync(resolve(cwd, "scripts/launch-final-gate.mjs
 const launchCutoverRehearsal = readFileSync(resolve(cwd, "scripts/launch-cutover-rehearsal.mjs"), "utf8");
 const launchOperatorBrief = readFileSync(resolve(cwd, "scripts/launch-operator-brief.mjs"), "utf8");
 const launchMissingInputs = readFileSync(resolve(cwd, "scripts/launch-missing-inputs.mjs"), "utf8");
+const launchHandoff = readFileSync(resolve(cwd, "scripts/launch-handoff.mjs"), "utf8");
 const cloudflareDnsTemplate = readFileSync(resolve(cwd, "scripts/cloudflare-dns-template.mjs"), "utf8");
 const cloudflareResponseHeaders = readFileSync(resolve(cwd, "scripts/cloudflare-response-headers-template.mjs"), "utf8");
 const cloudflareApply = readFileSync(resolve(cwd, "scripts/cloudflare-apply.mjs"), "utf8");
@@ -52,6 +53,7 @@ const launchMissingInputsDoc = readFileSync(resolve(cwd, "docs/launch-missing-in
 const userInputsManual = readFileSync(resolve(cwd, "docs/user-inputs-manual.md"), "utf8");
 const serviceWatchDoc = readFileSync(resolve(cwd, "docs/splus-service-watch.md"), "utf8");
 const serviceWatchLastChecked = serviceWatchDoc.match(/^Last checked:\s*(.+)$/m)?.[1]?.trim() || "";
+const launchOperatorBriefServiceWatch = launchOperatorBriefDoc.match(/^- Service watch:\s*([^\s(]+).*$/m)?.[1]?.trim() || "";
 const launchMissingInputsBlockerReport = launchMissingInputsDoc.match(/^- Blocker report:\s*([^\s(]+).*$/m)?.[1]?.trim() || "";
 const cloudflareDnsRecordsDoc = readFileSync(resolve(cwd, "docs/cloudflare-dns-records.md"), "utf8");
 const cloudflareDnsRecordsTerraform = readFileSync(resolve(cwd, "infra/cloudflare/dns-records.tf.example"), "utf8");
@@ -599,7 +601,7 @@ if (
   !/render:apply/.test(launchOperatorBrief) ||
   !/launch-ready\.mjs/.test(launchOperatorBrief) ||
   !/external-smoke\.mjs/.test(launchOperatorBrief) ||
-  !/pnpm launch:operator-brief -- --refresh/.test(launchOperatorBrief) ||
+  !/pnpm launch:handoff/.test(launchOperatorBrief) ||
   !/goalState/.test(launchOperatorBrief) ||
   !/launchState/.test(launchOperatorBrief) ||
   !/nextOperatorPrerequisite/.test(launchOperatorBrief) ||
@@ -608,12 +610,12 @@ if (
   !/Render `onrender\.com` host/.test(launchOperatorBriefDoc) ||
   !/Active goal/.test(launchOperatorBrief) ||
   !/Launch readiness/.test(launchOperatorBrief) ||
-  !/오래된 Git SHA나 blocker 상태를 출시 판단 증거로 쓰지 않는다/.test(launchOperatorBrief) ||
+  !/live blocker를 한 번만 갱신/.test(launchOperatorBrief) ||
   !/Header application mode/.test(launchOperatorBrief) ||
   !/Static Web에는 DB\/Redis/.test(launchOperatorBrief) ||
   !/Launch Operator Brief/.test(launchOperatorBriefDoc) ||
-  !/pnpm launch:operator-brief -- --refresh/.test(launchOperatorBriefDoc) ||
-  !/오래된 Git SHA나 blocker 상태를 출시 판단 증거로 쓰지 않는다/.test(launchOperatorBriefDoc) ||
+  !/pnpm launch:handoff/.test(launchOperatorBriefDoc) ||
+  !/live blocker를 한 번만 갱신/.test(launchOperatorBriefDoc) ||
   !/Render Web Static Site/.test(launchOperatorBriefDoc) ||
   !/Render API Service/.test(launchOperatorBriefDoc) ||
   !/Render API automation/.test(launchOperatorBriefDoc) ||
@@ -638,18 +640,29 @@ if (
   !/proof: `identity_portone_verified_lookup`/.test(launchOperatorBriefDoc) ||
   !/cloudflare:dns/.test(launchOperatorBriefDoc) ||
   !/cloudflare:headers/.test(launchOperatorBriefDoc) ||
+  !/"launch:handoff"/.test(packageJson) ||
+  !/launch-handoff\.mjs/.test(packageJson) ||
+  !/launch-next-actions\.mjs/.test(launchHandoff) ||
+  !/--refresh/.test(launchHandoff) ||
+  !/launch-operator-brief\.mjs/.test(launchHandoff) ||
+  !/launch-missing-inputs\.mjs/.test(launchHandoff) ||
+  !/pnpm launch:handoff/.test(launchOperatorBrief) ||
+  !/pnpm launch:handoff/.test(launchOperatorBriefDoc) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET/.test(launchOperatorBrief) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET/.test(launchOperatorBriefDoc) ||
   !/cloudflare-dns-records\.local\.md/.test(launchOperatorBrief) ||
   !/cloudflare-dns-records\.local\.md/.test(launchOperatorBriefDoc) ||
   !/User Inputs/.test(launchOperatorBriefDoc) ||
-  !/launch:missing-inputs -- --refresh/.test(launchOperatorBrief) ||
-  !/launch:missing-inputs -- --refresh/.test(launchOperatorBriefDoc) ||
+  !/docs\/launch-missing-inputs\.md/.test(launchOperatorBrief) ||
+  !/docs\/launch-missing-inputs\.md/.test(launchOperatorBriefDoc) ||
   !/pnpm launch:final-gate/.test(launchOperatorBriefDoc) ||
   !/api\.musunil\.com/.test(launchOperatorBriefDoc) ||
   !/MUSUNIL_USER_INPUTS_B64/.test(launchOperatorBriefDoc)
 ) {
   failures.push("Launch operator brief must combine current blockers, Render Web/API settings, Cloudflare DNS, user inputs, and final verification into one generated handoff document");
+}
+if (!serviceWatchLastChecked || !launchOperatorBriefServiceWatch || serviceWatchLastChecked !== launchOperatorBriefServiceWatch) {
+  failures.push("docs/launch-operator-brief.md must be regenerated from the latest docs/splus-service-watch.md blocker report. Run pnpm launch:handoff.");
 }
 const serviceWatchStaticReady =
   /\|\s*web_static_manifest\s*\|\s*ok\s*\|/.test(serviceWatchDoc) &&
@@ -682,6 +695,8 @@ if (
   !/blockerReport/.test(launchMissingInputs) ||
   !/Report freshness/.test(launchMissingInputs) ||
   !/stale live blocker report/.test(launchMissingInputs) ||
+  !/pnpm launch:handoff/.test(launchMissingInputs) ||
+  !/pnpm launch:handoff/.test(launchMissingInputsDoc) ||
   !/pnpm launch:missing-inputs -- --refresh/.test(launchMissingInputs) ||
   !/Blocker report/.test(launchMissingInputsDoc) ||
   !/Report freshness/.test(launchMissingInputsDoc) ||
@@ -704,7 +719,7 @@ if (
   failures.push("Launch missing-inputs helper must generate a secret-safe final input checklist with apply, provider smoke, runtime secret, and proof-marker requirements");
 }
 if (!serviceWatchLastChecked || !launchMissingInputsBlockerReport || serviceWatchLastChecked !== launchMissingInputsBlockerReport) {
-  failures.push("docs/launch-missing-inputs.md must be refreshed from the latest docs/splus-service-watch.md blocker report. Run pnpm launch:missing-inputs -- --refresh.");
+  failures.push("docs/launch-missing-inputs.md must be refreshed from the latest docs/splus-service-watch.md blocker report. Run pnpm launch:handoff.");
 }
 if (
   !/"launch:final-gate"/.test(packageJson) ||

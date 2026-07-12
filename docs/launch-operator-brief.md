@@ -2,18 +2,18 @@
 
 이 문서는 마지막 운영 연결 단계에서 사람이 Render/Cloudflare/Secret 입력을 할 때 보는 단일 브리프다. 여기 나온 값만 기준으로 맞추고, 완료 판단은 `pnpm launch:final-gate` 통과로만 한다.
 
-> 실제 Render/Cloudflare 화면을 열기 직전에는 반드시 `pnpm launch:operator-brief -- --refresh`를 다시 실행한다. 이 파일은 마지막 생성 시점의 스냅샷이며, 오래된 Git SHA나 blocker 상태를 출시 판단 증거로 쓰지 않는다.
+> 실제 Render/Cloudflare 화면을 열기 직전에는 반드시 `pnpm launch:handoff`를 다시 실행한다. 이 명령은 live blocker를 한 번만 갱신하고 운영 브리프와 입력 체크리스트를 같은 보고서 기준으로 다시 쓴다.
 
 ## Current State
 
-- Generated: 2026-07-12T07:37:50.942Z
-- Git SHA: b3c627feb76a7c58e4b879ec4169ded3607c1650
-- Refresh command: `pnpm launch:operator-brief -- --refresh`
+- Generated: 2026-07-12T08:24:12.391Z
+- Git SHA: 327d206a1992496747ac6b11f6d2c12a9c801dc2
+- Refresh command: `pnpm launch:handoff`
 - Active goal: active
 - Launch readiness: blocked
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T07:32:29.279Z (fresh)
+- Service watch: 2026-07-12T08:24:12.152Z (fresh)
 - Checks: 4 ok, 3 fail, 13 skip, 4 actions
 - Before next command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Next command: `pnpm launch:apply`
@@ -63,7 +63,7 @@ Split apply paths from current blockers:
 ## What To Do Now
 
 1. connect_api_endpoint (operator)
-   - Action: pnpm launch:apply 출력대로 Render/Cloudflare token과 서비스 target 상태를 확인한다. Render API token과 Cloudflare token이 있으면 pnpm launch:apply -- --apply가 api.musunil.com custom domain 생성, Render onrender.com target 파생, Cloudflare DNS 적용을 한 번에 처리한다. token이 없으면 pnpm render:api-settings와 pnpm cloudflare:dns로 값을 확인한 뒤 Render Dashboard target을 MUSUNIL_RENDER_API_DNS_TARGET에 넣고 Cloudflare DNS의 api 레코드에 DNS only로 연결한다.
+   - Action: pnpm launch:apply 출력대로 Render/Cloudflare token과 서비스 target 상태를 확인한다. Render API token과 Cloudflare token이 있으면 pnpm launch:apply -- --apply가 api.musunil.com custom domain 생성, Render onrender.com target 파생, Cloudflare DNS 적용을 한 번에 처리한다. Render token 없이 Dashboard target을 직접 복사한 경우에는 pnpm render:api-settings와 pnpm cloudflare:dns로 값을 확인한 뒤 MUSUNIL_RENDER_API_DNS_TARGET와 CLOUDFLARE_API_TOKEN만 넣고 같은 명령을 실행한다. 이때 renderSkippedReason=manual_api_dns_target_without_render_token이면 Render API write는 건너뛰고 Cloudflare api CNAME만 DNS only로 적용한다.
    - Verify: `pnpm launch:apply && pnpm launch:blockers -- --refresh`
    - Reference: docs/launch-cutover-runbook.md#3-render-api
 2. apply_static_headers (operator)
@@ -210,7 +210,7 @@ Cache rules:
 
 사용자가 마지막에 채울 값의 우선순위다. Static Web에는 secret을 넣지 않고, API/Secret File에만 주입한다.
 
-- 정확한 누락 입력값과 proof marker는 `pnpm launch:missing-inputs -- --refresh`로 `docs/launch-missing-inputs.md`를 갱신해 확인한다.
+- 정확한 누락 입력값과 proof marker는 `pnpm launch:handoff`가 함께 갱신하는 `docs/launch-missing-inputs.md`에서 확인한다.
 
 - app.support_email
 - organization.legal_name/operator_name/privacy_officer_*/location_info_manager_*

@@ -1,15 +1,16 @@
 # Launch Missing Inputs
 
 이 문서는 실제 값을 담지 않는다. 사용자가 마지막에 채울 필드명, 현재 상태, 검증 명령만 보여준다.
+운영 브리프와 같은 live blocker 스냅샷으로 갱신하려면 `pnpm launch:handoff`를 실행한다.
 
 ## Current Gate
 
-- Generated: 2026-07-12T08:13:22.027Z
+- Generated: 2026-07-12T08:24:13.728Z
 - Source: local_file
 - Launch state: blocked
 - Current stage: connect_api_endpoint
 - Release blocked: yes
-- Blocker report: 2026-07-12T08:13:21.504Z (0m old, refresh after 15m)
+- Blocker report: 2026-07-12T08:24:12.152Z (0m old, refresh after 15m)
 - Report freshness: fresh
 - Before next command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Next command: `pnpm launch:apply`
