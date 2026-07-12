@@ -1,0 +1,68 @@
+name: post-deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      verification_mode:
+        description: "Verification to run after Render deploy"
+        required: true
+        default: "final-gate"
+        type: choice
+        options:
+          - "final-gate"
+          - "web-deploy"
+      web_base_url:
+        description: "Deployed Web URL"
+        required: true
+        default: "https://musunil.com"
+      api_base_url:
+        description: "Deployed API URL"
+        required: true
+        default: "https://api.musunil.com"
+      expected_api_base_url:
+        description: "Expected apiBaseUrl in Web config.js"
+        required: true
+        default: "https://api.musunil.com"
+      expected_commit_sha:
+        description: "Expected deployed Git SHA. Leave blank to use this workflow commit."
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Prepare verification env
+        env:
+          INPUT_WEB_BASE_URL: ${{ inputs.web_base_url }}
+          INPUT_API_BASE_URL: ${{ inputs.api_base_url }}
+          INPUT_EXPECTED_API_BASE_URL: ${{ inputs.expected_api_base_url }}
+          INPUT_EXPECTED_COMMIT_SHA: ${{ inputs.expected_commit_sha }}
+        run: |
+          expected_commit="$INPUT_EXPECTED_COMMIT_SHA"
+          if [ -z "$expected_commit" ]; then
+            expected_commit="$GITHUB_SHA"
+          fi
+          {
+            echo "MUSUNIL_WEB_BASE_URL=$INPUT_WEB_BASE_URL"
+            echo "MUSUNIL_API_BASE_URL=$INPUT_API_BASE_URL"
+            echo "MUSUNIL_EXPECTED_API_BASE_URL=$INPUT_EXPECTED_API_BASE_URL"
+            echo "MUSUNIL_EXPECTED_COMMIT_SHA=$expected_commit"
+            echo "MUSUNIL_STRICT_WEB_HEADERS=1"
+          } >> "$GITHUB_ENV"
+      - name: Verify Web deploy
+        if: ${{ inputs.verification_mode == 'web-deploy' }}
+        run: pnpm check:web-deploy
+      - name: Verify final launch gate
+        if: ${{ inputs.verification_mode == 'final-gate' }}
+        run: pnpm launch:final-gate

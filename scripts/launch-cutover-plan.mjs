@@ -134,6 +134,8 @@ const plan = {
     "pnpm cloudflare:check:strict",
     "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
     "MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
+    "GitHub Actions post-deploy workflow_dispatch: run web-deploy mode after Render Web deploy.",
+    "GitHub Actions post-deploy workflow_dispatch: run final-gate mode after Web/API/DNS/Header connection.",
     "pnpm check:visual-surface:live",
     "pnpm sources:refresh-preflight",
     "pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes",

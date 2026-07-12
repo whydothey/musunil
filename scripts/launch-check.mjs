@@ -62,6 +62,7 @@ const postDeploySmokeRunner = readFileSync(resolve(cwd, "scripts/post-deploy-smo
 const publicSourceRefreshPreflight = readFileSync(resolve(cwd, "scripts/public-source-refresh-preflight.mjs"), "utf8");
 const rootPackageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
 const ciWorkflow = readFileSync(resolve(cwd, ".github/workflows/ci.yml"), "utf8");
+const postDeployWorkflow = readFileSync(resolve(cwd, ".github/workflows/post-deploy.yml"), "utf8");
 const gitignore = readFileSync(resolve(cwd, ".gitignore"), "utf8");
 const readme = readFileSync(resolve(cwd, "README.md"), "utf8");
 const renderYaml = readFileSync(resolve(cwd, "render.yaml"), "utf8");
@@ -107,6 +108,23 @@ if (
   failures.push("GitHub Actions CI must use Node 24-compatible checkout/setup-node actions");
 }
 if (!/pnpm check:release/.test(ciWorkflow)) failures.push("GitHub Actions CI must run pnpm check:release");
+if (
+  !/name:\s*post-deploy/.test(postDeployWorkflow) ||
+  !/workflow_dispatch/.test(postDeployWorkflow) ||
+  !/verification_mode/.test(postDeployWorkflow) ||
+  !/web-deploy/.test(postDeployWorkflow) ||
+  !/final-gate/.test(postDeployWorkflow) ||
+  !/MUSUNIL_WEB_BASE_URL/.test(postDeployWorkflow) ||
+  !/MUSUNIL_API_BASE_URL/.test(postDeployWorkflow) ||
+  !/MUSUNIL_EXPECTED_API_BASE_URL/.test(postDeployWorkflow) ||
+  !/MUSUNIL_EXPECTED_COMMIT_SHA/.test(postDeployWorkflow) ||
+  !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(postDeployWorkflow) ||
+  !/pnpm check:web-deploy/.test(postDeployWorkflow) ||
+  !/pnpm launch:final-gate/.test(postDeployWorkflow) ||
+  /on:\s*\n\s+push:/.test(postDeployWorkflow)
+) {
+  failures.push("GitHub Actions post-deploy workflow must be manual-only and verify strict Web deploy or final launch gate against deployed URLs");
+}
 if (!/fallback\.issueCards = fallback\.issueCards\.filter\(\(issue\) => !isPreviewIssue\(issue\.id\) && !isMetaPublicSourceIssue\(issue\)\)/.test(web)) {
   failures.push("production Web fallback must not expose public source bundles as issue cards");
 }

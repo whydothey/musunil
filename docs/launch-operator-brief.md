@@ -6,14 +6,14 @@
 
 ## Current State
 
-- Generated: 2026-07-12T05:35:10.053Z
-- Git SHA: 6c908a3ee02c6067750b88a03fe753dea7835e1d
+- Generated: 2026-07-12T05:40:46.360Z
+- Git SHA: 940ddd03051f8038295a42a41fec2d9f50d00569
 - Refresh command: `pnpm launch:operator-brief -- --refresh`
 - Active goal: active
 - Launch readiness: blocked
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T05:35:23.648Z (fresh)
+- Service watch: 2026-07-12T05:40:59.922Z (fresh)
 - Checks: 4 ok, 3 fail, 13 skip, 4 actions
 - Before next command: Render API token과 Cloudflare token이 있으면 `pnpm launch:apply -- --apply`가 api.musunil.com custom domain 생성, Render onrender.com target 파생, Cloudflare DNS 적용을 한 번에 처리한다. token이 없으면 dry-run 출력의 requiredEnv만 채우고, 하위 확인은 `pnpm render:api-settings`와 `pnpm cloudflare:dns`를 사용한다.
 - Next command: `pnpm launch:apply && pnpm launch:final-gate`
@@ -253,6 +253,8 @@ Cache rules:
 - pnpm cloudflare:check:strict
 - MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy
 - MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy
+- GitHub Actions post-deploy workflow_dispatch: run web-deploy mode after Render Web deploy.
+- GitHub Actions post-deploy workflow_dispatch: run final-gate mode after Web/API/DNS/Header connection.
 - pnpm check:visual-surface:live
 - pnpm sources:refresh-preflight
 - pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes
