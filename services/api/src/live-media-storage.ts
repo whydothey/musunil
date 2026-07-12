@@ -42,6 +42,13 @@ export function storageSmokePrefix(): string {
   return "private/live/smoke/";
 }
 
+export function assertStorageSmokeKey(value: string): void {
+  const prefix = storageSmokePrefix();
+  if (!value.startsWith(prefix) || value.includes("..") || value.includes("//")) {
+    throw new Error(`MUSUNIL_STORAGE_SMOKE_KEY must stay under ${prefix} and must not include path traversal segments.`);
+  }
+}
+
 function storageUrl(endpoint: string, bucket: string, storageKey: string): URL {
   const base = new URL(endpoint.endsWith("/") ? endpoint : `${endpoint}/`);
   return new URL(`${encodePathPart(bucket)}/${storageKey.split("/").map(encodePathPart).join("/")}`, base);

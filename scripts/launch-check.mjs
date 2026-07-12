@@ -197,6 +197,7 @@ if (!/minDurationMs/.test(schemasIndex) || !/\(evidence\.durationMs \?\? 0\) < p
 }
 const apiServer = readFileSync(resolve(cwd, "services/api/src/server.ts"), "utf8");
 const apiApp = readFileSync(resolve(cwd, "services/api/src/app.ts"), "utf8");
+const apiSelfCheck = readFileSync(resolve(cwd, "services/api/src/self-check.ts"), "utf8");
 const liveMediaStorage = readFileSync(resolve(cwd, "services/api/src/live-media-storage.ts"), "utf8");
 const storageSmoke = readFileSync(resolve(cwd, "scripts/storage-smoke.mjs"), "utf8");
 const redactionSmoke = readFileSync(resolve(cwd, "scripts/redaction-smoke.mjs"), "utf8");
@@ -247,12 +248,18 @@ if (!/createLiveMediaStorage/.test(storageSmoke) || !/storage_put_delete/.test(s
 if (
   !/storageSmokePrefix/.test(liveMediaStorage) ||
   !/private\/live\/smoke\//.test(liveMediaStorage) ||
+  !/function assertStorageSmokeKey/.test(liveMediaStorage) ||
+  !/value\.startsWith\(prefix\)/.test(liveMediaStorage) ||
+  !/value\.includes\("\.\."\)/.test(liveMediaStorage) ||
+  !/value\.includes\("\/\/"\)/.test(liveMediaStorage) ||
+  !/MUSUNIL_STORAGE_SMOKE_KEY must stay under/.test(liveMediaStorage) ||
   !/assertStorageSmokeKey/.test(storageSmoke) ||
-  !/MUSUNIL_STORAGE_SMOKE_KEY must stay under/.test(storageSmoke) ||
-  !/value\.startsWith\(prefix\)/.test(storageSmoke) ||
-  !/value\.includes\("\.\."\)/.test(storageSmoke)
+  !/generatedStorageSmokeKey/.test(apiSelfCheck) ||
+  !/private\/live\/original\/occ-live-1\.webm/.test(apiSelfCheck) ||
+  !/nested\/\/bad\.txt/.test(apiSelfCheck) ||
+  !/assert\.throws\(\(\) => assertStorageSmokeKey/.test(apiSelfCheck)
 ) {
-  failures.push("storage smoke must constrain any custom smoke key to the private/live/smoke/ prefix before PUT/DELETE");
+  failures.push("storage smoke must execute-test custom smoke key constraints under the private/live/smoke/ prefix before PUT/DELETE");
 }
 if (
   !/MUSUNIL_STORAGE_SMOKE_KEY/.test(userFacingDocs) ||

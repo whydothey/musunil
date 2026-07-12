@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 import { loadUserInputs, validateLaunchConfig } from "../packages/config/src/index.ts";
-import { createLiveMediaStorage, storageSmokeKey, storageSmokePrefix } from "../services/api/src/live-media-storage.ts";
+import { assertStorageSmokeKey, createLiveMediaStorage, storageSmokeKey } from "../services/api/src/live-media-storage.ts";
 
 const cwd = resolve(import.meta.dirname, "..");
 const { config, source, path } = loadUserInputs({ cwd });
@@ -17,7 +17,12 @@ if (!storage) {
 }
 
 const storageKey = process.env.MUSUNIL_STORAGE_SMOKE_KEY || storageSmokeKey();
-assertStorageSmokeKey(storageKey);
+try {
+  assertStorageSmokeKey(storageKey);
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+}
 try {
   await storage.put({
     storageKey,
@@ -29,12 +34,4 @@ try {
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
-}
-
-function assertStorageSmokeKey(value) {
-  const prefix = storageSmokePrefix();
-  if (!value.startsWith(prefix) || value.includes("..") || value.includes("//")) {
-    console.error(`MUSUNIL_STORAGE_SMOKE_KEY must stay under ${prefix} and must not include path traversal segments.`);
-    process.exit(1);
-  }
 }

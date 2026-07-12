@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import { createApp, createSeedStore, decryptLiveMediaBytes } from "./app.ts";
 import { enforcePublicWriteRateLimit, readJsonBody } from "./http-boundary.ts";
+import { assertStorageSmokeKey, storageSmokeKey, storageSmokePrefix } from "./live-media-storage.ts";
 import { decryptSnapshot, encryptSnapshot } from "./postgres-store.ts";
 
 const now = new Date("2026-07-07T09:00:00.000Z");
@@ -59,6 +60,18 @@ const encryptedSnapshot = encryptSnapshot('{"raw":"사용자 원문"}', "test_en
 assert.equal(encryptedSnapshot.includes("사용자 원문"), false);
 assert.equal(decryptSnapshot(encryptedSnapshot, "test_encryption_key_32_bytes_minimum"), '{"raw":"사용자 원문"}');
 assert.throws(() => decryptSnapshot(encryptedSnapshot, "wrong_encryption_key_32_bytes_minimum"));
+const generatedStorageSmokeKey = storageSmokeKey();
+assert.equal(generatedStorageSmokeKey.startsWith(storageSmokePrefix()), true);
+assert.doesNotThrow(() => assertStorageSmokeKey(generatedStorageSmokeKey));
+assert.doesNotThrow(() => assertStorageSmokeKey(`${storageSmokePrefix()}manual-smoke.txt`));
+for (const unsafeStorageSmokeKey of [
+  "private/live/original/occ-live-1.webm",
+  `${storageSmokePrefix()}../original/occ-live-1.webm`,
+  `${storageSmokePrefix()}nested//bad.txt`,
+  "private/live/smoke"
+]) {
+  assert.throws(() => assertStorageSmokeKey(unsafeStorageSmokeKey), /MUSUNIL_STORAGE_SMOKE_KEY must stay under/);
+}
 const user1Session = await verifiedIdentitySession(app);
 const user1Headers = userHeaders(user1Session);
 const routeOnlySession = await verifiedIdentitySession(app);
