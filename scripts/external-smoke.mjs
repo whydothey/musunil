@@ -8,6 +8,7 @@ const steps = [
   { id: "storage", args: ["storage:smoke"], requireRealOutput: "storage_put_delete" },
   { id: "redaction", args: ["redaction:smoke"], requireRealOutput: "redaction_engine_smoke" },
   { id: "mobile_integrity", args: ["mobile:integrity-smoke"], requireRealOutput: "mobile_integrity_provider_dry_run" },
+  { id: "identity", args: ["identity:smoke"], requireRealOutput: "identity_portone_verified_lookup" },
   {
     id: postLaws ? "laws_post" : "laws_dry_run",
     args: postLaws ? ["--filter", "@musunil/public-source-ingest", "dev", "--", "--laws", "--post"] : ["sources:laws"],

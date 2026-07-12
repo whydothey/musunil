@@ -91,6 +91,7 @@ domestic_operation:
    - `identity.portone_api_secret`
    - `identity.session_cookie_domain`
    - 읽기는 공개지만 제보, 현장 판단, 반론, 신고, 알림 설정은 본인확인 완료 세션이 필요하다.
+   - 실제 운영 직전에는 포트원 본인확인을 1회 완료하고, 완료된 verification id를 현재 터미널에만 `MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID`로 넣은 뒤 `pnpm identity:smoke`를 실행한다. 이 ID는 YAML이나 Git에 저장하지 않는다.
 
 3. LIVE 현장 영상 원본 저장소
    - `security.media_encryption_key`

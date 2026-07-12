@@ -13,7 +13,7 @@ const diagnostics = {
   summary: {
     productionIssueCount: productionIssues.length,
     blockingGroups: groupedIssueIds(productionIssues),
-    externalSmokeCommands: ["pnpm storage:smoke", "pnpm redaction:smoke", "pnpm mobile:integrity-smoke", "pnpm sources:laws"],
+    externalSmokeCommands: ["pnpm storage:smoke", "pnpm redaction:smoke", "pnpm mobile:integrity-smoke", "pnpm identity:smoke", "pnpm sources:laws"],
     requiredActions: []
   },
   components: {
@@ -33,7 +33,8 @@ diagnostics.readyForMetadataCheck = [
 diagnostics.readyForExternalSmoke = [
   diagnostics.components.storage.readyForSmoke,
   diagnostics.components.redaction.readyForSmoke,
-  diagnostics.components.mobileIntegrity.readyForSmoke
+  diagnostics.components.mobileIntegrity.readyForSmoke,
+  diagnostics.components.identity.readyForSmoke
 ].every(Boolean);
 diagnostics.summary.requiredActions = requiredActions();
 
@@ -113,6 +114,12 @@ function mobileIntegrityDiagnostics() {
 function identityDiagnostics() {
   const provider = readString("identity.provider");
   const apiBaseUrl = readString("identity.portone_api_base_url") ?? "";
+  const readyForProductionAuth =
+    provider === "portone" &&
+    status("identity.portone_store_id") === "configured" &&
+    status("identity.portone_identity_channel_key") === "configured" &&
+    secretStatus(pathOf("identity", "portone" + "_api" + "_secret"), 24) === "configured" &&
+    status("identity.session_cookie_domain") === "configured";
   return {
     provider: provider ?? "missing",
     providerStatus: provider === "portone" ? "configured" : status("identity.provider"),
@@ -121,13 +128,12 @@ function identityDiagnostics() {
     apiSecretStatus: secretStatus(pathOf("identity", "portone" + "_api" + "_secret"), 24),
     sessionCookieDomainStatus: status("identity.session_cookie_domain"),
     apiBaseHost: safeHost(apiBaseUrl),
+    smokeCommand: "pnpm identity:smoke",
+    smokeVerificationIdEnv: "MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID",
+    smokeVerificationIdStatus: secretEnvStatus("MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID", 12),
     metadataReady: provider === "portone" && safeHost(apiBaseUrl) !== "invalid",
-    readyForProductionAuth:
-      provider === "portone" &&
-      status("identity.portone_store_id") === "configured" &&
-      status("identity.portone_identity_channel_key") === "configured" &&
-      secretStatus(pathOf("identity", "portone" + "_api" + "_secret"), 24) === "configured" &&
-      status("identity.session_cookie_domain") === "configured"
+    readyForProductionAuth,
+    readyForSmoke: readyForProductionAuth && secretEnvStatus("MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID", 12) === "configured"
   };
 }
 
@@ -137,6 +143,7 @@ function requiredActions() {
   if (!diagnostics.components.redaction.readyForSmoke) actions.push("redaction.engine_smoke_command에 {input}/{output}을 받는 실제 비식별 엔진 명령을 넣고 pnpm redaction:smoke를 실행한다.");
   if (!diagnostics.components.mobileIntegrity.readyForSmoke) actions.push("Play Integrity 또는 App Attest 값과 mobile.integrity_smoke_command를 채운 뒤 pnpm mobile:integrity-smoke를 실행한다.");
   if (!diagnostics.components.identity.readyForProductionAuth) actions.push("PortOne 본인확인 store/channel/API secret/cookie domain을 채우고 인증 리허설을 수행한다.");
+  else if (!diagnostics.components.identity.readyForSmoke) actions.push("실제 PortOne 본인확인을 1회 완료한 뒤 MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID를 현재 셸에 넣고 pnpm identity:smoke를 실행한다.");
   return actions;
 }
 
@@ -174,6 +181,13 @@ function commandStatus(value) {
 
 function secretStatus(path, minLength) {
   const value = readString(path);
+  if (!value) return "missing";
+  if (isPlaceholder(value)) return "placeholder";
+  return value.length >= minLength ? "configured" : "too_short";
+}
+
+function secretEnvStatus(name, minLength) {
+  const value = process.env[name];
   if (!value) return "missing";
   if (isPlaceholder(value)) return "placeholder";
   return value.length >= minLength ? "configured" : "too_short";

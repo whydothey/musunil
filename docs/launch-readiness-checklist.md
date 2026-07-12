@@ -42,6 +42,7 @@
 - `pnpm smoke:api -- --boundary-checks` 통과.
 - `pnpm launch:external-smoke` 통과.
 - `pnpm mobile:integrity-smoke` 통과.
+- 실제 PortOne 본인확인 완료 ID로 `pnpm identity:smoke` 통과.
 - 실제 storage credential 입력 후 `pnpm storage:smoke` 통과.
 - 실제 비식별 엔진 명령 입력 후 `pnpm redaction:smoke` 통과.
 - `pnpm ops:diagnose`가 storage, redaction, mobile integrity, identity의 metadata 준비 상태와 다음 조치를 secret 원문 없이 출력한다.
@@ -227,10 +228,11 @@ PG 계약 후에만 아래 값을 입력하고 `payments.operating_support_enabl
 
 - 공공 원천 worker dry-run 결과가 실제 게시판 최신 목록과 맞는다.
 - 전국 coverage report의 `schedule_active`, `schedule_candidate`, `statistics_only`, `needs_discovery`, 다음 점검 시각, 공백 사유가 운영 리포트에 반영된다.
-- `pnpm launch:external-smoke`가 storage PUT/DELETE, redaction proof, 법 원천 1건 이상 dry-run을 한 번에 통과한다.
+- `pnpm launch:external-smoke`가 storage PUT/DELETE, redaction proof, 모바일 무결성 dry-run, PortOne 본인확인 결과 조회, 법 원천 1건 이상 dry-run을 한 번에 통과한다.
 - 외부 credential 입력 직후 `pnpm ops:diagnose`로 metadata 누락을 먼저 확인하고, `readyForExternalSmoke`가 false이면 `requiredActions` 순서대로 수정한 뒤 실제 smoke를 실행한다.
 - storage/redaction/mobile smoke는 private storage key나 provider raw output을 운영 로그에 그대로 남기지 않는다.
 - `pnpm mobile:integrity-smoke`가 실제 모바일 verifier dry-run을 실행하고 `mobile_integrity_provider_dry_run` proof marker를 출력한다.
+- 실제 PortOne 본인확인을 1회 완료한 뒤 완료된 verification id를 로컬 셸의 `MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID`에만 넣고 `pnpm identity:smoke`를 실행한다. 이 값은 YAML, Git, 문서에 저장하지 않는다.
 - storage bucket credential로 `pnpm storage:smoke`가 실제 PUT/DELETE dry-run에 성공한다.
 - 비식별 엔진 command로 `pnpm redaction:smoke`가 입력 파일을 처리해 공개본 후보 파일과 proof hash를 만든다.
 - Web `config.js`에는 `apiBaseUrl`, `mapStyleUrl`만 있고 내부 키/secret 필드가 없으며 현재 YAML 값과 일치한다.

@@ -135,6 +135,7 @@ const liveMediaStorage = readFileSync(resolve(cwd, "services/api/src/live-media-
 const storageSmoke = readFileSync(resolve(cwd, "scripts/storage-smoke.mjs"), "utf8");
 const redactionSmoke = readFileSync(resolve(cwd, "scripts/redaction-smoke.mjs"), "utf8");
 const mobileIntegritySmoke = readFileSync(resolve(cwd, "scripts/mobile-integrity-smoke.mjs"), "utf8");
+const identitySmoke = readFileSync(resolve(cwd, "scripts/identity-smoke.mjs"), "utf8");
 const operationalDiagnostics = readFileSync(resolve(cwd, "scripts/operational-readiness-diagnostics.mjs"), "utf8");
 const postDeploySmoke = readFileSync(resolve(cwd, "scripts/post-deploy-smoke.mjs"), "utf8");
 const serviceWatch = readFileSync(resolve(cwd, "scripts/service-watch.mjs"), "utf8");
@@ -180,6 +181,17 @@ if (!/createLiveMediaStorage/.test(storageSmoke) || !/storage_put_delete/.test(s
 if (/checked:\s*"storage_put_delete"[\s\S]*storageKey/.test(storageSmoke)) {
   failures.push("storage smoke must not print private storage keys");
 }
+if (
+  !/"identity:smoke"/.test(packageJson) ||
+  !/identity_portone_verified_lookup/.test(identitySmoke) ||
+  !/MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID/.test(identitySmoke) ||
+  !/subjectFieldsPresent/.test(identitySmoke)
+) {
+  failures.push("PortOne identity launch smoke command is missing");
+}
+if (/identityVerificationId:\s*identityVerificationId/.test(identitySmoke) || /\bci:\s*ci\b/.test(identitySmoke) || /\bdi:\s*di\b/.test(identitySmoke)) {
+  failures.push("identity smoke must not print PortOne verification id, CI, or DI values");
+}
 if (!/"ops:diagnose"/.test(packageJson) || !/"check:ops-diagnostics"/.test(packageJson) || !/check:ops-diagnostics/.test(JSON.parse(packageJson).scripts["check:release"] ?? "")) {
   failures.push("release check must include operational readiness metadata diagnostics");
 }
@@ -194,6 +206,8 @@ if (
   !/operational_readiness_metadata/.test(operationalDiagnostics) ||
   !/readyForMetadataCheck/.test(operationalDiagnostics) ||
   !/readyForExternalSmoke/.test(operationalDiagnostics) ||
+  !/MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID/.test(operationalDiagnostics) ||
+  !/pnpm identity:smoke/.test(operationalDiagnostics) ||
   !/commandEchoSuppressed/.test(operationalDiagnostics) ||
   !/smokeCommandEchoSuppressed/.test(operationalDiagnostics)
 ) {
@@ -366,6 +380,7 @@ if (
   !/storage_put_delete/.test(externalSmoke) ||
   !/redaction_engine_smoke/.test(externalSmoke) ||
   !/mobile_integrity_provider_dry_run/.test(externalSmoke) ||
+  !/identity_portone_verified_lookup/.test(externalSmoke) ||
   !/--refresh/.test(launchCutoverRehearsal) ||
   !/--strict/.test(launchCutoverRehearsal) ||
   !/pnpm launch:cutover-rehearsal/.test(launchCutoverRunbook) ||
@@ -408,6 +423,7 @@ if (
   !/proof: `storage_put_delete`/.test(launchOperatorBriefDoc) ||
   !/proof: `redaction_engine_smoke`/.test(launchOperatorBriefDoc) ||
   !/proof: `mobile_integrity_provider_dry_run`/.test(launchOperatorBriefDoc) ||
+  !/proof: `identity_portone_verified_lookup`/.test(launchOperatorBriefDoc) ||
   !/cloudflare:dns/.test(launchOperatorBriefDoc) ||
   !/cloudflare:headers/.test(launchOperatorBriefDoc) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET/.test(launchOperatorBrief) ||

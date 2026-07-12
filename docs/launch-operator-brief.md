@@ -6,14 +6,14 @@
 
 ## Current State
 
-- Generated: 2026-07-12T02:00:52.940Z
-- Git SHA: 85a28199c2eb5b34246cf1f07d14062c333772b9
+- Generated: 2026-07-12T02:11:30.924Z
+- Git SHA: 00f077cb2bf3a0cc69eaaef9dcb9362561495a6d
 - Refresh command: `pnpm launch:operator-brief -- --refresh`
 - Active goal: active
 - Launch readiness: blocked
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T01:48:25.242Z (fresh)
+- Service watch: 2026-07-12T02:04:55.207Z (fresh)
 - Checks: 4 ok, 3 fail, 12 skip, 4 actions
 - Before next command: Render musunil-api > Settings > Custom Domains에서 api.musunil.com의 DNS target을 복사해 현재 셸의 MUSUNIL_RENDER_API_DNS_TARGET에 먼저 export한다. 문서 placeholder, 괄호 예시, 추측한 .onrender.com 값은 쓰지 않는다.
 - Next command: `pnpm render:api-settings && : "${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}" && pnpm cloudflare:dns && pnpm cloudflare:check:strict`
@@ -173,6 +173,7 @@ Cache rules:
 - storage: `pnpm storage:smoke`, proof: `storage_put_delete`
 - redaction: `pnpm redaction:smoke`, proof: `redaction_engine_smoke`
 - mobile_integrity: `pnpm mobile:integrity-smoke`, proof: `mobile_integrity_provider_dry_run`
+- identity: `pnpm identity:smoke`, proof: `identity_portone_verified_lookup`
 - laws_dry_run: `pnpm sources:laws`, proof: `laws_dry_run`, forbidden: `laws_disabled`
 
 ## Verification

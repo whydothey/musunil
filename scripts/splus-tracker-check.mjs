@@ -119,29 +119,32 @@ for (const term of [
 for (const term of [
   "실제 storage credential 입력 후 `pnpm storage:smoke` 통과",
   "실제 비식별 엔진 명령 입력 후 `pnpm redaction:smoke` 통과",
+  "실제 PortOne 본인확인 완료 ID로 `pnpm identity:smoke` 통과",
   "모바일 LIVE 제보 출시 전 실제 기기에서 무결성 verifier dry-run"
 ]) {
   if (!launch.includes(term)) failures.push(`launch checklist missing manual S+ gate: ${term}`);
 }
 
 if (!national.includes("현재 종합 등급은 A+다.")) failures.push("national issue tracker must not claim S+ before external live verification gates pass");
-if (!national.includes("실제 모바일 attestation provider/storage/redaction smoke 실행 남음")) {
+if (!national.includes("실제 모바일 attestation provider/storage/redaction/identity smoke 실행 남음")) {
   failures.push("national issue tracker missing remaining live verification blocker");
 }
 if (!packageJson.includes('"launch:external-smoke"')) failures.push("package.json missing launch:external-smoke");
 if (!packageJson.includes('"mobile:integrity-smoke"')) failures.push("package.json missing mobile:integrity-smoke");
+if (!packageJson.includes('"identity:smoke"')) failures.push("package.json missing identity:smoke");
 if (!packageJson.includes('"launch:ready"')) failures.push("package.json missing launch:ready");
 if (!packageJson.includes('"launch:post-deploy-smoke"')) failures.push("package.json missing launch:post-deploy-smoke");
 if (!packageJson.includes('"launch:final-gate"')) failures.push("package.json missing launch:final-gate");
 if (!launch.includes("`pnpm launch:external-smoke`")) failures.push("launch checklist missing unified external smoke command");
 if (!launch.includes("`pnpm mobile:integrity-smoke`")) failures.push("launch checklist missing mobile integrity smoke command");
+if (!launch.includes("`pnpm identity:smoke`")) failures.push("launch checklist missing identity smoke command");
 if (!launch.includes("`pnpm launch:ready`")) failures.push("launch checklist missing unified launch-ready command");
 if (!launch.includes("`pnpm launch:post-deploy-smoke`")) failures.push("launch checklist missing post-deploy smoke command");
 if (!launch.includes("`pnpm launch:final-gate`")) failures.push("launch checklist missing final gate command");
 for (const term of ["pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws", "pnpm launch:post-deploy-smoke -- --require-laws", "pnpm launch:final-gate"]) {
   if (!userInputsManual.includes(term)) failures.push(`user inputs manual missing final launch command: ${term}`);
 }
-for (const term of ["pnpm launch:ready", "pnpm launch:post-deploy-smoke", "pnpm launch:final-gate", "sample gate", "실제 `pnpm storage:smoke`", "실제 `pnpm redaction:smoke`", "실제 `pnpm mobile:integrity-smoke`", "운영 DB/Redis/Render `/ready`"]) {
+for (const term of ["pnpm launch:ready", "pnpm launch:post-deploy-smoke", "pnpm launch:final-gate", "sample gate", "실제 `pnpm storage:smoke`", "실제 `pnpm redaction:smoke`", "실제 `pnpm mobile:integrity-smoke`", "실제 `pnpm identity:smoke`", "운영 DB/Redis/Render `/ready`"]) {
   if (!audit.includes(term)) failures.push(`completion audit missing final evidence term: ${term}`);
 }
 

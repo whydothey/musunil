@@ -108,6 +108,7 @@ Last updated: 2026-07-12 07:59 KST
   - `pnpm storage:smoke`
   - `pnpm redaction:smoke`
   - `pnpm mobile:integrity-smoke`
+  - `pnpm identity:smoke`
   - `pnpm smoke:api`
   - `pnpm smoke:api -- --boundary-checks`
   - 정적 Web `config.js` 생성: `pnpm build:web-config`
@@ -154,7 +155,7 @@ Last updated: 2026-07-12 07:59 KST
   - privacy purge는 외부 storage 원본 media DELETE 성공 후에만 DB storageKey/hash 제거
   - production LIVE 현장 인증은 Android Play Integrity 또는 iOS App Attest 설정 없이는 launch check 실패
   - 모바일 무결성 실제 provider dry-run 명령 주입: `mobile.integrity_smoke_command`
-  - `pnpm launch:external-smoke`는 storage, redaction, mobile integrity, law source dry-run을 단일 순서로 실행
+  - `pnpm launch:external-smoke`는 storage, redaction, mobile integrity, PortOne identity lookup, law source dry-run을 단일 순서로 실행
   - `pnpm ops:diagnose`는 외부 연결 전 storage, redaction, mobile integrity, identity metadata 상태와 다음 조치를 secret 원문 없이 출력
   - `pnpm check:ops-diagnostics`는 template 기반 metadata 진단을 release gate에서 실행해 운영 준비 항목 누락 회귀를 차단
   - `pnpm launch:ready -- <yaml>`는 입력 검증, config encode check, Render runtime sample gate, 운영 metadata 진단, external smoke, release check를 단일 순서로 실행
@@ -177,6 +178,7 @@ Last updated: 2026-07-12 07:59 KST
 - 실제 storage credential로 `pnpm storage:smoke` 통과.
 - 실제 비식별 엔진 command로 `pnpm redaction:smoke` 통과.
 - 실제 Play Integrity 또는 App Attest verifier dry-run으로 `pnpm mobile:integrity-smoke` 통과.
+- 실제 PortOne 본인확인 완료 ID를 `MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID`에 넣고 `pnpm identity:smoke` 통과.
 - 실제 법 원천 키로 `pnpm sources:laws` 1건 이상 dry-run과 `--post` 검증.
 - Render Dashboard에서 Blueprint 생성과 `MUSUNIL_USER_INPUTS_B64` 1회 입력.
 - 운영 DB/Redis 연결 상태에서 `/ready` 200 확인.

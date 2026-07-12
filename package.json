@@ -40,6 +40,7 @@
     "storage:smoke": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/storage-smoke.mjs",
     "redaction:smoke": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/redaction-smoke.mjs",
     "mobile:integrity-smoke": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/mobile-integrity-smoke.mjs",
+    "identity:smoke": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/identity-smoke.mjs",
     "launch:external-smoke": "node scripts/external-smoke.mjs",
     "launch:ready": "node scripts/launch-ready.mjs",
     "launch:post-deploy-smoke": "node scripts/post-deploy-smoke-runner.mjs",

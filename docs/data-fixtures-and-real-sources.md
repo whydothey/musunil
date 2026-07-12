@@ -170,7 +170,7 @@ pnpm sources:laws-diagnose -- --require-law-metadata
 pnpm launch:external-smoke
 ```
 
-이 명령은 storage, redaction, 모바일 무결성, 법 원천 dry-run을 함께 확인한다. 법 원천 credential이 있는데 0건을 파싱하면 dry-run도 `law_source_parse_empty`로 실패한다. 성공은 1건 이상이 반환될 때만 S+ 증거로 인정한다.
+이 명령은 storage, redaction, 모바일 무결성, PortOne 본인확인 결과 조회, 법 원천 dry-run을 함께 확인한다. 법 원천 credential이 있는데 0건을 파싱하면 dry-run도 `law_source_parse_empty`로 실패한다. 성공은 1건 이상이 반환되고 `identity_portone_verified_lookup` proof marker가 출력될 때만 S+ 증거로 인정한다.
 
 현재 검증 범위:
 
