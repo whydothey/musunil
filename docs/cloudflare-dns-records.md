@@ -1,6 +1,7 @@
 # Cloudflare DNS Records
 
 이 문서는 `musunil.com` 출시 컷오버 때 Cloudflare DNS에 입력할 레코드 템플릿이다. Render Dashboard가 각 custom domain에 대해 보여주는 target을 그대로 복사해야 하며, 임의로 `.onrender.com` 주소를 추측해 넣지 않는다.
+추적 문서는 placeholder를 유지한다. 실제 target을 복사한 뒤에는 아래 로컬 환경변수로 검증용 산출물을 만들고 strict check를 실행한다.
 
 ## Dashboard Records
 
@@ -9,6 +10,19 @@
 | `@` | `musunil.com` | `CNAME` | Render musunil-web custom-domain target | DNS only if Render headers are applied directly; proxied only when using the Web response header fallback |
 | `www` | `www.musunil.com` | `CNAME` | musunil.com | same policy as musunil.com |
 | `api` | `api.musunil.com` | `CNAME` | Render musunil-api custom-domain target | DNS only until /health, /ready, CORS, media, and identity boundary smoke pass |
+
+## Exact Target Workflow
+
+Render target은 secret이 아니지만 서비스별로 다르므로 추적 문서에는 placeholder로 둔다. Render Dashboard에서 Custom Domain target을 복사한 뒤 로컬 셸에만 아래처럼 넣는다.
+
+```bash
+export MUSUNIL_RENDER_WEB_DNS_TARGET="Render musunil-web custom-domain target"
+export MUSUNIL_RENDER_API_DNS_TARGET="Render musunil-api custom-domain target"
+pnpm cloudflare:dns
+pnpm cloudflare:check:strict
+```
+
+`pnpm cloudflare:dns`는 위 값이 있으면 git-ignored local copy인 `docs/cloudflare-dns-records.local.md`와 `infra/cloudflare/dns-records.local.tfvars`도 쓴다. `MUSUNIL_RENDER_API_DNS_TARGET`이 있으면 strict check는 `api.musunil.com` CNAME이 Render target과 일치하는지 검사한다.
 
 ## Proxy Policy
 

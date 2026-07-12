@@ -19,8 +19,8 @@ const plan = {
     {
       id: "api_dns",
       owner: "operator",
-      action: "Run pnpm render:api-settings and pnpm cloudflare:dns, attach api.musunil.com as a custom domain on the Render musunil-api service, then create the matching Cloudflare DNS record from the generated template.",
-      verify: "pnpm render:api-settings && pnpm cloudflare:dns && pnpm cloudflare:check"
+      action: "Run pnpm render:api-settings and pnpm cloudflare:dns, attach api.musunil.com as a custom domain on the Render musunil-api service, copy the Render target into MUSUNIL_RENDER_API_DNS_TARGET, then create the matching Cloudflare DNS record from the generated template.",
+      verify: "MUSUNIL_RENDER_API_DNS_TARGET=\"<Render API target>\" pnpm cloudflare:check:strict"
     },
     {
       id: "static_headers",
@@ -81,8 +81,14 @@ const plan = {
   cloudflareDnsTemplate: {
     docsPath: "docs/cloudflare-dns-records.md",
     terraformPath: "infra/cloudflare/dns-records.tf.example",
+    localDocsPath: "docs/cloudflare-dns-records.local.md",
+    localTfvarsPath: "infra/cloudflare/dns-records.local.tfvars",
     command: "pnpm cloudflare:dns",
-    checkCommand: "pnpm check:cloudflare-dns-template"
+    checkCommand: "pnpm check:cloudflare-dns-template",
+    exactTargetEnv: [
+      "MUSUNIL_RENDER_WEB_DNS_TARGET",
+      "MUSUNIL_RENDER_API_DNS_TARGET"
+    ]
   },
   cloudflareCacheRules: [
     "Do not cache /, /config.js, /build-info.json, or /static-manifest.json.",
@@ -110,10 +116,12 @@ const plan = {
     "pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws",
     "pnpm render:api-settings",
     "pnpm render:web-settings",
+    "export MUSUNIL_RENDER_WEB_DNS_TARGET=\"<Render Web target>\"",
+    "export MUSUNIL_RENDER_API_DNS_TARGET=\"<Render API target>\"",
     "pnpm cloudflare:dns",
     "pnpm cloudflare:headers",
     "Apply Render custom domains, Cloudflare DNS, and Render Static headers or the Web-only Cloudflare response header fallback.",
-    "pnpm cloudflare:check",
+    "pnpm cloudflare:check:strict",
     "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
     "MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy",
     "pnpm check:visual-surface:live",
@@ -128,6 +136,7 @@ const plan = {
     "Live visual surface smoke passes on musunil.com across 390px, 430px, 768px, and 1440px.",
     "Integrated service watch passes with web_runtime_config ok, web_visual_surface ok, serviceSyncState=live, and at least 3 rendered topic issue cards.",
     "Strict Web header check passes with no-store, CSP, Permissions-Policy, Referrer-Policy, nosniff, and frame protection on /, /config.js, and /build-info.json.",
+    "Strict Cloudflare DNS check verifies api.musunil.com resolves to the exact Render API custom-domain target.",
     "api.musunil.com resolves over HTTPS and /ready is ready=true.",
     "Public payloads expose no raw user text, private GPS, storage keys, identity hashes, or forbidden engagement surfaces.",
     "Write endpoints return identity_required without a verified identity session.",
@@ -186,6 +195,8 @@ function printMarkdown(value) {
   console.log("## Cloudflare DNS");
   console.log("");
   console.log(`Template: ${value.cloudflareDnsTemplate.command} (${value.cloudflareDnsTemplate.docsPath}, ${value.cloudflareDnsTemplate.terraformPath})`);
+  console.log(`Exact target env: ${value.cloudflareDnsTemplate.exactTargetEnv.join(", ")}`);
+  console.log(`Local exact copy: ${value.cloudflareDnsTemplate.localDocsPath}, ${value.cloudflareDnsTemplate.localTfvarsPath}`);
   console.log("");
   for (const record of value.cloudflareDns) {
     console.log(`- ${record.name}: ${record.type} -> ${record.target}. Proxy: ${record.proxy}.`);

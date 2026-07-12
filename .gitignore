@@ -12,3 +12,5 @@ config/*.secret.yaml
 *.pem
 *.key
 *.log
+docs/cloudflare-dns-records.local.md
+infra/cloudflare/dns-records.local.tfvars

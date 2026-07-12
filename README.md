@@ -73,11 +73,14 @@ Render/Cloudflare 연결 직후에는 먼저 DNS와 edge 응답을 분리 확인
 
 ```bash
 pnpm launch:operator-brief
+export MUSUNIL_RENDER_WEB_DNS_TARGET="<Render Web target>"
+export MUSUNIL_RENDER_API_DNS_TARGET="<Render API target>"
+pnpm cloudflare:dns
 pnpm cloudflare:headers
-pnpm cloudflare:check
+pnpm cloudflare:check:strict
 ```
 
-`pnpm launch:operator-brief`는 현재 blocker, Render Web/API 설정값, Cloudflare DNS, 사용자 입력 우선순위, 검증 순서를 [docs/launch-operator-brief.md](/Users/mk/Documents/Musunil/docs/launch-operator-brief.md)에 한 번에 갱신한다. `pnpm cloudflare:headers`는 Render Static headers가 live 응답에 반영되지 않을 때 쓸 Cloudflare Response Header Transform Rule 템플릿을 [docs/cloudflare-response-headers.md](/Users/mk/Documents/Musunil/docs/cloudflare-response-headers.md)와 [response-headers.tf.example](/Users/mk/Documents/Musunil/infra/cloudflare/response-headers.tf.example)에 생성한다. `pnpm cloudflare:check`는 `musunil.com`과 `api.musunil.com`의 DNS, Web HTTPS, `config.js`의 `apiBaseUrl`, 핵심 Web 보안 헤더, API `/health`, `/ready`를 분리해서 보여준다. 최종 게이트로 쓸 때는 `pnpm cloudflare:check:strict`를 실행한다.
+`pnpm launch:operator-brief`는 현재 blocker, Render Web/API 설정값, Cloudflare DNS, 사용자 입력 우선순위, 검증 순서를 [docs/launch-operator-brief.md](/Users/mk/Documents/Musunil/docs/launch-operator-brief.md)에 한 번에 갱신한다. `pnpm cloudflare:dns`는 추적용 placeholder 문서와, target env가 있을 때 git-ignored local copy를 생성한다. `pnpm cloudflare:headers`는 Render Static headers가 live 응답에 반영되지 않을 때 쓸 Cloudflare Response Header Transform Rule 템플릿을 [docs/cloudflare-response-headers.md](/Users/mk/Documents/Musunil/docs/cloudflare-response-headers.md)와 [response-headers.tf.example](/Users/mk/Documents/Musunil/infra/cloudflare/response-headers.tf.example)에 생성한다. `pnpm cloudflare:check`는 `musunil.com`과 `api.musunil.com`의 DNS, Web HTTPS, `config.js`의 `apiBaseUrl`, 핵심 Web 보안 헤더, API `/health`, `/ready`를 분리해서 보여준다. 최종 게이트로 쓸 때는 `MUSUNIL_RENDER_API_DNS_TARGET`을 설정한 `pnpm cloudflare:check:strict`로 API CNAME target까지 확인한다.
 
 배포 후에는 아래 명령으로 API와 Web이 같은 최신 커밋을 보고 있는지 확인한다.
 

@@ -8,42 +8,28 @@ const json = args.includes("--json");
 const stdout = args.includes("--stdout");
 const docsPath = resolve(cwd, "docs/cloudflare-dns-records.md");
 const terraformPath = resolve(cwd, "infra/cloudflare/dns-records.tf.example");
+const localDocsPath = resolve(cwd, "docs/cloudflare-dns-records.local.md");
+const localTfvarsPath = resolve(cwd, "infra/cloudflare/dns-records.local.tfvars");
 
-const records = [
-  {
-    name: "@",
-    hostname: "musunil.com",
-    type: "CNAME",
-    target: "Render musunil-web custom-domain target",
-    proxy: "DNS only if Render headers are applied directly; proxied only when using the Web response header fallback",
-    terraformValue: "var.render_web_target",
-    terraformProxied: "var.web_record_proxied"
-  },
-  {
-    name: "www",
-    hostname: "www.musunil.com",
-    type: "CNAME",
-    target: "musunil.com",
-    proxy: "same policy as musunil.com",
-    terraformValue: "musunil.com",
-    terraformProxied: "var.web_record_proxied"
-  },
-  {
-    name: "api",
-    hostname: "api.musunil.com",
-    type: "CNAME",
-    target: "Render musunil-api custom-domain target",
-    proxy: "DNS only until /health, /ready, CORS, media, and identity boundary smoke pass",
-    terraformValue: "var.render_api_target",
-    terraformProxied: "false"
-  }
-];
+const targetInputs = {
+  web: renderTargetInput("MUSUNIL_RENDER_WEB_DNS_TARGET"),
+  api: renderTargetInput("MUSUNIL_RENDER_API_DNS_TARGET")
+};
+
+const records = createRecords({ useConfiguredTargets: false });
+const localRecords = createRecords({ useConfiguredTargets: true });
 
 const result = {
   checked: "cloudflare_dns_records_template",
   zone: "musunil.com",
   docsPath: "docs/cloudflare-dns-records.md",
   terraformPath: "infra/cloudflare/dns-records.tf.example",
+  localDocsPath: "docs/cloudflare-dns-records.local.md",
+  localTfvarsPath: "infra/cloudflare/dns-records.local.tfvars",
+  targetInputs: [
+    targetInputSummary(targetInputs.web),
+    targetInputSummary(targetInputs.api)
+  ],
   records,
   verification: [
     "pnpm cloudflare:check",
@@ -54,6 +40,9 @@ const result = {
 
 const markdown = renderMarkdown(result);
 const terraform = renderTerraform(result);
+const localMarkdown = renderMarkdown({ ...result, records: localRecords }, { local: true });
+const localTfvars = renderLocalTfvars();
+const hasConfiguredTarget = Boolean(targetInputs.web.value || targetInputs.api.value);
 
 if (json) {
   console.log(JSON.stringify(result, null, 2));
@@ -77,19 +66,77 @@ if (json) {
   writeFileSync(terraformPath, terraform);
   console.log(`Wrote ${result.docsPath}`);
   console.log(`Wrote ${result.terraformPath}`);
+  if (hasConfiguredTarget) {
+    writeFileSync(localDocsPath, localMarkdown);
+    writeFileSync(localTfvarsPath, localTfvars);
+    console.log(`Wrote ${result.localDocsPath} (git-ignored)`);
+    console.log(`Wrote ${result.localTfvarsPath} (git-ignored)`);
+  }
 }
 
-function renderMarkdown(value) {
+function createRecords({ useConfiguredTargets }) {
   return [
-    "# Cloudflare DNS Records",
+    {
+      name: "@",
+      hostname: "musunil.com",
+      type: "CNAME",
+      target: useConfiguredTargets && targetInputs.web.value ? targetInputs.web.value : "Render musunil-web custom-domain target",
+      targetEnv: targetInputs.web.env,
+      proxy: "DNS only if Render headers are applied directly; proxied only when using the Web response header fallback",
+      terraformValue: "var.render_web_target",
+      terraformProxied: "var.web_record_proxied"
+    },
+    {
+      name: "www",
+      hostname: "www.musunil.com",
+      type: "CNAME",
+      target: "musunil.com",
+      targetEnv: "",
+      proxy: "same policy as musunil.com",
+      terraformValue: "musunil.com",
+      terraformProxied: "var.web_record_proxied"
+    },
+    {
+      name: "api",
+      hostname: "api.musunil.com",
+      type: "CNAME",
+      target: useConfiguredTargets && targetInputs.api.value ? targetInputs.api.value : "Render musunil-api custom-domain target",
+      targetEnv: targetInputs.api.env,
+      proxy: "DNS only until /health, /ready, CORS, media, and identity boundary smoke pass",
+      terraformValue: "var.render_api_target",
+      terraformProxied: "false"
+    }
+  ];
+}
+
+function renderMarkdown(value, options = {}) {
+  const local = Boolean(options.local);
+  return [
+    local ? "# Cloudflare DNS Records Local Copy" : "# Cloudflare DNS Records",
     "",
     "이 문서는 `musunil.com` 출시 컷오버 때 Cloudflare DNS에 입력할 레코드 템플릿이다. Render Dashboard가 각 custom domain에 대해 보여주는 target을 그대로 복사해야 하며, 임의로 `.onrender.com` 주소를 추측해 넣지 않는다.",
+    local
+      ? "이 파일은 로컬 전용 산출물이며 git에 커밋하지 않는다. 값이 비어 있으면 Render Dashboard에서 target을 다시 확인한다."
+      : "추적 문서는 placeholder를 유지한다. 실제 target을 복사한 뒤에는 아래 로컬 환경변수로 검증용 산출물을 만들고 strict check를 실행한다.",
     "",
     "## Dashboard Records",
     "",
     "| Name | Hostname | Type | Target | Proxy |",
     "|---|---|---|---|---|",
     ...value.records.map((record) => `| \`${record.name}\` | \`${record.hostname}\` | \`${record.type}\` | ${record.target} | ${record.proxy} |`),
+    "",
+    "## Exact Target Workflow",
+    "",
+    "Render target은 secret이 아니지만 서비스별로 다르므로 추적 문서에는 placeholder로 둔다. Render Dashboard에서 Custom Domain target을 복사한 뒤 로컬 셸에만 아래처럼 넣는다.",
+    "",
+    "```bash",
+    "export MUSUNIL_RENDER_WEB_DNS_TARGET=\"Render musunil-web custom-domain target\"",
+    "export MUSUNIL_RENDER_API_DNS_TARGET=\"Render musunil-api custom-domain target\"",
+    "pnpm cloudflare:dns",
+    "pnpm cloudflare:check:strict",
+    "```",
+    "",
+    "`pnpm cloudflare:dns`는 위 값이 있으면 git-ignored local copy인 `docs/cloudflare-dns-records.local.md`와 `infra/cloudflare/dns-records.local.tfvars`도 쓴다. `MUSUNIL_RENDER_API_DNS_TARGET`이 있으면 strict check는 `api.musunil.com` CNAME이 Render target과 일치하는지 검사한다.",
     "",
     "## Proxy Policy",
     "",
@@ -168,4 +215,32 @@ function renderRecord(record) {
 
 function hclString(value) {
   return `"${String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+function renderLocalTfvars() {
+  return [
+    "# Generated by scripts/cloudflare-dns-template.mjs when MUSUNIL_RENDER_*_DNS_TARGET is set.",
+    "# This file is git-ignored. Copy values into your private Terraform workspace only.",
+    targetInputs.web.value ? `render_web_target = ${hclString(targetInputs.web.value)}` : "# render_web_target = \"Render musunil-web custom-domain target\"",
+    targetInputs.api.value ? `render_api_target = ${hclString(targetInputs.api.value)}` : "# render_api_target = \"Render musunil-api custom-domain target\"",
+    "web_record_proxied = false",
+    ""
+  ].join("\n");
+}
+
+function renderTargetInput(env) {
+  return { env, value: normalizeRenderTarget(process.env[env]) };
+}
+
+function targetInputSummary(input) {
+  return {
+    env: input.env,
+    configured: Boolean(input.value),
+    purpose: input.env.includes("_API_") ? "api.musunil.com CNAME exact target check" : "musunil.com Render custom-domain target copy aid"
+  };
+}
+
+function normalizeRenderTarget(value) {
+  if (typeof value !== "string") return "";
+  return value.trim().replace(/\.$/, "");
 }

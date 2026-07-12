@@ -154,6 +154,8 @@ function renderMarkdown(value) {
     "Render Dashboard가 보여주는 custom-domain target을 그대로 복사한다. API는 smoke 통과 전까지 DNS only가 안전하다.",
     "",
     `DNS template: \`${value.cloudflareDnsTemplate.command || "pnpm cloudflare:dns"}\` -> \`${value.cloudflareDnsTemplate.docsPath || "docs/cloudflare-dns-records.md"}\`, \`${value.cloudflareDnsTemplate.terraformPath || "infra/cloudflare/dns-records.tf.example"}\``,
+    `Exact target env: \`${(value.cloudflareDnsTemplate.exactTargetEnv || ["MUSUNIL_RENDER_WEB_DNS_TARGET", "MUSUNIL_RENDER_API_DNS_TARGET"]).join("`, `")}\``,
+    `Local exact copy: \`${value.cloudflareDnsTemplate.localDocsPath || "docs/cloudflare-dns-records.local.md"}\`, \`${value.cloudflareDnsTemplate.localTfvarsPath || "infra/cloudflare/dns-records.local.tfvars"}\``,
     "",
     "Web headers fallback:",
     "",

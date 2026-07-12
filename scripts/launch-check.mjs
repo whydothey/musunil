@@ -84,7 +84,7 @@ for (const term of ["공식 원천", "일정 수집", "데이터 커버리지", 
 for (const phrase of ["장기 현장/교통/인파/경로/제보", "교통 통제/도로 소통 공개 API", "지하철/버스 운행 영향 공개 API"]) {
   if (userFacingDocs.includes(phrase)) failures.push(`non-protest source/domain wording must not reappear in launch docs: ${phrase}`);
 }
-for (const pattern of ["config/*.local.yaml", "config/*.secret.yaml", ".env", ".env.*", "*.pem", "*.key"]) {
+for (const pattern of ["config/*.local.yaml", "config/*.secret.yaml", ".env", ".env.*", "*.pem", "*.key", "docs/cloudflare-dns-records.local.md", "infra/cloudflare/dns-records.local.tfvars"]) {
   if (!gitignore.split("\n").includes(pattern)) failures.push(`.gitignore must block local secret pattern: ${pattern}`);
 }
 for (const pattern of ["apps/web/build-info.js", "apps/web/build-info.json"]) {
@@ -352,6 +352,10 @@ if (
   !/Cloudflare/.test(launchOperatorBriefDoc) ||
   !/cloudflare:dns/.test(launchOperatorBriefDoc) ||
   !/cloudflare:headers/.test(launchOperatorBriefDoc) ||
+  !/MUSUNIL_RENDER_API_DNS_TARGET/.test(launchOperatorBrief) ||
+  !/MUSUNIL_RENDER_API_DNS_TARGET/.test(launchOperatorBriefDoc) ||
+  !/cloudflare-dns-records\.local\.md/.test(launchOperatorBrief) ||
+  !/cloudflare-dns-records\.local\.md/.test(launchOperatorBriefDoc) ||
   !/User Inputs/.test(launchOperatorBriefDoc) ||
   !/pnpm launch:final-gate/.test(launchOperatorBriefDoc) ||
   !/api\.musunil\.com/.test(launchOperatorBriefDoc) ||
@@ -381,7 +385,9 @@ if (
   !/MUSUNIL_USER_INPUTS_B64/.test(renderApiSettings) ||
   !/Render generated/.test(renderApiSettings) ||
   !/Cloudflare DNS/.test(renderApiSettings) ||
+  !/MUSUNIL_RENDER_API_DNS_TARGET/.test(renderApiSettings) ||
   !/cloudflare:dns/.test(renderApiSettings) ||
+  !/cloudflare:check:strict/.test(renderApiSettings) ||
   !/pnpm launch:post-deploy-smoke -- --require-laws/.test(renderApiSettings) ||
   !/pnpm launch:final-gate/.test(renderApiSettings) ||
   !/launch:post-deploy-smoke/.test(renderApiSettings) ||
@@ -401,6 +407,11 @@ if (
   !/cloudflare_dns_and_edge_preflight/.test(cloudflareDnsCheck) ||
   !/web_dns/.test(cloudflareDnsCheck) ||
   !/api_dns/.test(cloudflareDnsCheck) ||
+  !/render_target_inputs/.test(cloudflareDnsCheck) ||
+  !/api_render_target/.test(cloudflareDnsCheck) ||
+  !/MUSUNIL_RENDER_API_DNS_TARGET/.test(cloudflareDnsCheck) ||
+  !/resolveCname/.test(cloudflareDnsCheck) ||
+  !/expectedRenderTargets/.test(cloudflareDnsCheck) ||
   !/web_config/.test(cloudflareDnsCheck) ||
   !/web_header_smoke/.test(cloudflareDnsCheck) ||
   !/api_health/.test(cloudflareDnsCheck) ||
@@ -421,6 +432,10 @@ if (
   !/cloudflare_dns_records_template/.test(cloudflareDnsTemplate) ||
   !/docs\/cloudflare-dns-records\.md/.test(cloudflareDnsTemplate) ||
   !/infra\/cloudflare\/dns-records\.tf\.example/.test(cloudflareDnsTemplate) ||
+  !/docs\/cloudflare-dns-records\.local\.md/.test(cloudflareDnsTemplate) ||
+  !/infra\/cloudflare\/dns-records\.local\.tfvars/.test(cloudflareDnsTemplate) ||
+  !/MUSUNIL_RENDER_WEB_DNS_TARGET/.test(cloudflareDnsTemplate) ||
+  !/MUSUNIL_RENDER_API_DNS_TARGET/.test(cloudflareDnsTemplate) ||
   !/Render musunil-api custom-domain target/.test(cloudflareDnsTemplate) ||
   !/web_record_proxied/.test(cloudflareDnsTemplate) ||
   !/proxied = false/.test(cloudflareDnsRecordsTerraform) ||
@@ -592,6 +607,10 @@ if (
   !/cloudflare:dns/.test(launchCutoverPlan) ||
   !/cloudflare:headers/.test(launchCutoverPlan) ||
   !/cloudflare:check/.test(launchCutoverPlan) ||
+  !/MUSUNIL_RENDER_API_DNS_TARGET/.test(launchCutoverPlan) ||
+  !/MUSUNIL_RENDER_WEB_DNS_TARGET/.test(launchCutoverPlan) ||
+  !/docs\/cloudflare-dns-records\.local\.md/.test(launchCutoverPlan) ||
+  !/dns-records\.local\.tfvars/.test(launchCutoverPlan) ||
   !/render:api-settings/.test(launchCutoverPlan) ||
   !/render:web-settings/.test(launchCutoverPlan) ||
   !/build:web-static:render/.test(launchCutoverPlan) ||

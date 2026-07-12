@@ -114,6 +114,7 @@ function parseReport(source, refreshMetadata = { attempted: false }) {
       "pnpm render:api-settings",
       "pnpm render:web-settings",
       "pnpm cloudflare:dns",
+      "MUSUNIL_RENDER_API_DNS_TARGET=\"<Render API target>\" pnpm cloudflare:check:strict",
       "pnpm cloudflare:headers",
       "pnpm cloudflare:check",
       "pnpm cloudflare:check:strict",
@@ -145,7 +146,9 @@ function determineBlockerStage({ refreshFailed, freshness, status, failed, skipp
 
 function nextCommandForStage(stage, actions) {
   if (stage === "refresh_live_evidence" || stage === "refresh_live_evidence_failed") return "pnpm launch:blockers -- --refresh";
-  if (stage === "connect_api_endpoint") return "pnpm render:api-settings && pnpm cloudflare:dns && pnpm cloudflare:check";
+  if (stage === "connect_api_endpoint") {
+    return "pnpm render:api-settings && pnpm cloudflare:dns && MUSUNIL_RENDER_API_DNS_TARGET=\"<Render API target>\" pnpm cloudflare:check:strict";
+  }
   if (stage === "apply_static_headers") {
     return "pnpm render:web-settings && pnpm cloudflare:headers && MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy";
   }

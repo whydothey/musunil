@@ -31,13 +31,15 @@ const settings = {
     name: "api",
     type: "CNAME",
     target: "Render musunil-api custom-domain target shown in Render",
+    targetEnv: "MUSUNIL_RENDER_API_DNS_TARGET",
     proxy: "DNS only until /health, /ready, CORS, media, and identity boundary smoke pass"
   },
   afterSave: [
     "Deploy musunil-api after MUSUNIL_USER_INPUTS_B64 and generated secrets are present.",
     "Attach api.musunil.com in Render Custom Domains and copy the Render target to Cloudflare DNS.",
+    "export MUSUNIL_RENDER_API_DNS_TARGET=\"<Render musunil-api custom-domain target>\"",
     "pnpm cloudflare:dns",
-    "pnpm cloudflare:check",
+    "pnpm cloudflare:check:strict",
     "pnpm launch:post-deploy-smoke -- --require-laws",
     "MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm service:watch -- --once",
     "pnpm launch:final-gate"
@@ -90,8 +92,9 @@ if (process.argv.includes("--json")) {
   console.log("Custom domain and Cloudflare:");
   console.log(`- Render Custom Domain: ${settings.customDomain}`);
   console.log(`- Cloudflare DNS: ${settings.cloudflareDns.name} ${settings.cloudflareDns.type} -> ${settings.cloudflareDns.target}`);
+  console.log(`- Exact target env: ${settings.cloudflareDns.targetEnv}`);
   console.log(`- Proxy: ${settings.cloudflareDns.proxy}`);
-  console.log("- DNS/edge preflight: pnpm cloudflare:check");
+  console.log("- DNS/edge preflight: pnpm cloudflare:check:strict");
   console.log("");
   console.log("After saving:");
   for (const step of settings.afterSave) console.log(`- ${step}`);
