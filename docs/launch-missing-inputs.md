@@ -5,15 +5,16 @@
 
 ## Current Gate
 
-- Generated: 2026-07-12T08:59:51.488Z
+- Generated: 2026-07-12T09:09:19.942Z
 - Source: local_file
 - Launch state: blocked
 - Current stage: connect_api_endpoint
 - Release blocked: yes
-- Blocker report: 2026-07-12T08:59:49.644Z (0m old, refresh after 15m)
+- Blocker report: 2026-07-12T09:09:18.374Z (0m old, refresh after 15m)
 - Report freshness: fresh
-- Before next command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
-- Next command: `pnpm launch:apply`
+- Before apply command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
+- Immediate safe command: `pnpm launch:apply`
+- Apply command after inputs: `pnpm launch:apply -- --apply`
 
 ## Immediate Apply Inputs
 

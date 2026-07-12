@@ -77,6 +77,8 @@ function parseReport(source, refreshMetadata = { attempted: false }) {
     actions,
     releaseBlocked
   });
+  const nextOperatorCommand = nextCommandForStage(blockerStage, actions, launchApplyPlan, headerApplyPlan);
+  const nextOperatorCommandScope = commandScopeForStage(blockerStage, actions, launchApplyPlan, headerApplyPlan, nextOperatorCommand);
   return {
     checked: "launch_next_actions",
     goalState: "active",
@@ -88,7 +90,9 @@ function parseReport(source, refreshMetadata = { attempted: false }) {
     requiredLaunchInputsMissing: requiredLaunchInputsMissing(launchApplyPlan),
     requiredHeaderInputsMissing: requiredLaunchInputsMissing(headerApplyPlan),
     nextOperatorPrerequisite: prerequisiteForStage(blockerStage, actions, launchApplyPlan, headerApplyPlan),
-    nextOperatorCommand: nextCommandForStage(blockerStage, actions, launchApplyPlan, headerApplyPlan),
+    nextOperatorCommand,
+    nextOperatorCommandScope,
+    nextApplyCommand: nextApplyCommandForStage(blockerStage, actions, launchApplyPlan, headerApplyPlan),
     splitApplyPaths: splitApplyPaths({ failed, actions, launchApplyPlan, headerApplyPlan }),
     lastChecked,
     reportAgeMinutes: freshness.ageMinutes,
@@ -193,6 +197,25 @@ function nextCommandForStage(stage, actions, launchApplyPlan, headerApplyPlan) {
   if (actions[0]?.verify) return actions[0].verify;
   if (stage === "ready_for_final_gate") return "pnpm launch:final-gate";
   return "pnpm launch:blockers -- --refresh";
+}
+
+function commandScopeForStage(stage, actions, launchApplyPlan, headerApplyPlan, command) {
+  if (stage === "connect_api_endpoint" && !launchApplyInputsReady(launchApplyPlan)) return "dry_run_only";
+  if (stage === "apply_static_headers" && !launchApplyInputsReady(headerApplyPlan)) return "dry_run_only";
+  if (/--apply/.test(command)) return "apply";
+  if (/final-gate|check:web-deploy|cloudflare:check|service:watch/.test(command)) return "verify";
+  return actions.length > 0 ? "diagnostic" : "final_gate";
+}
+
+function nextApplyCommandForStage(stage, actions, launchApplyPlan, headerApplyPlan) {
+  if (stage === "connect_api_endpoint" && !launchApplyInputsReady(launchApplyPlan)) {
+    if (canApplyHeaderOnly(actions, headerApplyPlan)) return "pnpm launch:apply -- --apply --cloudflare-headers-only";
+    return "pnpm launch:apply -- --apply";
+  }
+  if (stage === "apply_static_headers" && !launchApplyInputsReady(headerApplyPlan)) {
+    return "pnpm launch:apply -- --apply --cloudflare-headers-only";
+  }
+  return "";
 }
 
 function splitApplyPaths({ failed, actions, launchApplyPlan, headerApplyPlan }) {
@@ -353,9 +376,15 @@ function printMarkdown(summary) {
   console.log(`Checks: ${summary.passCount} ok, ${summary.failCount} fail, ${summary.skipCount} skip`);
   console.log("");
   if (summary.nextOperatorPrerequisite) {
-    console.log(`Before next command: ${summary.nextOperatorPrerequisite}`);
+    const label = summary.nextOperatorCommandScope === "dry_run_only" ? "Before apply command" : "Before next command";
+    console.log(`${label}: ${summary.nextOperatorPrerequisite}`);
   }
-  console.log(`Next command: \`${summary.nextOperatorCommand}\``);
+  if (summary.nextOperatorCommandScope === "dry_run_only") {
+    console.log(`Immediate safe command: \`${summary.nextOperatorCommand}\``);
+    if (summary.nextApplyCommand) console.log(`Apply command after inputs: \`${summary.nextApplyCommand}\``);
+  } else {
+    console.log(`Next command: \`${summary.nextOperatorCommand}\``);
+  }
   console.log("");
   console.log("## Launch Apply Inputs");
   console.log("");

@@ -39,7 +39,12 @@ if (json) {
     console.log(`Wrote docs/launch-operator-brief.md`);
     console.log(`Stage: ${brief.stage}`);
     console.log(`Release blocked: ${brief.releaseBlocked ? "yes" : "no"}`);
-    console.log(`Next: ${brief.nextOperatorCommand}`);
+    if (brief.nextOperatorCommandScope === "dry_run_only") {
+      console.log(`Immediate safe command: ${brief.nextOperatorCommand}`);
+      if (brief.nextApplyCommand) console.log(`Apply command after inputs: ${brief.nextApplyCommand}`);
+    } else {
+      console.log(`Next: ${brief.nextOperatorCommand}`);
+    }
   }
 }
 
@@ -68,6 +73,8 @@ function buildBrief() {
     stage: rehearsalData.stage || "unknown",
     nextOperatorPrerequisite: rehearsalData.nextOperatorPrerequisite || "",
     nextOperatorCommand: rehearsalData.nextOperatorCommand || "pnpm launch:cutover-rehearsal -- --refresh",
+    nextOperatorCommandScope: rehearsalData.nextOperatorCommandScope || "diagnostic",
+    nextApplyCommand: rehearsalData.nextApplyCommand || "",
     serviceWatch: rehearsalData.report || {
       lastChecked: null,
       stale: true,
@@ -123,8 +130,7 @@ function renderMarkdown(value) {
     `- Release blocked: ${value.releaseBlocked ? "yes" : "no"}`,
     `- Service watch: ${value.serviceWatch.lastChecked || "unknown"} (${value.serviceWatch.stale ? "stale" : "fresh"})`,
     `- Checks: ${value.counts.pass} ok, ${value.counts.fail} fail, ${value.counts.skip} skip, ${value.counts.requiredActions} actions`,
-    value.nextOperatorPrerequisite ? `- Before next command: ${value.nextOperatorPrerequisite}` : "",
-    `- Next command: \`${value.nextOperatorCommand}\``,
+    ...operatorCommandLines(value),
     "",
     ...helperFailureSection(value.helperFailures),
     "## One Command Apply",
@@ -252,6 +258,20 @@ function renderMarkdown(value) {
     ...listLines(value.successCriteria),
     ""
   ].join("\n");
+}
+
+function operatorCommandLines(value) {
+  if (value.nextOperatorCommandScope === "dry_run_only") {
+    return [
+      value.nextOperatorPrerequisite ? `- Before apply command: ${value.nextOperatorPrerequisite}` : "",
+      `- Immediate safe command: \`${value.nextOperatorCommand}\``,
+      value.nextApplyCommand ? `- Apply command after inputs: \`${value.nextApplyCommand}\`` : ""
+    ].filter(Boolean);
+  }
+  return [
+    value.nextOperatorPrerequisite ? `- Before next command: ${value.nextOperatorPrerequisite}` : "",
+    `- Next command: \`${value.nextOperatorCommand}\``
+  ].filter(Boolean);
 }
 
 function helperFailureSection(items) {

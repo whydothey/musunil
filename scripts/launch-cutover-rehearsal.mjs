@@ -112,6 +112,8 @@ function buildSummary(results) {
     splitApplyPaths: blockersData.splitApplyPaths || [],
     nextOperatorPrerequisite: blockersData.nextOperatorPrerequisite || nextOperatorPrerequisite(stage, launchApplyPlan),
     nextOperatorCommand: blockersData.nextOperatorCommand || nextOperatorCommand(stage, requiredActions, launchApplyPlan),
+    nextOperatorCommandScope: blockersData.nextOperatorCommandScope || commandScopeForStage(stage, launchApplyPlan),
+    nextApplyCommand: blockersData.nextApplyCommand || nextApplyCommandForStage(stage, launchApplyPlan),
     cutover: {
       domains: cutoverData.domains || { web: "https://musunil.com", api: "https://api.musunil.com" },
       renderStaticSite: cutoverData.renderStaticSite || null,
@@ -208,6 +210,19 @@ function nextOperatorCommand(stage, actions, launchApplyPlan) {
   return "pnpm launch:blockers -- --refresh";
 }
 
+function commandScopeForStage(stage, launchApplyPlan, command = "") {
+  if ((stage === "connect_api_endpoint" || stage === "apply_static_headers") && !launchApplyInputsReady(launchApplyPlan)) return "dry_run_only";
+  if (/--apply/.test(command)) return "apply";
+  if (/final-gate|check:web-deploy|cloudflare:check|service:watch/.test(command)) return "verify";
+  return "diagnostic";
+}
+
+function nextApplyCommandForStage(stage, launchApplyPlan) {
+  if (stage === "connect_api_endpoint" && !launchApplyInputsReady(launchApplyPlan)) return "pnpm launch:apply -- --apply";
+  if (stage === "apply_static_headers" && !launchApplyInputsReady(launchApplyPlan)) return "pnpm launch:apply -- --apply --cloudflare-headers-only";
+  return "";
+}
+
 function nextOperatorPrerequisite(stage, launchApplyPlan = null) {
   if (stage === "deploy_latest_static") {
     return "Render musunil-web가 현재 main 커밋을 배포했는지 확인한다. live static manifest가 local manifest와 다르면 Clear build cache & deploy를 실행하고 완료 후 다시 검증한다.";
@@ -258,9 +273,15 @@ function printMarkdown(value) {
   console.log(`Checks: ${value.counts.pass} ok, ${value.counts.fail} fail, ${value.counts.skip} skip, ${value.counts.requiredActions} actions`);
   console.log("");
   if (value.nextOperatorPrerequisite) {
-    console.log(`Before next command: ${value.nextOperatorPrerequisite}`);
+    const label = value.nextOperatorCommandScope === "dry_run_only" ? "Before apply command" : "Before next command";
+    console.log(`${label}: ${value.nextOperatorPrerequisite}`);
   }
-  console.log(`Next command: \`${value.nextOperatorCommand}\``);
+  if (value.nextOperatorCommandScope === "dry_run_only") {
+    console.log(`Immediate safe command: \`${value.nextOperatorCommand}\``);
+    if (value.nextApplyCommand) console.log(`Apply command after inputs: \`${value.nextApplyCommand}\``);
+  } else {
+    console.log(`Next command: \`${value.nextOperatorCommand}\``);
+  }
   console.log("");
 
   if (value.helperFailures.length > 0) {

@@ -1,6 +1,6 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-12 17:59 KST
+Last updated: 2026-07-12 18:09 KST
 
 Status: 완료 아님.
 
@@ -182,6 +182,7 @@ GET /ready -> 200
 - 2026-07-12 17:37 GitHub Actions `post-deploy` 수동 workflow가 `render_api_dns_target` 입력을 받아 `MUSUNIL_RENDER_API_DNS_TARGET`으로 넘기게 했다. Render API token 없이 Dashboard에서 복사한 API DNS target만 쓰는 경로도 원격 `final-gate`에서 strict CNAME 검증을 실행할 수 있지만, 실제 DNS 적용·API readiness·`serviceSyncState=live` 전 운영 준비 완료가 아니다.
 - 2026-07-12 17:45 GitHub Actions `post-deploy` 수동 workflow가 선택적 `RENDER_API_TOKEN`/`MUSUNIL_RENDER_API_TOKEN`/`MUSUNIL_INTERNAL_API_KEY` secrets를 원격 `launch:final-gate`에 전달하게 했다. secret이 있으면 Render target 자동 파생과 공개 원천 refresh 회복을 원격에서도 시도할 수 있지만, secret 입력·DNS 적용·API readiness·`serviceSyncState=live` 전 운영 준비 완료가 아니다.
 - 2026-07-12 17:50 GitHub Actions `post-deploy` 수동 workflow에 `github_environment` 입력과 기본 `production` job environment를 추가했다. Environment secret에 둔 Render/API 운영 secret도 원격 final-gate에서 접근 가능하지만, 실제 secret 입력·DNS 적용·API readiness·`serviceSyncState=live` 전 운영 준비 완료가 아니다.
+- 2026-07-12 18:09 `launch:blockers`, `launch:cutover-rehearsal`, `launch:operator-brief`, `launch:missing-inputs`가 필수 입력 누락 상태에서 즉시 실행 가능한 dry-run과 입력 후 실제 apply 명령을 분리해 표시한다. `pnpm launch:apply`는 현재 안전한 dry-run이고 `pnpm launch:apply -- --apply`는 Render/Cloudflare 입력 뒤 실행할 명령으로만 안내되지만, 실제 DNS/Header/API live sync와 final gate 전 운영 준비 완료가 아니다.
 
 ## Next Active Goal Order
 

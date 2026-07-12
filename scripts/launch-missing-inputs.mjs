@@ -45,7 +45,12 @@ if (json) {
     console.log("Wrote docs/launch-missing-inputs.md");
     console.log(`Immediate missing: ${summary.immediateApplyInputs.length}`);
     console.log(`Provider groups not ready: ${summary.providerGroups.filter((group) => !group.readyForSmoke).length}`);
-    console.log(`Next command: ${summary.nextOperatorCommand}`);
+    if (summary.nextOperatorCommandScope === "dry_run_only") {
+      console.log(`Immediate safe command: ${summary.nextOperatorCommand}`);
+      if (summary.nextApplyCommand) console.log(`Apply command after inputs: ${summary.nextApplyCommand}`);
+    } else {
+      console.log(`Next command: ${summary.nextOperatorCommand}`);
+    }
   }
 }
 
@@ -75,6 +80,8 @@ function buildSummary() {
     blockerStage: blockerData.blockerStage || "unknown",
     releaseBlocked: Boolean(blockerData.releaseBlocked),
     nextOperatorCommand: blockerData.nextOperatorCommand || "pnpm launch:blockers -- --refresh",
+    nextOperatorCommandScope: blockerData.nextOperatorCommandScope || "diagnostic",
+    nextApplyCommand: blockerData.nextApplyCommand || "",
     nextOperatorPrerequisite: blockerData.nextOperatorPrerequisite || "",
     blockerReport: {
       lastChecked: blockerData.lastChecked || null,
@@ -250,8 +257,7 @@ function renderMarkdown(value) {
     `- Release blocked: ${value.releaseBlocked ? "yes" : "no"}`,
     `- Blocker report: ${blockerReportLine(value.blockerReport)}`,
     `- Report freshness: ${value.blockerReport?.stale ? "stale" : "fresh"}`,
-    value.nextOperatorPrerequisite ? `- Before next command: ${value.nextOperatorPrerequisite}` : "",
-    `- Next command: \`${value.nextOperatorCommand}\``,
+    ...operatorCommandLines(value),
     "",
     ...staleReportLines(value.blockerReport),
     ...helperFailureLines(value.helperFailures),
@@ -284,6 +290,20 @@ function renderMarkdown(value) {
     ...listLines(value.requiredActions),
     ""
   ].join("\n");
+}
+
+function operatorCommandLines(value) {
+  if (value.nextOperatorCommandScope === "dry_run_only") {
+    return [
+      value.nextOperatorPrerequisite ? `- Before apply command: ${value.nextOperatorPrerequisite}` : "",
+      `- Immediate safe command: \`${value.nextOperatorCommand}\``,
+      value.nextApplyCommand ? `- Apply command after inputs: \`${value.nextApplyCommand}\`` : ""
+    ].filter(Boolean);
+  }
+  return [
+    value.nextOperatorPrerequisite ? `- Before next command: ${value.nextOperatorPrerequisite}` : "",
+    `- Next command: \`${value.nextOperatorCommand}\``
+  ].filter(Boolean);
 }
 
 function blockerReportLine(report = {}) {

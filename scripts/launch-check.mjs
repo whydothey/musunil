@@ -481,6 +481,12 @@ if (
   !/requiredLaunchInputsMissing/.test(launchNextActions) ||
   !/requiredHeaderInputsMissing/.test(launchNextActions) ||
   !/nextOperatorPrerequisite/.test(launchNextActions) ||
+  !/nextOperatorCommandScope/.test(launchNextActions) ||
+  !/nextApplyCommand/.test(launchNextActions) ||
+  !/commandScopeForStage/.test(launchNextActions) ||
+  !/Immediate safe command/.test(launchNextActions) ||
+  !/Apply command after inputs/.test(launchNextActions) ||
+  !/Before apply command/.test(launchNextActions) ||
   !/Before next command/.test(launchNextActions) ||
   !/필수 입력이 비어 있으면/.test(launchNextActions) ||
   !/canApplyHeaderOnly/.test(launchNextActions) ||
@@ -592,6 +598,11 @@ if (
   !/Launch readiness/.test(launchCutoverRehearsal) ||
   !/releaseBlocked/.test(launchCutoverRehearsal) ||
   !/nextOperatorPrerequisite/.test(launchCutoverRehearsal) ||
+  !/nextOperatorCommandScope/.test(launchCutoverRehearsal) ||
+  !/nextApplyCommand/.test(launchCutoverRehearsal) ||
+  !/Immediate safe command/.test(launchCutoverRehearsal) ||
+  !/Apply command after inputs/.test(launchCutoverRehearsal) ||
+  !/Before apply command/.test(launchCutoverRehearsal) ||
   !/blockersData\.nextOperatorPrerequisite/.test(launchCutoverRehearsal) ||
   !/Before next command/.test(launchCutoverRehearsal) ||
   !/deploy_latest_static/.test(launchCutoverRehearsal) ||
@@ -659,8 +670,16 @@ if (
   !/goalState/.test(launchOperatorBrief) ||
   !/launchState/.test(launchOperatorBrief) ||
   !/nextOperatorPrerequisite/.test(launchOperatorBrief) ||
+  !/nextOperatorCommandScope/.test(launchOperatorBrief) ||
+  !/nextApplyCommand/.test(launchOperatorBrief) ||
+  !/operatorCommandLines/.test(launchOperatorBrief) ||
+  !/Immediate safe command/.test(launchOperatorBrief) ||
+  !/Apply command after inputs/.test(launchOperatorBrief) ||
+  !/Before apply command/.test(launchOperatorBrief) ||
   !/Before next command/.test(launchOperatorBrief) ||
-  !/Before next command/.test(launchOperatorBriefDoc) ||
+  !/Immediate safe command/.test(launchOperatorBriefDoc) ||
+  !/Apply command after inputs/.test(launchOperatorBriefDoc) ||
+  !/Before apply command/.test(launchOperatorBriefDoc) ||
   !/Render `onrender\.com` host/.test(launchOperatorBriefDoc) ||
   !/Active goal/.test(launchOperatorBrief) ||
   !/Launch readiness/.test(launchOperatorBrief) ||
@@ -752,6 +771,12 @@ if (
   !/lawsGroup\(lawDiagnostics\.data\?\.diagnostics\)/.test(launchMissingInputs) ||
   !/!lawDiagnostics\.ok/.test(launchMissingInputs) ||
   !/blockerReport/.test(launchMissingInputs) ||
+  !/nextOperatorCommandScope/.test(launchMissingInputs) ||
+  !/nextApplyCommand/.test(launchMissingInputs) ||
+  !/operatorCommandLines/.test(launchMissingInputs) ||
+  !/Immediate safe command/.test(launchMissingInputs) ||
+  !/Apply command after inputs/.test(launchMissingInputs) ||
+  !/Before apply command/.test(launchMissingInputs) ||
   !/Report freshness/.test(launchMissingInputs) ||
   !/stale live blocker report/.test(launchMissingInputs) ||
   !/pnpm launch:handoff/.test(launchMissingInputs) ||
@@ -759,6 +784,9 @@ if (
   !/pnpm launch:missing-inputs -- --refresh/.test(launchMissingInputs) ||
   !/Blocker report/.test(launchMissingInputsDoc) ||
   !/Report freshness/.test(launchMissingInputsDoc) ||
+  !/Immediate safe command/.test(launchMissingInputsDoc) ||
+  !/Apply command after inputs/.test(launchMissingInputsDoc) ||
+  !/Before apply command/.test(launchMissingInputsDoc) ||
   !/Immediate Apply Inputs/.test(launchMissingInputsDoc) ||
   !/Provider Smoke Inputs/.test(launchMissingInputsDoc) ||
   !/Runtime Secrets/.test(launchMissingInputsDoc) ||
