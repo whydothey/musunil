@@ -312,6 +312,9 @@ if (
   !/render_target_source/.test(launchApply) ||
   !/cloudflare_api_token/.test(launchApply) ||
   !/cloudflare_zone/.test(launchApply) ||
+  !/default_zone_name_lookup/.test(launchApply) ||
+  !/cloudflareZoneName/.test(launchApply) ||
+  !/token cannot read zones by name/.test(launchApply) ||
   !/requiredEnv/.test(launchApply) ||
   !/item\.env\.join\(" or "\)/.test(launchApply) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET/.test(launchApply) ||
@@ -629,6 +632,8 @@ if (
   !/cloudflare_apply_plan/.test(cloudflareApply) ||
   !/CLOUDFLARE_API_TOKEN/.test(cloudflareApply) ||
   !/CLOUDFLARE_ZONE_ID/.test(cloudflareApply) ||
+  !/zoneResolution/.test(cloudflareApply) ||
+  !/zone_name_lookup/.test(cloudflareApply) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET/.test(cloudflareApply) ||
   !/--apply/.test(cloudflareApply) ||
   !/dry_run/.test(cloudflareApply) ||

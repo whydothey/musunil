@@ -25,6 +25,7 @@ const plan = {
   ],
   zoneName,
   zoneIdConfigured: Boolean(zoneIdInput),
+  zoneResolution: zoneIdInput ? "env_zone_id" : "zone_name_lookup",
   tokenConfigured: Boolean(apiToken),
   requested: {
     dns: dnsRequested,
@@ -139,7 +140,7 @@ function buildResponseHeaderRule() {
 function requiredEnv() {
   const items = [];
   if (!apiToken) items.push("CLOUDFLARE_API_TOKEN");
-  if (!zoneIdInput) items.push("CLOUDFLARE_ZONE_ID or CLOUDFLARE_ZONE_NAME=musunil.com with zone read permission");
+  if (!zoneIdInput && !zoneName) items.push("CLOUDFLARE_ZONE_ID or CLOUDFLARE_ZONE_NAME");
   if (dnsRequested && !apiTarget.value) items.push("MUSUNIL_RENDER_API_DNS_TARGET");
   if (dnsRequested && webTarget.rawConfigured && !webTarget.value) items.push("valid MUSUNIL_RENDER_WEB_DNS_TARGET hostname");
   if (dnsRequested && apiTarget.rawConfigured && !apiTarget.value) items.push("valid MUSUNIL_RENDER_API_DNS_TARGET hostname");

@@ -25,7 +25,7 @@ const plan = {
     {
       id: "api_dns",
       owner: "operator",
-      action: "Run pnpm launch:apply. If RENDER_API_TOKEN, CLOUDFLARE_API_TOKEN, and CLOUDFLARE_ZONE_ID are available, pnpm launch:apply -- --apply adds api.musunil.com to Render, derives the Render onrender.com target, and applies the Cloudflare DNS record. Without tokens, copy the Render target into MUSUNIL_RENDER_API_DNS_TARGET, then create the matching Cloudflare DNS record from the generated template.",
+      action: "Run pnpm launch:apply. If RENDER_API_TOKEN and CLOUDFLARE_API_TOKEN are available, pnpm launch:apply -- --apply adds api.musunil.com to Render, derives the Render onrender.com target, resolves the musunil.com Cloudflare zone by name, and applies the DNS record. Without Render token, copy the Render target into MUSUNIL_RENDER_API_DNS_TARGET. If the Cloudflare token cannot read zones by name, set CLOUDFLARE_ZONE_ID as a fallback.",
       verify: "pnpm launch:apply && pnpm launch:final-gate"
     },
     {

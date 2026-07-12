@@ -51,11 +51,10 @@ Use [response-headers.tf.example](/Users/mk/Documents/Musunil/infra/cloudflare/r
 
 ## API Automation
 
-`pnpm cloudflare:apply`는 기본적으로 dry-run 계획만 출력한다. Cloudflare API token과 zone을 준비한 뒤 `--apply --headers`를 붙였을 때만 `http_response_headers_transform` phase의 zone ruleset을 생성하거나, `musunil_web_security_headers` rule을 갱신한다.
+`pnpm cloudflare:apply`는 기본적으로 dry-run 계획만 출력한다. Cloudflare API token을 준비한 뒤 `--apply --headers`를 붙였을 때만 `http_response_headers_transform` phase의 zone ruleset을 생성하거나, `musunil_web_security_headers` rule을 갱신한다. 기본 zone은 `musunil.com` 이름으로 조회하며, token이 zone name 조회 권한을 갖지 못한 경우에만 `CLOUDFLARE_ZONE_ID`를 fallback으로 넣는다.
 
 ```bash
 : "${CLOUDFLARE_API_TOKEN:?set Cloudflare API token first}"
-: "${CLOUDFLARE_ZONE_ID:?set Cloudflare zone id first}"
 pnpm cloudflare:apply -- --headers
 pnpm cloudflare:apply -- --headers --apply
 MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com pnpm check:web-deploy

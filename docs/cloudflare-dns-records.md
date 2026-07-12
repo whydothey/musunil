@@ -28,11 +28,10 @@ pnpm cloudflare:check:strict
 
 ## API Automation
 
-`pnpm cloudflare:apply`는 기본적으로 dry-run 계획만 출력한다. Cloudflare API token과 zone을 준비한 뒤 `--apply`를 붙였을 때만 DNS 레코드를 생성/갱신한다. DNS 적용은 Cloudflare DNS Records API를 사용하고, 기존 같은 이름의 비-CNAME 레코드가 있으면 자동 변경하지 않고 실패한다.
+`pnpm cloudflare:apply`는 기본적으로 dry-run 계획만 출력한다. Cloudflare API token을 준비한 뒤 `--apply`를 붙였을 때만 DNS 레코드를 생성/갱신한다. 기본 zone은 `musunil.com` 이름으로 조회하며, token이 zone name 조회 권한을 갖지 못한 경우에만 `CLOUDFLARE_ZONE_ID`를 fallback으로 넣는다. DNS 적용은 Cloudflare DNS Records API를 사용하고, 기존 같은 이름의 비-CNAME 레코드가 있으면 자동 변경하지 않고 실패한다.
 
 ```bash
 : "${CLOUDFLARE_API_TOKEN:?set Cloudflare API token first}"
-: "${CLOUDFLARE_ZONE_ID:?set Cloudflare zone id first}"
 : "${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}"
 pnpm cloudflare:apply -- --dns
 pnpm cloudflare:apply -- --dns --apply

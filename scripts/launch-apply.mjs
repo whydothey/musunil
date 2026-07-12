@@ -87,7 +87,8 @@ const result = {
   tokenState: {
     render: Boolean(process.env.RENDER_API_TOKEN || process.env.MUSUNIL_RENDER_API_TOKEN),
     cloudflare: Boolean(process.env.CLOUDFLARE_API_TOKEN || process.env.CF_API_TOKEN),
-    cloudflareZone: Boolean(process.env.CLOUDFLARE_ZONE_ID || process.env.CF_ZONE_ID || process.env.CLOUDFLARE_ZONE_NAME)
+    cloudflareZoneId: Boolean(process.env.CLOUDFLARE_ZONE_ID || process.env.CF_ZONE_ID),
+    cloudflareZoneName: process.env.CLOUDFLARE_ZONE_NAME || "musunil.com"
   },
   derivedTargets,
   targetSource: {
@@ -193,11 +194,11 @@ function operatorInputs(value) {
     });
     inputs.push({
       id: "cloudflare_zone",
-      required: true,
-      status: value.tokenState.cloudflareZone ? "configured" : "missing",
+      required: false,
+      status: value.tokenState.cloudflareZoneId ? "configured" : "default_zone_name_lookup",
       env: ["CLOUDFLARE_ZONE_ID"],
       alternatives: ["CF_ZONE_ID", "CLOUDFLARE_ZONE_NAME=musunil.com"],
-      purpose: "Select the musunil.com zone for DNS/header apply"
+      purpose: "Optional fallback when the Cloudflare token cannot resolve the musunil.com zone by name"
     });
     inputs.push({
       id: "render_api_dns_target",
@@ -242,7 +243,7 @@ function nextCommands(value) {
     commands.push("Fix Render API token/service lookup, then rerun pnpm launch:apply.");
   }
   if (value.steps.some((step) => step.id === "cloudflare_dns_apply" && !step.ok)) {
-    commands.push("Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID, then rerun pnpm launch:apply -- --apply.");
+    commands.push("Set CLOUDFLARE_API_TOKEN. If the token cannot read zones by name, also set CLOUDFLARE_ZONE_ID, then rerun pnpm launch:apply -- --apply.");
   }
   commands.push("After apply succeeds, run pnpm launch:final-gate.");
   return commands;

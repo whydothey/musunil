@@ -6,23 +6,23 @@
 
 ## Current State
 
-- Generated: 2026-07-12T03:54:26.994Z
-- Git SHA: 3a5032c0dfac8a6439ecc33f5f181fcd0876d6a6
+- Generated: 2026-07-12T04:37:33.264Z
+- Git SHA: 9c218e41902635a5bfee9af65b1fbb3cdf1aa16d
 - Refresh command: `pnpm launch:operator-brief -- --refresh`
 - Active goal: active
 - Launch readiness: blocked
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T03:54:42.138Z (fresh)
-- Checks: 4 ok, 3 fail, 12 skip, 4 actions
+- Service watch: 2026-07-12T04:37:48.210Z (fresh)
+- Checks: 4 ok, 3 fail, 13 skip, 4 actions
 - Before next command: Render API token과 Cloudflare token이 있으면 `pnpm launch:apply -- --apply`가 api.musunil.com custom domain 생성, Render onrender.com target 파생, Cloudflare DNS 적용을 한 번에 처리한다. token이 없으면 dry-run 출력의 requiredEnv만 채우고, 하위 확인은 `pnpm render:api-settings`와 `pnpm cloudflare:dns`를 사용한다.
 - Next command: `pnpm launch:apply && pnpm launch:final-gate`
 
 ## One Command Apply
 
 - `pnpm launch:apply`는 Render와 Cloudflare 적용 계획을 한 번에 보여주는 dry-run이다.
-- 출력의 `operatorInputs`와 `requiredEnv`가 마지막에 채워야 할 값이다. 현재 핵심 묶음은 `RENDER_API_TOKEN` 또는 `MUSUNIL_RENDER_API_DNS_TARGET`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`다.
-- `RENDER_API_TOKEN`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`가 있으면 `pnpm launch:apply -- --apply`로 Render custom domain, Render Web headers, Cloudflare DNS를 적용한다.
+- 출력의 `operatorInputs`와 `requiredEnv`가 마지막에 채워야 할 값이다. 현재 핵심 묶음은 `RENDER_API_TOKEN` 또는 `MUSUNIL_RENDER_API_DNS_TARGET`, `CLOUDFLARE_API_TOKEN`이다.
+- `RENDER_API_TOKEN`, `CLOUDFLARE_API_TOKEN`이 있으면 `pnpm launch:apply -- --apply`로 Render custom domain, Render Web headers, Cloudflare DNS를 적용한다. Cloudflare zone은 기본적으로 `musunil.com` 이름으로 조회하며, token 권한 때문에 조회가 실패할 때만 `CLOUDFLARE_ZONE_ID`를 추가한다.
 - Render API에서 서비스 URL을 읽을 수 있으면 Cloudflare DNS target은 Render `onrender.com` host로 자동 전달된다.
 - Web header가 계속 live에 반영되지 않을 때만 `pnpm launch:apply -- --apply --cloudflare-headers`를 사용한다.
 - Web build metadata까지 새로 반영해야 하면 `pnpm launch:apply -- --apply --deploy-web`을 사용한다.
@@ -31,7 +31,7 @@
 Required launch inputs from current dry-run:
 
 - Mode: `dry_run`
-- Required env: `RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`
+- Required env: `RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET`, `CLOUDFLARE_API_TOKEN`
 
 | ID | Required | Status | Env | Purpose |
 |---|---|---|---|---|
@@ -39,7 +39,7 @@ Required launch inputs from current dry-run:
 | render_api_token | no | missing_for_auto_target_derivation | RENDER_API_TOKEN<br>alt:MUSUNIL_RENDER_API_TOKEN<br>alt:MUSUNIL_RENDER_API_DNS_TARGET | Render service lookup, custom domain/header apply, and onrender.com target derivation |
 | render_service_identity | no | optional_by_exact_service_name | MUSUNIL_RENDER_WEB_SERVICE_ID<br>MUSUNIL_RENDER_API_SERVICE_ID<br>alt:MUSUNIL_RENDER_WEB_SERVICE_NAME=musunil-web<br>alt:MUSUNIL_RENDER_API_SERVICE_NAME=musunil-api | Use exact Render service IDs when service-name lookup is ambiguous |
 | cloudflare_api_token | yes | missing | CLOUDFLARE_API_TOKEN<br>alt:CF_API_TOKEN | Create or update Cloudflare DNS records and optional response header rule |
-| cloudflare_zone | yes | missing | CLOUDFLARE_ZONE_ID<br>alt:CF_ZONE_ID<br>alt:CLOUDFLARE_ZONE_NAME=musunil.com | Select the musunil.com zone for DNS/header apply |
+| cloudflare_zone | no | default_zone_name_lookup | CLOUDFLARE_ZONE_ID<br>alt:CF_ZONE_ID<br>alt:CLOUDFLARE_ZONE_NAME=musunil.com | Optional fallback when the Cloudflare token cannot resolve the musunil.com zone by name |
 | render_api_dns_target | no | missing_manual_fallback | MUSUNIL_RENDER_API_DNS_TARGET<br>alt:RENDER_API_TOKEN | Manual fallback CNAME target for api.musunil.com when Render API target derivation is unavailable |
 | render_web_dns_target | no | not_required_for_current_request | MUSUNIL_RENDER_WEB_DNS_TARGET<br>alt:RENDER_API_TOKEN | Manual fallback CNAME target for musunil.com when Web DNS/header fallback is being applied |
 
@@ -176,7 +176,7 @@ Web headers fallback:
 Cloudflare API automation:
 
 - `pnpm cloudflare:apply`는 기본 dry-run이며 `--apply` 없이는 Cloudflare에 쓰지 않는다.
-- `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`, Render target env를 넣은 뒤 `pnpm cloudflare:apply -- --dns --apply`와 `pnpm cloudflare:apply -- --headers --apply`를 순서대로 실행할 수 있다.
+- `CLOUDFLARE_API_TOKEN`과 Render target env를 넣은 뒤 `pnpm cloudflare:apply -- --dns --apply`와 `pnpm cloudflare:apply -- --headers --apply`를 순서대로 실행할 수 있다. Zone name 조회 권한이 없을 때만 `CLOUDFLARE_ZONE_ID`를 추가한다.
 - 적용 후에는 `pnpm cloudflare:check:strict`와 `pnpm launch:final-gate`로만 완료를 판단한다.
 
 - `musunil.com`: CNAME or Render-supported apex record -> Render musunil-web custom-domain target shown in Render. Proxy: DNS only when Render headers are applied directly; proxied if using the Cloudflare response header rule, with cache bypass confirmed.
