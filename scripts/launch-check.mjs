@@ -604,6 +604,14 @@ if (
   !/Current stage/.test(launchNextActions) ||
   !/MUSUNIL_LAUNCH_BLOCKERS_STALE_AFTER_MINUTES/.test(launchNextActions) ||
   !/refreshRequired/.test(launchNextActions) ||
+  !/staleDecisionWarning/.test(launchNextActions) ||
+  !/actionsAdvisoryOnly/.test(launchNextActions) ||
+  !/STALE LIVE EVIDENCE/.test(launchNextActions) ||
+  !/diagnostic only/.test(launchNextActions) ||
+  !/Do not change Render\/Cloudflare settings/.test(launchNextActions) ||
+  !/Split Apply Paths \(stale evidence\)/.test(launchNextActions) ||
+  !/Blocking Checks \(stale evidence\)/.test(launchNextActions) ||
+  !/Required Actions \(stale evidence\)/.test(launchNextActions) ||
   !/refreshServiceWatch/.test(launchNextActions) ||
   !/beforeLastChecked/.test(launchNextActions) ||
   !/reportUpdated/.test(launchNextActions) ||

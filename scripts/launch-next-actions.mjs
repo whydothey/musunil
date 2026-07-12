@@ -94,6 +94,10 @@ function parseReport(source, refreshMetadata = { attempted: false }) {
     nextOperatorCommandScope,
     nextApplyCommand: nextApplyCommandForStage(blockerStage, actions, launchApplyPlan, headerApplyPlan),
     splitApplyPaths: splitApplyPaths({ failed, actions, launchApplyPlan, headerApplyPlan }),
+    staleDecisionWarning: freshness.stale
+      ? "STALE LIVE EVIDENCE: run pnpm launch:blockers -- --refresh before applying operator actions or declaring blockers cleared."
+      : "",
+    actionsAdvisoryOnly: freshness.stale,
     lastChecked,
     reportAgeMinutes: freshness.ageMinutes,
     staleAfterMinutes: freshness.staleAfterMinutes,
@@ -383,7 +387,16 @@ function printMarkdown(summary) {
   console.log(`Current stage: ${summary.blockerStage}`);
   console.log(`Service watch status: ${summary.status}`);
   console.log(`Checks: ${summary.passCount} ok, ${summary.failCount} fail, ${summary.skipCount} skip`);
+  if (summary.staleDecisionWarning) console.log(`Evidence warning: ${summary.staleDecisionWarning}`);
   console.log("");
+  if (summary.stale) {
+    console.log("## Stale Evidence Warning");
+    console.log("");
+    console.log(`- ${summary.staleDecisionWarning}`);
+    console.log("- Treat split apply paths, blocking checks, and required actions below as diagnostic only until refreshed.");
+    console.log("- Do not change Render/Cloudflare settings or mark launch blockers cleared from this stale snapshot.");
+    console.log("");
+  }
   if (summary.nextOperatorPrerequisite) {
     const label = summary.nextOperatorCommandScope === "dry_run_only" ? "Before apply command" : "Before next command";
     console.log(`${label}: ${summary.nextOperatorPrerequisite}`);
@@ -400,7 +413,7 @@ function printMarkdown(summary) {
   printLaunchApplyInputs(summary.launchApply);
   console.log("");
   if (summary.splitApplyPaths.length > 0) {
-    console.log("## Split Apply Paths");
+    console.log(summary.stale ? "## Split Apply Paths (stale evidence)" : "## Split Apply Paths");
     console.log("");
     for (const path of summary.splitApplyPaths) {
       console.log(`- ${path.id}: ${path.note}`);
@@ -414,10 +427,6 @@ function printMarkdown(summary) {
     }
     console.log("");
   }
-  if (summary.stale) {
-    console.log("> This blocker summary is based on stale live evidence. Run `pnpm launch:blockers -- --refresh` before making a launch decision.");
-    console.log("");
-  }
   if (summary.refresh.attempted && !summary.refresh.reportUpdated) {
     console.log("> Live evidence refresh did not update `docs/splus-service-watch.md`; treat this as blocked until the refresh command writes a new report.");
     console.log("");
@@ -426,7 +435,7 @@ function printMarkdown(summary) {
     console.log("No launch blockers are recorded in the latest service watch report.");
     return;
   }
-  console.log("## Blocking Checks");
+  console.log(summary.stale ? "## Blocking Checks (stale evidence)" : "## Blocking Checks");
   console.log("");
   for (const check of summary.failedChecks) {
     console.log(`- ${check.id}: ${compact(check.detail)}`);
@@ -437,7 +446,7 @@ function printMarkdown(summary) {
     for (const check of summary.skippedChecks) console.log(`- ${check.id}: ${compact(check.detail, 120)}`);
   }
   console.log("");
-  console.log("## Required Actions");
+  console.log(summary.stale ? "## Required Actions (stale evidence)" : "## Required Actions");
   console.log("");
   for (let index = 0; index < summary.requiredActions.length; index += 1) {
     const action = summary.requiredActions[index];
