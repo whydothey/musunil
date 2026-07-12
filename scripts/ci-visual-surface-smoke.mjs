@@ -105,7 +105,7 @@ async function main() {
     checked: "commercial_visual_surface",
     ok: failures.length === 0,
     mode: visualBaseUrl ? "live_url" : productionFallbackMode ? "local_static_production_fallback" : "local_static",
-    baseUrl: appUrl,
+    baseUrl: stableEvidenceBaseUrl(appUrl, { visualBaseUrl, productionFallbackMode }),
     productionFallbackMode,
     serviceStates,
     serviceBannerVisibleCount: scenarios.filter((item) => item.detail?.serviceBannerVisible).length,
@@ -176,6 +176,8 @@ async function runViewport(client, viewport, url) {
     () => assert(!productionFallbackMode || home.firstIssueTitle === "정보통신망법 개정 관련 집회", `production fallback first issue changed: ${home.firstIssueTitle}`),
     () => assert(!productionFallbackMode || !home.issueEmptyStateVisible, "production fallback must render topic issues instead of the empty state"),
     () => assert(!home.sourceBundleFirst, `first issue is a public source bundle, not a topic issue: ${home.firstIssueTitle}`),
+    () => assert(!viewport.mobile || !home.serviceBannerVisible || home.serviceBannerRect.height <= 30, `mobile service sync strip is too tall: ${home.serviceBannerRect.height}`),
+    () => assert(!viewport.mobile || !home.serviceBannerRetryVisible, "mobile service sync strip must not expose a duplicate refresh button"),
     () => assert(!/자료 기준/.test(home.firstIssueDeck) && /(기준|일정|기록|\d{1,2}월)/.test(home.firstIssueDeck), `first issue public place/time line is too operational: ${home.firstIssueDeck}`),
     () => assert(/위치/.test(home.firstIssueSummary) && /현장/.test(home.firstIssueSummary) && /(공식자료|공개근거|공개자료)/.test(home.firstIssueSummary) && /현장영상/.test(home.firstIssueSummary), `first issue summary missing location/evidence units: ${home.firstIssueSummary}`),
     () => assert(!/반론\/정정/.test(home.firstIssueSummary) && (!/반론/.test(home.firstIssueSummary) || /반론·정정/.test(home.firstIssueSummary)), `first issue rebuttal copy should use civic correction label: ${home.firstIssueSummary}`),
@@ -337,7 +339,9 @@ function visualMetrics(label) {
       visibleText: text.slice(0, 2400),
       serviceSyncState: document.documentElement.dataset.serviceSyncState || serviceBanner?.dataset.state || "unknown",
       serviceBannerVisible,
+      serviceBannerRect: rect("#service-banner"),
       serviceBannerTitle: serviceBannerVisible ? (document.querySelector("#service-banner-title")?.textContent?.trim() || "") : "",
+      serviceBannerRetryVisible: visible(document.querySelector("#service-retry")),
       forbidden,
       dashboardVisible,
       navOverlap,
@@ -486,6 +490,11 @@ function evidenceDirFromArgs() {
 function relativeFromCwd(value) {
   const absolute = resolve(value);
   return absolute.startsWith(`${cwd}/`) ? absolute.slice(cwd.length + 1) : absolute;
+}
+
+function stableEvidenceBaseUrl(appUrl, options = {}) {
+  if (options.visualBaseUrl) return appUrl;
+  return options.productionFallbackMode ? "local-static://production-fallback" : "local-static://default";
 }
 
 function argValue(name) {

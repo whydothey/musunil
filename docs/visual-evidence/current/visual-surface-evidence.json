@@ -2,7 +2,7 @@
   "checked": "commercial_visual_surface",
   "ok": true,
   "mode": "local_static",
-  "baseUrl": "http://localhost:55001/",
+  "baseUrl": "local-static://default",
   "productionFallbackMode": false,
   "serviceStates": [
     "delayed"
@@ -35,7 +35,7 @@
     {
       "id": "mobile_390_home",
       "ok": true,
-      "assertions": 30,
+      "assertions": 32,
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
@@ -125,7 +125,7 @@
     {
       "id": "mobile_430_home",
       "ok": true,
-      "assertions": 30,
+      "assertions": 32,
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
@@ -215,7 +215,7 @@
     {
       "id": "tablet_768_home",
       "ok": true,
-      "assertions": 30,
+      "assertions": 32,
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
@@ -305,7 +305,7 @@
     {
       "id": "desktop_1440_home",
       "ok": true,
-      "assertions": 30,
+      "assertions": 32,
       "detail": {
         "serviceSyncState": "delayed",
         "serviceBannerVisible": true,
