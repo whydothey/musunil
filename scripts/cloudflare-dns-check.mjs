@@ -147,8 +147,8 @@ function requiredActions(items) {
   if (failedIds.has("api_dns")) {
     actions.push({
       id: "connect_api_dns",
-      action: "Render musunil-api Custom Domains에 api.musunil.com을 추가하고, Render target을 Cloudflare api CNAME에 DNS only로 연결한다.",
-      verify: "pnpm cloudflare:check:strict"
+      action: "pnpm render:api-settings와 pnpm cloudflare:dns 출력대로 Render musunil-api Custom Domains에 api.musunil.com을 추가하고, Render target을 Cloudflare api CNAME에 DNS only로 연결한다.",
+      verify: "pnpm render:api-settings && pnpm cloudflare:dns && pnpm cloudflare:check:strict"
     });
   }
   if (failedIds.has("web_dns") || failedIds.has("web_https")) {

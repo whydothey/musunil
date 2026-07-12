@@ -19,8 +19,8 @@ const plan = {
     {
       id: "api_dns",
       owner: "operator",
-      action: "Run pnpm render:api-settings, attach api.musunil.com as a custom domain on the Render musunil-api service, then create the matching Cloudflare DNS record.",
-      verify: "pnpm render:api-settings && pnpm cloudflare:check"
+      action: "Run pnpm render:api-settings and pnpm cloudflare:dns, attach api.musunil.com as a custom domain on the Render musunil-api service, then create the matching Cloudflare DNS record from the generated template.",
+      verify: "pnpm render:api-settings && pnpm cloudflare:dns && pnpm cloudflare:check"
     },
     {
       id: "static_headers",
@@ -78,6 +78,12 @@ const plan = {
       proxy: "DNS only until /health, /ready, CORS, and media smoke pass"
     }
   ],
+  cloudflareDnsTemplate: {
+    docsPath: "docs/cloudflare-dns-records.md",
+    terraformPath: "infra/cloudflare/dns-records.tf.example",
+    command: "pnpm cloudflare:dns",
+    checkCommand: "pnpm check:cloudflare-dns-template"
+  },
   cloudflareCacheRules: [
     "Do not cache /, /config.js, /build-info.json, or /static-manifest.json.",
     "Do not transform HTML, JS, JSON, poster, or video responses before launch verification.",
@@ -104,6 +110,7 @@ const plan = {
     "pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws",
     "pnpm render:api-settings",
     "pnpm render:web-settings",
+    "pnpm cloudflare:dns",
     "pnpm cloudflare:headers",
     "Apply Render custom domains, Cloudflare DNS, and Render Static headers or the Web-only Cloudflare response header fallback.",
     "pnpm cloudflare:check",
@@ -177,6 +184,8 @@ function printMarkdown(value) {
   console.log(`- Env Keys: ${value.renderApiService.requiredEnv.join(", ")}`);
   console.log("");
   console.log("## Cloudflare DNS");
+  console.log("");
+  console.log(`Template: ${value.cloudflareDnsTemplate.command} (${value.cloudflareDnsTemplate.docsPath}, ${value.cloudflareDnsTemplate.terraformPath})`);
   console.log("");
   for (const record of value.cloudflareDns) {
     console.log(`- ${record.name}: ${record.type} -> ${record.target}. Proxy: ${record.proxy}.`);

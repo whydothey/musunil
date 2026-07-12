@@ -4,19 +4,19 @@
 
 ## Current State
 
-- Generated: 2026-07-11T23:55:17.065Z
-- Git SHA: c9114d7240312642949252aade9869487205788e
+- Generated: 2026-07-12T00:05:22.505Z
+- Git SHA: 9af196677f39d071fabb9e1c21bcc5373ddb4249
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-11T23:54:34.656Z (fresh)
+- Service watch: 2026-07-12T00:05:14.889Z (fresh)
 - Checks: 4 ok, 3 fail, 12 skip, 4 actions
-- Next command: `pnpm render:api-settings && pnpm cloudflare:check`
+- Next command: `pnpm render:api-settings && pnpm cloudflare:dns && pnpm cloudflare:check`
 
 ## What To Do Now
 
 1. connect_api_endpoint (operator)
-   - Action: pnpm render:api-settings 출력대로 Render musunil-api 설정과 환경변수를 확인한다. Custom Domains에 api.musunil.com을 추가하고, Render가 표시한 target을 Cloudflare DNS의 api 레코드에 DNS only로 연결한다.
-   - Verify: `pnpm render:api-settings && pnpm cloudflare:check && pnpm launch:final-gate`
+   - Action: pnpm render:api-settings와 pnpm cloudflare:dns 출력대로 Render musunil-api 설정과 환경변수를 확인한다. Custom Domains에 api.musunil.com을 추가하고, Render가 표시한 target을 Cloudflare DNS의 api 레코드에 DNS only로 연결한다.
+   - Verify: `pnpm render:api-settings && pnpm cloudflare:dns && pnpm cloudflare:check && pnpm launch:final-gate`
    - Reference: docs/launch-cutover-runbook.md#3-render-api
 2. apply_static_headers (operator)
    - Action: pnpm render:web-settings 출력의 Header application mode를 먼저 확인한다. 수동 Static Site이면 Render musunil-web Settings > Headers에 Cache-Control, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options를 그대로 입력하고 Clear build cache & deploy를 실행한다. Render headers가 live 응답에 계속 반영되지 않거나 Cloudflare proxy가 켜져 있으면 pnpm cloudflare:headers로 생성되는 Web 전용 Response Header Transform Rule을 적용하고 /, /config.js, /build-info.json 캐시 우회도 확인한다.
@@ -118,6 +118,8 @@ Environment source summary:
 
 Render Dashboard가 보여주는 custom-domain target을 그대로 복사한다. API는 smoke 통과 전까지 DNS only가 안전하다.
 
+DNS template: `pnpm cloudflare:dns` -> `docs/cloudflare-dns-records.md`, `infra/cloudflare/dns-records.tf.example`
+
 Web headers fallback:
 
 - Render Static Site Headers가 live 응답에 반영되지 않으면 `pnpm cloudflare:headers`로 Cloudflare Response Header Transform Rule 템플릿을 갱신한다.
@@ -153,6 +155,7 @@ Cache rules:
 - pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws
 - pnpm render:api-settings
 - pnpm render:web-settings
+- pnpm cloudflare:dns
 - pnpm cloudflare:headers
 - Apply Render custom domains, Cloudflare DNS, and Render Static headers or the Web-only Cloudflare response header fallback.
 - pnpm cloudflare:check

@@ -38,9 +38,12 @@ const launchReady = readFileSync(resolve(cwd, "scripts/launch-ready.mjs"), "utf8
 const launchFinalGate = readFileSync(resolve(cwd, "scripts/launch-final-gate.mjs"), "utf8");
 const launchCutoverRehearsal = readFileSync(resolve(cwd, "scripts/launch-cutover-rehearsal.mjs"), "utf8");
 const launchOperatorBrief = readFileSync(resolve(cwd, "scripts/launch-operator-brief.mjs"), "utf8");
+const cloudflareDnsTemplate = readFileSync(resolve(cwd, "scripts/cloudflare-dns-template.mjs"), "utf8");
 const cloudflareResponseHeaders = readFileSync(resolve(cwd, "scripts/cloudflare-response-headers-template.mjs"), "utf8");
 const launchCutoverRunbook = readFileSync(resolve(cwd, "docs/launch-cutover-runbook.md"), "utf8");
 const launchOperatorBriefDoc = readFileSync(resolve(cwd, "docs/launch-operator-brief.md"), "utf8");
+const cloudflareDnsRecordsDoc = readFileSync(resolve(cwd, "docs/cloudflare-dns-records.md"), "utf8");
+const cloudflareDnsRecordsTerraform = readFileSync(resolve(cwd, "infra/cloudflare/dns-records.tf.example"), "utf8");
 const cloudflareResponseHeadersDoc = readFileSync(resolve(cwd, "docs/cloudflare-response-headers.md"), "utf8");
 const cloudflareResponseHeadersTerraform = readFileSync(resolve(cwd, "infra/cloudflare/response-headers.tf.example"), "utf8");
 const webFlowSmoke = readFileSync(resolve(cwd, "scripts/ci-web-flow-smoke.mjs"), "utf8");
@@ -274,6 +277,7 @@ if (
   !/service:watch:visual/.test(launchNextActions) ||
   !/render:api-settings/.test(launchNextActions) ||
   !/render:web-settings/.test(launchNextActions) ||
+  !/cloudflare:dns/.test(launchNextActions) ||
   !/cloudflare:headers/.test(launchNextActions) ||
   !/cloudflare:check/.test(launchNextActions) ||
   !/cloudflare:check:strict/.test(launchNextActions) ||
@@ -291,6 +295,7 @@ if (
   !/nextOperatorCommand/.test(launchCutoverRehearsal) ||
   !/Ordered Operator Actions/.test(launchCutoverRehearsal) ||
   !/connect_api_endpoint/.test(launchCutoverRehearsal) ||
+  !/cloudflare:dns/.test(launchCutoverRehearsal) ||
   !/apply_static_headers/.test(launchCutoverRehearsal) ||
   !/cloudflare:headers/.test(launchCutoverRehearsal) ||
   !/restore_live_issue_sync/.test(launchCutoverRehearsal) ||
@@ -316,6 +321,7 @@ if (
   !/Render Web Static Site/.test(launchOperatorBriefDoc) ||
   !/Render API Service/.test(launchOperatorBriefDoc) ||
   !/Cloudflare/.test(launchOperatorBriefDoc) ||
+  !/cloudflare:dns/.test(launchOperatorBriefDoc) ||
   !/cloudflare:headers/.test(launchOperatorBriefDoc) ||
   !/User Inputs/.test(launchOperatorBriefDoc) ||
   !/pnpm launch:final-gate/.test(launchOperatorBriefDoc) ||
@@ -346,6 +352,7 @@ if (
   !/MUSUNIL_USER_INPUTS_B64/.test(renderApiSettings) ||
   !/Render generated/.test(renderApiSettings) ||
   !/Cloudflare DNS/.test(renderApiSettings) ||
+  !/cloudflare:dns/.test(renderApiSettings) ||
   !/MUSUNIL_WEB_BASE_URL=https:\/\/musunil\.com MUSUNIL_API_BASE_URL=https:\/\/api\.musunil\.com pnpm launch:post-deploy-smoke/.test(renderApiSettings) ||
   !/pnpm launch:final-gate/.test(renderApiSettings) ||
   !/launch:post-deploy-smoke/.test(renderApiSettings) ||
@@ -357,6 +364,8 @@ if (
 if (
   !/"cloudflare:check"/.test(packageJson) ||
   !/"cloudflare:check:strict"/.test(packageJson) ||
+  !/"cloudflare:dns"/.test(packageJson) ||
+  !/"check:cloudflare-dns-template"/.test(packageJson) ||
   !/"cloudflare:headers"/.test(packageJson) ||
   !/"check:cloudflare-headers"/.test(packageJson) ||
   !/cloudflare-dns-check\.mjs/.test(packageJson) ||
@@ -368,11 +377,29 @@ if (
   !/api_health/.test(cloudflareDnsCheck) ||
   !/api_ready/.test(cloudflareDnsCheck) ||
   !/connect_api_dns/.test(cloudflareDnsCheck) ||
+  !/cloudflare:dns/.test(cloudflareDnsCheck) ||
   !/apply_static_headers/.test(cloudflareDnsCheck) ||
   !/cloudflare:headers/.test(cloudflareDnsCheck) ||
   !/--strict/.test(cloudflareDnsCheck)
 ) {
   failures.push("Cloudflare/DNS preflight helper must check Web/API DNS, Web config, headers, API health/ready, and strict mode");
+}
+if (
+  !/cloudflare_dns_records_template/.test(cloudflareDnsTemplate) ||
+  !/docs\/cloudflare-dns-records\.md/.test(cloudflareDnsTemplate) ||
+  !/infra\/cloudflare\/dns-records\.tf\.example/.test(cloudflareDnsTemplate) ||
+  !/Render musunil-api custom-domain target/.test(cloudflareDnsTemplate) ||
+  !/web_record_proxied/.test(cloudflareDnsTemplate) ||
+  !/proxied = false/.test(cloudflareDnsRecordsTerraform) ||
+  !/cloudflare_record/.test(cloudflareDnsRecordsTerraform) ||
+  !/render_api_target/.test(cloudflareDnsRecordsTerraform) ||
+  !/Cloudflare DNS Records/.test(cloudflareDnsRecordsDoc) ||
+  !/api\.musunil\.com/.test(cloudflareDnsRecordsDoc) ||
+  !/DNS only/.test(cloudflareDnsRecordsDoc) ||
+  !/pnpm cloudflare:check/.test(cloudflareDnsRecordsDoc) ||
+  !/pnpm check:cloudflare-dns-template/.test(JSON.parse(packageJson).scripts["check:release"] ?? "")
+) {
+  failures.push("Cloudflare DNS template must generate dashboard docs and Terraform example for Web/API records and be wired into release checks");
 }
 if (
   !/cloudflare_response_headers_template/.test(cloudflareResponseHeaders) ||
@@ -515,6 +542,7 @@ if (!/"launch:cutover-plan"/.test(packageJson) || !/launch-cutover-plan\.mjs/.te
 if (
   !/api\.musunil\.com/.test(launchCutoverPlan) ||
   !/Cloudflare DNS/.test(launchCutoverPlan) ||
+  !/cloudflare:dns/.test(launchCutoverPlan) ||
   !/cloudflare:headers/.test(launchCutoverPlan) ||
   !/cloudflare:check/.test(launchCutoverPlan) ||
   !/render:api-settings/.test(launchCutoverPlan) ||
@@ -540,6 +568,7 @@ if (
   !/pnpm launch:cutover-plan/.test(launchCutoverRunbook) ||
   !/api\.musunil\.com/.test(launchCutoverRunbook) ||
   !/Cloudflare/.test(launchCutoverRunbook) ||
+  !/cloudflare:dns/.test(launchCutoverRunbook) ||
   !/cloudflare:headers/.test(launchCutoverRunbook) ||
   !/check:visual-surface:live/.test(launchCutoverRunbook) ||
   !/identity_required/.test(launchCutoverRunbook) ||
@@ -588,6 +617,7 @@ if (
   !/build:web-static:render/.test(serviceWatch) ||
   !/pnpm launch:final-gate/.test(serviceWatch) ||
   !/render:api-settings/.test(serviceWatch) ||
+  !/cloudflare:dns/.test(serviceWatch) ||
   !/apply_static_headers/.test(serviceWatch) ||
   !/cloudflare:headers/.test(serviceWatch) ||
   !/cloudflare:check/.test(serviceWatch) ||

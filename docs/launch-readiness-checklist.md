@@ -12,6 +12,7 @@
 - `pnpm launch:operator-brief` 실행. 이 명령은 현재 live blocker 보고서, Render Web/API 설정값, Cloudflare DNS, 사용자 입력 우선순위, 검증 순서를 [launch-operator-brief.md](/Users/mk/Documents/Musunil/docs/launch-operator-brief.md)에 갱신한다. 운영자가 마지막에 입력할 값은 이 브리프를 먼저 보고 처리한다.
 - `pnpm launch:final-gate` 통과. 이 명령은 배포 후 `pnpm launch:post-deploy-smoke -- --require-laws`와 `pnpm launch:blockers:refresh-strict`를 순서대로 실행하고, 앞 단계가 실패해도 live blocker 갱신까지 시도한 뒤 최종 실패한다.
 - Render/Cloudflare 연결 직후 `pnpm cloudflare:check`가 DNS, Web HTTPS, `config.js` API base, Web header smoke, API `/health`, `/ready`를 분리 진단한다. 최종 차단 게이트로 쓸 때는 `pnpm cloudflare:check:strict`를 실행한다.
+- Cloudflare DNS 입력 전 `pnpm cloudflare:dns`를 실행해 [cloudflare-dns-records.md](/Users/mk/Documents/Musunil/docs/cloudflare-dns-records.md)와 [dns-records.tf.example](/Users/mk/Documents/Musunil/infra/cloudflare/dns-records.tf.example)를 갱신한다. Render Dashboard가 보여주는 custom-domain target만 복사하며, API 레코드는 `/health`, `/ready`, CORS, media smoke 통과 전까지 DNS only로 둔다.
 - Render Static headers가 live 응답에 적용되지 않으면 `pnpm cloudflare:headers`를 실행해 Cloudflare Response Header Transform Rule 템플릿을 갱신한다. 이 템플릿은 Web 레코드 전용 대체 경로이며, API 레코드는 `/health`, `/ready`, CORS, media smoke 통과 전까지 DNS only로 둔다.
 - `pnpm build:web-config`가 운영 YAML 기준으로 실행됨.
 - `pnpm launch:check` 통과.
@@ -22,6 +23,7 @@
 - `pnpm check:law-diagnostics` 통과.
 - `pnpm check:ops-diagnostics` 통과.
 - `pnpm check:render-runtime-config` 통과.
+- `pnpm check:cloudflare-dns-template` 통과.
 - `pnpm check:runtime-smoke` 통과.
 - `pnpm check:web-smoke` 통과.
 - `pnpm check:web-flow` 통과.
@@ -122,7 +124,7 @@
 - production Web은 `config.js`의 `apiBaseUrl`을 기준으로 하며, `?api=`와 localStorage API override는 localhost에서만 허용된다.
 - 로컬 dev 검증은 `MUSUNIL_WEB_API_BASE_URL=http://localhost:<api-port> pnpm dev:web`가 stale `apps/web/config.js` 값보다 우선해야 하며, `pnpm check:web-smoke`가 이 runtime override를 검증한다.
 - Render Static Site 수동 설정값은 `pnpm render:web-settings`로 출력한 Branch, Root Directory, Build Command, Publish Directory, Headers를 기준으로 맞춘다.
-- 출시 컷오버는 `pnpm launch:cutover-plan`과 [launch-cutover-runbook.md](/Users/mk/Documents/Musunil/docs/launch-cutover-runbook.md)를 기준으로 API DNS, Cloudflare DNS, Render Static headers, 검증 순서를 한 번에 확인한다.
+- 출시 컷오버는 `pnpm launch:cutover-plan`, `pnpm cloudflare:dns`, [cloudflare-dns-records.md](/Users/mk/Documents/Musunil/docs/cloudflare-dns-records.md), [launch-cutover-runbook.md](/Users/mk/Documents/Musunil/docs/launch-cutover-runbook.md)를 기준으로 API DNS, Cloudflare DNS, Render Static headers, 검증 순서를 한 번에 확인한다.
 - production Web은 가능하면 `build-info.json`의 `commitSha`가 배포 대상 Git SHA와 같아야 한다. Render 수동 Static Site가 build metadata를 반영하지 않는 경우에는 `/static-manifest.json`과 live HTML/config/media SHA-256이 현재 repo 산출물과 정확히 일치해야 한다.
 - Render Static Site는 repo root에서 `pnpm build:web-static:render`를 실행하고 `apps/web`만 publish한다. 이 단일 명령은 운영 API base 주입, 실제 build-info 작성, 정적 manifest 생성, web smoke를 모두 포함한다.
 - Render 배포 뒤에는 `pnpm check:visual-surface:live`로 실제 `musunil.com` 화면의 이슈 스토리, 이슈 카드, 상세, 인증영상 대기/영상, 지도, 제보 첫 행동이 390px, 430px, 768px, 1440px에서 모두 유지되는지 확인한다.
@@ -130,6 +132,7 @@
 - `service:watch` 결과에서 `skip`은 검증 생략이지 통과가 아니다. 출시 판단은 모든 check가 `ok`이고 Required Actions가 비어 있을 때만 `S+ Guard`로 본다.
 - Render Static Site와 Cloudflare 경로는 `/`, `/config.js`, `/build-info.json`에 `Cache-Control: no-store`, CSP, `Permissions-Policy`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`를 보내야 하며, 공개 영상 확인을 위해 CSP에 `media-src 'self' https: blob:`가 있어야 한다.
 - `pnpm check:cloudflare-headers`는 `render.yaml`의 `musunil-web.headers`와 Cloudflare response header 문서/Terraform 예시가 같은 값인지 검증한다.
+- `pnpm check:cloudflare-dns-template`은 Web/API DNS 문서와 Terraform 예시가 `scripts/cloudflare-dns-template.mjs`에서 재생성한 값과 같은지 검증한다.
 - `/build-info.json` 또는 `/build-info.js`가 404면 Static Site build command가 실행되지 않았거나, repo root/Publish Directory/Blueprint 연결이 잘못됐거나, build-info 산출물이 ignore/미추적 처리된 상태로 본다.
 - `/static-manifest.json`과 live 파일 해시가 현재 repo 산출물과 일치하지만 `/build-info.json`이 `generated-at-build`이면 Static Site가 커밋된 `apps/web` 파일을 publish하고 build metadata만 반영하지 않는 상태다. 이 경우 최신 UI 배포 여부는 통과로 보되, `check:web-deploy`와 `service:watch`는 `web_build_info_placeholder` 경고를 남긴다.
 - `/static-manifest.json` 또는 live 파일 해시가 현재 repo 산출물과 다르면 구버전 배포로 보고 실패한다. Render 수동 Static Site의 Branch, Root Directory, Build Command, Publish Directory, headers를 `README.md`와 `render.yaml` 기준으로 고친 뒤 `Clear build cache & deploy`를 실행한다.

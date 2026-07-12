@@ -98,6 +98,7 @@ function parseReport(source, refreshMetadata = { attempted: false }) {
       "pnpm launch:blockers:refresh-strict",
       "pnpm render:api-settings",
       "pnpm render:web-settings",
+      "pnpm cloudflare:dns",
       "pnpm cloudflare:headers",
       "pnpm cloudflare:check",
       "pnpm cloudflare:check:strict",
