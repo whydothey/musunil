@@ -66,6 +66,7 @@ const publicApiRoutes = readFileSync(resolve(cwd, "scripts/public-api-routes.mjs
 const webStaticManifestScript = readFileSync(resolve(cwd, "scripts/write-web-static-manifest.mjs"), "utf8");
 const postDeploySmokeRunner = readFileSync(resolve(cwd, "scripts/post-deploy-smoke-runner.mjs"), "utf8");
 const githubPostDeployWorkflow = readFileSync(resolve(cwd, "scripts/github-post-deploy-workflow.mjs"), "utf8");
+const githubCiStatus = readFileSync(resolve(cwd, "scripts/github-ci-status.mjs"), "utf8");
 const publicSourceRefreshPreflight = readFileSync(resolve(cwd, "scripts/public-source-refresh-preflight.mjs"), "utf8");
 const lawSourceIngest = readFileSync(resolve(cwd, "workers/public-source-ingest/src/laws.ts"), "utf8");
 const rootPackageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
@@ -123,6 +124,20 @@ if (
   failures.push("GitHub Actions CI must use Node 24-compatible checkout/setup-node actions");
 }
 if (!/pnpm check:release/.test(ciWorkflow)) failures.push("GitHub Actions CI must run pnpm check:release");
+if (
+  !/"ci:status":\s*"node scripts\/github-ci-status\.mjs"/.test(rootPackageJson) ||
+  !/checked:\s*"github_ci_status"/.test(githubCiStatus) ||
+  !/--workflow/.test(githubCiStatus) ||
+  !/ci\.yml/.test(githubCiStatus) ||
+  !/--commit/.test(githubCiStatus) ||
+  !/gh", "run", "watch"/.test(githubCiStatus) ||
+  !/Queued means GitHub has accepted the workflow/.test(githubCiStatus) ||
+  !/pnpm ci:status/.test(readme) ||
+  !/pnpm ci:status/.test(userFacingDocs) ||
+  !/queued/.test(userFacingDocs)
+) {
+  failures.push("GitHub push CI status helper must expose pnpm ci:status, current commit filtering, queued/in-progress/completed distinction, and a gh run watch command");
+}
 if (
   !/name:\s*post-deploy/.test(postDeployWorkflow) ||
   !/workflow_dispatch/.test(postDeployWorkflow) ||

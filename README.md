@@ -159,7 +159,7 @@ Render 배포가 끝난 뒤 로컬 셸 없이 검증하려면 GitHub Actions `po
 - AI provider 없이도 현재 launch check 통과, provider를 켤 때만 `ai.api_key` 필수.
 - production LIVE 미디어는 `storage.*`, media encryption key, Android Play Integrity 또는 iOS App Attest 설정 없이는 launch check 실패.
 - LIVE 원본 업로드는 AES-GCM 암호화 후 S3-compatible storage adapter로 PUT하며, production 외부 저장소 필수 모드에서 adapter나 media encryption key가 없으면 fail-closed.
-- GitHub Actions `pnpm check:release` CI.
+- GitHub Actions `pnpm check:release` CI와 `pnpm ci:status` 원격 상태 확인 helper.
 - `pnpm launch:inputs` 운영 YAML 초안 생성: Render generated secret은 비워 두고 실제 운영 값만 `CHANGE_ME_*`로 남김.
 - 기본 템플릿은 production-safe 값으로 preview/mock을 끄고 `CHANGE_ME_*` 입력값만 드러냄.
 - `pnpm launch:verify-inputs` 로컬 검증: Render 관리형 DB/Redis를 모의 주입해 사용자 YAML만 검증.

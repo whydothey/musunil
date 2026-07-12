@@ -2,7 +2,7 @@
 
 외부 연결이 필요 없는 범위에서 완료한 항목이다.
 
-Last updated: 2026-07-12 07:59 KST
+Last updated: 2026-07-12 19:25 KST
 
 ## 완료
 
@@ -172,6 +172,7 @@ Last updated: 2026-07-12 07:59 KST
   - `pnpm config:encode` launch 검증 후 `MUSUNIL_USER_INPUTS_B64` 생성, placeholder YAML 인코딩 차단
   - 기본 템플릿과 `pnpm launch:inputs` 모두 운영 입력값만 `CHANGE_ME_*`로 남김
   - GitHub Actions `pnpm check:release` CI는 Node 24 호환 action 버전 사용
+  - `pnpm ci:status`로 현재 Git SHA의 GitHub Actions `ci.yml` run 상태, queued/in-progress/completed 구분, watch 명령을 확인
 
 ## 외부 연결 필요
 

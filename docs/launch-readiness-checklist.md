@@ -5,6 +5,7 @@
 - `pnpm check` 통과.
 - `pnpm check:splus` 통과.
 - `pnpm check:release` 통과.
+- 커밋 push 뒤 `pnpm ci:status`로 현재 Git SHA의 GitHub Actions `ci.yml` run을 확인한다. `queued`는 GitHub runner 배정 전 상태라 코드 실패로 보지 않고, helper가 출력한 watch 명령으로 최종 결론을 확인한다.
 - `pnpm launch:ready` 통과.
 - `pnpm launch:ready`는 external smoke 전에 `pnpm ops:diagnose -- --require-external-smoke-ready`를 실행한다.
 - `pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes` 통과.
