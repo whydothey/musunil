@@ -134,6 +134,9 @@ if (
   !/Queued means GitHub has accepted the workflow/.test(githubCiStatus) ||
   !/pnpm ci:status/.test(readme) ||
   !/pnpm ci:status/.test(userFacingDocs) ||
+  !/pnpm ci:status/.test(launchOperatorBrief) ||
+  !/pnpm ci:status/.test(launchOperatorBriefDoc) ||
+  !/pnpm ci:status/.test(launchCutoverRunbook) ||
   !/queued/.test(userFacingDocs)
 ) {
   failures.push("GitHub push CI status helper must expose pnpm ci:status, current commit filtering, queued/in-progress/completed distinction, and a gh run watch command");

@@ -128,6 +128,7 @@ function renderMarkdown(value) {
     `- Launch readiness: ${value.launchState}`,
     `- Stage: ${value.stage}`,
     `- Release blocked: ${value.releaseBlocked ? "yes" : "no"}`,
+    "- Push CI: run `pnpm ci:status` after every push. `queued` means GitHub has accepted the workflow but has not assigned a runner yet; use the printed watch command for the final result.",
     `- Service watch: ${value.serviceWatch.lastChecked || "unknown"} (${value.serviceWatch.stale ? "stale" : "fresh"})`,
     `- Checks: ${value.counts.pass} ok, ${value.counts.fail} fail, ${value.counts.skip} skip, ${value.counts.requiredActions} actions`,
     ...operatorCommandLines(value),
