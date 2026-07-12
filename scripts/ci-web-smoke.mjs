@@ -109,7 +109,7 @@ async function checkWeb(port) {
   assert(html.headers.get("content-security-policy")?.includes("default-src 'self'"), "content-security-policy missing");
   assert(html.headers.get("content-security-policy")?.includes("https://cdn.portone.io"), "PortOne SDK CSP allowlist missing");
   assert(html.headers.get("content-security-policy")?.includes("media-src 'self'"), "public media CSP allowlist missing");
-  assert(index.includes("확인된 집회·시위"), "consumer issue-feed home title missing");
+  assert(index.includes("공개자료 기반 집회·시위"), "consumer issue-feed home title missing");
   for (const [id, title] of [
     ["issue_public_regional_schedule", "지역별 집회 공개 일정"],
     ["issue_public_daegu_stats", "대구 집회 신고·개최 현황"],
@@ -153,14 +153,14 @@ async function checkWeb(port) {
   assert(index.includes("isMetaPublicSourceIssue"), "meta public-source issue sort guard missing");
   assert(index.includes('id="detail-confirm-summary"'), "detail confirmed summary line missing");
   assert(index.includes("issue-card-action-label"), "issue card footer action label missing");
-  assert(index.includes(">상세 보기</span>"), "issue card lightweight detail label missing");
+  assert(index.includes(">근거·영상</span>"), "issue card evidence-first label missing");
   assert(index.includes("secondary-action"), "issue card dispute shortcut styling missing");
   assert(index.includes('data-issue-card-action="dispute"'), "issue card dispute shortcut missing");
   assert(!index.includes("근거·영상·지도"), "old issue card footer path copy present");
   assert(index.includes(".issue-card-action.primary-action") && index.includes("background: transparent;"), "issue card primary action should be lightweight, not a filled CTA");
-  assert(!index.includes('issueCardActionButton("evidence", "icon-stats", "근거 보기", `${title} 근거 보기`, "primary")'), "evidence should not remain the primary home card action");
+  assert(index.includes('data-issue-card-action="evidence"'), "issue card evidence action missing");
+  assert(index.includes('if (action === "evidence")'), "issue card evidence action branch missing");
   assert(!index.includes('issueCardActionButton("map", "icon-locate", "지도", `${title} 지도에서 위치 확인`, "primary")'), "map action should not be the primary card action");
-  assert(index.includes('data-issue-card-action="summary"'), "issue card summary action missing");
   assert(!index.includes('issueCardActionButton("video"'), "issue card video action should not be a repeated CTA");
   assert(!index.includes('issueCardActionButton("dispute"'), "issue card rebuttal action should not be a repeated CTA");
   assert(!index.includes('issue-card-source">공개자료 기준'), "repeated issue card source label present");
@@ -394,7 +394,7 @@ async function checkWeb(port) {
   assert(index.includes("field-review-slot"), "review-state video slot missing");
   assert(index.includes("현장 영상 공개 준비 중"), "review-state video copy missing");
   assert(index.includes('<p class="subtitle">공개 위치·근거 확인</p>'), "consumer-facing brand subtitle missing");
-  assert(index.includes("<h2>확인된 집회·시위</h2>"), "consumer-facing home headline missing");
+  assert(index.includes("<h2>공개자료 기반 집회·시위</h2>"), "consumer-facing home headline missing");
   assert(index.includes('id="service-banner"'), "public service sync banner missing");
   assert(index.includes("공개자료 확인 중"), "service sync checking copy missing");
   assert(index.includes("공개자료로 먼저 확인"), "public material fallback copy missing");

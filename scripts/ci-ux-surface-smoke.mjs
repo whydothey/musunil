@@ -9,11 +9,11 @@ const checkedScenarios = [];
 
 scenario("home_issue_first", [
   has('id="home-section"'),
-  has("확인된 집회·시위"),
+  has("공개자료 기반 집회·시위"),
   has('id="issue-stories"'),
   has('id="issues"'),
-  has('data-issue-card-action="summary"'),
-  has(">상세 보기</span>"),
+  has('data-issue-card-action="evidence"'),
+  has(">근거·영상</span>"),
   order('id="issue-stories"', 'id="issues"'),
   order('id="issues"', 'id="issue-situations-block"'),
   absent("이슈 파일"),

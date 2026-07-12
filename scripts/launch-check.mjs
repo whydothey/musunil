@@ -1094,7 +1094,7 @@ if (!/"check:web-flow"/.test(packageJson) || !/ci-web-flow-smoke\.mjs/.test(pack
   failures.push("Web user-flow smoke must be wired into release checks");
 }
 if (
-  !/home_issue_card_to_detail_and_dispute/.test(webFlowSmoke) ||
+	  !/home_issue_card_to_evidence_and_dispute/.test(webFlowSmoke) ||
   !/detail_quick_actions_to_evidence_video_map/.test(webFlowSmoke) ||
   !/reels_actions_keep_video_objective/.test(webFlowSmoke) ||
   !/report_target_first_capture_and_receipt/.test(webFlowSmoke) ||

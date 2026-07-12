@@ -24,12 +24,12 @@ scenario("mobile_desktop_navigation_surface", [
   regex(/document\.querySelectorAll\("\.rail-item"\)[\s\S]*setPrimaryView\(button\.dataset\.railView\)/)
 ]);
 
-scenario("home_issue_card_to_detail_and_dispute", [
-  has('data-issue-card-action="summary"'),
-  has('>상세 보기</span>'),
+scenario("home_issue_card_to_evidence_and_dispute", [
+  has('data-issue-card-action="evidence"'),
+  has('>근거·영상</span>'),
   has('data-issue-card-action="dispute"'),
-  functionHas("openIssueCardAction", 'if (action === "summary")'),
-  functionHas("openIssueCardAction", 'selectIssue(issue, { openDetail: true, scrollToCards: false, initialTab: "summary" });'),
+  functionHas("openIssueCardAction", 'if (action === "evidence")'),
+  functionHas("openIssueCardAction", 'selectIssue(issue, { openDetail: true, scrollToCards: false, initialTab: "evidence" });'),
   functionHas("openIssueCardAction", 'const initialTab = action === "dispute" ? "dispute" : "evidence";'),
   functionHas("selectIssue", "renderIssueDetail(issue)"),
   functionHas("selectIssue", "openDetailPanel()"),

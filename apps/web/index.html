@@ -1405,6 +1405,54 @@
         background: var(--story-color, var(--brand));
       }
 
+      .story-status-mark {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 100%;
+        height: 100%;
+        border-radius: 999px;
+        background:
+          radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--story-color, var(--brand)) 18%, transparent), transparent 38%),
+          linear-gradient(180deg, color-mix(in srgb, var(--story-color, var(--brand)) 7%, var(--surface)), var(--surface));
+      }
+
+      .story-status-mark::before {
+        content: "";
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        border: 2px solid color-mix(in srgb, var(--story-color, var(--brand)) 76%, transparent);
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--surface) 88%, transparent);
+      }
+
+      .story-status-mark i {
+        position: absolute;
+        display: block;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--story-color, var(--brand)) 82%, transparent);
+      }
+
+      .story-status-mark i:nth-child(1) {
+        width: 6px;
+        height: 6px;
+        transform: translate(-15px, -9px);
+      }
+
+      .story-status-mark i:nth-child(2) {
+        width: 6px;
+        height: 6px;
+        transform: translate(15px, -9px);
+      }
+
+      .story-status-mark i:nth-child(3) {
+        width: 28px;
+        height: 3px;
+        transform: translateY(16px);
+        opacity: .72;
+      }
+
       .story-visual,
       .issue-cover-art svg {
         width: 100%;
@@ -1892,9 +1940,9 @@
 
       .issue-card-proof-row span {
         display: grid;
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: 34px minmax(0, 1fr);
         align-items: baseline;
-        gap: 0;
+        gap: 8px;
         min-width: 0;
         color: var(--muted);
         font-size: 12px;
@@ -1903,23 +1951,28 @@
       }
 
       .issue-card-proof-row b {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        clip: rect(0 0 0 0);
-        clip-path: inset(50%);
+        position: static;
+        width: auto;
+        height: auto;
+        overflow: visible;
+        clip: auto;
+        clip-path: none;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 820;
         white-space: nowrap;
       }
 
       .issue-card-proof-row em {
-        display: block;
+        display: -webkit-box;
         min-width: 0;
         overflow: hidden;
         color: var(--text);
         font-style: normal;
         text-overflow: ellipsis;
-        white-space: nowrap;
+        white-space: normal;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
       }
 
       .issue-location-strip {
@@ -1928,24 +1981,26 @@
         grid-template-columns: 30px minmax(0, 1fr) auto;
         align-items: center;
         gap: 10px;
-        min-height: 46px;
-        padding: 8px 10px;
-        border: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
-        border-radius: 12px;
-        background: color-mix(in srgb, var(--surface-2) 74%, var(--surface));
+        min-height: 42px;
+        padding: 9px 0 0;
+        border: 0;
+        border-top: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+        border-radius: 0;
+        background: transparent;
         color: var(--ink);
         text-align: left;
         cursor: pointer;
-        box-shadow: inset 0 1px 0 rgb(255 255 255 / 56%);
+        box-shadow: none;
         transition:
           border-color var(--motion-fast) var(--ease-out),
-          background-color var(--motion-fast) var(--ease-out),
+          color var(--motion-fast) var(--ease-out),
           transform var(--motion-fast) var(--ease-out);
       }
 
       .issue-location-strip:hover {
         border-color: color-mix(in srgb, var(--story-color, var(--brand)) 28%, var(--line));
-        background: color-mix(in srgb, var(--story-color, var(--brand)) 5%, var(--surface));
+        background: transparent;
+        color: var(--brand);
       }
 
       .issue-location-strip:active {
@@ -1955,10 +2010,10 @@
       .issue-location-symbol {
         display: grid;
         place-items: center;
-        width: 30px;
-        height: 30px;
+        width: 28px;
+        height: 28px;
         border-radius: 999px;
-        background: color-mix(in srgb, var(--story-color, var(--brand)) 10%, var(--surface));
+        background: color-mix(in srgb, var(--story-color, var(--brand)) 8%, var(--surface));
         color: var(--story-color, var(--brand));
         box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--story-color, var(--brand)) 18%, transparent);
       }
@@ -5130,14 +5185,15 @@
         }
 
         .issue-card-proof-row span {
-          grid-template-columns: minmax(0, 1fr);
-          gap: 0;
+          grid-template-columns: 32px minmax(0, 1fr);
+          gap: 7px;
           font-size: 11px;
         }
 
         .issue-card-proof-row b {
-          width: 1px;
-          height: 1px;
+          width: auto;
+          height: auto;
+          font-size: 10.5px;
         }
 
         .issue-card > .chips {
@@ -5593,7 +5649,7 @@
         <section class="column stack" id="home-section" aria-label="이슈와 상황 목록">
           <div class="section-title home-lead">
             <div>
-              <h2>확인된 집회·시위</h2>
+              <h2>공개자료 기반 집회·시위</h2>
               <p class="fine" id="api-state">자료 불러오는 중</p>
             </div>
           </div>
@@ -6397,7 +6453,7 @@
             title: "대구 도심 선거 절차 관련 집회",
             regionLabel: "대구 도심권",
             lifecycleState: "UNKNOWN",
-            chips: ["위치 확인 중", "다른 주장 있음"],
+            chips: ["위치 확인 중", "반론·정정 있음"],
             updatedAt: new Date().toISOString(),
             priorityScore: 14,
             current: "확인 중",
@@ -6843,7 +6899,7 @@
 
       function issueDisputeSummaryText(issue) {
         const dispute = Number(issue?.disputeCount || 0);
-        return dispute ? `반론/정정 ${dispute}건` : "반론/정정 없음";
+        return dispute ? `반론·정정 ${dispute}건` : "반론·정정 없음";
       }
 
       function issueConfirmedWhereWhenLine(issue) {
@@ -8086,11 +8142,15 @@
         const preview = publicLivePreviewForIssue(issue);
         const url = publicLiveMediaSrc(preview);
         const poster = publicLivePosterDisplaySrc(preview);
-        if (!url || !poster) return issueVisualSvg(issue, { compact: true });
+        if (!url || !poster) return renderIssueStoryFallback(issue);
         return `
-          <span class="story-thumb-fallback">${issueVisualSvg(issue, { compact: true })}</span>
+          <span class="story-thumb-fallback">${renderIssueStoryFallback(issue)}</span>
           <video class="story-thumb-video" src="${escapeHtml(url)}" poster="${escapeHtml(poster)}" muted playsinline preload="metadata" aria-hidden="true"></video>
         `;
+      }
+
+      function renderIssueStoryFallback(_issue) {
+        return `<span class="story-status-mark"><i></i><i></i><i></i></span>`;
       }
 
       function renderIssueCoverArt(issue) {
@@ -8212,7 +8272,7 @@
 
       function issueRecentChange(issue) {
         if (Number(issue.currentCount || 0) > 0) return "현장 자료 증가";
-        if (Number(issue.disputeCount || 0) > 0) return "반론 있음";
+        if (Number(issue.disputeCount || 0) > 0) return "반론·정정 있음";
         if (Number(issue.officialCount || 0) > 0) return "공식 확인";
         return "확인 중";
       }
@@ -8337,15 +8397,15 @@
 	        const needs = Number(issue.needsVerificationCount || 0);
 	        const dispute = Number(issue.disputeCount || 0);
 	        if (needs > 0) return "출처 추가 확인 필요";
-	        if (dispute > 0) return `다른 주장 ${dispute}건`;
+	        if (dispute > 0) return `반론·정정 ${dispute}건`;
 	        if (!Number(issue.officialCount || 0)) return "공식 자료 확인 중";
 	        return "";
 	      }
 
       function issueDisputeStatusText(issue) {
         const dispute = Number(issue.disputeCount || 0);
-        if (dispute > 0) return `다른 주장 ${dispute}건`;
-        return "다른 주장 없음";
+        if (dispute > 0) return `반론·정정 ${dispute}건`;
+        return "반론·정정 없음";
       }
 
       function issueScaleStatusText(issue) {
@@ -8404,7 +8464,7 @@
 
       function issueCardStatusText(issue) {
         const state = issueStoryState(issue);
-        if (state === "dispute") return "반론 있음";
+        if (state === "dispute") return "반론·정정 있음";
         if (state === "pending") return "확인 중";
         if (state === "official") return "공개자료 확인";
         return "현장 변화 확인";
@@ -8442,6 +8502,31 @@
         return "정밀 위치와 제보자 정보는 공개하지 않습니다.";
       }
 
+      function issueCardLocationBriefText(issue) {
+        const cards = issueRelatedCards(issue);
+        const regions = issueRegions(issue, cards);
+        const place = regions.length ? regions.slice(0, 2).join(" · ") : "지역 확인 중";
+        const current = Number(issue.currentCount || cards.length || 0);
+        const locationCount = Number(issue.regionCount || regions.length || 0);
+        return [
+          place,
+          current ? `현장 ${current}건` : "현장 확인 중",
+          locationCount ? `공개 위치 ${locationCount}곳` : "공개 위치 확인 중"
+        ].join(" · ");
+      }
+
+      function issueCardEvidenceBriefText(issue) {
+        const cards = issueRelatedCards(issue);
+        const official = Number(issue.officialCount || 0);
+        const proof = cards.reduce((sum, card) => sum + Number(card.proof || 0), 0);
+        const video = issueVideoCount(issue);
+        const dispute = Number(issue.disputeCount || 0);
+        const basis = official ? `공식자료 ${official}건` : proof ? `공개근거 ${proof}건` : "공개자료 확인 중";
+        const field = video ? `현장영상 ${video}건` : "현장영상 확인 중";
+        const disputeText = dispute ? "반론·정정 있음" : "";
+        return [basis, field, disputeText].filter(Boolean).join(" · ");
+      }
+
       function issueLocationStripMarkup(issue) {
         const cards = issueRelatedCards(issue);
         const regions = [...new Set(cards.map((card) => card.regionLabel).filter(Boolean))].slice(0, 2);
@@ -8456,15 +8541,15 @@
               <strong>${escapeHtml(label)}</strong>
               <span>${escapeHtml(countLabel)} · ${escapeHtml(scopeLabel)}</span>
             </span>
-            <span class="issue-location-open" aria-hidden="true">지도</span>
+            <span class="issue-location-open" aria-hidden="true">지도에서 보기</span>
           </button>
         `;
       }
 
       function issueCardFactRows(issue) {
         return [
-          ["위치", issueCardPlaceLine(issue)],
-          ["근거", `${issueCardMainFactLine(issue)} · ${issueCardEvidenceLine(issue)}`]
+          ["위치", issueCardLocationBriefText(issue)],
+          ["근거", issueCardEvidenceBriefText(issue)]
         ];
       }
 
@@ -8505,12 +8590,12 @@
         const dispute = Number(issue?.disputeCount || 0);
         return `
           <div class="issue-card-actions" aria-label="${escapeHtml(title)} 확인 경로">
-            <button class="issue-card-action primary-action" type="button" data-issue-card-action="summary" aria-label="${escapeHtml(title)} 상세 보기">
-              <span class="issue-card-action-label">상세 보기</span>
+            <button class="issue-card-action primary-action" type="button" data-issue-card-action="evidence" aria-label="${escapeHtml(title)} 근거와 영상 보기">
+              <span class="issue-card-action-label">근거·영상</span>
             </button>
             ${dispute > 0 ? `
-              <button class="issue-card-action secondary-action" type="button" data-issue-card-action="dispute" aria-label="${escapeHtml(title)} 다른 주장 보기">
-                <span class="issue-card-action-label">다른 주장</span>
+              <button class="issue-card-action secondary-action" type="button" data-issue-card-action="dispute" aria-label="${escapeHtml(title)} 반론·정정 보기">
+                <span class="issue-card-action-label">반론·정정</span>
               </button>
             ` : ""}
           </div>
@@ -8538,6 +8623,10 @@
         }
         if (action === "summary") {
           selectIssue(issue, { openDetail: true, scrollToCards: false, initialTab: "summary" });
+          return;
+        }
+        if (action === "evidence") {
+          selectIssue(issue, { openDetail: true, scrollToCards: false, initialTab: "evidence" });
           return;
         }
         const initialTab = action === "dispute" ? "dispute" : "evidence";
@@ -8614,7 +8703,7 @@
           "위치 1곳",
           proof ? `공개근거 ${proof}건` : "공개근거 확인 중",
           cardVideoSummaryText(card),
-          dispute ? `반론/정정 ${dispute}건` : "반론/정정 없음"
+          dispute ? `반론·정정 ${dispute}건` : "반론·정정 없음"
         ].join(" · ");
       }
 
@@ -9365,7 +9454,7 @@
                 <span>${escapeHtml(`${publicClaimCountText(publicClaimCount)} · 출처별 주장과 현장 자료를 분리해 표시합니다.`)}</span>
               </div>
               <div class="detail-answer-row">
-                <b>다른 주장</b>
+                <b>반론·정정</b>
                 <span>${escapeHtml(disputeCount ? `${disputeCount}건을 별도 탭에서 함께 봅니다.` : "현재 공개된 반론·정정은 없습니다.")}</span>
               </div>
               <div class="detail-answer-row">
