@@ -6,14 +6,14 @@
 
 ## Current State
 
-- Generated: 2026-07-12T03:39:27.454Z
-- Git SHA: deba2f32f17498f1a5198f13374a250adf4e9b65
+- Generated: 2026-07-12T03:49:15.375Z
+- Git SHA: 76149c7c3f3a059f6021855f8c417f7f710a0cfb
 - Refresh command: `pnpm launch:operator-brief -- --refresh`
 - Active goal: active
 - Launch readiness: blocked
 - Stage: connect_api_endpoint
 - Release blocked: yes
-- Service watch: 2026-07-12T03:39:40.773Z (fresh)
+- Service watch: 2026-07-12T03:49:29.090Z (fresh)
 - Checks: 4 ok, 3 fail, 12 skip, 4 actions
 - Before next command: Render API token과 Cloudflare token이 있으면 `pnpm launch:apply -- --apply`가 api.musunil.com custom domain 생성, Render onrender.com target 파생, Cloudflare DNS 적용을 한 번에 처리한다. token이 없으면 dry-run 출력의 requiredEnv만 채우고, 하위 확인은 `pnpm render:api-settings`와 `pnpm cloudflare:dns`를 사용한다.
 - Next command: `pnpm launch:apply && pnpm launch:final-gate`
@@ -21,6 +21,7 @@
 ## One Command Apply
 
 - `pnpm launch:apply`는 Render와 Cloudflare 적용 계획을 한 번에 보여주는 dry-run이다.
+- 출력의 `operatorInputs`와 `requiredEnv`가 마지막에 채워야 할 값이다. 현재 핵심 묶음은 `RENDER_API_TOKEN` 또는 `MUSUNIL_RENDER_API_DNS_TARGET`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`다.
 - `RENDER_API_TOKEN`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`가 있으면 `pnpm launch:apply -- --apply`로 Render custom domain, Render Web headers, Cloudflare DNS를 적용한다.
 - Render API에서 서비스 URL을 읽을 수 있으면 Cloudflare DNS target은 Render `onrender.com` host로 자동 전달된다.
 - Web header가 계속 live에 반영되지 않을 때만 `pnpm launch:apply -- --apply --cloudflare-headers`를 사용한다.

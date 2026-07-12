@@ -95,9 +95,14 @@ const result = {
     api: targetSource("api", derivedTargets.api)
   },
   steps,
+  operatorInputs: [],
+  requiredEnv: [],
   ok: steps.every((step) => step.ok),
-  next: nextCommands(steps, derivedTargets)
+  next: []
 };
+result.operatorInputs = operatorInputs(result);
+result.requiredEnv = requiredEnv(result.operatorInputs);
+result.next = nextCommands(result);
 
 printResult(result);
 if (!result.ok) process.exit(1);
@@ -138,19 +143,119 @@ function targetSource(kind, value) {
   return "render_api_service_url";
 }
 
-function nextCommands(steps, targets) {
+function operatorInputs(value) {
+  const inputs = [];
+  if (value.requested.render) {
+    inputs.push({
+      id: "render_target_source",
+      required: !value.derivedTargets.api,
+      status: value.derivedTargets.api
+        ? value.targetSource.api === "render_api_service_url"
+          ? "derived_from_render_api"
+          : "configured"
+        : "missing",
+      requiredMode: "one_of",
+      env: ["RENDER_API_TOKEN", "MUSUNIL_RENDER_API_DNS_TARGET"],
+      alternatives: ["MUSUNIL_RENDER_API_TOKEN"],
+      purpose: "Choose one source for the Render API onrender.com target used by api.musunil.com"
+    });
+    inputs.push({
+      id: "render_api_token",
+      required: false,
+      status: value.tokenState.render
+        ? "configured"
+        : value.derivedTargets.api
+          ? "not_required_target_available"
+          : "missing_for_auto_target_derivation",
+      env: ["RENDER_API_TOKEN"],
+      alternatives: ["MUSUNIL_RENDER_API_TOKEN", "MUSUNIL_RENDER_API_DNS_TARGET"],
+      purpose: "Render service lookup, custom domain/header apply, and onrender.com target derivation"
+    });
+    inputs.push({
+      id: "render_service_identity",
+      required: false,
+      status: process.env.MUSUNIL_RENDER_API_SERVICE_ID || process.env.MUSUNIL_RENDER_WEB_SERVICE_ID
+        ? "configured"
+        : "optional_by_exact_service_name",
+      env: ["MUSUNIL_RENDER_WEB_SERVICE_ID", "MUSUNIL_RENDER_API_SERVICE_ID"],
+      alternatives: ["MUSUNIL_RENDER_WEB_SERVICE_NAME=musunil-web", "MUSUNIL_RENDER_API_SERVICE_NAME=musunil-api"],
+      purpose: "Use exact Render service IDs when service-name lookup is ambiguous"
+    });
+  }
+  if (value.requested.cloudflare) {
+    inputs.push({
+      id: "cloudflare_api_token",
+      required: true,
+      status: value.tokenState.cloudflare ? "configured" : "missing",
+      env: ["CLOUDFLARE_API_TOKEN"],
+      alternatives: ["CF_API_TOKEN"],
+      purpose: "Create or update Cloudflare DNS records and optional response header rule"
+    });
+    inputs.push({
+      id: "cloudflare_zone",
+      required: true,
+      status: value.tokenState.cloudflareZone ? "configured" : "missing",
+      env: ["CLOUDFLARE_ZONE_ID"],
+      alternatives: ["CF_ZONE_ID", "CLOUDFLARE_ZONE_NAME=musunil.com"],
+      purpose: "Select the musunil.com zone for DNS/header apply"
+    });
+    inputs.push({
+      id: "render_api_dns_target",
+      required: false,
+      status: value.derivedTargets.api
+        ? value.targetSource.api === "render_api_service_url"
+          ? "derived_from_render_api"
+          : "configured"
+        : "missing_manual_fallback",
+      env: ["MUSUNIL_RENDER_API_DNS_TARGET"],
+      alternatives: ["RENDER_API_TOKEN"],
+      purpose: "Manual fallback CNAME target for api.musunil.com when Render API target derivation is unavailable"
+    });
+    inputs.push({
+      id: "render_web_dns_target",
+      required: value.requested.cloudflareHeaders && !value.derivedTargets.web,
+      status: value.derivedTargets.web
+        ? value.targetSource.web === "render_api_service_url"
+          ? "derived_from_render_api"
+          : "configured"
+        : value.requested.cloudflareHeaders
+          ? "missing"
+          : "not_required_for_current_request",
+      env: ["MUSUNIL_RENDER_WEB_DNS_TARGET"],
+      alternatives: ["RENDER_API_TOKEN"],
+      purpose: "Manual fallback CNAME target for musunil.com when Web DNS/header fallback is being applied"
+    });
+  }
+  return inputs;
+}
+
+function nextCommands(value) {
   const commands = [];
-  if (!targets.api) {
+  const missingRequired = missingRequiredInputs(value.operatorInputs).map((item) => item.id);
+  if (missingRequired.length > 0) {
+    commands.push(`Fill required launch inputs: ${missingRequired.join(", ")}.`);
+  }
+  if (!value.derivedTargets.api) {
     commands.push("Set RENDER_API_TOKEN so pnpm launch:apply can derive the Render API onrender.com target, or set MUSUNIL_RENDER_API_DNS_TARGET manually.");
   }
-  if (steps.some((step) => step.id === "render_apply" && !step.ok)) {
+  if (value.steps.some((step) => step.id === "render_apply" && !step.ok)) {
     commands.push("Fix Render API token/service lookup, then rerun pnpm launch:apply.");
   }
-  if (steps.some((step) => step.id === "cloudflare_dns_apply" && !step.ok)) {
+  if (value.steps.some((step) => step.id === "cloudflare_dns_apply" && !step.ok)) {
     commands.push("Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID, then rerun pnpm launch:apply -- --apply.");
   }
   commands.push("After apply succeeds, run pnpm launch:final-gate.");
   return commands;
+}
+
+function missingRequiredInputs(inputs) {
+  return inputs.filter((item) => item.required && item.status === "missing");
+}
+
+function requiredEnv(inputs) {
+  return missingRequiredInputs(inputs).map((item) =>
+    item.requiredMode === "one_of" ? item.env.join(" or ") : item.env.join(", ")
+  );
 }
 
 function parseJson(value) {

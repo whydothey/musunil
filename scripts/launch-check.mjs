@@ -299,6 +299,14 @@ if (
   !/cloudflare-apply\.mjs/.test(launchApply) ||
   !/deriveTargets/.test(launchApply) ||
   !/render_api_service_url/.test(launchApply) ||
+  !/operatorInputs/.test(launchApply) ||
+  !/requiredMode/.test(launchApply) ||
+  !/one_of/.test(launchApply) ||
+  !/render_target_source/.test(launchApply) ||
+  !/cloudflare_api_token/.test(launchApply) ||
+  !/cloudflare_zone/.test(launchApply) ||
+  !/requiredEnv/.test(launchApply) ||
+  !/item\.env\.join\(" or "\)/.test(launchApply) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET/.test(launchApply) ||
   !/--cloudflare-headers/.test(launchApply) ||
   !/--deploy-web/.test(launchApply) ||

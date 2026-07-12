@@ -126,6 +126,7 @@ function renderMarkdown(value) {
     "## One Command Apply",
     "",
     "- `pnpm launch:apply`는 Render와 Cloudflare 적용 계획을 한 번에 보여주는 dry-run이다.",
+    "- 출력의 `operatorInputs`와 `requiredEnv`가 마지막에 채워야 할 값이다. 현재 핵심 묶음은 `RENDER_API_TOKEN` 또는 `MUSUNIL_RENDER_API_DNS_TARGET`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`다.",
     "- `RENDER_API_TOKEN`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`가 있으면 `pnpm launch:apply -- --apply`로 Render custom domain, Render Web headers, Cloudflare DNS를 적용한다.",
     "- Render API에서 서비스 URL을 읽을 수 있으면 Cloudflare DNS target은 Render `onrender.com` host로 자동 전달된다.",
     "- Web header가 계속 live에 반영되지 않을 때만 `pnpm launch:apply -- --apply --cloudflare-headers`를 사용한다.",
