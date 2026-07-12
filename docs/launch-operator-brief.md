@@ -6,8 +6,8 @@
 
 ## Current State
 
-- Generated: 2026-07-12T00:19:51.653Z
-- Git SHA: 2ae345ed9f0bcee03701bfba8c2a08939ab1ec1c
+- Generated: 2026-07-12T00:31:12.409Z
+- Git SHA: 1cfe5c33c99f8fbcdaf83630a01d6df33dbbc2ab
 - Refresh command: `pnpm launch:operator-brief -- --refresh`
 - Stage: connect_api_endpoint
 - Release blocked: yes
@@ -165,7 +165,7 @@ Cache rules:
 - MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy
 - MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy
 - pnpm check:visual-surface:live
-- MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com pnpm launch:post-deploy-smoke -- --require-laws
+- pnpm launch:post-deploy-smoke -- --require-laws
 - MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm service:watch:visual
 - pnpm launch:final-gate
 

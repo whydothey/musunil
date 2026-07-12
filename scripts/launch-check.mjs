@@ -205,6 +205,12 @@ if (
   !/process\.argv\.slice\(2\)/.test(postDeploySmokeRunner) ||
   !/scripts\/post-deploy-smoke\.mjs/.test(postDeploySmokeRunner) ||
   !/"check:web-deploy"/.test(postDeploySmokeRunner) ||
+  !/post_deploy_smoke_runner_plan/.test(postDeploySmokeRunner) ||
+  !/deriveLaunchEnv/.test(postDeploySmokeRunner) ||
+  !/MUSUNIL_WEB_BASE_URL",\s*"https:\/\/musunil\.com"/.test(postDeploySmokeRunner) ||
+  !/MUSUNIL_API_BASE_URL",\s*"https:\/\/api\.musunil\.com"/.test(postDeploySmokeRunner) ||
+  !/MUSUNIL_EXPECTED_API_BASE_URL/.test(postDeploySmokeRunner) ||
+  !/MUSUNIL_EXPECTED_COMMIT_SHA/.test(postDeploySmokeRunner) ||
   !/MUSUNIL_WEB_BASE_URL/.test(postDeploySmoke) ||
   !/isDeployedHttpsUrl/.test(postDeploySmoke) ||
   !/url\.protocol === "https:"/.test(postDeploySmoke) ||

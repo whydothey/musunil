@@ -379,12 +379,10 @@ GET /ready -> 200
 배포 URL 기준 비파괴 smoke:
 
 ```bash
-MUSUNIL_WEB_BASE_URL=https://musunil.com \
-MUSUNIL_API_BASE_URL=https://api.musunil.com \
 pnpm launch:post-deploy-smoke -- --require-laws
 ```
 
-`MUSUNIL_WEB_BASE_URL`과 `MUSUNIL_API_BASE_URL`은 실제 HTTPS 배포 URL이어야 한다. localhost, 127.0.0.1, `.local`, HTTP URL은 최종 운영 smoke로 인정하지 않는다.
+이 명령은 production 기본값으로 `https://musunil.com`, `https://api.musunil.com`, 현재 Git SHA를 보정한다. staging/preview 도메인을 검증할 때만 `MUSUNIL_WEB_BASE_URL`과 `MUSUNIL_API_BASE_URL`을 실제 HTTPS 배포 URL로 override한다. localhost, 127.0.0.1, `.local`, HTTP URL은 최종 운영 smoke로 인정하지 않는다.
 
 배포 후 최종 판정:
 
