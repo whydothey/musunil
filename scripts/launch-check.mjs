@@ -410,6 +410,8 @@ if (
   !/render_target_inputs/.test(cloudflareDnsCheck) ||
   !/api_render_target/.test(cloudflareDnsCheck) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET/.test(cloudflareDnsCheck) ||
+  !/isPlaceholderRenderTarget/.test(cloudflareDnsCheck) ||
+  !/Render DNS target placeholder is not valid input/.test(cloudflareDnsCheck) ||
   !/resolveCname/.test(cloudflareDnsCheck) ||
   !/expectedRenderTargets/.test(cloudflareDnsCheck) ||
   !/web_config/.test(cloudflareDnsCheck) ||
@@ -436,6 +438,8 @@ if (
   !/infra\/cloudflare\/dns-records\.local\.tfvars/.test(cloudflareDnsTemplate) ||
   !/MUSUNIL_RENDER_WEB_DNS_TARGET/.test(cloudflareDnsTemplate) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET/.test(cloudflareDnsTemplate) ||
+  !/placeholderRejected/.test(cloudflareDnsTemplate) ||
+  !/isPlaceholderRenderTarget/.test(cloudflareDnsTemplate) ||
   !/Render musunil-api custom-domain target/.test(cloudflareDnsTemplate) ||
   !/web_record_proxied/.test(cloudflareDnsTemplate) ||
   !/proxied = false/.test(cloudflareDnsRecordsTerraform) ||

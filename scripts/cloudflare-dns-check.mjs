@@ -5,13 +5,21 @@ const strict = args.includes("--strict");
 const webBaseUrl = deployedHttpsUrl(process.env.MUSUNIL_WEB_BASE_URL ?? "https://musunil.com");
 const apiBaseUrl = deployedHttpsUrl(process.env.MUSUNIL_API_BASE_URL ?? "https://api.musunil.com");
 const expectedApiBaseUrl = deployedHttpsUrl(process.env.MUSUNIL_EXPECTED_API_BASE_URL ?? apiBaseUrl);
-const expectedRenderApiTarget = normalizeDnsTarget(process.env.MUSUNIL_RENDER_API_DNS_TARGET);
-const expectedRenderWebTarget = normalizeDnsTarget(process.env.MUSUNIL_RENDER_WEB_DNS_TARGET);
+const renderApiTargetInput = readRenderTargetInput("MUSUNIL_RENDER_API_DNS_TARGET");
+const renderWebTargetInput = readRenderTargetInput("MUSUNIL_RENDER_WEB_DNS_TARGET");
+const expectedRenderApiTarget = renderApiTargetInput.value;
+const expectedRenderWebTarget = renderWebTargetInput.value;
 const checks = [];
 
 await check("web_dns", async () => dnsSummary(new URL(webBaseUrl).hostname));
 await check("api_dns", async () => dnsSummary(new URL(apiBaseUrl).hostname));
 await check("render_target_inputs", async () => {
+  const placeholderInputs = [renderApiTargetInput, renderWebTargetInput].filter((input) => input.placeholder);
+  if (placeholderInputs.length > 0) {
+    throw new Error(
+      `Render DNS target placeholder is not valid input: ${placeholderInputs.map((input) => input.env).join(", ")}`
+    );
+  }
   if (strict && !expectedRenderApiTarget) {
     throw new Error(
       "strict DNS check requires MUSUNIL_RENDER_API_DNS_TARGET copied from Render musunil-api Custom Domains"
@@ -20,6 +28,8 @@ await check("render_target_inputs", async () => {
   return {
     apiTargetConfigured: Boolean(expectedRenderApiTarget),
     webTargetConfigured: Boolean(expectedRenderWebTarget),
+    apiTargetRawProvided: renderApiTargetInput.rawConfigured,
+    webTargetRawProvided: renderWebTargetInput.rawConfigured,
     note: "Apex web CNAME target may be flattened by Cloudflare, so exact DNS target comparison is enforced for api.musunil.com."
   };
 });
@@ -109,7 +119,9 @@ const result = {
   apiBaseUrl,
   expectedRenderTargets: {
     webConfigured: Boolean(expectedRenderWebTarget),
-    apiConfigured: Boolean(expectedRenderApiTarget)
+    apiConfigured: Boolean(expectedRenderApiTarget),
+    webRawProvided: renderWebTargetInput.rawConfigured,
+    apiRawProvided: renderApiTargetInput.rawConfigured
   },
   ok: checks.every((item) => item.ok),
   checks,
@@ -186,22 +198,22 @@ function requiredActions(items) {
   if (failedIds.has("render_target_inputs")) {
     actions.push({
       id: "set_render_dns_target_inputs",
-      action: "Render musunil-api Custom Domains 화면의 DNS target을 로컬 셸에 MUSUNIL_RENDER_API_DNS_TARGET으로 넣고 pnpm cloudflare:dns를 다시 실행한다. Web target은 MUSUNIL_RENDER_WEB_DNS_TARGET으로 같이 넣으면 로컬 copy가 더 명확해진다.",
-      verify: "export MUSUNIL_RENDER_API_DNS_TARGET=\"<Render API target>\" && export MUSUNIL_RENDER_WEB_DNS_TARGET=\"<Render Web target>\" && pnpm cloudflare:dns && pnpm cloudflare:check:strict"
+      action: "Render musunil-api Custom Domains 화면의 실제 DNS target을 로컬 셸에 MUSUNIL_RENDER_API_DNS_TARGET으로 넣고 pnpm cloudflare:dns를 다시 실행한다. 문서의 괄호 예시나 placeholder 문구를 그대로 넣으면 실패한다. Web target은 MUSUNIL_RENDER_WEB_DNS_TARGET으로 같이 넣으면 로컬 copy가 더 명확해진다.",
+      verify: "export MUSUNIL_RENDER_API_DNS_TARGET=\"srv-actual-api-target.onrender.com\" && export MUSUNIL_RENDER_WEB_DNS_TARGET=\"srv-actual-web-target.onrender.com\" && pnpm cloudflare:dns && pnpm cloudflare:check:strict"
     });
   }
   if (failedIds.has("api_render_target") || (apiDnsOk && skippedIds.has("api_render_target"))) {
     actions.push({
       id: "verify_api_render_target",
       action: "Cloudflare api CNAME이 Render musunil-api Custom Domain target과 정확히 일치하는지 확인한다. API smoke 전에는 api 레코드를 DNS only로 둔다.",
-      verify: "MUSUNIL_RENDER_API_DNS_TARGET=\"<Render API target>\" pnpm cloudflare:check:strict"
+      verify: "MUSUNIL_RENDER_API_DNS_TARGET=\"srv-actual-api-target.onrender.com\" pnpm cloudflare:check:strict"
     });
   }
   if (failedIds.has("api_dns")) {
     actions.push({
       id: "connect_api_dns",
       action: "pnpm render:api-settings와 pnpm cloudflare:dns 출력대로 Render musunil-api Custom Domains에 api.musunil.com을 추가하고, Render target을 MUSUNIL_RENDER_API_DNS_TARGET에 넣은 뒤 Cloudflare api CNAME에 DNS only로 연결한다.",
-      verify: "pnpm render:api-settings && pnpm cloudflare:dns && MUSUNIL_RENDER_API_DNS_TARGET=\"<Render API target>\" pnpm cloudflare:check:strict"
+      verify: "pnpm render:api-settings && pnpm cloudflare:dns && MUSUNIL_RENDER_API_DNS_TARGET=\"srv-actual-api-target.onrender.com\" pnpm cloudflare:check:strict"
     });
   }
   if (failedIds.has("web_dns") || failedIds.has("web_https")) {
@@ -251,4 +263,26 @@ function formatReadinessFailure(body) {
 function normalizeDnsTarget(value) {
   if (typeof value !== "string") return "";
   return value.trim().toLowerCase().replace(/\.$/, "");
+}
+
+function readRenderTargetInput(env) {
+  const raw = typeof process.env[env] === "string" ? process.env[env].trim() : "";
+  const placeholder = Boolean(raw && isPlaceholderRenderTarget(raw));
+  return {
+    env,
+    rawConfigured: Boolean(raw),
+    placeholder,
+    value: placeholder ? "" : normalizeDnsTarget(raw)
+  };
+}
+
+function isPlaceholderRenderTarget(value) {
+  const text = String(value).trim().toLowerCase();
+  return (
+    /^<[^>]+>$/.test(text) ||
+    text.includes("custom-domain target") ||
+    text.includes("render api target") ||
+    text.includes("render web target") ||
+    text.includes("copy from render")
+  );
 }

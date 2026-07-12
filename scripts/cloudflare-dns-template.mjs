@@ -127,11 +127,11 @@ function renderMarkdown(value, options = {}) {
     "",
     "## Exact Target Workflow",
     "",
-    "Render target은 secret이 아니지만 서비스별로 다르므로 추적 문서에는 placeholder로 둔다. Render Dashboard에서 Custom Domain target을 복사한 뒤 로컬 셸에만 아래처럼 넣는다.",
+    "Render target은 secret이 아니지만 서비스별로 다르므로 추적 문서에는 placeholder로 둔다. Render Dashboard에서 Custom Domain target을 복사한 뒤 로컬 셸에만 아래처럼 넣는다. 문서의 괄호 예시나 `custom-domain target` 문구를 그대로 넣으면 placeholder로 거부된다.",
     "",
     "```bash",
-    "export MUSUNIL_RENDER_WEB_DNS_TARGET=\"Render musunil-web custom-domain target\"",
-    "export MUSUNIL_RENDER_API_DNS_TARGET=\"Render musunil-api custom-domain target\"",
+    "export MUSUNIL_RENDER_WEB_DNS_TARGET=\"srv-actual-web-target.onrender.com\"",
+    "export MUSUNIL_RENDER_API_DNS_TARGET=\"srv-actual-api-target.onrender.com\"",
     "pnpm cloudflare:dns",
     "pnpm cloudflare:check:strict",
     "```",
@@ -228,19 +228,40 @@ function renderLocalTfvars() {
   ].join("\n");
 }
 
-function renderTargetInput(env) {
-  return { env, value: normalizeRenderTarget(process.env[env]) };
-}
-
 function targetInputSummary(input) {
   return {
     env: input.env,
     configured: Boolean(input.value),
+    rawProvided: input.rawConfigured,
+    placeholderRejected: input.placeholder,
     purpose: input.env.includes("_API_") ? "api.musunil.com CNAME exact target check" : "musunil.com Render custom-domain target copy aid"
   };
 }
 
 function normalizeRenderTarget(value) {
   if (typeof value !== "string") return "";
-  return value.trim().replace(/\.$/, "");
+  const raw = value.trim();
+  if (isPlaceholderRenderTarget(raw)) return "";
+  return raw.replace(/\.$/, "");
+}
+
+function renderTargetInput(env) {
+  const raw = typeof process.env[env] === "string" ? process.env[env].trim() : "";
+  return {
+    env,
+    rawConfigured: Boolean(raw),
+    placeholder: Boolean(raw && isPlaceholderRenderTarget(raw)),
+    value: normalizeRenderTarget(raw)
+  };
+}
+
+function isPlaceholderRenderTarget(value) {
+  const text = String(value).trim().toLowerCase();
+  return (
+    /^<[^>]+>$/.test(text) ||
+    text.includes("custom-domain target") ||
+    text.includes("render api target") ||
+    text.includes("render web target") ||
+    text.includes("copy from render")
+  );
 }
