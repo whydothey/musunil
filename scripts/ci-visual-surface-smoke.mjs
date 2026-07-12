@@ -173,16 +173,17 @@ async function runViewport(client, viewport, url) {
     () => assert(home.issueCount >= 3, `expected at least 3 issue cards, got ${home.issueCount}`),
     () => assert(home.firstIssueTitle.length >= 6, "first issue title is missing"),
     () => assert(!productionFallbackMode || home.serviceSyncState === "delayed", `production fallback visual smoke must exercise delayed API sync, got ${home.serviceSyncState}`),
-    () => assert(!productionFallbackMode || home.firstIssueTitle === "정보통신망법 개정 관련 집회", `production fallback first issue changed: ${home.firstIssueTitle}`),
+    () => assert(!productionFallbackMode || home.firstIssueTitle === "정보통신망법 개정 반대 집회", `production fallback first issue changed: ${home.firstIssueTitle}`),
     () => assert(!productionFallbackMode || !home.issueEmptyStateVisible, "production fallback must render topic issues instead of the empty state"),
     () => assert(!home.sourceBundleFirst, `first issue is a public source bundle, not a topic issue: ${home.firstIssueTitle}`),
     () => assert(!viewport.mobile || !home.serviceBannerVisible || home.serviceBannerRect.height <= 30, `mobile service sync strip is too tall: ${home.serviceBannerRect.height}`),
     () => assert(!viewport.mobile || !home.serviceBannerRetryVisible, "mobile service sync strip must not expose a duplicate refresh button"),
     () => assert(!/자료 기준/.test(home.firstIssueDeck) && /(기준|일정|기록|\d{1,2}월)/.test(home.firstIssueDeck), `first issue public place/time line is too operational: ${home.firstIssueDeck}`),
-    () => assert(/위치/.test(home.firstIssueSummary) && /현장/.test(home.firstIssueSummary) && /(공식자료|공개근거|공개자료)/.test(home.firstIssueSummary) && /현장영상/.test(home.firstIssueSummary), `first issue summary missing location/evidence units: ${home.firstIssueSummary}`),
+    () => assert(/위치/.test(home.firstIssueSummary) && /현장/.test(home.firstIssueSummary) && /(공식자료|공개근거|공개자료)/.test(home.firstIssueSummary) && /(공개영상|촬영자료|현장영상)/.test(home.firstIssueSummary), `first issue summary missing location/evidence units: ${home.firstIssueSummary}`),
     () => assert(!/반론\/정정/.test(home.firstIssueSummary) && (!/반론/.test(home.firstIssueSummary) || /반론·정정/.test(home.firstIssueSummary)), `first issue rebuttal copy should use civic correction label: ${home.firstIssueSummary}`),
     () => assert(!/인원 미확인/.test(home.firstIssueSummary), `first issue summary exposes low-value negative scale copy: ${home.firstIssueSummary}`),
-    () => assert(/근거·영상/.test(home.firstIssueActions.join(" ")), `first issue evidence-first path missing: ${home.firstIssueActions.join(", ")}`),
+    () => assert(/근거 보기/.test(home.firstIssueActions.join(" ")), `first issue evidence-first path missing: ${home.firstIssueActions.join(", ")}`),
+    () => assert(!/근거·영상/.test(home.firstIssueActions.join(" ")), `first issue should not promise video from evidence action: ${home.firstIssueActions.join(", ")}`),
     () => assert(home.firstIssueActionCount >= 1 && home.firstIssueActionCount <= 2, `first issue has too many visible action labels: ${home.firstIssueActionCount}`),
     () => assert(home.firstIssuePrimaryActionCount === 1, `first issue must have exactly one primary action, got ${home.firstIssuePrimaryActionCount}`),
     () => assert(home.firstIssueInteractiveCount <= 3, `first issue has too many visible interactive targets: ${home.firstIssueInteractiveCount}`),
@@ -270,7 +271,9 @@ async function runViewport(client, viewport, url) {
     () => assert(report.forbidden.length === 0, `forbidden report copy: ${report.forbidden.join(", ")}`),
     () => assert(report.reportStage === "locate", `report should start from locate stage, got ${report.reportStage}`),
     () => assert(report.reportPrimaryAction === "근처 현장 찾기", `report primary action changed: ${report.reportPrimaryAction}`),
-    () => assert(report.visibleReportPanels.length === 0, `report exposes target panels before user action: ${report.visibleReportPanels.join(", ")}`),
+    () => assert(report.nearbyTargetsVisible, "report must show nearby target candidate surface before location permission"),
+    () => assert(report.nearbyWaitingPreviewVisible, "report must preview what nearby target selection will show"),
+    () => assert(report.visibleReportPanels.length === 0, `report exposes target/capture panels before user action: ${report.visibleReportPanels.join(", ")}`),
     () => assert(!viewport.mobile || !report.navOverlap, "mobile report surface overlaps bottom navigation")
   ], serviceDetail(report));
 }
@@ -393,7 +396,9 @@ function visualMetrics(label) {
         }).length,
       reportStage: document.querySelector("#report-section")?.dataset.reportStage || "",
       reportPrimaryAction: document.querySelector("#start-capture-action")?.textContent?.trim() || "",
-      visibleReportPanels: [".nearby-targets", ".report-target-panel", ".capture-preview", ".report-receipt"]
+      nearbyTargetsVisible: visible(document.querySelector(".nearby-targets")),
+      nearbyWaitingPreviewVisible: visible(document.querySelector(".nearby-waiting-preview")),
+      visibleReportPanels: [".report-target-panel", ".capture-preview", ".report-receipt"]
         .flatMap((selector) => [...document.querySelectorAll(selector)].filter(visible).map(() => selector))
     };
   })()`;

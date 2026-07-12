@@ -1550,6 +1550,51 @@
         --story-color: var(--brand);
       }
 
+      .story-ring.story-text-only {
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        justify-items: start;
+        gap: 8px;
+        width: auto;
+        min-width: 126px;
+        max-width: 174px;
+        min-height: 42px;
+        padding: 8px 10px;
+        border: 1px solid color-mix(in srgb, var(--story-color, var(--brand)) 22%, var(--line));
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--surface) 88%, var(--surface-2));
+        text-align: left;
+        transition:
+          border-color var(--motion-fast) var(--ease-out),
+          background var(--motion-fast) var(--ease-out),
+          transform var(--motion-fast) var(--ease-out);
+      }
+
+      .story-ring.story-text-only:hover,
+      .story-ring.story-text-only[aria-selected="true"] {
+        border-color: color-mix(in srgb, var(--story-color, var(--brand)) 48%, var(--line));
+        background: color-mix(in srgb, var(--story-color, var(--brand)) 7%, var(--surface));
+        transform: translateY(-1px);
+      }
+
+      .story-dot {
+        display: block;
+        width: 9px;
+        height: 9px;
+        border-radius: 999px;
+        background: var(--story-color, var(--brand));
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--story-color, var(--brand)) 12%, transparent);
+      }
+
+      .story-ring.story-text-only .story-label {
+        width: auto;
+        min-height: 0;
+        color: var(--ink);
+        font-size: 12px;
+        line-height: 1.2;
+        -webkit-line-clamp: 2;
+      }
+
       .issue-card {
         grid-template-columns: minmax(0, 1fr);
         padding: 15px;
@@ -4049,7 +4094,6 @@
 
       .report-panel[data-report-stage="locate"] #capture-check-action,
       .report-panel[data-report-stage="locate"] #report-video-action,
-      .report-panel[data-report-stage="locate"] .nearby-targets[data-state="waiting"],
       .report-panel[data-report-stage="locate"] .report-target-panel[data-state="empty"],
       .report-panel[data-report-stage="locate"] .capture-preview {
         display: none;
@@ -4272,12 +4316,11 @@
         background: var(--surface);
       }
 
-      .nearby-targets[data-state="waiting"] .nearby-target-list {
-        display: none;
-      }
-
       .nearby-targets[data-state="waiting"] {
         border-style: dashed;
+        background:
+          linear-gradient(135deg, color-mix(in srgb, var(--brand) 7%, transparent), transparent 58%),
+          color-mix(in srgb, var(--surface) 88%, var(--surface-2));
       }
 
       .report-target-head,
@@ -4418,6 +4461,37 @@
       .nearby-target-list {
         display: grid;
         gap: 7px;
+      }
+
+      .nearby-waiting-preview {
+        display: grid;
+        gap: 6px;
+      }
+
+      .nearby-waiting-preview span {
+        display: grid;
+        grid-template-columns: 24px minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
+        min-height: 34px;
+        padding: 0 9px;
+        border: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--surface) 86%, transparent);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 720;
+      }
+
+      .nearby-waiting-preview b {
+        display: grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--brand) 11%, var(--surface));
+        color: var(--brand);
+        font-size: 11px;
       }
 
       .nearby-target-card {
@@ -5911,7 +5985,7 @@
                   </div>
                 </div>
               </div>
-              <button class="button" id="split-view" aria-label="선택한 현장 근거와 영상 보기">근거·영상 보기</button>
+              <button class="button" id="split-view" aria-label="선택한 현장 근거 보기">근거 보기</button>
             </div>
           </div>
           <div class="explore-grid" id="explore-grid" aria-label="지역·이슈 탐색"></div>
@@ -6366,7 +6440,7 @@
             lifecycleState: "UNKNOWN",
             status: "active",
             topicTags: ["정보통신망법 개정", "집회", "공개자료"],
-            updatedAt: new Date().toISOString(),
+            updatedAt: "",
             targetCount: 2,
             currentCount: 2,
             regionCount: 1,
@@ -6383,7 +6457,7 @@
             lifecycleState: "UNKNOWN",
             status: "active",
             topicTags: ["대통령 탄핵", "집회", "공개자료"],
-            updatedAt: new Date().toISOString(),
+            updatedAt: "",
             targetCount: 1,
             currentCount: 1,
             regionCount: 1,
@@ -6400,7 +6474,7 @@
             lifecycleState: "UNKNOWN",
             status: "active",
             topicTags: ["선거 절차", "집회", "공개자료"],
-            updatedAt: new Date().toISOString(),
+            updatedAt: "",
             targetCount: 1,
             currentCount: 1,
             regionCount: 1,
@@ -6417,7 +6491,7 @@
             lifecycleState: "UNKNOWN",
             status: "active",
             topicTags: ["정보통신망법 개정", "반대", "집회"],
-            updatedAt: new Date().toISOString(),
+            updatedAt: "",
 	            targetCount: 2,
 	            currentCount: 2,
             regionCount: 1,
@@ -6432,9 +6506,9 @@
             targetType: "issue",
             title: "대통령 탄핵 요구 행진",
             lifecycleState: "UNKNOWN",
-            status: "active",
+	            status: "active",
 	            topicTags: ["대통령 탄핵", "행진", "집회"],
-            updatedAt: new Date().toISOString(),
+            updatedAt: "",
 	            targetCount: 1,
 	            currentCount: 1,
             regionCount: 1,
@@ -6543,7 +6617,7 @@
             regionLabel: "서울 도심권",
             lifecycleState: "UNKNOWN",
             chips: ["위치 확인 중", "근거 확인 중"],
-            updatedAt: new Date().toISOString(),
+            updatedAt: "",
             priorityScore: 23,
             current: "확인 중",
             peak: "-",
@@ -6557,7 +6631,7 @@
             regionLabel: "수도권",
             lifecycleState: "UNKNOWN",
             chips: ["위치 확인 중", "근거 확인 중"],
-            updatedAt: new Date().toISOString(),
+            updatedAt: "",
             priorityScore: 17,
             current: "확인 중",
             peak: "-",
@@ -6571,7 +6645,7 @@
             regionLabel: "부산 서면 일대",
             lifecycleState: "UNKNOWN",
             chips: ["위치 확인 중", "근거 확인 중"],
-            updatedAt: new Date().toISOString(),
+            updatedAt: "",
             priorityScore: 15,
             current: "확인 중",
             peak: "-",
@@ -6585,7 +6659,7 @@
             regionLabel: "대구 도심권",
             lifecycleState: "UNKNOWN",
             chips: ["위치 확인 중", "반론·정정 있음"],
-            updatedAt: new Date().toISOString(),
+            updatedAt: "",
             priorityScore: 14,
             current: "확인 중",
             peak: "-",
@@ -6600,7 +6674,7 @@
 	            publicLocation: { lng: 126.978, lat: 37.5665, label: "서울 도심권", precision: "area" },
 	            lifecycleState: "UNKNOWN",
             chips: ["위치 인증 제보 있음", "여러 주장 있음"],
-            updatedAt: new Date().toISOString(),
+            updatedAt: "",
             priorityScore: 24,
             current: "800~1,200",
             peak: "3,000~4,500",
@@ -6615,7 +6689,7 @@
 	            publicLocation: { lng: 129.059, lat: 35.1578, label: "부산 서면 일대", precision: "area" },
 	            lifecycleState: "UPCOMING",
 	            chips: ["행진 가능성", "위치 확인 필요"],
-	            updatedAt: new Date().toISOString(),
+	            updatedAt: "",
 	            priorityScore: 16,
 	            current: "확인 중",
 	            peak: "-",
@@ -6704,7 +6778,7 @@
       }
 
       function isPreviewIssue(id) {
-        return id.includes("_mock") || id.includes("_sample") || id === "issue_1";
+        return id.includes("_mock") || id.includes("_sample");
       }
 
       function isPreviewLaw(id) {
@@ -7405,8 +7479,14 @@
           selectedReportTarget = undefined;
           reportTargetConfirmed = false;
           count.textContent = "확인 전";
-          status.textContent = "내 위치로 200m 안 현장을 찾습니다.";
-          list.innerHTML = "";
+          status.textContent = "위치를 확인하면 가까운 공개 현장을 먼저 보여줍니다.";
+          list.innerHTML = `
+            <div class="nearby-waiting-preview" aria-label="위치 확인 후 표시될 정보">
+              <span><b>1</b>이슈와 현장 후보</span>
+              <span><b>2</b>내 위치 기준 거리</span>
+              <span><b>3</b>영상이 연결될 대상</span>
+            </div>
+          `;
           renderSelectedReportTarget();
           updateReportActionState();
           return;
@@ -8006,7 +8086,8 @@
       function issueOrderScore(issue) {
         const archived = issue.lifecycleState === "ARCHIVED" || issue.status === "archived" ? 1000 : 0;
         const metaIssue = isMetaPublicSourceIssue(issue) ? 260 : 0;
-        return archived + metaIssue - Number(issue.currentCount || 0) * 20 - Number(issue.officialCount || 0) * 4 - Number(issue.targetCount || 0);
+        const broadIssue = issuePositionText(issue) === "관련 쟁점" ? 18 : 0;
+        return archived + metaIssue + broadIssue - Number(issue.currentCount || 0) * 20 - Number(issue.officialCount || 0) * 4 - Number(issue.targetCount || 0);
       }
 
       function isMetaPublicSourceIssue(issue) {
@@ -8126,6 +8207,19 @@
 
       function issueVideoCount(issue) {
         return Number(issue.liveClaimCount || issue.videoCount || (fallbackLiveClaimsByTarget[issue.id] || []).length || 0);
+      }
+
+      function issuePlayableVideoCount(issue) {
+        if (!issue) return 0;
+        const isDisplayable = (item) => Boolean(publicLiveMediaSrc(item) && publicLivePosterDisplaySrc(item));
+        const directCount = (fallbackLiveClaimsByTarget[issue.id] || []).filter(isDisplayable).length;
+        const preview = publicLivePreviewForIssue(issue);
+        const previewCount = isDisplayable(preview) ? 1 : 0;
+        return Math.max(directCount, previewCount);
+      }
+
+      function issuePendingVideoCount(issue) {
+        return Math.max(0, issueVideoCount(issue) - issuePlayableVideoCount(issue));
       }
 
       function issueStoryState(issue) {
@@ -8284,6 +8378,11 @@
         return `<span class="story-status-mark"><i></i><i></i><i></i></span>`;
       }
 
+      function hasIssueStoryVideo(issue) {
+        const preview = publicLivePreviewForIssue(issue);
+        return Boolean(publicLiveMediaSrc(preview) && publicLivePosterDisplaySrc(preview));
+      }
+
       function renderIssueCoverArt(issue) {
         const preview = publicLivePreviewForIssue(issue);
         const url = publicLiveMediaSrc(preview);
@@ -8437,16 +8536,18 @@
         return min === max ? `공개 위치 반경 ${min}m` : `공개 위치 반경 ${min}~${max}m`;
       }
 
-	      function issueVerificationStateText(issue) {
-	        const official = Number(issue.officialCount || 0);
-	        const video = issueVideoCount(issue);
-	        const dispute = Number(issue.disputeCount || 0);
-	        if (official && video) return `공식 자료 ${official}건 · 현장 영상 ${video}건`;
-	        if (video) return `현장 영상 ${video}건 · 공식 자료 확인 중`;
-	        if (official) return `공식 자료 ${official}건 · 영상 확인 중`;
-	        if (dispute) return `반론·정정 ${dispute}건 · 근거 분리 중`;
-	        return "공개 자료와 현장 자료 확인 중";
-	      }
+      function issueVerificationStateText(issue) {
+        const official = Number(issue.officialCount || 0);
+        const playableVideo = issuePlayableVideoCount(issue);
+        const pendingVideo = issuePendingVideoCount(issue);
+        const dispute = Number(issue.disputeCount || 0);
+        if (official && playableVideo) return `공식 자료 ${official}건 · 공개 영상 ${playableVideo}건`;
+        if (playableVideo) return `공개 영상 ${playableVideo}건 · 공식 자료 확인 중`;
+        if (pendingVideo) return `촬영자료 ${pendingVideo}건 검토 중`;
+        if (official) return `공식 자료 ${official}건 · 영상 확인 중`;
+        if (dispute) return `반론·정정 ${dispute}건 · 근거 분리 중`;
+        return "공개 자료와 현장 자료 확인 중";
+      }
 
       function issueCurrentStateText(issue) {
         return `${issueStatusLabel(issue)} · 최근 정리됨`;
@@ -8456,26 +8557,26 @@
         return "공개자료 기준";
       }
 
-	      function issueVideoReviewText(issue) {
-	        const preview = publicLivePreviewForIssue(issue);
-	        const video = issueVideoCount(issue);
-	        if (video > 0 && publicLivePosterDisplaySrc(preview)) return `현장 영상 ${video}건`;
-	        if (video > 0 || preview) return "현장 영상 확인 중";
-	        return "현장 영상 확인 중";
-	      }
+      function issueVideoReviewText(issue) {
+        const playableVideo = issuePlayableVideoCount(issue);
+        const pendingVideo = issuePendingVideoCount(issue);
+        if (playableVideo > 0) return `공개 영상 ${playableVideo}건`;
+        if (pendingVideo > 0) return `촬영자료 ${pendingVideo}건 검토 중`;
+        return "현장 영상 확인 중";
+      }
 
       function issueVideoStatusText(issue) {
-        const preview = publicLivePreviewForIssue(issue);
-        const video = issueVideoCount(issue);
-        if (video > 0) return `현장 영상 ${video}건`;
-        if (preview) return "영상 검토 중";
+        const playableVideo = issuePlayableVideoCount(issue);
+        const pendingVideo = issuePendingVideoCount(issue);
+        if (playableVideo > 0) return `공개 영상 ${playableVideo}건`;
+        if (pendingVideo > 0) return `촬영자료 ${pendingVideo}건 검토 중`;
         return "영상 확인 중";
       }
 
       let requestedReelsIssueId;
 
       function issueHasVideoSurface(issue) {
-        return Boolean(issue && issueVideoCount(issue) > 0);
+        return Boolean(issue && issuePlayableVideoCount(issue) > 0);
       }
 
       function reelsDefaultIssue() {
@@ -8649,11 +8750,13 @@
 
       function issueCardProofText(issue) {
         const official = Number(issue.officialCount || 0);
-        const video = issueVideoCount(issue);
+        const playableVideo = issuePlayableVideoCount(issue);
+        const pendingVideo = issuePendingVideoCount(issue);
         const dispute = Number(issue.disputeCount || 0);
-        if (official && video) return `공식 자료 ${official}건과 현장 영상 ${video}건`;
+        if (official && playableVideo) return `공식 자료 ${official}건과 공개 영상 ${playableVideo}건`;
         if (official) return `공식 자료 ${official}건 기준`;
-        if (video) return `현장 영상 ${video}건 검토 중`;
+        if (playableVideo) return `공개 영상 ${playableVideo}건`;
+        if (pendingVideo) return `촬영자료 ${pendingVideo}건 검토 중`;
         if (dispute) return `반론·정정 ${dispute}건 분리 표시`;
         return "공개 자료 확인 중";
       }
@@ -8681,10 +8784,15 @@
         const cards = issueRelatedCards(issue);
         const official = Number(issue.officialCount || 0);
         const proof = cards.reduce((sum, card) => sum + Number(card.proof || 0), 0);
-        const video = issueVideoCount(issue);
+        const playableVideo = issuePlayableVideoCount(issue);
+        const pendingVideo = issuePendingVideoCount(issue);
         const dispute = Number(issue.disputeCount || 0);
         const basis = official ? `공식자료 ${official}건` : proof ? `공개근거 ${proof}건` : "공개자료 확인 중";
-        const field = video ? `현장영상 ${video}건` : "현장영상 확인 중";
+        const field = playableVideo
+          ? `공개영상 ${playableVideo}건`
+          : pendingVideo
+            ? `촬영자료 ${pendingVideo}건 검토 중`
+            : "현장영상 확인 중";
         const disputeText = dispute ? "반론·정정 있음" : "";
         return [basis, field, disputeText].filter(Boolean).join(" · ");
       }
@@ -8738,11 +8846,13 @@
 
       function issueEvidenceShortText(issue) {
         const official = Number(issue.officialCount || 0);
-        const video = issueVideoCount(issue);
+        const playableVideo = issuePlayableVideoCount(issue);
+        const pendingVideo = issuePendingVideoCount(issue);
         const dispute = Number(issue.disputeCount || 0);
-        if (official && video) return `공식 자료 ${official}건과 현장 영상 ${video}건을 함께 봅니다.`;
-	        if (official) return `공식 자료 ${official}건을 기준으로 확인 중입니다.`;
-	        if (video) return `현장 영상 ${video}건을 공개 전 검토 중입니다.`;
+        if (official && playableVideo) return `공식 자료 ${official}건과 공개 영상 ${playableVideo}건을 함께 봅니다.`;
+        if (official) return `공식 자료 ${official}건을 기준으로 확인 중입니다.`;
+        if (playableVideo) return `공개 영상 ${playableVideo}건을 봅니다.`;
+        if (pendingVideo) return `촬영자료 ${pendingVideo}건은 공개 전 검토 중입니다.`;
         if (dispute) return `반론·정정 ${dispute}건을 함께 분리해 봅니다.`;
         return "공개 자료와 현장 자료가 확인되는 순서대로 정리합니다.";
       }
@@ -8750,12 +8860,18 @@
       function issueCardActionMarkup(issue) {
         const title = issue?.title || "선택 이슈";
         const dispute = Number(issue?.disputeCount || 0);
+        const playableVideo = issuePlayableVideoCount(issue);
         return `
           <div class="issue-card-actions" aria-label="${escapeHtml(title)} 확인 경로">
-            <button class="issue-card-action primary-action" type="button" data-issue-card-action="evidence" aria-label="${escapeHtml(title)} 근거와 영상 보기">
-              <span class="issue-card-action-label">근거·영상</span>
+            <button class="issue-card-action primary-action" type="button" data-issue-card-action="evidence" aria-label="${escapeHtml(title)} 근거 보기">
+              <span class="issue-card-action-label">근거 보기</span>
             </button>
-            ${dispute > 0 ? `
+            ${playableVideo > 0 ? `
+              <button class="issue-card-action secondary-action" type="button" data-issue-card-action="video" aria-label="${escapeHtml(title)} 영상 보기">
+                <span class="issue-card-action-label">영상 보기</span>
+              </button>
+            ` : ""}
+            ${dispute > 0 && playableVideo === 0 ? `
               <button class="issue-card-action secondary-action" type="button" data-issue-card-action="dispute" aria-label="${escapeHtml(title)} 반론·정정 보기">
                 <span class="issue-card-action-label">반론·정정</span>
               </button>
@@ -8874,17 +8990,23 @@
         if (!root) return;
         root.innerHTML = "";
         for (const issue of issues.slice(0, 10)) {
+          const hasStoryVideo = hasIssueStoryVideo(issue);
           const button = document.createElement("button");
-          button.className = "story-ring";
+          button.className = `story-ring ${hasStoryVideo ? "has-live-video" : "story-text-only"}`;
           button.type = "button";
           button.dataset.issueId = issue.id;
           button.dataset.state = issueStoryState(issue);
           button.setAttribute("aria-selected", String(issue.id === selectedIssue?.id));
           button.setAttribute("aria-label", `${issue.title} 상세 보기`);
-          button.innerHTML = `
-            <span class="story-orb" aria-hidden="true">${renderIssueStoryVisual(issue)}</span>
-            <span class="story-label">${escapeHtml(issueStoryLabel(issue))}</span>
-          `;
+          button.innerHTML = hasStoryVideo
+            ? `
+              <span class="story-orb" aria-hidden="true">${renderIssueStoryVisual(issue)}</span>
+              <span class="story-label">${escapeHtml(issueStoryLabel(issue))}</span>
+            `
+            : `
+              <span class="story-dot" aria-hidden="true"></span>
+              <span class="story-label">${escapeHtml(issueStoryLabel(issue))}</span>
+            `;
           button.addEventListener("click", () => selectIssue(issue, { openDetail: true, scrollToCards: false }));
           root.append(button);
         }
@@ -9596,7 +9718,7 @@
         const summary = detail.nationalSummary || {};
         const regionCount = Number(summary.regionCount || issue.regionCount || new Set(cards.map((card) => card.regionLabel || "전국")).size);
         const targetCount = Number(summary.targetCount || issue.targetCount || cards.length);
-        const liveClaimCount = Number(summary.liveClaimCount || issueVideoCount(issue) || 0);
+        const videoStatus = issueVideoStatusText(issue);
         const publicClaimCount = Number(summary.publicClaimCount || claims.length);
         const needsCount = Number(summary.needsVerificationCount || issue.needsVerificationCount || 0);
         const locationCount = Number(summary.locationCount || issue.regionCount || regions.length || 0);
@@ -9623,7 +9745,7 @@
               </div>
               <div class="detail-answer-row">
                 <b>얼마나</b>
-                <span>${escapeHtml(`${locationCount ? `위치 ${locationCount}곳` : "위치 확인 중"} · ${videoEvidenceStatusText(liveClaimCount)} · ${scaleText}`)}</span>
+                <span>${escapeHtml(`${locationCount ? `위치 ${locationCount}곳` : "위치 확인 중"} · ${videoStatus} · ${scaleText}`)}</span>
               </div>
               <div class="detail-answer-row">
                 <b>근거</b>

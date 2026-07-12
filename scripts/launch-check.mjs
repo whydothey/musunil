@@ -1228,7 +1228,7 @@ if (
   !/MUSUNIL_VISUAL_BASE_URL/.test(visualSurfaceSmoke) ||
   !/productionFallbackMode/.test(visualSurfaceSmoke) ||
   !/local_static_production_fallback/.test(visualSurfaceSmoke) ||
-  !/정보통신망법 개정 관련 집회/.test(visualSurfaceSmoke) ||
+  !/정보통신망법 개정 반대 집회/.test(visualSurfaceSmoke) ||
   !/dashboardVisible/.test(visualSurfaceSmoke) ||
   !/navOverlap/.test(visualSurfaceSmoke) ||
   !/mapSheetHeight/.test(visualSurfaceSmoke) ||

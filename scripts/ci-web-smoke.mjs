@@ -158,7 +158,8 @@ async function checkWeb(port) {
   assert(index.includes("isMetaPublicSourceIssue"), "meta public-source issue sort guard missing");
   assert(index.includes('id="detail-confirm-summary"'), "detail confirmed summary line missing");
   assert(index.includes("issue-card-action-label"), "issue card footer action label missing");
-  assert(index.includes(">근거·영상</span>"), "issue card evidence-first label missing");
+  assert(index.includes(">근거 보기</span>"), "issue card evidence-first label missing");
+  assert(!index.includes(">근거·영상</span>"), "issue card should not promise video when action opens evidence");
   assert(index.includes("secondary-action"), "issue card dispute shortcut styling missing");
   assert(index.includes('data-issue-card-action="dispute"'), "issue card dispute shortcut missing");
   assert(!index.includes("근거·영상·지도"), "old issue card footer path copy present");
@@ -280,7 +281,8 @@ async function checkWeb(port) {
   assert(index.includes('liveMap.on("idle", () => syncOccurrenceMapLayers());'), "MapLibre idle layer sync missing");
   assert(index.includes("자료 위치"), "map source pin key missing");
   assert(index.includes("현장 인증 범위"), "map presence area key missing");
-  assert(index.includes("근거·영상 보기"), "map sheet should expose evidence/video CTA");
+  assert(index.includes("근거 보기"), "map sheet should expose evidence CTA");
+  assert(!index.includes("근거·영상 보기"), "map sheet should not promise video when action opens evidence detail");
   assert(!index.includes('id="split-view" aria-label="선택한 현장 상세 보기">상세</button>'), "stale generic map detail CTA present");
   assert(index.includes("const target = selected || visibleCards(loadedCards)[0] || loadedCards[0];"), "map detail should resolve selected occurrence target");
   assert(index.includes('selectDetailTab("summary", { pulse: false, transition: false });'), "map detail should open selected occurrence summary");
@@ -295,6 +297,7 @@ async function checkWeb(port) {
   assert(!/좋아요|댓글|찬반|추천|비추천|팔로우/u.test(index), "forbidden social mechanic copy present");
   assert(!/현장 증가|미확인 근거|낮은 신뢰도|중간 신뢰도|높은 신뢰도/u.test(index), "dashboard/confidence wording present");
   assert(index.includes("근처 현장 후보"), "nearby report target candidates missing");
+  assert(index.includes("위치 확인 후 표시될 정보"), "nearby report target waiting preview missing");
   assert(index.includes('id="identity-sheet"'), "identity verification sheet missing");
   assert(index.includes("requestIdentityVerification"), "PortOne identity SDK handoff missing");
   assert(index.includes('api("/auth/identity/start"'), "identity start API handoff missing");
@@ -337,7 +340,8 @@ async function checkWeb(port) {
   assert(index.includes("위치 ${locationCount}곳"), "compact location count label missing");
   assert(index.includes("영상 확인 중"), "compact field-video status label missing");
   assert(!index.includes(">LOAD<"), "demo-style loading label must not appear in public UI");
-  assert(index.includes("현장 영상 ${video}건"), "field-video status label missing");
+  assert(index.includes("공개 영상 ${playableVideo}건"), "playable public video status label missing");
+  assert(index.includes("촬영자료 ${pendingVideo}건 검토 중"), "pending field footage status label missing");
   assert(!index.includes("영상 근거 ${videos}건"), "stale compact video evidence label present");
   assert(!index.includes("현장 영상 근거 ${issueVideoCount(issue)}건"), "zero-prone explore video count present");
   assert(!index.includes("현장 영상 근거 ${liveClaimCount}건"), "zero-prone detail video count present");

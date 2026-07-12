@@ -26,7 +26,7 @@ scenario("mobile_desktop_navigation_surface", [
 
 scenario("home_issue_card_to_evidence_and_dispute", [
   has('data-issue-card-action="evidence"'),
-  has('>근거·영상</span>'),
+  has('>근거 보기</span>'),
   has('data-issue-card-action="dispute"'),
   functionHas("openIssueCardAction", 'if (action === "evidence")'),
   functionHas("openIssueCardAction", 'selectIssue(issue, { openDetail: true, scrollToCards: false, initialTab: "evidence" });'),
@@ -92,7 +92,7 @@ scenario("map_selection_and_search_remain_contextual", [
   has("presence-areas"),
   has("자료 위치"),
   has("현장 인증 범위"),
-  has("근거·영상 보기"),
+  has("근거 보기"),
   functionHas("renderDetail", "renderMapSelectionContext(card)"),
   functionHas("selectCard", "flyToCard(card)"),
   functionHas("selectCard", "renderDetail(card).then"),
@@ -119,6 +119,7 @@ scenario("report_target_first_capture_and_receipt", [
   has('id="submit-capture-action"'),
   has('id="report-receipt"'),
   has("근처 현장 후보"),
+  has("위치 확인 후 표시될 정보"),
   has("이 현장 확정"),
   functionHas("updateReportActionState", 'start.textContent = "근처 현장 찾기";'),
   functionHas("updateReportActionState", 'start.textContent = canConfirmReportTarget() ? "이 현장 확정" : "근처 현장 찾기";'),
