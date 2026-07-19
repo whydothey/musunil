@@ -240,17 +240,22 @@ export type EvidenceReel = {
   id: string;
   claimId: string;
   occurrenceId: string;
+  targetType: "occurrence" | "continuous_presence";
   issueId?: string;
   occurrenceTitle: string;
   issueTitle?: string;
   regionLabel: string;
   capturedAt?: string;
+  durationMs?: number;
   publicRadiusM: number;
   sourceProvenance: SourceProvenance;
   evidenceStrength: EvidenceStrength;
   riskLevel: RiskLevel;
   media: { redactedClipUrl: string; redactedPosterUrl?: string };
+  summary: string;
   hasDispute: boolean;
+  fieldVerification: { aligned: number; disputed: number; statusLabel: string };
+  occurrenceDigest: OccurrenceDigest;
 };
 
 export type LawInterestItem = {

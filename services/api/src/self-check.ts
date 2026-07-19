@@ -57,6 +57,10 @@ assert.equal((productionHome.body as { issueCards: unknown[] }).issueCards.lengt
 const productionLaws = await createApp(productionSeed).handle({ method: "GET", path: "/laws" });
 assert.equal((productionLaws.body as { laws: unknown[] }).laws.length, 0);
 assert.equal((await createApp(productionSeed).handle({ method: "GET", path: "/laws/law_info_network_amendment" })).status, 404);
+const productionReels = await createApp(productionSeed).handle({ method: "GET", path: "/reels?seed=production-check" });
+assert.equal(productionReels.status, 200);
+assert.equal((productionReels.body as { reels: unknown[] }).reels.length, 0);
+assert.equal(JSON.stringify(productionReels.body).includes("preview-"), false);
 const encryptedSnapshot = encryptSnapshot('{"raw":"사용자 원문"}', "test_encryption_key_32_bytes_minimum");
 assert.equal(encryptedSnapshot.includes("사용자 원문"), false);
 assert.equal(decryptSnapshot(encryptedSnapshot, "test_encryption_key_32_bytes_minimum"), '{"raw":"사용자 원문"}');
@@ -130,6 +134,7 @@ const publicPayloads = [
   await app.handle({ method: "GET", path: "/laws/law_info_network_amendment" }),
   await app.handle({ method: "GET", path: "/targets/occurrence/occ_1/live-claims" }),
   await app.handle({ method: "GET", path: "/targets/issue/issue_1/live-claims" }),
+  await app.handle({ method: "GET", path: "/reels?seed=public-surface" }),
   await app.handle({ method: "GET", path: "/area-clusters" }),
   await app.handle({ method: "GET", path: "/map" }),
   await app.handle({ method: "GET", path: "/transparency/logs" })
@@ -144,6 +149,41 @@ assert.equal((liveClaims.body as { liveClaims: Array<{ claim: { id: string }; re
 assert.equal((liveClaims.body as { liveClaims: Array<{ redactionStatus: string }> }).liveClaims[0]?.redactionStatus, "completed");
 assert.equal((liveClaims.body as { liveClaims: Array<{ media: { redactedClipUrl: string; redactedPosterUrl?: string } }> }).liveClaims[0]?.media.redactedClipUrl, "/media/redacted/preview-occ-live-1.webm");
 assert.equal((liveClaims.body as { liveClaims: Array<{ media: { redactedPosterUrl?: string } }> }).liveClaims[0]?.media.redactedPosterUrl, "/media/redacted/preview-occ-live-1-poster.png");
+const globalReels = await app.handle({ method: "GET", path: "/reels?seed=fairness-check" });
+assert.equal(globalReels.status, 200);
+const globalReelBody = globalReels.body as {
+  reels: Array<{
+    id: string;
+    claimId: string;
+    occurrenceId: string;
+    targetType: string;
+    issueId?: string;
+    regionLabel: string;
+    summary: string;
+    media: { redactedClipUrl: string; redactedPosterUrl?: string };
+    occurrenceDigest: { id: string; targetType: string };
+  }>;
+  eligibleBucketCount: number;
+  policy: string;
+};
+assert.equal(globalReelBody.policy, "issue_occurrence_region_round_robin");
+assert.equal(globalReelBody.reels.length >= 3, true);
+assert.equal(globalReelBody.eligibleBucketCount, new Set(globalReelBody.reels.map((reel) => `${reel.issueId}:${reel.regionLabel}:${reel.occurrenceId}`)).size);
+assert.equal(globalReelBody.reels.every((reel) => reel.targetType === "occurrence" || reel.targetType === "continuous_presence"), true);
+assert.equal(globalReelBody.reels.every((reel) => reel.claimId && reel.occurrenceId && reel.summary && reel.media.redactedClipUrl && reel.occurrenceDigest.id === reel.occurrenceId), true);
+assertPublicPayloadSafe(globalReelBody);
+const seenReelIds = new Set<string>();
+for (let index = 0; index < 10_000; index += 1) {
+  const response = await app.handle({ method: "GET", path: `/reels?seed=fairness-${index}` });
+  const body = response.body as { reels: typeof globalReelBody.reels };
+  for (const reel of body.reels) seenReelIds.add(reel.id);
+  for (let reelIndex = 0; reelIndex < body.reels.length - 1; reelIndex += 1) {
+    const currentIssue = body.reels[reelIndex].issueId || "unlinked";
+    const laterHasDifferentIssue = body.reels.slice(reelIndex + 1).some((reel) => (reel.issueId || "unlinked") !== currentIssue);
+    if (laterHasDifferentIssue) assert.notEqual(body.reels[reelIndex + 1].issueId || "unlinked", currentIssue);
+  }
+}
+assert.deepEqual([...seenReelIds].sort(), globalReelBody.reels.map((reel) => reel.id).sort());
 const missingPublicRedactionStore = createSeedStore();
 const missingPublicRedactionEvidence = missingPublicRedactionStore.evidence.find((item) => item.id === "ev_occ_live_1");
 if (missingPublicRedactionEvidence) missingPublicRedactionEvidence.publicStorageKey = undefined;

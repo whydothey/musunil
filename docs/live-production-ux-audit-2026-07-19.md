@@ -19,7 +19,7 @@
 | G1. 공통 집회 현장 UX 계약과 모듈형 정적 웹 기반 | **Guard** | `OccurrenceDigest` API 계약, 단일 선택 상태, recursive manifest, API/Web/visual smoke가 통과했다. |
 | G2. 이슈 우선 홈과 현장 파일 | **Guard** | 홈은 이슈 우선으로 유지되고, 상세 첫 화면의 `전국 집회 현장`에서 장소·시간·상태·규모 상태·근거·관련 법안으로 이동한다. |
 | G3. 지도와 집회 현장 상세 동일성 | **Guard** | 핀·영역·검색·홈 카드가 공유 선택 상태를 쓰고, 탐색 진입의 비동기 이슈 렌더가 현장 시트를 덮지 않는다. |
-| G4. 공정한 릴스형 증거 영상 탐색 | **Active** | 공개 가능 영상만 공정하게 순환하고 production 빈 상태가 정직하다. |
+| G4. 공정한 릴스형 증거 영상 탐색 | **Guard** | 공개·비식별·Proof-of-Presence·기기무결성 조건을 통과한 영상만 이슈·현장·지역 버킷으로 순환하고, 영상·현장·상세가 같은 OccurrenceDigest를 유지한다. production 공개 영상이 없으면 빈 상태만 표시한다. |
 | G5. 공식 법안 피드와 이슈 연결 | Pending | 실제 공식 법안과 두 정렬, 교차 이동이 라이브에서 통과한다. |
 | G6. 현장 제보의 확신 가능한 완료 흐름 | Pending | 대상 확정·본인확인·촬영·미리보기·접수 상태가 실제 API에서 통과한다. |
 | G7. 실제 운영 연결과 공식 원천 복구 | Pending | API DNS, Render, DB/Redis, 원천, 보안 헤더, service watch가 live로 통과한다. |
@@ -33,6 +33,8 @@
 | 2026-07-19 | G2 | 이슈를 열어도 장소·시간별 집회 현장이 첫 답으로 나오지 않음 | 이슈 상세 첫 화면을 `전국 집회 현장` 목록으로 바꾸고, 현장 선택과 관련 공식 법안 이동을 같은 상세 흐름에 연결 | `check:web-smoke`, `check:web-flow`, `check:ux-surface`, 390/430/768/1440 `check:visual-surface` 통과 |
 | 2026-07-19 | G3 | 지도 상단이 선택 핀과 다른 이슈를 가리킬 수 있음 | 지도 맥락 스트립을 공유 `selectedOccurrenceId`에서 읽어 현장명·지역·공개 위치·영상 상태를 표시하도록 변경 | `check:web-smoke`, `check:web-flow` 통과. MapLibre 실제 interaction capture는 진행 중 |
 | 2026-07-19 | G3 | 이슈 선택 뒤 탐색으로 이동할 때 비동기 이슈 상세가 현장 시트를 덮을 수 있음 | 탐색/지도 경로는 항상 선택 `OccurrenceDigest`의 상세를 렌더하도록 분기 | `check:web-smoke`, `check:web-flow`, 390/430/768/1440 `check:visual-surface` 통과 |
+| 2026-07-19 | G4 | 영상 탭이 선택 이슈 한 건에 묶여 있고 적은 노출 현장을 발견할 수 없음 | `GET /reels`를 추가했다. 공개 Claim 중 비식별 완료·Proof-of-Presence 통과·기기무결성 통과·공개 clip/poster가 모두 있는 Evidence만 `EvidenceReel`로 파생하고, 이슈 → 현장·지역 버킷 → 영상 순서의 seed 기반 round-robin으로 반환한다. | API self-check의 10,000 seed 순환, 공개 payload 비밀 필드 검사, production seed `/reels` 빈 목록 통과 |
+| 2026-07-19 | G4 | 전역 릴스의 재생 영상과 데스크톱 맥락 패널이 다른 현장을 가리킬 수 있음 | 재생 중 릴스의 `OccurrenceDigest`를 공유 선택 상태와 우측 패널에 동기화하고, `현장` 액션은 같은 현장 ID의 지도·상세로 이동하게 했다. 홈 카드에서는 대형 영상 미리보기를 제거해 이슈 스캔 밀도를 회복했다. | `check:web-smoke`, `check:web-flow`, `check:ux-surface`, `check:visual-surface`, `check:reels-staging` 통과 |
 
 ## Evidence Ledger
 
@@ -41,13 +43,14 @@
 | G1 | local | `/home`·`/issues/:id`·`/occurrences/:id`·`/map` additive digest, module asset manifest, 390/430/768/1440 visual smoke | Guard | production API/DNS 미연결로 실제 live 데이터 교차 확인은 G7에서 수행 |
 | G2 | local | 홈 이슈 카드 → 전국 집회 현장 → 현장 상세, 이슈 → 관련 공식 법안 흐름 | Guard | 실제 원천 API가 연결된 live 화면에서 5·10초 검증은 G7/G8에서 재실행 |
 | G3 | local | 핀/영역/검색 → 선택 현장 상세, 지도 맥락 스트립과 상세의 대상 동기화 | Guard | 실제 production MapLibre interaction capture와 live API payload 비교는 G7/G8에서 재실행 |
+| G4 | local + staging | `/reels` public serializer, 10,000 seed fairness simulation, production seed 0건, `check:reels-staging`에서 390/430/768/1440 영상 재생 surface와 `현장` → 동일 `selectedOccurrenceId`/지도·상세 제목 일치 | Guard | 실제 production 공개 Evidence가 생긴 뒤 production 화면에서 같은 검증을 G7/G8에 재실행 |
 | G7 | live | `https://musunil.com/build-info.json`, `https://api.musunil.com` DNS | 실패 | placeholder build metadata, API DNS 미연결 |
 
 ## Residual Risks
 
 - `api.musunil.com` DNS와 Render API/DB/Redis가 아직 live로 연결되지 않았다.
 - 국회·법제처 원천 키, PortOne, storage, 비식별, 모바일 무결성 운영 credential은 Goal 7 전까지 실제 검증할 수 없다.
-- production에는 공개 통과 실제 현장 영상이 없으므로, Goal 4는 staging fixture 검증과 정직한 production 빈 상태를 분리해 판정해야 한다.
+- production에는 공개 통과 실제 현장 영상이 없으므로, Goal 4는 staging fixture 검증과 정직한 production 빈 상태를 분리해 Guard로 두었다. 실제 공개 Evidence가 생기면 G7/G8에서 재검증한다.
 
 ## 1. 감사 범위와 실제 확인 결과
 

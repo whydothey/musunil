@@ -237,10 +237,12 @@ async function checkWeb(port) {
   assert(index.includes('href="#icon-report"'), "report line icon missing");
   assert(index.includes("mobile-detail-open"), "detail sheet state missing");
   assert(index.includes("data-reel-action=\"evidence\""), "reel evidence action missing");
-  assert(index.includes("data-reel-action=\"region\""), "reel region action missing");
+  assert(index.includes("data-reel-action=\"occurrence\""), "reel occurrence action missing");
   assert(index.includes("data-reel-action=\"issue\""), "reel issue action missing");
   assert(index.includes("data-reel-action=\"dispute\""), "reel dispute action missing");
-  assert(index.includes("reelsDefaultIssue"), "reels should choose a video-bearing issue by default");
+  assert(index.includes("publicApi.reels"), "reels should use the global public reel API");
+  assert(index.includes("reelSessionSeed"), "reels should preserve a session discovery seed");
+  assert(index.includes("activeReelItemsById"), "reel action target state missing");
   assert(index.includes("renderReelsEmptyState"), "professional reels empty state missing");
   assert(index.includes("renderReelsPendingReview"), "posterless live claims should render as pending review cards");
   assert(index.includes("reel-pending-card"), "posterless review should use a non-video pending card");

@@ -37,6 +37,7 @@
     "check:web-flow": "node scripts/ci-web-flow-smoke.mjs",
     "check:ux-surface": "node scripts/ci-ux-surface-smoke.mjs",
     "check:visual-surface": "node scripts/ci-visual-surface-smoke.mjs",
+    "check:reels-staging": "node scripts/ci-reels-staging-smoke.mjs",
     "check:visual-surface:production-fallback": "node scripts/ci-visual-surface-smoke.mjs --production-fallback",
     "check:visual-surface:live": "node scripts/ci-visual-surface-smoke.mjs --base-url https://musunil.com",
     "check:visual-surface:evidence": "node scripts/ci-visual-surface-smoke.mjs --evidence-dir docs/visual-evidence/current",

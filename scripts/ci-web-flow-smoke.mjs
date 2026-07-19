@@ -66,13 +66,13 @@ scenario("detail_quick_actions_to_evidence_video_map", [
 
 scenario("reels_actions_keep_video_objective", [
   has('data-reel-action="evidence"'),
-  has('data-reel-action="region"'),
+  has('data-reel-action="occurrence"'),
   has('data-reel-action="dispute"'),
   has('data-reel-action="issue"'),
   has('<video class="reel-video"'),
   has("reel-pending-card"),
   regex(/closest\("\[data-reel-action\]"\)/),
-  regex(/action\.dataset\.reelAction === "region"[\s\S]*setPrimaryView\("explore"\)/),
+  regex(/action\.dataset\.reelAction === "occurrence"[\s\S]*setPrimaryView\("explore"\)/),
   regex(/action\.dataset\.reelAction === "issue"[\s\S]*setPrimaryView\("home"\)/),
   regex(/evidence: "evidence",\s*dispute: "dispute"/),
   regex(/selectDetailTab\(tab\);\s*openDetailPanel\(\);/)

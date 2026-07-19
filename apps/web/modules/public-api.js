@@ -19,6 +19,13 @@ export function createPublicApi(baseUrl, fetchImpl = window.fetch.bind(window)) 
     request,
     home: () => request("/home"),
     map: () => request("/map"),
+    reels: ({ seed, cursor } = {}) => {
+      const params = new URLSearchParams();
+      if (seed) params.set("seed", seed);
+      if (Number.isFinite(cursor)) params.set("cursor", String(cursor));
+      const query = params.toString();
+      return request(query ? `/reels?${query}` : "/reels");
+    },
     laws: (sort) => request(sort ? `/laws?sort=${encodeURIComponent(sort)}` : "/laws"),
     issue: (id) => request(`/issues/${encodeURIComponent(id)}`),
     occurrence: (id) => request(`/occurrences/${encodeURIComponent(id)}`)

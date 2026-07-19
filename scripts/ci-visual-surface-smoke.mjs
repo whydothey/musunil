@@ -10,6 +10,7 @@ const failures = [];
 const scenarios = [];
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
 const productionFallbackMode = args.includes("--production-fallback") || process.env.MUSUNIL_VISUAL_PRODUCTION_FALLBACK === "1";
+const requireReels = args.includes("--require-reels");
 const evidenceDir = evidenceDirFromArgs();
 const evidenceScreenshots = [];
 let server;
@@ -147,7 +148,7 @@ async function runViewport(client, viewport, url) {
   try {
     await waitForExpression(
       client,
-      "document.querySelectorAll('.issue-card').length >= 3 && document.querySelectorAll('.story-ring').length >= 3",
+      "document.querySelectorAll('.issue-card').length >= 1 && document.querySelectorAll('.story-ring').length >= 1",
       20_000
     );
   } catch {
@@ -156,6 +157,7 @@ async function runViewport(client, viewport, url) {
   await sleep(260);
 
   const home = await evaluate(client, visualMetrics("home"));
+  const minimumFeedItems = home.serviceSyncState === "live" ? 1 : 3;
   await captureEvidence(client, `${viewport.id}_home`);
   scenario(`${viewport.id}_home`, [
     () => assert(
@@ -169,8 +171,8 @@ async function runViewport(client, viewport, url) {
     () => assert(home.scrollWidth <= viewport.width, `home overflows horizontally: ${home.scrollWidth} > ${viewport.width}`),
     () => assert(home.forbidden.length === 0, `forbidden public UI copy: ${home.forbidden.join(", ")}`),
     () => assert(home.dashboardVisible.length === 0, `dashboard-like visible elements: ${home.dashboardVisible.join(", ")}`),
-    () => assert(home.storyCount >= 3, `expected at least 3 issue story rings, got ${home.storyCount}`),
-    () => assert(home.issueCount >= 3, `expected at least 3 issue cards, got ${home.issueCount}`),
+    () => assert(home.storyCount >= minimumFeedItems, `expected at least ${minimumFeedItems} issue story rings, got ${home.storyCount}`),
+    () => assert(home.issueCount >= minimumFeedItems, `expected at least ${minimumFeedItems} issue cards, got ${home.issueCount}`),
     () => assert(home.firstIssueTitle.length >= 6, "first issue title is missing"),
     () => assert(!productionFallbackMode || home.serviceSyncState === "delayed", `production fallback visual smoke must exercise delayed API sync, got ${home.serviceSyncState}`),
     () => assert(!productionFallbackMode || home.firstIssueTitle === "정보통신망법 개정 반대 집회", `production fallback first issue changed: ${home.firstIssueTitle}`),
@@ -230,7 +232,7 @@ async function runViewport(client, viewport, url) {
     const labels = [...document.querySelectorAll("[data-reel-action] span, [data-reel-empty-action] span")]
       .filter(visible)
       .map((node) => node.textContent.trim());
-    return labels.includes("근거") && labels.some((label) => /위치|지도/.test(label));
+    return labels.includes("근거") && labels.some((label) => /현장|지도/.test(label));
   })()`, 4_000);
   await sleep(220);
   const reels = await evaluate(client, visualMetrics("reels"));
@@ -239,11 +241,31 @@ async function runViewport(client, viewport, url) {
     () => assert(reels.scrollWidth <= viewport.width, `reels overflows horizontally: ${reels.scrollWidth} > ${viewport.width}`),
     () => assert(reels.forbidden.length === 0, `forbidden reels copy: ${reels.forbidden.join(", ")}`),
     () => assert(reels.reelActionLabels.includes("근거"), `reels evidence action missing: ${reels.reelActionLabels.join(", ")}`),
-    () => assert(reels.reelActionLabels.some((label) => /위치|지도/.test(label)), `reels location action missing: ${reels.reelActionLabels.join(", ")}`),
+    () => assert(reels.reelActionLabels.some((label) => /현장|지도/.test(label)), `reels occurrence action missing: ${reels.reelActionLabels.join(", ")}`),
+    () => assert(!requireReels || reels.reelVideoCount >= 1, "staging reels must render at least one playable public video"),
     () => assert(reels.reelPendingFullCount === 0, "posterless pending claims should not render as full-screen video reels"),
     () => assert(reels.issueContextTitle.length >= 6, "reels issue context title is missing"),
     () => assert(!viewport.mobile || !reels.navOverlap, "mobile reels action surface overlaps bottom navigation")
   ], serviceDetail(reels));
+
+  if (requireReels) {
+    const reelTarget = await evaluate(client, `(() => {
+      const reel = document.querySelector('.reel-card.reel-full[data-reel-target-id]');
+      return reel ? { id: reel.dataset.reelTargetId, title: reel.querySelector('.reel-overlay strong')?.textContent?.trim() || "" } : null;
+    })()`);
+    await click(client, '[data-reel-action="occurrence"]');
+    await waitForExpression(client, `document.documentElement.dataset.selectedOccurrenceId === ${JSON.stringify(reelTarget?.id || "")}`);
+    const linked = await evaluate(client, `({
+      selectedOccurrenceId: document.documentElement.dataset.selectedOccurrenceId || "",
+      mapTitle: document.querySelector('#map-title')?.textContent?.trim() || "",
+      detailTitle: document.querySelector('#detail-title')?.textContent?.trim() || ""
+    })`);
+    scenario(`${viewport.id}_reel_occurrence_link`, [
+      () => assert(Boolean(reelTarget?.id), "staging reel target is missing"),
+      () => assert(linked.selectedOccurrenceId === reelTarget?.id, `reel occurrence selection diverged: ${linked.selectedOccurrenceId} !== ${reelTarget?.id}`),
+      () => assert(linked.mapTitle === reelTarget?.title || linked.detailTitle === reelTarget?.title, `reel occurrence context title diverged: ${linked.mapTitle} / ${linked.detailTitle}`)
+    ], { ...serviceDetail(reels), reelTarget, linked });
+  }
 
   await selectPrimaryView(client, viewport, "explore");
   await waitForExpression(client, "document.querySelector('#map-section') && getComputedStyle(document.querySelector('#map-section')).display !== 'none'");
@@ -381,6 +403,7 @@ function visualMetrics(label) {
       detailActionMinWidth: Math.min(...[...document.querySelectorAll(".detail-action-row button")].filter(visible).map((node) => Math.round(node.getBoundingClientRect().width)), 999),
       detailActionRight: Math.max(0, ...[...document.querySelectorAll(".detail-action-row button")].filter(visible).map((node) => Math.round(node.getBoundingClientRect().right))),
       reelActionLabels: [...document.querySelectorAll("[data-reel-action] span, [data-reel-empty-action] span")].filter(visible).map((node) => node.textContent.trim()),
+      reelVideoCount: [...document.querySelectorAll(".reel-card.reel-full video.reel-video[src]")].filter(visible).length,
       reelPendingCardCount: [...document.querySelectorAll(".reel-pending-card")].filter(visible).length,
       reelPendingFullCount: [...document.querySelectorAll(".reel-card.reel-full.reel-pending")].filter(visible).length,
       issueContextTitle: document.querySelector("#reels-anchor-title")?.textContent?.trim() || "",
@@ -483,7 +506,8 @@ function visualBaseUrlFromArgs() {
   if (parsed.protocol !== "https:" && !isLocalHttp) {
     throw new Error(`Visual surface base URL must be HTTPS or localhost HTTP: ${value}`);
   }
-  return new URL("/", parsed).toString();
+  if (!parsed.pathname) parsed.pathname = "/";
+  return parsed.toString();
 }
 
 function evidenceDirFromArgs() {

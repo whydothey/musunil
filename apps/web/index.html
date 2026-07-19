@@ -5957,7 +5957,7 @@
             <div class="issue-context-copy">
               <span class="issue-context-meta">
                 <span class="issue-context-status" id="reels-anchor-status" data-state="pending">확인 중</span>
-                <span class="issue-context-kicker">선택 이슈</span>
+                <span class="issue-context-kicker" id="reels-anchor-kicker">전국 탐색</span>
               </span>
               <strong class="issue-context-title" id="reels-anchor-title">이슈를 선택해 주세요</strong>
               <span class="issue-context-line" id="reels-anchor-line">영상은 선택 이슈의 공개 근거로만 봅니다.</span>
@@ -8350,7 +8350,7 @@
 
       function publicLivePosterDisplaySrc(item) {
         const src = publicLivePosterSrc(item);
-        return src && !isSampleRedactedPreviewUrl(src) ? src : "";
+        return src && (isPreviewApiBase || !isSampleRedactedPreviewUrl(src)) ? src : "";
       }
 
       function publicLiveVideoDisplaySrc(item) {
@@ -8658,6 +8658,23 @@
       }
 
       let requestedReelsIssueId;
+      let activeReelItemsById = new Map();
+      let activeReelObserver;
+
+      function reelSessionSeed() {
+        const storageKey = "musunil-reels-seed";
+        try {
+          const stored = sessionStorage.getItem(storageKey);
+          if (stored) return stored;
+          const seed = typeof crypto?.randomUUID === "function"
+            ? crypto.randomUUID().replace(/-/g, "")
+            : `${Date.now()}${Math.random().toString(36).slice(2)}`;
+          sessionStorage.setItem(storageKey, seed);
+          return seed;
+        } catch {
+          return "public-reels";
+        }
+      }
 
       function issueHasVideoSurface(issue) {
         return Boolean(issue && issuePlayableVideoCount(issue) > 0);
@@ -9138,10 +9155,10 @@
 	        }
 
 	        for (const issue of issues) {
-          const fieldPreviewHtml = renderIssueFieldPreview(issue);
-          const visualPreviewHtml = fieldPreviewHtml || issueLocationStripMarkup(issue);
+	          // 홈은 쟁점 스캔용이다. 실제 영상은 현장 상세와 영상 탭에서만 재생한다.
+          const visualPreviewHtml = issueLocationStripMarkup(issue);
 		          const card = document.createElement("article");
-		          card.className = `issue-card${fieldPreviewHtml ? " has-field-preview" : ""}`;
+		          card.className = "issue-card";
 		          card.dataset.issueId = issue.id;
           card.style.setProperty("--story-color", issueStoryColor(issue));
 		          card.setAttribute("aria-selected", String(issue.id === selectedIssue?.id));
@@ -10250,7 +10267,7 @@
             </div>
             <div class="reels-empty-actions" aria-label="영상 대기 상태에서 확인할 항목">
               <button class="button primary" type="button" data-reel-empty-action="evidence"><svg class="button-symbol" aria-hidden="true"><use href="#icon-stats"></use></svg><span>근거</span></button>
-              <button class="button ghost" type="button" data-reel-empty-action="map"><svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg><span>위치</span></button>
+              <button class="button ghost" type="button" data-reel-empty-action="map"><svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg><span>지도</span></button>
               <button class="button ghost" type="button" data-reel-empty-action="report"><svg class="button-symbol" aria-hidden="true"><use href="#icon-report"></use></svg><span>제보</span></button>
             </div>
             <div class="reels-empty-status">
@@ -10290,8 +10307,8 @@
             </div>
             <div class="reel-actions" aria-label="영상 검토 상태에서 확인할 항목">
               <button class="reel-action" type="button" data-reel-action="evidence"><svg class="button-symbol" aria-hidden="true"><use href="#icon-stats"></use></svg><span>근거</span></button>
-              <button class="reel-action" type="button" data-reel-action="region"><svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg><span>위치</span></button>
-              <button class="reel-action" type="button" data-reel-action="dispute"><svg class="button-symbol" aria-hidden="true"><use href="#icon-assembly"></use></svg><span>반론</span></button>
+              <button class="reel-action" type="button" data-reel-action="occurrence"><svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg><span>현장</span></button>
+              <button class="reel-action" type="button" data-reel-action="dispute"><svg class="button-symbol" aria-hidden="true"><use href="#icon-assembly"></use></svg><span>다른 주장</span></button>
               <button class="reel-action" type="button" data-reel-action="issue"><svg class="button-symbol" aria-hidden="true"><use href="#icon-home"></use></svg><span>이슈</span></button>
             </div>
           </article>
@@ -10362,7 +10379,7 @@
             const video = publicLiveVideoDisplaySrc(item);
             if (!poster || !video) return renderReelsPendingReview(item);
             return `
-            <article class="reel-card reel-full" data-reel-id="${escapeHtml(item.id || "")}">
+            <article class="reel-card reel-full" data-reel-id="${escapeHtml(item.id || "")}" data-reel-target-id="${escapeHtml(item.targetId || item.occurrenceId || "")}" data-reel-target-type="${escapeHtml(item.targetType || "occurrence")}" data-reel-issue-id="${escapeHtml(item.issueId || "")}">
               <div class="reel-media has-video" aria-label="비식별 처리된 현장 인증 영상">
                 <video class="reel-video" src="${escapeHtml(video)}" poster="${escapeHtml(poster)}" controls playsinline preload="metadata" controlslist="nodownload noplaybackrate" disablepictureinpicture></video>
                 <span class="reel-play-badge is-ready">비식별 공개본</span>
@@ -10375,9 +10392,9 @@
               </div>
               <div class="reel-actions" aria-label="영상 확인 메뉴">
                 <button class="reel-action" type="button" data-reel-action="evidence"><svg class="button-symbol" aria-hidden="true"><use href="#icon-stats"></use></svg><span>근거</span></button>
-                <button class="reel-action" type="button" data-reel-action="region"><svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg><span>위치 범위</span></button>
-                <button class="reel-action" type="button" data-reel-action="dispute"><svg class="button-symbol" aria-hidden="true"><use href="#icon-assembly"></use></svg><span>반론</span></button>
-                <button class="reel-action" type="button" data-reel-action="issue"><svg class="button-symbol" aria-hidden="true"><use href="#icon-home"></use></svg><span>관련 이슈</span></button>
+                <button class="reel-action" type="button" data-reel-action="occurrence"><svg class="button-symbol" aria-hidden="true"><use href="#icon-search"></use></svg><span>현장</span></button>
+                <button class="reel-action" type="button" data-reel-action="dispute"><svg class="button-symbol" aria-hidden="true"><use href="#icon-assembly"></use></svg><span>다른 주장</span></button>
+                <button class="reel-action" type="button" data-reel-action="issue"><svg class="button-symbol" aria-hidden="true"><use href="#icon-home"></use></svg><span>이슈</span></button>
               </div>
             </article>
           `;
@@ -10428,26 +10445,153 @@
       async function renderReelsView() {
         const root = $("reels-feed");
         if (!root) return;
-        const issue = reelsDefaultIssue();
-        if (issue && issue.id !== selectedIssue?.id) {
-          selectedIssue = issue;
-          const nextSelected = visibleCards(loadedCards).find((card) => card.issueId === issue.id) || selected;
-          if (nextSelected) selected = nextSelected;
-        }
-        updateIssueContextStrips();
-        $("reels-context").textContent = issue ? `${issue.title} · 현장 인증 영상` : "공개 현장 영상을 봅니다.";
+        $("reels-context").textContent = "공개 조건을 통과한 현장 영상을 이슈와 지역별로 고르게 봅니다.";
+        setReelContextAnchor();
         root.innerHTML = `
           <article class="reel-card reel-full">
             <div class="reel-media"><div class="reel-placeholder"><span class="reel-signal">확인중</span><strong>영상 확인 중</strong><span>공개본만 불러옵니다</span></div></div>
           </article>
         `;
-        if (!issue) {
-          root.innerHTML = `<div class="empty-state"><strong>표시할 영상이 없습니다</strong><span>이슈가 확인되면 현장 인증 영상이 여기에 표시됩니다.</span></div>`;
+        try {
+          const response = await publicApi.reels({ seed: reelSessionSeed(), cursor: 0 });
+          const reels = Array.isArray(response.reels) ? response.reels.map(reelDisplayItem) : [];
+          activeReelItemsById = new Map(reels.map((item) => [item.id, item]));
+          root.innerHTML = renderLiveClaims(reels, "공개 조건을 통과한 현장 영상이 아직 없습니다.", { fullScreen: true });
+          if (reels[0]) syncReelContext(reels[0]);
+          observeReelContext(root);
+        } catch {
+          activeReelItemsById = new Map();
+          activeReelObserver?.disconnect();
+          root.innerHTML = renderReelsEmptyState(undefined, "공개 영상 연결 상태를 확인하고 있습니다.");
+        }
+        requestedReelsIssueId = undefined;
+      }
+
+      function reelDisplayItem(reel) {
+        const digest = reel?.occurrenceDigest || {};
+        return {
+          ...reel,
+          targetId: reel?.occurrenceId || reel?.targetId,
+          targetType: reel?.targetType || digest.targetType || "occurrence",
+          targetTitle: reel?.occurrenceTitle || digest.title || "집회 현장",
+          regionLabel: reel?.regionLabel || digest.regionLabel || "지역 확인 중",
+          durationMs: reel?.durationMs,
+          claim: {
+            id: reel?.claimId,
+            normalizedStatement: reel?.summary || "현장 인증 영상",
+            sourceProvenance: reel?.sourceProvenance,
+            evidenceStrength: reel?.evidenceStrength,
+            riskLevel: reel?.riskLevel
+          },
+          fieldVerification: reel?.fieldVerification || { aligned: 0, disputed: 0, statusLabel: "현장 판단 대기" }
+        };
+      }
+
+      function selectReelOccurrence(reel) {
+        if (!reel) return;
+        const digest = reel.occurrenceDigest || {};
+        const existing = loadedCards.find((card) => card.id === (reel.targetId || reel.occurrenceId));
+        const card = existing || {
+          id: reel.targetId || reel.occurrenceId,
+          targetType: reel.targetType || digest.targetType || "occurrence",
+          issueId: reel.issueId || digest.issueId,
+          title: reel.targetTitle || digest.title || "집회 현장",
+          regionLabel: reel.regionLabel || digest.regionLabel || "지역 확인 중",
+          lifecycleState: digest.lifecycleState || "UNKNOWN",
+          startsAt: digest.startsAt,
+          endsAt: digest.endsAt,
+          updatedAt: digest.updatedAt,
+          proof: digest.evidenceCount || 0,
+          evidenceCount: digest.evidenceCount || 0,
+          officialClaimCount: digest.officialClaimCount || 0,
+          publicVideoCount: digest.publicVideoCount || 0,
+          disputeCount: digest.disputeCount || 0,
+          current: "확인 중",
+          peak: "-",
+          chips: []
+        };
+        selectCard(card, { openDetail: false });
+        return card;
+      }
+
+      function reelOccurrenceCard(reel) {
+        if (!reel) return undefined;
+        const digest = reel.occurrenceDigest || {};
+        return loadedCards.find((card) => card.id === (reel.targetId || reel.occurrenceId)) || {
+          id: reel.targetId || reel.occurrenceId,
+          targetType: reel.targetType || digest.targetType || "occurrence",
+          issueId: reel.issueId || digest.issueId,
+          title: reel.targetTitle || digest.title || "집회 현장",
+          regionLabel: reel.regionLabel || digest.regionLabel || "지역 확인 중",
+          lifecycleState: digest.lifecycleState || "UNKNOWN",
+          startsAt: digest.startsAt,
+          endsAt: digest.endsAt,
+          updatedAt: digest.updatedAt,
+          proof: digest.evidenceCount || 0,
+          evidenceCount: digest.evidenceCount || 0,
+          officialClaimCount: digest.officialClaimCount || 0,
+          publicVideoCount: digest.publicVideoCount || 0,
+          disputeCount: digest.disputeCount || 0,
+          current: "확인 중",
+          peak: "-",
+          chips: []
+        };
+      }
+
+      function syncReelContext(reel) {
+        const card = reelOccurrenceCard(reel);
+        if (!card) return;
+        selected = card;
+        const issue = loadedIssueCards.find((item) => item.id === card.issueId);
+        if (issue) selectedIssue = issue;
+        syncSelectedOccurrence(card);
+        updatePinSelection();
+        updateIssueContextStrips();
+        setReelContextAnchor(reel);
+        void renderDetail(card);
+      }
+
+      function setReelContextAnchor(reel) {
+        const status = $("reels-anchor-status");
+        const kicker = $("reels-anchor-kicker");
+        const title = $("reels-anchor-title");
+        const line = $("reels-anchor-line");
+        if (!reel) {
+          if (status) {
+            status.textContent = "공개 영상";
+            status.dataset.state = "active";
+          }
+          if (kicker) kicker.textContent = "전국 탐색";
+          if (title) title.textContent = "전국 공개 현장 영상";
+          if (line) line.textContent = "이슈·현장·지역을 순환해 공개 조건을 통과한 영상만 표시합니다.";
           return;
         }
-        const liveClaims = await loadLiveClaims("issue", issue.id);
-        root.innerHTML = renderLiveClaims(liveClaims, "이 이슈에 연결된 공개 현장 인증 영상이 아직 없습니다.", { fullScreen: true, issue });
-        requestedReelsIssueId = undefined;
+        if (status) {
+          status.textContent = publicFieldStatusLabel(reel.fieldVerification?.statusLabel);
+          status.dataset.state = reel.hasDispute ? "dispute" : "active";
+        }
+        if (kicker) kicker.textContent = "재생 중 현장";
+        if (title) title.textContent = reel.targetTitle || reel.occurrenceTitle || "집회 현장";
+        if (line) {
+          line.textContent = [
+            reel.issueTitle || "연결 이슈 확인 중",
+            reel.regionLabel || "지역 확인 중",
+            reel.publicRadiusM ? `공개 위치 반경 ${reel.publicRadiusM}m` : "공개 위치 흐림"
+          ].join(" · ");
+        }
+      }
+
+      function observeReelContext(root) {
+        activeReelObserver?.disconnect();
+        if (typeof IntersectionObserver !== "function") return;
+        activeReelObserver = new IntersectionObserver((entries) => {
+          const current = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
+          const reelId = current?.target?.dataset?.reelId;
+          if (reelId) syncReelContext(activeReelItemsById.get(reelId));
+        }, { root, threshold: [0.55, 0.7] });
+        root.querySelectorAll("[data-reel-id]").forEach((item) => activeReelObserver.observe(item));
       }
 
 	      function trustSummary(claims, card) {
@@ -11392,11 +11536,16 @@
         }
         const action = event.target instanceof Element ? event.target.closest("[data-reel-action]") : null;
         if (!action) return;
-        if (action.dataset.reelAction === "region") {
+        const reelCard = action.closest("[data-reel-id]");
+        const reel = reelCard ? activeReelItemsById.get(reelCard.dataset.reelId) : undefined;
+        const occurrence = selectReelOccurrence(reel);
+        if (action.dataset.reelAction === "occurrence") {
           setPrimaryView("explore");
           return;
         }
         if (action.dataset.reelAction === "issue") {
+          const issue = loadedIssueCards.find((item) => item.id === occurrence?.issueId || item.id === reel?.issueId);
+          if (issue) selectIssue(issue, { openDetail: false, scrollToCards: false });
           setPrimaryView("home");
           return;
         }

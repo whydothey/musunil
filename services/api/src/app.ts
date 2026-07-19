@@ -16,6 +16,7 @@ import {
   type ContinuousPresence,
   type CrowdEstimate,
   type Evidence,
+  type EvidenceReel,
   type EvidenceStrength,
   type IdentityVerificationSession,
   type Issue,
@@ -892,6 +893,9 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
     return getLaws(store, sort === "proposed_desc" ? "proposed_desc" : "interest");
   }
   if (request.method === "GET" && path.startsWith("/laws/")) return getLaw(store, path.split("/")[2]);
+  if (request.method === "GET" && path === "/reels") {
+    return getReels(store, url.searchParams.get("seed"), url.searchParams.get("cursor"));
+  }
   if (request.method === "GET" && path.startsWith("/targets/") && path.endsWith("/live-claims")) {
     return getTargetLiveClaims(store, path.split("/")[2], path.split("/")[3]);
   }
@@ -2057,6 +2061,104 @@ function getTargetLiveClaims(store: Store, targetTypeValue: string | undefined, 
     targetId: id,
     liveClaims: liveClaims.map((claim) => toPublicLiveClaim(store, claim))
   });
+}
+
+function getReels(store: Store, seedValue: string | null, cursorValue: string | null): ApiResponse {
+  const seed = normalizeReelSeed(seedValue);
+  const cursor = normalizeReelCursor(cursorValue);
+  const eligible = store.claims
+    .filter((claim) => isPublicClaim(claim) && claim.targetType !== "issue" && hasPublicLiveEvidence(store, claim))
+    .map((claim) => toEvidenceReel(store, claim))
+    .filter((reel): reel is EvidenceReel => Boolean(reel));
+  const ordered = fairEvidenceReelOrder(eligible, seed);
+  const pageSize = 12;
+  const reels = ordered.slice(cursor, cursor + pageSize);
+  const bucketIds = new Set(eligible.map(reelBucketId));
+  const nextCursor = cursor + reels.length < ordered.length ? cursor + reels.length : undefined;
+  return json(200, {
+    reels,
+    seed,
+    cursor,
+    nextCursor,
+    totalEligible: ordered.length,
+    eligibleBucketCount: bucketIds.size,
+    policy: "issue_occurrence_region_round_robin"
+  });
+}
+
+function normalizeReelSeed(value: string | null): string {
+  const cleaned = String(value ?? "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 96);
+  return cleaned || "public-reels";
+}
+
+function normalizeReelCursor(value: string | null): number {
+  const parsed = Number.parseInt(String(value ?? "0"), 10);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? Math.min(parsed, 100_000) : 0;
+}
+
+function fairEvidenceReelOrder(reels: EvidenceReel[], seed: string): EvidenceReel[] {
+  const issueGroups = new Map<string, EvidenceReel[]>();
+  for (const reel of reels) {
+    const issueId = reel.issueId || "unlinked";
+    const group = issueGroups.get(issueId) || [];
+    group.push(reel);
+    issueGroups.set(issueId, group);
+  }
+  const issueIds = [...issueGroups.keys()].sort((left, right) => stableSeedRank(seed, `issue:${left}`).localeCompare(stableSeedRank(seed, `issue:${right}`)) || left.localeCompare(right));
+  const queues = new Map(issueIds.map((issueId) => [issueId, fairIssueReelOrder(issueGroups.get(issueId) || [], seed, issueId)]));
+  const ordered: EvidenceReel[] = [];
+  let lastIssueId: string | undefined;
+  let startIndex = 0;
+
+  while ([...queues.values()].some((queue) => queue.length > 0)) {
+    const availableIssueIds = issueIds.filter((issueId) => (queues.get(issueId)?.length || 0) > 0);
+    const preferred = availableIssueIds.filter((issueId) => issueId !== lastIssueId);
+    const candidates = preferred.length > 0 ? preferred : availableIssueIds;
+    const picked = candidates.find((issueId) => {
+      const index = issueIds.indexOf(issueId);
+      return index >= startIndex;
+    }) || candidates[0];
+    const queue = queues.get(picked);
+    const reel = queue?.shift();
+    if (!reel) break;
+    ordered.push(reel);
+    lastIssueId = picked;
+    startIndex = (issueIds.indexOf(picked) + 1) % Math.max(issueIds.length, 1);
+  }
+  return ordered;
+}
+
+function fairIssueReelOrder(reels: EvidenceReel[], seed: string, issueId: string): EvidenceReel[] {
+  const buckets = new Map<string, EvidenceReel[]>();
+  for (const reel of reels) {
+    const bucketId = reelBucketId(reel);
+    const bucket = buckets.get(bucketId) || [];
+    bucket.push(reel);
+    buckets.set(bucketId, bucket);
+  }
+  const bucketIds = [...buckets.keys()].sort((left, right) => stableSeedRank(seed, `bucket:${left}`).localeCompare(stableSeedRank(seed, `bucket:${right}`)) || left.localeCompare(right));
+  for (const bucketId of bucketIds) {
+    buckets.get(bucketId)?.sort((left, right) => stableSeedRank(seed, `reel:${left.id}`).localeCompare(stableSeedRank(seed, `reel:${right.id}`)) || left.id.localeCompare(right.id));
+  }
+  const ordered: EvidenceReel[] = [];
+  let startIndex = Number.parseInt(stableSeedRank(seed, `issue-start:${issueId}`).slice(0, 4), 16) % Math.max(bucketIds.length, 1);
+  while ([...buckets.values()].some((bucket) => bucket.length > 0)) {
+    for (let offset = 0; offset < bucketIds.length; offset += 1) {
+      const bucketId = bucketIds[(startIndex + offset) % bucketIds.length];
+      const reel = buckets.get(bucketId)?.shift();
+      if (reel) ordered.push(reel);
+    }
+    startIndex = (startIndex + 1) % Math.max(bucketIds.length, 1);
+  }
+  return ordered;
+}
+
+function reelBucketId(reel: EvidenceReel): string {
+  return `${reel.issueId || "unlinked"}:${reel.regionLabel}:${reel.occurrenceId}`;
+}
+
+function stableSeedRank(seed: string, value: string): string {
+  return createHash("sha256").update(`${seed}:${value}`).digest("hex");
 }
 
 function getTargetById(store: Store, targetType: TargetType, id: string | undefined, error: string): ApiResponse {
@@ -3868,6 +3970,42 @@ function toPublicLiveClaim(store: Store, claim: Claim) {
       redactedPosterUrl: publicRedactedPosterUrl(evidence?.publicPosterKey)
     },
     fieldVerification: fieldVerificationSummary(store, claim.id)
+  };
+}
+
+function toEvidenceReel(store: Store, claim: Claim): EvidenceReel | undefined {
+  if (claim.targetType === "issue") return undefined;
+  const target = targetRecord(store, claim.targetType, claim.targetId);
+  if (!target) return undefined;
+  const publicLiveClaim = toPublicLiveClaim(store, claim);
+  const clipUrl = publicLiveClaim.media.redactedClipUrl;
+  if (!clipUrl) return undefined;
+  const issueId = (target as Occurrence | ContinuousPresence).issueId;
+  const issue = issueId ? store.issues.find((item) => item.id === issueId) : undefined;
+  const fieldVerification = fieldVerificationSummary(store, claim.id);
+  return {
+    id: `reel_${claim.id}`,
+    claimId: claim.id,
+    occurrenceId: target.id,
+    targetType: claim.targetType,
+    issueId,
+    occurrenceTitle: targetTitle(claim.targetType, target),
+    issueTitle: issue?.title,
+    regionLabel: targetRegionLabel(store, claim.targetType, target) || "지역 확인 중",
+    capturedAt: publicLiveClaim.capturedAt,
+    durationMs: publicLiveClaim.durationMs,
+    publicRadiusM: publicLiveClaim.publicRadiusM ?? 200,
+    sourceProvenance: claim.sourceProvenance,
+    evidenceStrength: claim.evidenceStrength,
+    riskLevel: claim.riskLevel,
+    media: {
+      redactedClipUrl: clipUrl,
+      redactedPosterUrl: publicLiveClaim.media.redactedPosterUrl
+    },
+    summary: toPublicClaim(claim).normalizedStatement,
+    hasDispute: fieldVerification.disputed > 0 || claim.disputedByClaimIds.length > 0,
+    fieldVerification,
+    occurrenceDigest: toOccurrenceDigest(store, claim.targetType, target.id)
   };
 }
 

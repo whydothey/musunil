@@ -2,7 +2,7 @@
 
 Last updated: 2026-07-19 KST
 
-상세 실행 상태와 증거는 [live-production-ux-audit-2026-07-19.md](/Users/mk/Documents/Musunil/docs/live-production-ux-audit-2026-07-19.md)를 유일한 기준으로 한다. 2026-07-19에 G1 공통 `OccurrenceDigest` 계약, module static asset manifest, API/Web/visual smoke를 Guard로 전환했고, 전체 완료 판정은 여전히 G2-G8과 live 운영 blocker가 남아 있어 불가다.
+상세 실행 상태와 증거는 [live-production-ux-audit-2026-07-19.md](/Users/mk/Documents/Musunil/docs/live-production-ux-audit-2026-07-19.md)를 유일한 기준으로 한다. 2026-07-19에 G1 공통 `OccurrenceDigest` 계약, G2 이슈 우선 현장 파일, G3 지도·상세 동일성, G4 공정 릴스 탐색을 Guard로 전환했다. 전체 완료 판정은 여전히 G5-G8과 live 운영 blocker가 남아 있어 불가다.
 
 Status: 완료 아님.
 
