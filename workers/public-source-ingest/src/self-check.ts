@@ -552,6 +552,8 @@ const lawRuntime = readLawRuntime(
   {}
 );
 assert.equal(lawRuntime.assemblyBillApiKey, "assembly-key");
+assert.equal(lawRuntime.assemblyBillApiUrl, "https://open.assembly.go.kr/portal/openapi/ALLBILLV2");
+assert.equal(lawRuntime.assemblyBillEra, "제22대");
 assert.equal(lawRuntime.lawApiOc, "law-oc");
 assert.deepEqual(lawRuntime.keywords, ["정보통신망법"]);
 const lawDiagnostics = lawOperationalDiagnostics(lawRuntime);
@@ -574,29 +576,34 @@ assert.equal(disabledLawDiagnostics.summary.requiredActions.some((action) => act
 const originalFetch = globalThis.fetch;
 globalThis.fetch = (async (input: RequestInfo | URL) => {
   const url = String(input);
-  if (url.includes("ALLBILLINFO")) {
-    const page = new URL(url).searchParams.get("pIndex");
+  if (url.includes("ALLBILLV2")) {
+    const requestUrl = new URL(url);
+    const page = requestUrl.searchParams.get("pIndex");
+    assert.equal(requestUrl.searchParams.get("KEY"), "assembly-key");
+    assert.equal(requestUrl.searchParams.get("Type"), "json");
+    assert.equal(requestUrl.searchParams.get("ERACO"), "제22대");
     return new Response(
       JSON.stringify({
         list_total_count: 200,
         head: [{ list_total_count: 200 }, { RESULT: { CODE: "INFO-000", MESSAGE: "NORMAL SERVICE" } }],
         row: page === "2" ? [
           {
-            BILL_NAME: "공직선거법 일부개정법률안",
+            BILL_NM: "공직선거법 일부개정법률안",
             BILL_ID: "bill-election-newer",
-            PROC_RESULT: "접수",
-            PROPOSE_DT: "20260710",
+            PROC_STAGE_CD: "접수",
+            PPSL_DT: "20260710",
             LINK_URL: "https://untrusted.example/bill-election-newer"
           }
         ] : [
           {
-            BILL_NAME: "정보통신망법 일부개정법률안",
+            BILL_NM: "정보통신망법 일부개정법률안",
             BILL_ID: "bill-info-network",
-            PROC_RESULT: "접수",
-            PROPOSE_DT: "20260709",
+            JRCMIT_NM: "과학기술정보방송통신위원회",
+            PPSL_DT: "20260709",
+            PPSR_NM: "국회의원 10인",
             LINK_URL: "https://open.assembly.go.kr/bill-info-network"
           },
-          { BILL_NAME: "관계없는 법률안", BILL_ID: "bill-unrelated" }
+          { BILL_NM: "관계없는 법률안", BILL_ID: "bill-unrelated" }
         ]
       })
     );
@@ -618,7 +625,8 @@ globalThis.fetch = (async (input: RequestInfo | URL) => {
 try {
   const lawPayloads = await fetchLawPayloads({
     assemblyBillApiKey: "assembly-key",
-    assemblyBillApiUrl: "https://open.assembly.go.kr/portal/openapi/ALLBILLINFO",
+    assemblyBillApiUrl: "https://open.assembly.go.kr/portal/openapi/ALLBILLV2",
+    assemblyBillEra: "제22대",
     lawApiOc: "law-oc",
     lawApiBaseUrl: "https://www.law.go.kr/DRF/lawSearch.do",
     keywords: ["정보통신망법", "공직선거법"]

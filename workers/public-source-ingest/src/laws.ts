@@ -19,6 +19,7 @@ export type LawPayload = {
 export type LawRuntime = {
   assemblyBillApiKey?: string;
   assemblyBillApiUrl: string;
+  assemblyBillEra: string;
   lawApiOc?: string;
   lawApiBaseUrl: string;
   keywords: string[];
@@ -48,7 +49,8 @@ export type LawOperationalDiagnostics = {
   keywords: string[];
 };
 
-const defaultAssemblyBillApiUrl = "https://open.assembly.go.kr/portal/openapi/ALLBILLINFO";
+const defaultAssemblyBillApiUrl = "https://open.assembly.go.kr/portal/openapi/ALLBILLV2";
+const defaultAssemblyBillEra = "제22대";
 const defaultLawApiBaseUrl = "https://www.law.go.kr/DRF/lawSearch.do";
 const defaultKeywords = [
   "집회 및 시위에 관한 법률",
@@ -66,6 +68,7 @@ export function readLawRuntime(config: Record<string, unknown>, env: NodeJS.Proc
       readConfigCredentialString(config, "public_data_sources.national_assembly_bill_api_key") ??
       readConfigCredentialString(config, "public_data_sources.assembly_notice_api_key"),
     assemblyBillApiUrl: env.MUSUNIL_ASSEMBLY_BILL_API_URL ?? readConfigString(config, "public_data_sources.national_assembly_bill_api_url") ?? defaultAssemblyBillApiUrl,
+    assemblyBillEra: env.MUSUNIL_ASSEMBLY_BILL_ERACO ?? readConfigString(config, "public_data_sources.national_assembly_bill_eraco") ?? defaultAssemblyBillEra,
     lawApiOc: readCredentialString(env.MUSUNIL_LAW_GO_KR_OC) ?? readConfigCredentialString(config, "public_data_sources.law_go_kr_oc"),
     lawApiBaseUrl: env.MUSUNIL_LAW_GO_KR_BASE_URL ?? readConfigString(config, "public_data_sources.law_go_kr_base_url") ?? defaultLawApiBaseUrl,
     keywords: readConfigStringArray(config, "public_data_sources.law_interest_keywords", defaultKeywords)
@@ -73,7 +76,7 @@ export function readLawRuntime(config: Record<string, unknown>, env: NodeJS.Proc
 }
 
 export function lawOperationalDiagnostics(runtime: LawRuntime): LawOperationalDiagnostics {
-  const assemblyEndpoint = endpointStatus(runtime.assemblyBillApiUrl, "open.assembly.go.kr", "/portal/openapi/ALLBILLINFO");
+  const assemblyEndpoint = endpointStatus(runtime.assemblyBillApiUrl, "open.assembly.go.kr", "/portal/openapi/ALLBILLV2");
   const lawEndpoint = endpointStatus(runtime.lawApiBaseUrl, "www.law.go.kr", "/DRF/lawSearch.do");
   const providers: LawOperationalDiagnostics["providers"] = [
     {
@@ -83,7 +86,7 @@ export function lawOperationalDiagnostics(runtime: LawRuntime): LawOperationalDi
       endpointHost: assemblyEndpoint.host,
       credentialStatus: runtime.assemblyBillApiKey ? "configured" : "missing",
       endpointStatus: assemblyEndpoint.status,
-      queryMode: "ALLBILLINFO json pIndex=1 pSize=100"
+      queryMode: `ALLBILLV2 json ERACO=${runtime.assemblyBillEra} pIndex=1 pSize=100`
     },
     {
       id: "law_effective",
@@ -144,6 +147,7 @@ async function fetchAssemblyBillPage(runtime: LawRuntime, page: number, pageSize
   url.searchParams.set("Type", "json");
   url.searchParams.set("pIndex", String(page));
   url.searchParams.set("pSize", String(pageSize));
+  url.searchParams.set("ERACO", runtime.assemblyBillEra);
   const payload = await fetchJson(url);
   return { payload, rows: extractObjectRows(payload) };
 }
@@ -184,18 +188,18 @@ function assemblyBillPayload(row: Record<string, unknown>, keywords: string[]): 
   if (!billTitle || !keywords.some((keyword) => searchText(billTitle).includes(searchText(keyword)))) return undefined;
   const lawName = lawNameFromBillTitle(billTitle);
   const assemblyBillId = pickString(row, ["BILL_ID", "BILL_NO", "의안ID", "의안번호"]);
-  const proposedDate = parseDateText(pickString(row, ["PROPOSE_DT", "제안일자"]));
-  const statusDate = parseDateText(pickString(row, ["PROC_DT", "PROC_RESULT_DT", "처리일자", "의결일자"]));
+  const proposedDate = parseDateText(pickString(row, ["PPSL_DT", "PROPOSE_DT", "제안일자", "제안일"]));
+  const statusDate = parseDateText(pickString(row, ["RGS_RSLN_DT", "JRCMIT_PROC_DT", "LAW_PROC_DT", "PROM_DT", "PROC_DT", "PROC_RESULT_DT", "처리일자", "의결일자"]));
   return {
     id: idFor("assembly_bill", assemblyBillId ?? billTitle),
     source: "assembly_bill",
     lawName,
     billTitle,
-    stage: pickString(row, ["PROC_RESULT", "처리결과", "COMMITTEE", "소관위원회"]) ?? "접수",
+    stage: pickString(row, ["RGS_CONF_RSLT", "JRCMIT_PROC_RSLT", "LAW_PROC_RSLT", "PROC_STAGE_CD", "PROC_RESULT", "처리결과", "JRCMIT_NM", "COMMITTEE", "소관위원회"]) ?? "접수",
     proposedDate,
     statusDate,
     assemblyBillId,
-    summary: pickString(row, ["RST_PROPOSER", "제안자", "제안이유"]),
+    summary: pickString(row, ["PPSR_NM", "RST_PROPOSER", "제안자", "제안이유"]),
     officialUrl: officialAssemblyBillUrl(pickString(row, ["LINK_URL", "DETAIL_LINK", "URL", "의안상세링크"]), assemblyBillId),
     keywords: unique([lawName, ...keywords.filter((keyword) => searchText(billTitle).includes(searchText(keyword)))])
   };

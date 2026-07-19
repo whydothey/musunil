@@ -79,7 +79,8 @@ ai:
   provider: ""
 public_data_sources:
   national_assembly_bill_api_key: "assembly_api_key"
-  national_assembly_bill_api_url: "https://open.assembly.go.kr/portal/openapi/ALLBILLINFO"
+  national_assembly_bill_api_url: "https://open.assembly.go.kr/portal/openapi/ALLBILLV2"
+  national_assembly_bill_eraco: "제22대"
   law_go_kr_oc: ""
   law_go_kr_base_url: "https://www.law.go.kr/DRF/lawSearch.do"
 notifications:
