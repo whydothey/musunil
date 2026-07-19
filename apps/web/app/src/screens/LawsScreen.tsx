@@ -1,4 +1,4 @@
-import { ArrowUpRight, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useAppState } from "../app-state";
 import { EmptyState, LoadingState, ScreenHeader, ServiceUnavailable } from "../components";
@@ -25,17 +25,11 @@ export function LawsScreen() {
       {dataset && !laws.length ? <EmptyState title="연결된 공식 법안이 없습니다" description="국회·국가법령정보의 공식 자료만 표시합니다." actionHref="/" actionLabel="주요 이슈 보기" /> : null}
       <div className="law-list">
         {laws.map((law) => {
-          const linkedIssue = dataset?.issues.find((issue) => law.linkedIssueIds?.includes(issue.id));
           return (
-            <article className="law-row" key={law.id}>
+            <Link href={`/laws/${encodeURIComponent(law.id)}`} className="law-row" key={law.id} ariaLabel={`${law.title} 법안 정보 보기`}>
               <div className="law-source-line"><span>{law.source === "assembly_bill" ? "국회 의안" : "현행 법령"}</span><time>{law.proposedDate || law.statusDate || "날짜 확인 중"}</time></div>
-              <h2>{law.title}</h2>
-              <p>{law.stage} · 연결 이슈 {law.linkedIssueCount}개 · 현장 {law.occurrenceCount}곳</p>
-              <div className="law-actions">
-                {linkedIssue ? <Link href={`/issues/${encodeURIComponent(linkedIssue.id)}`}>연결 이슈<ChevronRight /></Link> : <span>연결 이슈 확인 중</span>}
-                {law.officialUrl ? <a href={law.officialUrl} target="_blank" rel="noreferrer">공식 자료<ArrowUpRight /></a> : null}
-              </div>
-            </article>
+              <div className="law-row-main"><div><h2>{law.title}</h2><p>{law.stage} · 연결 이슈 {law.linkedIssueCount}개 · 현장 {law.occurrenceCount}곳</p></div><ChevronRight aria-hidden="true" /></div>
+            </Link>
           );
         })}
       </div>

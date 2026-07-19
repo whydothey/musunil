@@ -53,6 +53,8 @@ console.log(JSON.stringify(payload, null, 2));
 
 async function verifyFixtureViewport(browserInstance, viewport) {
   const context = await browserInstance.newContext({ viewport: { width: viewport.width, height: viewport.height }, reducedMotion: "reduce", locale: "ko-KR" });
+  await context.grantPermissions(["geolocation"], { origin: new URL(baseUrl).origin });
+  await context.setGeolocation({ latitude: 37.5665, longitude: 126.978 });
   const page = await context.newPage();
   page.on("console", (message) => {
     if (message.type() !== "error") return;
@@ -73,6 +75,11 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     check(home.nestedInteractive === 0, `${viewport.id}: home nested interactive controls`);
     check(viewport.width >= 768 || visibleIssueTitles.length >= 3, `${viewport.id}: fewer than three issue titles in first viewport`);
     check(viewport.width < 1080 || home.mapCount === 0, `${viewport.id}: desktop home includes map`);
+    if (viewport.width >= 1080) {
+      const feedBox = await page.locator('[data-screen="home"]').boundingBox();
+      check(Boolean(feedBox && feedBox.width >= 880), `${viewport.id}: desktop feed remains a narrow mobile column`);
+    }
+    await assertAxe(page, `${viewport.id}: home`);
     await shot(page, `${viewport.id}_home.png`);
 
     await page.locator('a[href="/issues/issue-network-act"]').click();
@@ -81,15 +88,26 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     check(await page.locator('[role="tab"]').count() === 4, `${viewport.id}: issue detail must expose exactly four tabs`);
     check(await page.locator('.occurrence-row').count() >= 3, `${viewport.id}: issue detail occurrence list missing`);
     await shot(page, `${viewport.id}_issue.png`);
+    await assertAxe(page, `${viewport.id}: issue occurrences`);
+    for (const tab of [{ label: "영상", file: "videos" }, { label: "근거", file: "evidence" }, { label: "법안", file: "laws" }]) {
+      await page.getByRole("tab", { name: tab.label }).click();
+      await page.waitForTimeout(80);
+      await assertAxe(page, `${viewport.id}: issue ${tab.file}`);
+      await shot(page, `${viewport.id}_issue_${tab.file}.png`);
+    }
+    await page.getByRole("tab", { name: "현장" }).click();
 
     await page.locator('a[href="/occurrences/occ-network-seoul"]').click();
     await page.waitForURL("**/occurrences/occ-network-seoul");
     await page.locator('[data-screen="occurrence"]').waitFor({ state: "visible" });
     check((await page.locator('.fact-row').count()) === 4, `${viewport.id}: occurrence facts missing`);
     check((await page.locator('.context-actions a').count()) === 3, `${viewport.id}: occurrence context actions changed`);
+    check((await page.locator('.occurrence-video-cover').count()) === 0, `${viewport.id}: occurrence video action is duplicated by a second cover`);
+    await assertAxe(page, `${viewport.id}: occurrence`);
     await shot(page, `${viewport.id}_occurrence.png`);
     await page.goBack();
     await page.locator('[data-screen="issue"]').waitFor({ state: "visible" });
+    await page.waitForFunction(() => document.activeElement?.getAttribute("href") === "/occurrences/occ-network-seoul", undefined, { timeout: 2_500 }).catch(() => undefined);
     const restoredHref = await page.evaluate(() => document.activeElement?.getAttribute("href"));
     check(restoredHref === "/occurrences/occ-network-seoul", `${viewport.id}: back navigation did not restore occurrence focus`);
 
@@ -98,43 +116,129 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     const reelBox = await page.locator('.reel-card').first().boundingBox();
     check(Boolean(reelBox && reelBox.height >= viewport.height * 0.82), `${viewport.id}: reel does not fill the content viewport`);
     check((await page.locator('.reel-card').first().locator('.reel-actions a').count()) === 3, `${viewport.id}: reel action rail changed`);
+    await assertAxe(page, `${viewport.id}: reels`);
     await shot(page, `${viewport.id}_reels.png`);
+    await page.goto(`${baseUrl}/reels?occurrence=occ-network-seoul`, { waitUntil: "load" });
+    await page.locator('.reel-card').first().waitFor({ state: "visible" });
+    check((await page.locator('.reels-topbar button[aria-label="이전 화면"]').count()) === 1, `${viewport.id}: contextual reels back action missing`);
+    await page.getByRole("link", { name: "근거 보기" }).first().click();
+    await page.waitForURL("**/occurrences/occ-network-seoul#evidence");
+    await page.locator("#evidence").waitFor({ state: "visible" });
+    await page.waitForFunction(() => document.activeElement?.id === "evidence", undefined, { timeout: 2_500 }).catch(() => undefined);
+    check(await page.evaluate(() => document.activeElement?.id === "evidence"), `${viewport.id}: reel evidence action did not focus the evidence section`);
 
     await page.goto(`${baseUrl}/explore`, { waitUntil: "load" });
     await page.locator('.maplibregl-canvas').waitFor({ state: "visible" });
     await page.locator('[data-map-ready="true"]').waitFor({ state: "visible" });
+    await page.locator('[data-basemap-ready="true"]').waitFor({ state: "visible", timeout: 12_000 });
     const mapBox = await page.locator('.map-canvas').boundingBox();
     check(Boolean(mapBox && mapBox.height >= viewport.height * 0.8), `${viewport.id}: map canvas collapsed`);
+    await page.waitForTimeout(1_000);
+    const mapPixels = await pixelMetrics(context, await page.locator('.map-canvas').screenshot({ type: "png" }));
+    check(mapPixels.colorGroups >= 60 && mapPixels.dominantRatio <= 0.82, `${viewport.id}: basemap has insufficient visual context (${JSON.stringify(mapPixels)})`);
     await page.getByLabel("지도 검색").fill("인천");
     await page.locator('.map-results button').click();
-    check((await page.locator('.map-selection').count()) === 1, `${viewport.id}: map selection panel missing`);
+    await page.locator('.map-selection').waitFor({ state: "visible" });
     check((await page.locator('.map-selection .primary-button').count()) === 1, `${viewport.id}: map selection must have one primary action`);
+    const selectionBox = await page.locator('.map-selection').boundingBox();
+    check(Boolean(selectionBox && selectionBox.y >= 0 && selectionBox.y + selectionBox.height <= viewport.height), `${viewport.id}: map selection is outside the viewport`);
+    check((await page.locator('.map-selection h2').innerText()).includes("인천"), `${viewport.id}: map selection does not match the searched occurrence`);
+    await page.waitForTimeout(2_500);
+    const selectedMapPixels = await pixelMetrics(context, await page.locator('.map-canvas').screenshot({ type: "png" }));
+    check(selectedMapPixels.colorGroups >= 60 && selectedMapPixels.dominantRatio <= 0.88, `${viewport.id}: selected basemap did not finish painting (${JSON.stringify(selectedMapPixels)})`);
+    await assertAxe(page, `${viewport.id}: explore selection`);
     await shot(page, `${viewport.id}_explore.png`);
 
     await page.goto(`${baseUrl}/laws`, { waitUntil: "load" });
     await page.locator('[data-screen="laws"]').waitFor({ state: "visible" });
     check((await page.locator('.segmented-control button').count()) === 2, `${viewport.id}: law sort must have two options`);
     check((await page.locator('.law-row').count()) >= 3, `${viewport.id}: fixture law rows missing`);
+    check((await page.locator('.law-row').first().getAttribute("href"))?.startsWith("/laws/") === true, `${viewport.id}: law row is not a full semantic link`);
+    await assertAxe(page, `${viewport.id}: laws`);
     await shot(page, `${viewport.id}_laws.png`);
+    await page.locator('.law-row').first().click();
+    await page.locator('[data-screen="law"]').waitFor({ state: "visible" });
+    check((await page.locator('.official-law-link').count()) === 1, `${viewport.id}: law detail official source action missing`);
+    await assertAxe(page, `${viewport.id}: law detail`);
+    await shot(page, `${viewport.id}_law_detail.png`);
 
     await page.goto(`${baseUrl}/report`, { waitUntil: "load" });
     await page.locator('[data-screen="report"]').waitFor({ state: "visible" });
     const reportActions = await page.locator('main button').count();
     check(reportActions === 1, `${viewport.id}: report entry must expose one action, got ${reportActions}`);
     check((await page.getByRole("button", { name: "근처 현장 찾기" }).count()) === 1, `${viewport.id}: report primary action missing`);
+    await assertAxe(page, `${viewport.id}: report entry`);
     await shot(page, `${viewport.id}_report.png`);
-
-    await page.addScriptTag({ content: axe.source });
-    const axeResult = await page.evaluate(async () => window.axe.run(document, { resultTypes: ["violations"] }));
-    const serious = axeResult.violations.filter((item) => ["serious", "critical"].includes(item.impact || ""));
-    check(serious.length === 0, `${viewport.id}: axe serious violations ${JSON.stringify(serious.map((item) => ({ id: item.id, nodes: item.nodes.slice(0, 3).map((node) => node.target) })))}`);
+    await page.getByRole("button", { name: "근처 현장 찾기" }).click();
+    await page.locator('.candidate-row').first().waitFor({ state: "visible" });
+    await shot(page, `${viewport.id}_report_candidates.png`);
+    await page.locator('.candidate-row').first().click();
+    await page.getByRole("button", { name: "이 현장 촬영하기" }).waitFor({ state: "visible" });
+    await shot(page, `${viewport.id}_report_target.png`);
+    await page.getByRole("button", { name: "이 현장 촬영하기" }).click();
+    await page.getByRole("button", { name: "본인확인 계속" }).waitFor({ state: "visible" });
+    await shot(page, `${viewport.id}_report_identity.png`);
+    await page.getByRole("button", { name: "본인확인 계속" }).click();
+    await page.getByRole("button", { name: "7초 촬영 완료" }).waitFor({ state: "visible" });
+    await shot(page, `${viewport.id}_report_camera.png`);
+    await page.getByRole("button", { name: "7초 촬영 완료" }).click();
+    await page.getByRole("button", { name: "이 현장에 제출" }).waitFor({ state: "visible" });
+    const submitBox = await page.getByRole("button", { name: "이 현장에 제출" }).boundingBox();
+    const tabBox = await page.locator('.mobile-tabbar').isVisible() ? await page.locator('.mobile-tabbar').boundingBox() : undefined;
+    check(Boolean(submitBox && (!tabBox || submitBox.y + submitBox.height <= tabBox.y)), `${viewport.id}: report submit action is covered by navigation`);
+    await assertAxe(page, `${viewport.id}: report preview`);
+    await shot(page, `${viewport.id}_report_preview.png`);
+    await page.getByRole("button", { name: "이 현장에 제출" }).click();
+    await page.locator('.receipt-stage').waitFor({ state: "visible" });
+    await assertAxe(page, `${viewport.id}: report receipt`);
+    await shot(page, `${viewport.id}_report_receipt.png`);
 
     const finalMetrics = await metrics(page);
     check(finalMetrics.overflowX === false, `${viewport.id}: final horizontal overflow`);
     check(finalMetrics.forbidden.length === 0, `${viewport.id}: forbidden UI ${finalMetrics.forbidden.join(", ")}`);
-    results.push({ viewport, visibleIssueTitles, home, finalMetrics, axeViolations: serious.length });
+    results.push({ viewport, visibleIssueTitles, home, mapPixels, selectedMapPixels, finalMetrics, axeViolations: 0 });
   } finally {
     await context.close();
+  }
+}
+
+async function assertAxe(page, label) {
+  if (!(await page.evaluate(() => Boolean(window.axe)))) await page.addScriptTag({ content: axe.source });
+  const axeResult = await page.evaluate(async () => window.axe.run(document, { resultTypes: ["violations"] }));
+  const serious = axeResult.violations.filter((item) => ["serious", "critical"].includes(item.impact || ""));
+  check(serious.length === 0, `${label}: axe serious violations ${JSON.stringify(serious.map((item) => ({ id: item.id, nodes: item.nodes.slice(0, 3).map((node) => node.target) })))}`);
+}
+
+async function pixelMetrics(context, png) {
+  const probe = await context.newPage();
+  try {
+    await probe.setContent('<canvas id="canvas"></canvas>');
+    return await probe.evaluate(async (source) => {
+      const image = new Image();
+      image.src = source;
+      await image.decode();
+      const canvas = document.querySelector("canvas");
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context2d = canvas.getContext("2d");
+      context2d.drawImage(image, 0, 0);
+      const pixels = context2d.getImageData(0, 0, canvas.width, canvas.height).data;
+      const colors = new Map();
+      let total = 0;
+      const stride = Math.max(4, Math.floor(Math.min(canvas.width, canvas.height) / 80));
+      for (let y = 0; y < canvas.height; y += stride) {
+        for (let x = 0; x < canvas.width; x += stride) {
+          const index = (y * canvas.width + x) * 4;
+          const key = `${pixels[index] >> 3}:${pixels[index + 1] >> 3}:${pixels[index + 2] >> 3}`;
+          colors.set(key, (colors.get(key) || 0) + 1);
+          total += 1;
+        }
+      }
+      const dominant = Math.max(...colors.values());
+      return { colorGroups: colors.size, dominantRatio: Number((dominant / total).toFixed(4)) };
+    }, `data:image/png;base64,${png.toString("base64")}`);
+  } finally {
+    await probe.close();
   }
 }
 
@@ -173,8 +277,12 @@ async function verifyLiveViewport(browserInstance, viewport) {
 
     await page.goto(`${baseUrl}/explore`, { waitUntil: "domcontentloaded" });
     await page.locator(".map-canvas").waitFor({ state: "visible" });
+    await page.locator('[data-basemap-ready="true"]').waitFor({ state: "visible", timeout: 12_000 });
     const mapBox = await page.locator(".map-canvas").boundingBox();
     check(Boolean(mapBox && mapBox.height >= viewport.height * 0.8), `${viewport.id}: live map canvas collapsed`);
+    await page.waitForTimeout(1_000);
+    const mapPixels = await pixelMetrics(context, await page.locator('.map-canvas').screenshot({ type: "png" }));
+    check(mapPixels.colorGroups >= 60 && mapPixels.dominantRatio <= 0.82, `${viewport.id}: live basemap has insufficient visual context (${JSON.stringify(mapPixels)})`);
     await shot(page, `${viewport.id}_explore.png`);
 
     await page.goto(`${baseUrl}/laws`, { waitUntil: "domcontentloaded" });
@@ -190,7 +298,7 @@ async function verifyLiveViewport(browserInstance, viewport) {
     const finalMetrics = await metrics(page);
     check(finalMetrics.overflowX === false, `${viewport.id}: live final horizontal overflow`);
     check(finalMetrics.forbidden.length === 0, `${viewport.id}: live final forbidden UI ${finalMetrics.forbidden.join(", ")}`);
-    results.push({ viewport, issueCount, reelCount, home, finalMetrics });
+    results.push({ viewport, issueCount, reelCount, mapPixels, home, finalMetrics });
   } finally {
     await context.close();
   }

@@ -36,22 +36,12 @@ export function OccurrenceScreen({ id }: { id: string }) {
       </dl>
 
       <nav className="context-actions" aria-label="현장 관련 정보">
-        <Link href={`/reels?occurrence=${encodeURIComponent(id)}`}><PlaySquare /><span>영상</span></Link>
+        <Link href={`/reels?occurrence=${encodeURIComponent(id)}`}><PlaySquare /><span>영상{reels.length ? ` ${reels.length}` : ""}</span></Link>
         <a href="#evidence"><FileText /><span>근거</span></a>
         <Link href={`/explore?occurrence=${encodeURIComponent(id)}`}><MapPin /><span>위치</span></Link>
       </nav>
 
-      {reels.length ? (
-        <section className="content-section">
-          <div className="section-heading"><div><h2>현장 영상</h2><p>촬영 시각·위치 확인과 비식별 검토를 마쳤습니다</p></div></div>
-          <Link href={`/reels?occurrence=${encodeURIComponent(id)}`} className="occurrence-video-cover">
-            <img src={reels[0].media.redactedPosterUrl} alt="비식별 처리된 현장 영상 미리보기" />
-            <span><PlaySquare />{reels.length}건 연속 보기</span>
-          </Link>
-        </section>
-      ) : null}
-
-      <section className="content-section" id="evidence">
+      <section className="content-section" id="evidence" tabIndex={-1}>
         <div className="section-heading"><div><h2>근거와 주장</h2><p>누가 말했는지와 무엇으로 확인되는지 구분합니다</p></div></div>
         {claims.length ? claims.map((claim) => (
           <article className="claim-row" key={claim.id}>

@@ -1,4 +1,4 @@
-import { FileText, Layers3, MapPin, Pause, Play } from "lucide-react";
+import { ArrowLeft, FileText, Layers3, MapPin, Pause, Play } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppState } from "../app-state";
 import { EmptyState, LoadingState, ServiceUnavailable } from "../components";
@@ -7,10 +7,13 @@ import { Link, useRouter } from "../router";
 
 export function ReelsScreen() {
   const { dataset, serviceSyncState } = useAppState();
-  const { route } = useRouter();
+  const { route, back } = useRouter();
   const issueId = route.search.get("issue");
   const occurrenceId = route.search.get("occurrence");
   const selectedReel = route.search.get("reel");
+  const contextLabel = occurrenceId
+    ? dataset?.occurrences.find((item) => item.id === occurrenceId)?.title
+    : issueId ? dataset?.issues.find((item) => item.id === issueId)?.title : undefined;
   const reels = useMemo(() => {
     const all = dataset?.reels || [];
     const filtered = occurrenceId ? all.filter((item) => item.occurrenceId === occurrenceId) : issueId ? all.filter((item) => item.issueId === issueId) : all;
@@ -24,7 +27,10 @@ export function ReelsScreen() {
 
   return (
     <section className="reels-screen" data-screen="reels" aria-label="현장 영상">
-      <div className="reels-topbar"><strong>현장 영상</strong><span>위치·시각 확인</span></div>
+      <div className="reels-topbar">
+        {contextLabel ? <button type="button" onClick={back} aria-label="이전 화면"><ArrowLeft /></button> : null}
+        <div><strong>{contextLabel || "현장 영상"}</strong><span>{contextLabel ? "연결된 공개 영상" : "위치·시각 확인"}</span></div>
+      </div>
       <div className="reels-feed">
         {reels.map((reel, index) => <ReelCard key={reel.id} reel={reel} eager={index === 0} />)}
       </div>

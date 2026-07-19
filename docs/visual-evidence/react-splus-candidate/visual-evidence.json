@@ -1,7 +1,7 @@
 {
   "checked": "react_splus_candidate",
   "ok": true,
-  "baseUrl": "http://127.0.0.1:57319",
+  "baseUrl": "http://127.0.0.1:58364",
   "results": [
     {
       "viewport": {
@@ -20,6 +20,14 @@
         "nestedInteractive": 0,
         "mapCount": 0,
         "forbidden": []
+      },
+      "mapPixels": {
+        "colorGroups": 102,
+        "dominantRatio": 0.3841
+      },
+      "selectedMapPixels": {
+        "colorGroups": 136,
+        "dominantRatio": 0.3385
       },
       "finalMetrics": {
         "overflowX": false,
@@ -47,6 +55,14 @@
         "mapCount": 0,
         "forbidden": []
       },
+      "mapPixels": {
+        "colorGroups": 100,
+        "dominantRatio": 0.3732
+      },
+      "selectedMapPixels": {
+        "colorGroups": 116,
+        "dominantRatio": 0.3265
+      },
       "finalMetrics": {
         "overflowX": false,
         "nestedInteractive": 0,
@@ -73,6 +89,14 @@
         "mapCount": 0,
         "forbidden": []
       },
+      "mapPixels": {
+        "colorGroups": 76,
+        "dominantRatio": 0.6254
+      },
+      "selectedMapPixels": {
+        "colorGroups": 79,
+        "dominantRatio": 0.3396
+      },
       "finalMetrics": {
         "overflowX": false,
         "nestedInteractive": 0,
@@ -98,6 +122,14 @@
         "nestedInteractive": 0,
         "mapCount": 0,
         "forbidden": []
+      },
+      "mapPixels": {
+        "colorGroups": 69,
+        "dominantRatio": 0.7092
+      },
+      "selectedMapPixels": {
+        "colorGroups": 80,
+        "dominantRatio": 0.3498
       },
       "finalMetrics": {
         "overflowX": false,

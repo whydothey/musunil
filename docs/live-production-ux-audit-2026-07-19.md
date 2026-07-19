@@ -33,9 +33,9 @@
 | --- | --- | --- |
 | UI-G1. React/Vite 기반과 데이터 격리 | **Guard** | React 19, TypeScript, Vite 앱 셸·라우팅·디자인 토큰을 추가했다. production 빌드에서 fixture 제목·ID·preview 미디어 문자열 0건, 초기 JS gzip 약 67KB를 확인했다. |
 | UI-G2. 홈·이슈·현장 흐름 | **Guard** | 390/430/768/1440에서 홈 첫 viewport에 이슈 제목 4개, 중첩 조작 0건을 확인했다. 이슈는 전체 화면으로 열리고 `현장/영상/근거/법안` 네 탭, 현장은 공통 `OccurrenceDigest` 상세로 이동한다. |
-| UI-G3. 영상·지도 연결 | **Guard** | 세로 snap 영상의 액션을 `현장/근거/이슈`로 제한했다. MapLibre GeoJSON 핀·인증 영역, 검색 결과가 동일 `selectedOccurrenceId`를 사용하며 pan/zoom과 핀 선택 캡처를 통과했다. |
-| UI-G4. 법안·제보 단순화 | **Guard** | 법안 2개 정렬과 `근처 현장 → 대상 확정 → 본인확인 → 촬영 → 미리보기 → 접수` 점진 흐름을 구현했다. 첫 제보 화면의 주 행동은 1개다. production API·PortOne은 G7까지 정직한 미연결 상태를 유지한다. |
-| UI-G5. 상업용 시각 완성 | **Guard** | 대시보드형 KPI·중첩 카드·장식 글로우를 제거하고 단일 피드, 전체 화면 상세, 8px 이하 표면, Lucide 아이콘으로 통일했다. 28개 viewport/route 캡처에서 오버플로우 0건, axe serious/critical 0건이다. |
+| UI-G3. 영상·지도 연결 | **Guard** | 세로 snap 영상의 액션을 `현장/근거/이슈`로 제한하고 진입 맥락·뒤로가기를 표시했다. `근거`는 실제 근거 섹션으로 스크롤·포커스한다. MapLibre 핀·인증 영역과 검색 결과는 동일 `selectedOccurrenceId`를 쓰며, 지도 배경과 선택 후 화면의 픽셀 문맥·pan/zoom·선택 패널을 통과했다. |
+| UI-G4. 법안·제보 단순화 | **Guard** | 법안 행 전체가 44px 이상 semantic link로 상세를 열고 공식 원문·연결 이슈로 이동한다. `근처 현장 → 대상 확정 → 본인확인 → 촬영 → 미리보기 → 접수` 전 단계를 4개 viewport에서 캡처했다. production API·PortOne은 G7까지 정직한 미연결 상태를 유지한다. |
+| UI-G5. 상업용 시각 완성 | **Guard** | 대시보드형 KPI·중첩 카드·장식 글로우를 제거하고 단일 피드, 전체 화면 상세, 8px 이하 표면, Lucide 아이콘으로 통일했다. 68개 화면 캡처에서 오버플로우·중첩 조작 0건, 주요 화면/상태 axe serious/critical 0건이며 데스크톱 정보 열은 920px로 별도 조정했다. |
 | UI-G6. S+ 출시 감사·배포 전환 | **Active** | production fixture 누출 0건과 Render `apps/web/dist` build contract는 local에서 통과했다. 현재 커밋 배포 후 실제 `musunil.com` SHA·화면·빈 상태·보안 헤더 검증이 남아 있다. |
 | UI-G7. 운영 연결 재개 | Deferred | UI 출시 후보가 확정된 뒤 기존 G7을 재개한다. |
 
@@ -43,6 +43,7 @@
 
 | 일시 | Goal | 사용자 문제 | 변경 | 검증 |
 | --- | --- | --- | --- | --- |
+| 2026-07-20 00:50 KST | UI-G3~G6 | 독립 QA가 회색 지도, 릴스 근거 링크 오작동, 법안 상세 부재, 제보 첫 단계만 검증, 좁은 데스크톱 열을 이유로 전체 B·배포 불가 판정 | QA 판정을 수용해 완료 선언을 보류했다. 지도는 실제 타일의 idle과 캔버스 픽셀 문맥을 검사하고 선택 후 타일 완성까지 기다린다. 릴스는 현장/이슈 진입 맥락과 복귀를 표시하고 근거 섹션을 직접 포커스한다. 법안 전체 행 상세, 공식 원문, 연결 이슈 흐름을 추가했다. 현장 상세의 중복 영상 커버를 제거하고, 제보 7단계 및 데스크톱 920px 열을 검증했다. | `pnpm check:web-next:visual`, `pnpm check:web-next:production`, `pnpm check:launch-sample` 통과. [React S+ candidate evidence](/Users/mk/Documents/Musunil/docs/visual-evidence/react-splus-candidate/visual-evidence.json)의 지도 기본/선택 픽셀 문맥, 이슈 4개 탭, 법안 상세, 제보 후보~접수 4개 viewport 캡처 확인 |
 | 2026-07-20 00:15 KST | UI-G2~G6 | 후보 UI가 로컬에서만 보이고, 기존 배포·시각 검사가 구형 단일 HTML 구조를 다시 정답으로 고정할 위험 | 공통 현장 lazy detail 계약, 뒤로가기 포커스 복귀, MapLibre fallback과 실제 크기 검증, production fixture strip을 보강했다. Render publish를 `apps/web/dist`로 고정하고 config/build-info/headers/recursive manifest를 Vite public/dist 생명주기에 맞췄다. 기존 치수 검사는 이슈 가시성·중첩 조작·지도/상세 경쟁·네 탭·공통 현장·릴스 액션·제보 첫 행동·axe 검사로 교체했다. | `pnpm check`, `pnpm check:launch-sample`, `pnpm check:web-next:production`, `pnpm check:web-next:visual`, `pnpm check:web-render-build-command` 통과. [React S+ candidate evidence](/Users/mk/Documents/Musunil/docs/visual-evidence/react-splus-candidate/visual-evidence.json)에서 4개 viewport 모두 이슈 제목 4개, overflow 0, nested interactive 0, axe serious/critical 0 |
 | 2026-07-19 23:20 KST | UI-G1~G4 | 라이브가 약 1.2만 줄 단일 HTML과 다중 패널·과도한 조작 요소로 AI 대시보드처럼 보이고, 일반 사용자가 첫 행동을 알기 어려움 | 기존 라이브를 유지한 채 `apps/web/app`에 React/Vite 앱을 병렬 구축했다. 홈은 단일 이슈 링크 목록, 상세는 전체 화면, 지도는 핀·인증 영역, 영상은 세로 snap, 법안은 2개 정렬, 제보는 단계별 한 행동으로 재구성했다. fixture/production은 Vite alias로 빌드 단계부터 분리했다. | `@musunil/web typecheck`, fixture/production build 통과. production dist에서 fixture title/id/preview token 0건. 시각·접근성 검증은 UI-G5/G6 Active로 유지 |
 | 2026-07-19 | G1 | 홈·지도·상세가 서로 다른 선택 대상을 가리킬 수 있음 | `IssueOverview`/`OccurrenceDigest` additive API, `selectedOccurrenceId` 모듈 상태, ES module API/contract foundation, recursive static manifest를 도입 | `@musunil/api test`, `check:web-manifest`, `check:web-smoke`, `check:web-flow`, `check:ux-surface`, `check:visual-surface`, `check:web-render-build-command` 통과 |

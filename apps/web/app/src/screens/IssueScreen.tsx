@@ -86,12 +86,11 @@ export function IssueScreen({ id }: { id: string }) {
           <div className="section-list">
             <div className="section-heading"><div><h2>관련 법안</h2><p>국회·국가법령정보의 공식 자료입니다</p></div><Scale aria-hidden="true" /></div>
             {laws.length ? laws.map((law) => (
-              <article key={law.id} className="law-inline-row">
+              <Link key={law.id} href={`/laws/${encodeURIComponent(law.id)}`} className="law-inline-row">
                 <span>{law.source === "assembly_bill" ? "국회 의안" : "현행 법령"}</span>
                 <h3>{law.title}</h3>
                 <p>{law.stage} · {law.statusDate || law.proposedDate || "공식 날짜 확인 중"}</p>
-                {law.officialUrl ? <a href={law.officialUrl} target="_blank" rel="noreferrer">공식 자료</a> : null}
-              </article>
+              </Link>
             )) : <EmptyState title="연결된 법안이 없습니다" description="공식 법안 정보와 이슈의 연결 근거가 확인되면 표시합니다." actionHref="/laws" actionLabel="법안 전체 보기" />}
           </div>
         ) : null}

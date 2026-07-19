@@ -99,7 +99,7 @@ export function ReportScreen() {
         </div>
       ) : null}
 
-      {phase === "camera" && selected ? <CameraCapture occurrence={selected} onComplete={(url) => { setVideoUrl(url); setPhase("preview"); }} onCancel={() => setPhase("selected")} /> : null}
+      {phase === "camera" && selected ? <CameraCapture occurrence={selected} fixtureMediaUrl={dataset?.reels[0]?.media.redactedClipUrl} onComplete={(url) => { setVideoUrl(url); setPhase("preview"); }} onCancel={() => setPhase("selected")} /> : null}
 
       {phase === "preview" && selected && videoUrl ? (
         <div className="report-stage preview-stage">
@@ -126,7 +126,7 @@ export function ReportScreen() {
   );
 }
 
-function CameraCapture({ occurrence, onComplete, onCancel }: { occurrence: OccurrenceDigest; onComplete: (url: string) => void; onCancel: () => void }) {
+function CameraCapture({ occurrence, fixtureMediaUrl, onComplete, onCancel }: { occurrence: OccurrenceDigest; fixtureMediaUrl?: string; onComplete: (url: string) => void; onCancel: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | undefined>(undefined);
   const recorderRef = useRef<MediaRecorder | undefined>(undefined);
@@ -134,6 +134,7 @@ function CameraCapture({ occurrence, onComplete, onCancel }: { occurrence: Occur
   const [seconds, setSeconds] = useState(7);
 
   useEffect(() => {
+    if (__MUSUNIL_UI_DATA_MODE__ === "fixture") return;
     let active = true;
     navigator.mediaDevices?.getUserMedia({ video: { facingMode: "environment" }, audio: true }).then((stream) => {
       if (!active) { stream.getTracks().forEach((track) => track.stop()); return; }
@@ -143,6 +144,16 @@ function CameraCapture({ occurrence, onComplete, onCancel }: { occurrence: Occur
     }).catch(() => setStatus("error"));
     return () => { active = false; streamRef.current?.getTracks().forEach((track) => track.stop()); };
   }, []);
+
+  if (__MUSUNIL_UI_DATA_MODE__ === "fixture") {
+    return (
+      <div className="camera-stage fixture-camera-stage">
+        <div className="camera-top"><button type="button" onClick={onCancel}><ArrowLeft />취소</button><span>{occurrence.title}</span></div>
+        <div className="fixture-camera-view"><Camera /><strong>앱 내 카메라</strong><span>7초 현장 촬영 상태를 검증합니다</span></div>
+        <button type="button" className="record-button" onClick={() => onComplete(fixtureMediaUrl || "")} aria-label="7초 촬영 완료"><span /></button>
+      </div>
+    );
+  }
 
   const record = () => {
     const stream = streamRef.current;

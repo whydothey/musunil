@@ -1,5 +1,5 @@
 import { ChevronRight, LocateFixed, Search, X } from "lucide-react";
-import maplibregl, { type Map as MapLibreMap, type MapLayerMouseEvent, type MapGeoJSONFeature } from "maplibre-gl";
+import maplibregl, { type Map as MapLibreMap, type MapLayerMouseEvent, type MapGeoJSONFeature, type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppState } from "../app-state";
@@ -57,6 +57,7 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | undefined>(undefined);
   const [mapReady, setMapReady] = useState(false);
+  const [baseMapReady, setBaseMapReady] = useState(false);
   const [baseMapFallback, setBaseMapFallback] = useState(false);
   const pinData = pins || { type: "FeatureCollection" as const, features: [] };
   const areaData = areas || { type: "FeatureCollection" as const, features: [] };
@@ -74,6 +75,19 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
     let interactionsBound = false;
     let fallbackApplied = false;
+    let contextualPaintReady = false;
+    let contextualErrors = 0;
+    const applyFallback = () => {
+      if (fallbackApplied) return;
+      fallbackApplied = true;
+      contextualPaintReady = false;
+      setBaseMapReady(false);
+      setBaseMapFallback(true);
+      map.setStyle(fallbackRasterStyle());
+    };
+    const fallbackTimer = window.setTimeout(() => {
+      if (!contextualPaintReady) applyFallback();
+    }, 8_000);
     const installLayers = () => {
       if (map.getSource("occurrence-pins")) return;
       map.addSource("presence-areas", { type: "geojson", data: areaData as never });
@@ -112,18 +126,22 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
       setMapReady(true);
     };
     map.on("style.load", installLayers);
-    map.on("error", () => {
-      if (fallbackApplied || map.isStyleLoaded()) return;
-      fallbackApplied = true;
-      setBaseMapFallback(true);
-      map.setStyle({
-        version: 8,
-        sources: {},
-        layers: [{ id: "fallback-background", type: "background", paint: { "background-color": "#e8edef" } }]
-      });
+    map.on("idle", () => {
+      const contextualLayers = map.getStyle().layers.filter((layer) => !["background", "fallback-background", "presence-fill", "presence-outline", "occurrence-pin-shadow", "occurrence-pins"].includes(layer.id));
+      if (!contextualLayers.length) return;
+      contextualPaintReady = true;
+      setBaseMapReady(true);
+      window.clearTimeout(fallbackTimer);
+    });
+    map.on("error", (event) => {
+      if (fallbackApplied) return;
+      const message = String(event.error?.message || "");
+      if (!/tile|source|glyph|sprite|fetch|network/i.test(message)) return;
+      contextualErrors += 1;
+      if (contextualErrors >= 3) applyFallback();
     });
     mapRef.current = map;
-    return () => { map.remove(); mapRef.current = undefined; };
+    return () => { window.clearTimeout(fallbackTimer); map.remove(); mapRef.current = undefined; };
   }, []);
 
   useEffect(() => {
@@ -145,9 +163,27 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
   }, [selectedId, pinData.features]);
 
   return <>
-    <div ref={containerRef} className="map-canvas" data-map-ready={mapReady ? "true" : "false"} aria-label={`${occurrences.length}개 공개 현장 지도`} />
-    {baseMapFallback ? <div className="map-basemap-notice">지도 배경 연결 중 · 현장 위치는 표시됩니다</div> : null}
+    <div ref={containerRef} className="map-canvas" data-map-ready={mapReady ? "true" : "false"} data-basemap-ready={baseMapReady ? "true" : "false"} aria-label={`${occurrences.length}개 공개 현장 지도`} />
+    {baseMapFallback ? <div className="map-basemap-notice">대체 지도 연결됨</div> : null}
   </>;
+}
+
+function fallbackRasterStyle(): StyleSpecification {
+  return {
+    version: 8,
+    sources: {
+      "fallback-map": {
+        type: "raster",
+        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+        tileSize: 256,
+        attribution: "© OpenStreetMap contributors"
+      }
+    },
+    layers: [
+      { id: "fallback-background", type: "background", paint: { "background-color": "#e8edef" } },
+      { id: "fallback-map", type: "raster", source: "fallback-map", paint: { "raster-opacity": 1 } }
+    ]
+  };
 }
 
 function MapSelection({ occurrence, onClose }: { occurrence: OccurrenceDigest; onClose: () => void }) {
