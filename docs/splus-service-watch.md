@@ -1,6 +1,6 @@
 # S+ Service Watch
 
-Last checked: 2026-07-19T10:54:15.912Z
+Last checked: 2026-07-19T10:57:52.482Z
 
 Status: Active
 
@@ -8,7 +8,7 @@ Status: Active
 |---|---|---|
 | web_static_manifest | ok | {"files":16,"bytes":2460427,"headersFile":"verified","buildVariantFiles":6,"mode":"matches_stable_local_and_all_live_hashes"} |
 | web_runtime_config | ok | {"apiBaseUrl":"https://api.musunil.com","expectedApiBaseUrl":"https://api.musunil.com","mapStyleHost":"tiles.openfreemap.org","publicKeys":["apiBaseUrl","mapStyleUrl"]} |
-| web_build_info | ok | {"commitSha":"cdb1899c3d86b51aa7adc4474822356472edab98","builtAt":"2026-07-19T10:53:03.082Z"} |
+| web_build_info | ok | {"commitSha":"e90568d9011a30185d0c757b833f131a8ae20010","builtAt":"2026-07-19T10:55:19.549Z"} |
 | web_header_contract | ok | {"checked":[{"path":"/","headers":{"cache-control":"no-store","content-security-policy":"default-src 'self'; connect-src 'self' https:; img-src 'self' data: blob: https:; media-src 'self' https: blob:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.portone.io; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob:","permissions-policy":"camera=(self), microphone=(), geolocation=(self)","referrer-policy":"no-referrer","x-content-type-options":"nosniff","x-frame-options":"DENY"}},{"path":"/config.js","headers":{"cache-control":"no-store","content-security-policy":"default-src 'self'; connect-src 'self' https:; img-src 'self' data: blob: https:; media-src 'self' https: blob:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.portone.io; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob:","permissions-policy":"camera=(self), microphone=(), geolocation=(self)","referrer-policy":"no-referrer","x-content-type-options":"nosniff","x-frame-options":"DENY"}},{"path":"/build-info.json","headers":{"cache-control":"no-store","content-security-policy":"default-src 'self'; connect-src 'self' https:; img-src 'self' data: blob: https:; media-src 'self' https: blob:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.portone.io; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob:","permissions-policy":"camera=(self), microphone=(), geolocation=(self)","referrer-policy":"no-referrer","x-content-type-options":"nosniff","x-frame-options":"DENY"}}]} |
 | web_forbidden_ui_absent | ok | {"bytes":428352,"tokenCount":22} |
 | web_visual_surface | fail | live visual surface is rendering non-live data state: delayed; firstIssues=정보통신망법 개정 반대 집회; sourceBundleFirst=0/4 |

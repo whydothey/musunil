@@ -61,6 +61,9 @@ const serviceWatchDoc = readFileSync(resolve(cwd, "docs/splus-service-watch.md")
 const serviceWatchLastChecked = serviceWatchDoc.match(/^Last checked:\s*(.+)$/m)?.[1]?.trim() || "";
 const launchOperatorBriefServiceWatch = launchOperatorBriefDoc.match(/^- Service watch:\s*([^\s(]+).*$/m)?.[1]?.trim() || "";
 const launchMissingInputsBlockerReport = launchMissingInputsDoc.match(/^- Blocker report:\s*([^\s(]+).*$/m)?.[1]?.trim() || "";
+const serviceWatchWebDeploymentReady = ["web_static_manifest", "web_runtime_config", "web_build_info", "web_header_contract"].every((id) =>
+  new RegExp(`\\|\\s*${id}\\s*\\|\\s*ok\\s*\\|`).test(serviceWatchDoc)
+);
 const cloudflareDnsRecordsDoc = readFileSync(resolve(cwd, "docs/cloudflare-dns-records.md"), "utf8");
 const cloudflareDnsRecordsTerraform = readFileSync(resolve(cwd, "infra/cloudflare/dns-records.tf.example"), "utf8");
 const cloudflareResponseHeadersDoc = readFileSync(resolve(cwd, "docs/cloudflare-response-headers.md"), "utf8");
@@ -822,8 +825,8 @@ if (
   !/Apply command after inputs/.test(launchOperatorBriefDoc) ||
   !/Before apply command/.test(launchOperatorBriefDoc) ||
   !/Pre-External-Change Checks/.test(launchOperatorBriefDoc) ||
-  !/render_static_build_contract/.test(launchOperatorBriefDoc) ||
-  !/web_headers_only_dry_run/.test(launchOperatorBriefDoc) ||
+  (!serviceWatchWebDeploymentReady && !/render_static_build_contract/.test(launchOperatorBriefDoc)) ||
+  (!serviceWatchWebDeploymentReady && !/web_headers_only_dry_run/.test(launchOperatorBriefDoc)) ||
   !/render_cloudflare_apply_dry_run/.test(launchOperatorBriefDoc) ||
   !/Render `onrender\.com` host/.test(launchOperatorBriefDoc) ||
   !/Active goal/.test(launchOperatorBrief) ||
@@ -846,8 +849,8 @@ if (
   !/pnpm launch:apply shows derivedTargets\.api/.test(launchOperatorBriefDoc) ||
   !/Cloudflare user API token with musunil\.com zone DNS edit/.test(launchOperatorBriefDoc) ||
   !/Split apply paths from current blockers/.test(launchOperatorBriefDoc) ||
-  !/web_headers_only/.test(launchOperatorBriefDoc) ||
-  !/Web proxy observed/.test(launchOperatorBriefDoc) ||
+  (!serviceWatchWebDeploymentReady && !/web_headers_only/.test(launchOperatorBriefDoc)) ||
+  (!serviceWatchWebDeploymentReady && !/Web proxy observed/.test(launchOperatorBriefDoc)) ||
   !/Inputs ready/.test(launchOperatorBriefDoc) ||
   !/Missing:/.test(launchOperatorBriefDoc) ||
   !/RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET/.test(launchOperatorBriefDoc) ||
@@ -946,8 +949,8 @@ if (
   !/Apply command after inputs/.test(launchMissingInputsDoc) ||
   !/Before apply command/.test(launchMissingInputsDoc) ||
   !/Pre-External-Change Checks/.test(launchMissingInputsDoc) ||
-  !/render_static_build_contract/.test(launchMissingInputsDoc) ||
-  !/web_headers_only_dry_run/.test(launchMissingInputsDoc) ||
+  (!serviceWatchWebDeploymentReady && !/render_static_build_contract/.test(launchMissingInputsDoc)) ||
+  (!serviceWatchWebDeploymentReady && !/web_headers_only_dry_run/.test(launchMissingInputsDoc)) ||
   !/render_cloudflare_apply_dry_run/.test(launchMissingInputsDoc) ||
   !/Immediate Apply Inputs/.test(launchMissingInputsDoc) ||
   !/\| ID \| Required \| Status \| Env \| Purpose \| Where \| Validate \|/.test(launchMissingInputsDoc) ||
