@@ -289,6 +289,22 @@ export type ReportCandidate = {
   evidenceStrength: EvidenceStrength;
 };
 
+/** A private, authenticated receipt for a submitted report. This is never a public feed model. */
+export type ReportReceipt = {
+  reportId: string;
+  claimId: string;
+  reportType: "live" | "material" | "on_site_correction" | "rights_violation" | "rebuttal" | "field_verification";
+  status: "review" | "published";
+  targetType: TargetType;
+  targetId: string;
+  targetTitle: string;
+  issueTitle: string;
+  regionLabel: string;
+  publicRadiusM?: number;
+  receivedAt: string;
+  nextStepLabel: string;
+};
+
 export type CrowdEstimate = {
   id: string;
   targetType: "issue" | "occurrence" | "continuous_presence";

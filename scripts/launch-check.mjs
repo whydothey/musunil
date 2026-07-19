@@ -15,6 +15,7 @@ try {
 }
 
 const web = readFileSync(resolve(cwd, "apps/web/index.html"), "utf8");
+const webPublicApi = readFileSync(resolve(cwd, "apps/web/modules/public-api.js"), "utf8");
 const trackedFiles = gitTrackedFiles();
 const userFacingDocs = [
   "docs/product-principles.md",
@@ -1554,7 +1555,7 @@ if (!/identityTestModeRequested/.test(apiServer) || !/testMode:\s*identityTestMo
 if (!/verifiedCredentialsFromRequest/.test(apiApp) || !/cookieValueFromHeader/.test(apiApp) || !/"musunil_session"/.test(apiApp) || !/clearIdentityCookieHeaders/.test(apiApp)) {
   failures.push("verified identity session cookie restore and logout clearing guard is missing");
 }
-if (!/credentials:\s*"include"/.test(web) || !/restoreCookieSession/.test(web) || !/sessionFromMe/.test(web)) {
+if (!/credentials:\s*"include"/.test(webPublicApi) || !/restoreCookieSession/.test(web) || !/sessionFromMe/.test(web)) {
   failures.push("Web must restore HttpOnly identity cookie sessions through /me");
 }
 if (!/persistIdentitySession/.test(web) || !/shouldPersistIdentityToken/.test(web) || !/location\.protocol !== "https:"/.test(web)) {

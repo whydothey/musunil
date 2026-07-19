@@ -21,7 +21,7 @@
 | G3. 지도와 집회 현장 상세 동일성 | **Guard** | 핀·영역·검색·홈 카드가 공유 선택 상태를 쓰고, 탐색 진입의 비동기 이슈 렌더가 현장 시트를 덮지 않는다. |
 | G4. 공정한 릴스형 증거 영상 탐색 | **Guard** | 공개·비식별·Proof-of-Presence·기기무결성 조건을 통과한 영상만 이슈·현장·지역 버킷으로 순환하고, 영상·현장·상세가 같은 OccurrenceDigest를 유지한다. production 공개 영상이 없으면 빈 상태만 표시한다. |
 | G5. 공식 법안 피드와 이슈 연결 | **Guard** | 국회 의안의 공식 발의일과 현행 법령의 공포·시행일을 분리하고, `현장 관심`/`최근 발의` 정렬 및 이슈·집회 현장 교차 이동을 local에서 통과했다. 실제 원천 적재·live 검증은 G7에서 다시 수행한다. |
-| G6. 현장 제보의 확신 가능한 완료 흐름 | Pending | 대상 확정·본인확인·촬영·미리보기·접수 상태가 실제 API에서 통과한다. |
+| G6. 현장 제보의 확신 가능한 완료 흐름 | **Guard** | 위치 기반 후보·대상 확정·본인확인·앱 내 촬영·미리보기·대상 변경·접수·새로고침 뒤 접수 상태를 local staging API와 브라우저에서 통과했다. 실제 PortOne/저장소/비식별/모바일 무결성 운영 리허설은 G7에서 수행한다. |
 | G7. 실제 운영 연결과 공식 원천 복구 | Pending | API DNS, Render, DB/Redis, 원천, 보안 헤더, service watch가 live로 통과한다. |
 | G8. 라이브 S+ 종결 감사 | Pending | 모든 행이 `S+` 또는 `Guard`이고 external blocker가 0건이다. |
 
@@ -37,6 +37,8 @@
 | 2026-07-19 | G4 | 전역 릴스의 재생 영상과 데스크톱 맥락 패널이 다른 현장을 가리킬 수 있음 | 재생 중 릴스의 `OccurrenceDigest`를 공유 선택 상태와 우측 패널에 동기화하고, `현장` 액션은 같은 현장 ID의 지도·상세로 이동하게 했다. 홈 카드에서는 대형 영상 미리보기를 제거해 이슈 스캔 밀도를 회복했다. | `check:web-smoke`, `check:web-flow`, `check:ux-surface`, `check:visual-surface`, `check:reels-staging` 통과 |
 | 2026-07-19 | G5 | `최근 발의`가 처리일·앱 갱신일을 뜻하거나 비공식 링크가 섞일 수 있음 | `LawItem.proposedDate`를 추가하고 국회 의안의 공식 발의일만 `최근 발의` 정렬에 사용했다. 수집기는 최대 10개 공식 페이지를 읽고 공식 국회·법제처 도메인만 원문 링크로 허용한다. | API/worker self-check, migration check, 법 원천 metadata 진단 통과 |
 | 2026-07-19 | G5 | 법안 카드가 이슈 설명에서 끝나고 같은 집회 현장으로 내려가지 못함 | 법안 탭에 `현장 관심`/`최근 발의` 정렬을 추가하고, 상세의 연결 이슈와 연결 현장을 각각 동일한 이슈 파일과 `OccurrenceDigest` 지도·상세로 이동하게 했다. | `check:web-smoke`, `check:web-flow`, 390/430/768/1440 visual smoke 및 [Goal 5 visual evidence](/Users/mk/Documents/Musunil/docs/visual-evidence/goal5-laws-verified/visual-surface-evidence.json) 통과 |
+| 2026-07-19 | G6 | 첫 제보자가 촬영 전 대상·연결 이슈를 확신하지 못하고, 접수 뒤에도 자신의 영상 연결 상태를 확인하기 어려움 | 제보 흐름을 위치 후보 → 대상 확정 → 본인확인 → 앱 내 촬영 → 미리보기 → 제출 → 접수로 고정했다. 미리보기는 `검토로 제출/다시 촬영/대상 바꾸기`만 남기고, 접수 카드에는 사람이 읽을 수 있는 접수·자료 번호, 연결 현장·이슈·접수 시각·공개 반경을 표시한다. | `check:report-flow`, `check:web-smoke`, `check:web-flow`, `check:ux-surface`, API self-check, `check:release` 통과 |
+| 2026-07-19 | G6 | 법안 상세 요청이 늦게 끝나면 사용자가 고른 집회 현장 상세를 다시 법안으로 덮을 수 있음 | 모든 상세 렌더에 최신 선택 세대 번호를 적용해, 늦게 끝난 이슈·법안 요청이 선택된 `OccurrenceDigest` 화면을 덮지 못하게 했다. | 390/430/768/1440 local staging visual smoke에서 법안 → 동일 집회 현장 제목 일치 통과 |
 
 ## Evidence Ledger
 
@@ -47,6 +49,7 @@
 | G3 | local | 핀/영역/검색 → 선택 현장 상세, 지도 맥락 스트립과 상세의 대상 동기화 | Guard | 실제 production MapLibre interaction capture와 live API payload 비교는 G7/G8에서 재실행 |
 | G4 | local + staging | `/reels` public serializer, 10,000 seed fairness simulation, production seed 0건, `check:reels-staging`에서 390/430/768/1440 영상 재생 surface와 `현장` → 동일 `selectedOccurrenceId`/지도·상세 제목 일치 | Guard | 실제 production 공개 Evidence가 생긴 뒤 production 화면에서 같은 검증을 G7/G8에 재실행 |
 | G5 | local | `proposedDate` additive API, `/laws?sort=interest|proposed_desc`, trusted official URL guard, API/worker parser self-check, 390/430/768/1440 법안 정렬 및 법안 → 동일 집회 현장 이동 캡처 | Guard | 국회 API key 또는 법제처 OC 입력 후 실제 dry-run/post, live `/laws` 두 정렬과 공식 링크 재검증은 G7에서 수행 |
+| G6 | local staging | 테스트 전용 PortOne verifier, mock GPS/camera recorder, 실제 write API, 세션 복원. [390px 미리보기](/Users/mk/Documents/Musunil/docs/visual-evidence/goal6-report-flow-verified/report_flow_mobile_390_preview.png), [390px 접수 결과](/Users/mk/Documents/Musunil/docs/visual-evidence/goal6-report-flow-verified/report_flow_mobile_390_receipt.png), [검증 JSON](/Users/mk/Documents/Musunil/docs/visual-evidence/goal6-report-flow-verified/visual-surface-evidence.json) | Guard | 테스트 영상과 test identity는 staging 한정이다. 실제 PortOne, 외부 암호화 저장소, 비식별, Play Integrity/App Attest 운영 smoke는 G7에서 재실행 |
 | G7 | live | `https://musunil.com/build-info.json`, `https://api.musunil.com` DNS | 실패 | placeholder build metadata, API DNS 미연결 |
 
 ## Residual Risks
@@ -55,6 +58,7 @@
 - 국회·법제처 원천 키, PortOne, storage, 비식별, 모바일 무결성 운영 credential은 Goal 7 전까지 실제 검증할 수 없다.
 - G5의 운영 law feed는 실제 credential 없이 비어 있어야 하며, 현재 production fallback이 그 원칙을 지킨다. 실제 법안은 key/OC 입력과 ingest 성공 이후에만 표시할 수 있다.
 - production에는 공개 통과 실제 현장 영상이 없으므로, Goal 4는 staging fixture 검증과 정직한 production 빈 상태를 분리해 Guard로 두었다. 실제 공개 Evidence가 생기면 G7/G8에서 재검증한다.
+- G6의 GPS·카메라·PortOne test verifier는 local staging runner에서만 사용했다. production은 `MUSUNIL_IDENTITY_TEST_MODE`를 허용하지 않으며, 실제 운영 리허설 전에는 현장 제보 완료를 production S+ 증거로 취급하지 않는다.
 
 ## 1. 감사 범위와 실제 확인 결과
 

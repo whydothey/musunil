@@ -29,6 +29,7 @@ import {
   type Occurrence,
   type OccurrenceDigest,
   type PublicAssemblySourceRefresh,
+  type ReportReceipt,
   type RiskLevel,
   type SourceProvenance,
   type Subscription,
@@ -2467,7 +2468,31 @@ function toPublicIssueLawLink(link: IssueLawLink | undefined) {
 }
 
 function getMyReports(store: Store, userId: string): ApiResponse {
-  return json(200, { reports: store.reports.filter((report) => report.userId === userId) });
+  return json(200, { reports: store.reports.filter((report) => report.userId === userId).map((report) => toPrivateReportReceipt(store, report)) });
+}
+
+function toPrivateReportReceipt(store: Store, report: ReportRecord): ReportReceipt {
+  const target = targetRecord(store, report.targetType, report.targetId);
+  const claim = store.claims.find((item) => item.id === report.claimId);
+  const evidence = claim?.evidenceIds
+    .map((id) => store.evidence.find((item) => item.id === id))
+    .find((item): item is Evidence => Boolean(item));
+  const published = claim?.visibility === "public";
+  const isLive = report.reportType === "live";
+  return {
+    reportId: report.id,
+    claimId: report.claimId,
+    reportType: report.reportType,
+    status: published ? "published" : "review",
+    targetType: report.targetType,
+    targetId: report.targetId,
+    targetTitle: publicTargetTitle(target),
+    issueTitle: publicTargetIssueTitle(store, report.targetType, target),
+    regionLabel: publicTargetRegionLabel(target),
+    publicRadiusM: isLive ? evidence?.publicRadiusM ?? 200 : undefined,
+    receivedAt: report.createdAt.toISOString(),
+    nextStepLabel: published ? "공개 자료로 전환됨" : isLive ? "비식별 검토 중" : "검토 중"
+  };
 }
 
 function getMySubscriptions(store: Store, userId: string): ApiResponse {
@@ -2570,20 +2595,10 @@ function postLiveReport(store: Store, request: ApiRequest, options: AppOptions):
 
   store.evidence.push(evidence);
   const report = rememberReport(store, userId, "live", targetType, targetId, claim.id);
-  const target = targetRecord(store, targetType, targetId);
   audit(store, "hold", targetType, targetId, "live video report held for redaction and review before public visibility");
   return json(202, {
-    status: "live_report_queued_for_review",
-    reportId: report.id,
-    claimId: claim.id,
-    targetType,
-    targetId,
-    targetTitle: publicTargetTitle(target),
-    issueTitle: publicTargetIssueTitle(store, targetType, target),
-    regionLabel: publicTargetRegionLabel(target),
-    publicRadiusM: evidence.publicRadiusM,
-    receivedAt: report.createdAt.toISOString(),
-    nextStepLabel: "비식별 검토 중",
+    ...toPrivateReportReceipt(store, report),
+    queueStatus: "live_report_queued_for_review",
     claim: toPublicClaim(claim),
     evidenceId: evidence.id
   });

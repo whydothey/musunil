@@ -4146,6 +4146,22 @@
         display: none;
       }
 
+      .report-panel[data-report-stage="preview"] #capture-check-action,
+      .report-panel[data-report-stage="preview"] #report-video-action,
+      .report-panel[data-report-stage="preview"] .report-target-actions {
+        display: none;
+      }
+
+      .report-panel[data-report-stage="review"] .issue-context-strip,
+      .report-panel[data-report-stage="review"] .report-actions,
+      .report-panel[data-report-stage="review"] .report-context-panel,
+      .report-panel[data-report-stage="review"] .nearby-targets,
+      .report-panel[data-report-stage="review"] .report-target-panel,
+      .report-panel[data-report-stage="review"] .report-rules,
+      .report-panel[data-report-stage="review"] .capture-preview {
+        display: none;
+      }
+
 	      .report-steps {
 	        display: grid;
 	        grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -6125,6 +6141,7 @@
                 <button class="button" type="button" id="report-video-action">현장 영상 보기</button>
                 <button class="button primary" type="button" id="submit-capture-action" hidden>검토로 제출</button>
                 <button class="button" type="button" id="retake-capture-action" hidden>다시 촬영</button>
+                <button class="button" type="button" id="change-capture-target-action" hidden>대상 바꾸기</button>
               </div>
               <aside class="report-context-panel" aria-label="영상 제보 연결 상태">
                 <header>
@@ -6227,11 +6244,14 @@
                   <div><strong id="receipt-target">-</strong><span>연결 현장</span></div>
                   <div><strong id="receipt-issue">-</strong><span>연결 이슈</span></div>
                   <div><strong id="receipt-id">-</strong><span>접수 번호</span></div>
+                  <div><strong id="receipt-claim">-</strong><span>연결 자료</span></div>
+                  <div><strong id="receipt-received">-</strong><span>접수 시각</span></div>
                   <div><strong id="receipt-radius">반경 200m</strong><span>공개 위치 범위</span></div>
                 </div>
                 <div class="receipt-actions">
-                  <button class="button" type="button" id="receipt-video-action">접수 내역 보기</button>
+                  <button class="button" type="button" id="receipt-video-action">연결 현장</button>
                   <button class="button" type="button" id="receipt-evidence-action" aria-label="근거 보기">근거</button>
+                  <button class="button primary" type="button" id="new-report-action">새 제보</button>
                 </div>
               </section>
               <p class="status-line" id="form-status" aria-live="polite">위치를 확인하면 가까운 공개 현장을 보여줍니다.</p>
@@ -6812,6 +6832,9 @@
 	      let occurrenceDigestsById = new Map();
 	      const occurrenceSelection = createOccurrenceSelectionState(selected);
 	      let detailMode = "issue";
+      // Async detail requests may finish after the user has chosen another context.
+      // Only the newest selection is allowed to paint the shared detail surface.
+      let detailRenderVersion = 0;
       let latestCoverage;
       let latestMapData;
       let latestServiceSyncState = "loading";
@@ -6967,15 +6990,8 @@
 
       async function completeIdentity(purpose) {
         const start = await api("/auth/identity/start", { method: "POST", body: JSON.stringify({ purpose }) });
-        if (window.PortOne?.requestIdentityVerification) {
-          await window.PortOne.requestIdentityVerification({
-            storeId: start.storeId,
-            channelKey: start.channelKey,
-            identityVerificationId: start.identityVerificationId,
-            redirectUrl: location.href
-          });
-          return await api("/auth/identity/complete", { method: "POST", body: JSON.stringify({ identityVerificationId: start.identityVerificationId }) });
-        }
+        // A local preview has no real customer identity flow. Prefer the API's
+        // non-production test verifier even when the public SDK script is present.
         if (isPreviewApiBase || location.protocol === "file:") {
           return await api("/auth/identity/complete", {
             method: "POST",
@@ -6985,6 +7001,15 @@
               testDi: `preview-di-${Date.now()}`
             })
           });
+        }
+        if (window.PortOne?.requestIdentityVerification) {
+          await window.PortOne.requestIdentityVerification({
+            storeId: start.storeId,
+            channelKey: start.channelKey,
+            identityVerificationId: start.identityVerificationId,
+            redirectUrl: location.href
+          });
+          return await api("/auth/identity/complete", { method: "POST", body: JSON.stringify({ identityVerificationId: start.identityVerificationId }) });
         }
         throw new Error("identity_client_unavailable");
       }
@@ -7518,6 +7543,7 @@
         $("report-preview-meta").hidden = true;
         $("submit-capture-action").hidden = true;
         $("retake-capture-action").hidden = true;
+        $("change-capture-target-action").hidden = true;
         $("start-capture-action").hidden = false;
         if (capturePreviewUrl) {
           URL.revokeObjectURL(capturePreviewUrl);
@@ -7535,8 +7561,10 @@
         const start = $("start-capture-action");
         const submit = $("submit-capture-action");
         const retake = $("retake-capture-action");
+        const changeTarget = $("change-capture-target-action");
         submit.hidden = !pendingCapture;
         retake.hidden = !pendingCapture;
+        changeTarget.hidden = !pendingCapture;
         start.hidden = Boolean(pendingCapture);
         if (pendingCapture) return;
         if (!selectedReportTarget) {
@@ -7605,7 +7633,7 @@
             <button class="nearby-target-card" type="button" data-report-target-id="${escapeHtml(target.targetId)}" aria-selected="${String(target.targetId === selectedReportTarget?.targetId)}">
               <span class="nearby-target-main">
                 <strong>${escapeHtml(target.occurrenceTitle)}</strong>
-                <span>${escapeHtml(target.issueTitle)} · ${escapeHtml(target.regionLabel)}</span>
+                <span>${escapeHtml(target.issueTitle)} · ${escapeHtml(target.regionLabel)} · ${target.verificationCount ? `현장 확인 ${target.verificationCount}건` : "현장 확인 중"}</span>
               </span>
               <span class="nearby-target-side">
                 <span class="distance-pill ${reportDistanceClass(target.distanceM)}">${escapeHtml(target.distanceLabel)}</span>
@@ -7685,8 +7713,15 @@
       }
 
       async function activateReportFlow(options = {}) {
-        renderReportReceipt(loadStoredReportReceipt());
+        const storedReceipt = loadStoredReportReceipt();
+        renderReportReceipt(storedReceipt);
+        void refreshStoredReportReceipt(storedReceipt);
         if (options.requestPosition === false) {
+          if (storedReceipt?.reportId) {
+            setReportStage("review");
+            $("form-status").textContent = "최근 접수 상태를 확인할 수 있습니다.";
+            return;
+          }
           renderNearbyReportTargets();
           setReportStage(reportTargetConfirmed ? "target" : "locate");
           $("form-status").textContent = latestReportPosition ? "현장을 선택해 주세요." : "위치를 확인하면 가까운 공개 현장을 보여줍니다.";
@@ -7830,6 +7865,16 @@
         }
       }
 
+      function changeCaptureTarget() {
+        if (!pendingCapture) return;
+        clearPendingCapture();
+        reportTargetConfirmed = false;
+        renderNearbyReportTargets();
+        setReportStage("target");
+        $("form-status").textContent = "다른 현장을 선택해 주세요. 카메라는 새 대상을 확정한 뒤에 열립니다.";
+        document.querySelector("[data-report-target-id]")?.focus();
+      }
+
       async function submitLiveCapture(capture) {
         const { card, position, blob, capturedAt, distanceToTargetM } = capture;
         const targetCenter = cardCenter(card);
@@ -7888,7 +7933,7 @@
         return {
           reportId: report.reportId || report.claim?.id || "접수 번호 확인 중",
           claimId: report.claimId || report.claim?.id || "",
-          status: report.status || "live_report_queued_for_review",
+          status: report.status || "review",
           targetType: report.targetType || capture.card.targetType,
           targetId: report.targetId || capture.card.id,
           targetTitle: publicDisplayTitle(report.targetTitle || capture.card.title),
@@ -7915,6 +7960,39 @@
         }
       }
 
+      async function refreshStoredReportReceipt(storedReceipt = loadStoredReportReceipt()) {
+        const cached = JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
+        if (!storedReceipt?.reportId || !isUsableIdentitySession(cached)) return;
+        try {
+          const response = await api(`/me/reports?userId=${encodeURIComponent(cached.userId)}`, { headers: sessionHeaders(cached) });
+          const receipt = Array.isArray(response?.reports) ? response.reports.find((item) => item.reportId === storedReceipt.reportId) : undefined;
+          if (!receipt) return;
+          const normalized = { ...storedReceipt, ...receipt };
+          storeReportReceipt(normalized);
+          renderReportReceipt(normalized);
+        } catch {
+          // A local receipt stays visible while an expired session or an offline API is recovered.
+        }
+      }
+
+      function receiptStatusLabel(receipt) {
+        return receipt.status === "published" ? "공개됨" : "검토 대기";
+      }
+
+      function receiptTitle(receipt) {
+        return receipt.status === "published" ? "공개 처리됨" : "접수됨";
+      }
+
+      function receiptDate(value) {
+        const date = new Date(value || 0);
+        return Number.isNaN(date.getTime()) ? "접수 시각 확인 중" : date.toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+      }
+
+      function receiptReference(value, prefix) {
+        const normalized = String(value || "").replace(/[^a-z0-9]/gi, "").toUpperCase();
+        return normalized.length >= 8 ? `${prefix}-${normalized.slice(-8)}` : "확인 중";
+      }
+
       function renderReportReceipt(receipt) {
         const panel = $("report-receipt");
         if (!receipt) {
@@ -7922,12 +8000,14 @@
           return;
         }
         panel.hidden = false;
-        $("receipt-title").textContent = "접수됨";
+        $("receipt-title").textContent = receiptTitle(receipt);
         $("receipt-subtitle").textContent = receipt.nextStepLabel || "비식별 검토 중입니다.";
-        $("receipt-status").textContent = "검토 대기";
+        $("receipt-status").textContent = receiptStatusLabel(receipt);
         $("receipt-target").textContent = receipt.targetTitle || "-";
         $("receipt-issue").textContent = receipt.issueTitle || "-";
-        $("receipt-id").textContent = receipt.reportId || receipt.claimId || "-";
+        $("receipt-id").textContent = receiptReference(receipt.reportId, "R");
+        $("receipt-claim").textContent = receiptReference(receipt.claimId, "C");
+        $("receipt-received").textContent = receiptDate(receipt.receivedAt);
         $("receipt-radius").textContent = `반경 ${receipt.publicRadiusM || 200}m`;
       }
 
@@ -9591,6 +9671,7 @@
       }
 
       async function renderDetail(card) {
+        const renderVersion = ++detailRenderVersion;
         detailMode = "target";
         $("state-chip").textContent = labelState(card.lifecycleState);
         $("state-chip").className = `chip ${stateClass(card.lifecycleState)}`;
@@ -9606,6 +9687,7 @@
         $("stat-peak-label").textContent = "장소·시간";
         $("stat-proof-label").textContent = "확인 근거";
         const claims = await loadClaims(card);
+        if (renderVersion !== detailRenderVersion || detailMode !== "target" || selected?.id !== card.id) return;
         $("detail-summary").textContent = trustSummary(claims, card);
         $("detail-source-badges").innerHTML = renderSourceBadges(sourceBadgesForClaims(claims).length ? sourceBadgesForClaims(claims) : sourceBadgesForCard(card));
         $("summary-tab").innerHTML = renderSummary(claims, card);
@@ -9617,6 +9699,7 @@
       }
 
       async function renderIssueDetail(issue) {
+        const renderVersion = ++detailRenderVersion;
         detailMode = "issue";
         const cards = issueRelatedCards(issue);
         const visibleCount = visibleCards(loadedCards).length;
@@ -9644,6 +9727,7 @@
         $("map-risk").textContent = Number(issue.needsVerificationCount || 0) ? "일부 자료는 출처나 현장 확인이 더 필요합니다." : "공개 근거가 있는 위치만 표시합니다.";
 
 	        const detail = await loadIssueDetail(issue);
+	        if (renderVersion !== detailRenderVersion || detailMode !== "issue" || selectedIssue?.id !== issue.id) return;
 	        const claims = issueClaimsFromDetail(issue, detail);
 	        const badges = sourceBadgesForClaims(claims);
 	        $("detail-summary").textContent = issueSummary(issue, cards, visibleCount);
@@ -9657,8 +9741,10 @@
 
 	      async function renderLawDetail(law) {
 	        if (!law) return;
+	        const renderVersion = ++detailRenderVersion;
 	        detailMode = "law";
 	        const detail = await loadLawDetail(law);
+	        if (renderVersion !== detailRenderVersion || detailMode !== "law" || selectedLaw?.id !== law.id) return;
 	        const issues = detail.issues || [];
 	        const relatedTargets = detail.relatedTargets || [];
 	        $("state-chip").textContent = law.stage || lawSourceLabel(law.source);
@@ -11767,15 +11853,35 @@
         $("form-status").textContent = "다시 촬영할 수 있습니다.";
         updateReportActionState();
       });
+      $("change-capture-target-action").addEventListener("click", changeCaptureTarget);
       $("report-video-action").addEventListener("click", () => {
         setPrimaryView("reels");
         $("form-status").textContent = "선택한 이슈의 현장 영상으로 이동했습니다.";
       });
-      $("receipt-video-action").addEventListener("click", () => setPrimaryView("reels"));
+      $("receipt-video-action").addEventListener("click", () => {
+        const receipt = loadStoredReportReceipt();
+        const card = loadedCards.find((item) => item.id === receipt?.targetId);
+        if (!card) return;
+        setPrimaryView("explore");
+        selectCard(card, { toast: "연결 현장을 확인합니다." });
+      });
       $("receipt-evidence-action").addEventListener("click", () => {
         const receipt = loadStoredReportReceipt();
         const card = loadedCards.find((item) => item.id === receipt?.targetId);
-        if (card) selectCard(card, { toast: "연결 현장의 근거를 확인합니다." });
+        if (!card) return;
+        setPrimaryView("home");
+        selectCard(card, { toast: "연결 현장의 근거를 확인합니다." });
+        selectDetailTab("evidence");
+      });
+      $("new-report-action").addEventListener("click", () => {
+        try {
+          sessionStorage.removeItem(reportReceiptStorageKey);
+        } catch {}
+        renderReportReceipt(undefined);
+        reportTargetConfirmed = false;
+        selectedReportTarget = undefined;
+        clearPendingCapture();
+        activateReportFlow({ requestPosition: false });
       });
 
       window.addEventListener("resize", () => {

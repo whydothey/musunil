@@ -111,11 +111,14 @@ scenario("report_beginner_flow", [
   has('id="start-capture-action"'),
   has('id="confirm-report-target"'),
   has('id="submit-capture-action"'),
+  has('id="change-capture-target-action"'),
   has('id="report-receipt"'),
   functionHas("startLiveCapture", "if (!reportTargetConfirmed)"),
   functionHas("startLiveCapture", "confirmReportTarget()"),
   functionHas("submitPendingCapture", "storeReportReceipt(receipt)"),
-  functionHas("renderReportReceipt", "receipt.reportId || receipt.claimId")
+  functionHas("changeCaptureTarget", "reportTargetConfirmed = false"),
+  functionHas("refreshStoredReportReceipt", "/me/reports"),
+  functionHas("renderReportReceipt", 'receiptReference(receipt.claimId, "C")')
 ]);
 
 scenario("identity_write_boundary", [

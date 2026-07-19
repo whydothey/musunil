@@ -370,10 +370,13 @@ async function checkWeb(port) {
   assert(index.includes("제보 기준"), "report criteria disclosure missing");
   assert(index.includes("검토로 제출"), "report submit review copy missing");
   assert(index.includes('id="submit-capture-action"'), "capture preview submit action missing");
+  assert(index.includes('id="change-capture-target-action"'), "capture preview target recovery action missing");
   assert(index.includes('id="report-receipt"'), "report receipt panel missing");
   assert(index.includes("reportTargetFromCard"), "NearbyReportTarget derived model missing");
   assert(index.includes("pendingCapture"), "capture preview state missing");
   assert(index.includes("reportReceiptFromResponse"), "report receipt response binding missing");
+  assert(index.includes("refreshStoredReportReceipt"), "report receipt server refresh binding missing");
+  assert(index.includes('id="receipt-claim"') && index.includes('id="receipt-received"'), "report receipt claim/time fields missing");
   assert(index.includes("desktop-report"), "desktop report view state missing");
   assert(!index.includes("7초 뒤 자동으로 검토 대기에 제출합니다."), "stale auto-submit capture copy present");
   assert(index.includes("전국 현황"), "national issue snapshot missing");

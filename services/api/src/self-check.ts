@@ -639,6 +639,7 @@ assert.equal(JSON.stringify(live.body).includes("이 원문은 공개 응답에 
 const liveReceipt = live.body as {
   reportId: string;
   claimId: string;
+  status: string;
   targetTitle: string;
   issueTitle: string;
   regionLabel: string;
@@ -647,6 +648,7 @@ const liveReceipt = live.body as {
 };
 assert.equal(typeof liveReceipt.reportId, "string");
 assert.equal(typeof liveReceipt.claimId, "string");
+assert.equal(liveReceipt.status, "review");
 assert.equal(liveReceipt.targetTitle.length > 0, true);
 assert.equal(liveReceipt.issueTitle.length > 0, true);
 assert.equal(liveReceipt.regionLabel.length > 0, true);
@@ -1180,6 +1182,13 @@ assert.equal((await app.handle({ method: "GET", path: `/me/reports?userId=${user
 const mine = await app.handle({ method: "GET", path: `/me/reports?userId=${user1Session.userId}`, headers: user1Headers });
 assert.equal(mine.status, 200);
 assert.equal(JSON.stringify(mine.body).includes("이 원문은 공개 응답에 나오면 안 된다"), false);
+const myLiveReceipt = (mine.body as { reports: Array<{ reportId: string; claimId: string; status: string; nextStepLabel: string }> }).reports.find(
+  (report) => report.reportId === liveReceipt.reportId
+);
+assert.equal(myLiveReceipt?.claimId, liveReceipt.claimId);
+assert.equal(myLiveReceipt?.status, "review");
+assert.equal(myLiveReceipt?.nextStepLabel, "비식별 검토 중");
+assert.equal(JSON.stringify(mine.body).includes('"userId"'), false);
 
 const cookieMe = await app.handle({ method: "GET", path: "/me", headers: identityCookieHeader(cookieOnlySession) });
 assert.equal(cookieMe.status, 200);

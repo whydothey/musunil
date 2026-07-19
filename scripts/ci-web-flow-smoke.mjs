@@ -159,6 +159,7 @@ scenario("report_target_first_capture_and_receipt", [
   has('id="start-capture-action"'),
   has('id="confirm-report-target"'),
   has('id="submit-capture-action"'),
+  has('id="change-capture-target-action"'),
   has('id="report-receipt"'),
   has("근처 현장 후보"),
   has("위치 확인 후 표시될 정보"),
@@ -171,7 +172,12 @@ scenario("report_target_first_capture_and_receipt", [
   functionHas("startLiveCapture", 'activateReportFlow({ requestPosition: true })'),
   functionHas("startLiveCapture", 'await getUserSession("report")'),
   functionHas("submitPendingCapture", "storeReportReceipt(receipt)"),
-  functionHas("renderReportReceipt", "receipt.reportId || receipt.claimId")
+  functionHas("changeCaptureTarget", "reportTargetConfirmed = false"),
+  functionHas("changeCaptureTarget", 'setReportStage("target")'),
+  functionHas("refreshStoredReportReceipt", 'api(`/me/reports?userId=${encodeURIComponent(cached.userId)}`'),
+  functionHas("renderReportReceipt", 'receiptReference(receipt.reportId, "R")'),
+  functionHas("renderReportReceipt", 'receiptReference(receipt.claimId, "C")'),
+  functionHas("renderReportReceipt", "receipt.receivedAt")
 ]);
 
 scenario("identity_write_boundary_for_user_actions", [

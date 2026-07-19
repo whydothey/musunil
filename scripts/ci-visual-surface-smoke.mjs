@@ -11,6 +11,7 @@ const scenarios = [];
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
 const productionFallbackMode = args.includes("--production-fallback") || process.env.MUSUNIL_VISUAL_PRODUCTION_FALLBACK === "1";
 const requireReels = args.includes("--require-reels");
+const reportFlow = args.includes("--report-flow");
 const evidenceDir = evidenceDirFromArgs();
 const evidenceScreenshots = [];
 let server;
@@ -76,6 +77,9 @@ async function main() {
     try {
       await client.send("Page.enable");
       await client.send("Runtime.enable");
+      if (reportFlow) {
+        await client.send("Page.addScriptToEvaluateOnNewDocument", { source: reportFlowBrowserMocks() });
+      }
       for (const viewport of [
         { id: "mobile_390", width: 390, height: 844, mobile: true },
         { id: "mobile_430", width: 430, height: 932, mobile: true },
@@ -84,6 +88,7 @@ async function main() {
       ]) {
         await runViewport(client, viewport, appUrl);
       }
+      if (reportFlow) await runReportFlow(client, appUrl);
     } finally {
       client.close();
     }
@@ -372,6 +377,145 @@ async function captureEvidence(client, scenarioId) {
   });
   writeFileSync(outputPath, Buffer.from(result.data || "", "base64"));
   evidenceScreenshots.push(relativeFromCwd(outputPath));
+}
+
+async function runReportFlow(client, url) {
+  const viewport = { id: "report_flow_mobile_390", width: 390, height: 844, mobile: true };
+  await client.send("Emulation.setDeviceMetricsOverride", {
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 1,
+    mobile: true,
+    screenWidth: viewport.width,
+    screenHeight: viewport.height
+  });
+  await client.send("Emulation.setTouchEmulationEnabled", { enabled: true });
+  await navigate(client, url);
+  await waitForExpression(client, "document.querySelectorAll('.issue-card').length >= 1", 20_000);
+  await selectPrimaryView(client, viewport, "report");
+  await waitForExpression(client, "document.querySelector('#report-section')?.dataset.reportStage === 'locate'");
+  const initial = await evaluate(client, reportFlowSnapshot());
+  await click(client, "#start-capture-action");
+  await waitForExpression(client, "document.querySelectorAll('[data-report-target-id]').length >= 1 && document.querySelector('#report-section')?.dataset.reportStage === 'target'");
+  const located = await evaluate(client, reportFlowSnapshot());
+  await click(client, "#start-capture-action");
+  await waitForExpression(client, "document.querySelector('#start-capture-action')?.textContent?.trim() === '7초 촬영하기'");
+  const confirmed = await evaluate(client, reportFlowSnapshot());
+  await click(client, "#start-capture-action");
+  await waitForExpression(client, "document.querySelector('#identity-sheet')?.getAttribute('aria-hidden') === 'false'");
+  await click(client, "#identity-start-action");
+  await waitForReportStage(client, "preview");
+  const preview = await evaluate(client, reportFlowSnapshot());
+  await captureEvidence(client, `${viewport.id}_preview`);
+  await click(client, "#change-capture-target-action");
+  await waitForExpression(client, "document.querySelector('#report-section')?.dataset.reportStage === 'target' && document.querySelector('#start-capture-action')?.textContent?.trim() === '이 현장 확정'");
+  const changedTarget = await evaluate(client, reportFlowSnapshot());
+  await click(client, "#start-capture-action");
+  await waitForExpression(client, "document.querySelector('#start-capture-action')?.textContent?.trim() === '7초 촬영하기'");
+  await click(client, "#start-capture-action");
+  await waitForReportStage(client, "preview");
+  await click(client, "#submit-capture-action");
+  await waitForExpression(client, "document.querySelector('#report-section')?.dataset.reportStage === 'review' && !document.querySelector('#report-receipt')?.hidden", 12_000);
+  const receipt = await evaluate(client, reportFlowSnapshot());
+  await captureEvidence(client, `${viewport.id}_receipt`);
+  await navigate(client, url);
+  await waitForExpression(client, "document.querySelectorAll('.issue-card').length >= 1", 20_000);
+  await selectPrimaryView(client, viewport, "report");
+  await waitForExpression(client, `(() => {
+    const receipt = document.querySelector('#report-receipt');
+    if (!receipt || receipt.hidden) return false;
+    const rect = receipt.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.top < innerHeight && rect.bottom > 0;
+  })()`, 4_000);
+  const restored = await evaluate(client, reportFlowSnapshot());
+
+  scenario("report_flow_target_confirmation", [
+    () => assert(initial.mediaRequests === 0, `camera opened before location/target confirmation: ${initial.mediaRequests}`),
+    () => assert(located.candidateCount >= 1 && located.primaryAction === "이 현장 확정", `nearby candidate flow did not produce an explicit confirmation: ${JSON.stringify(located)}`),
+    () => assert(confirmed.mediaRequests === 0 && confirmed.primaryAction === "7초 촬영하기", `camera opened before the confirmed capture action: ${JSON.stringify(confirmed)}`)
+  ], { initial, located, confirmed });
+  scenario("report_flow_preview_recovery", [
+    () => assert(preview.stage === "preview", `capture did not reach preview: ${preview.stage}`),
+    () => assert(preview.previewTarget.length >= 4 && preview.previewTime.length >= 4 && preview.previewDistance.length >= 2, `preview is missing target/time/distance confirmation: ${JSON.stringify(preview)}`),
+    () => assert(preview.previewActions.join("/") === "검토로 제출/다시 촬영/대상 바꾸기", `preview actions must be submit/retake/change only: ${preview.previewActions.join("/")}`),
+    () => assert(changedTarget.stage === "target" && changedTarget.mediaRequests === 1, `changing target should return to confirmation without reopening camera: ${JSON.stringify(changedTarget)}`)
+  ], { preview, changedTarget });
+  scenario("report_flow_receipt_and_restore", [
+    () => assert(receipt.stage === "review" && receipt.receiptVisible, `receipt did not enter review: ${JSON.stringify(receipt)}`),
+    () => assert(receipt.receiptId.length >= 8 && receipt.receiptClaim.length >= 8, `receipt is missing report or claim identifier: ${JSON.stringify(receipt)}`),
+    () => assert(receipt.receiptTarget.length >= 4 && receipt.receiptIssue.length >= 4 && receipt.receiptReceived.length >= 4 && /반경\s*\d+m/.test(receipt.receiptRadius), `receipt is missing target, issue, time, or public radius: ${JSON.stringify(receipt)}`),
+    () => assert(restored.receiptVisible && restored.receiptId === receipt.receiptId && restored.receiptClaim === receipt.receiptClaim, `receipt was not restored after refresh: ${JSON.stringify(restored)}`)
+  ], { receipt, restored });
+}
+
+function reportFlowSnapshot() {
+  return `(() => {
+    const visible = (node) => {
+      if (!node) return false;
+      const style = getComputedStyle(node);
+      const rect = node.getBoundingClientRect();
+      return style.display !== 'none' && style.visibility !== 'hidden' && !node.hidden && rect.width > 0 && rect.height > 0;
+    };
+    return {
+      stage: document.querySelector('#report-section')?.dataset.reportStage || '',
+      formStatus: document.querySelector('#form-status')?.textContent?.trim() || '',
+      identityStatus: document.querySelector('#identity-status')?.textContent?.trim() || '',
+      identitySheetOpen: document.querySelector('#identity-sheet')?.getAttribute('aria-hidden') === 'false',
+      candidateCount: document.querySelectorAll('[data-report-target-id]').length,
+      primaryAction: document.querySelector('#start-capture-action')?.textContent?.trim() || '',
+      mediaRequests: Number(window.__musunilReportMediaRequests || 0),
+      previewTarget: document.querySelector('#preview-target')?.textContent?.trim() || '',
+      previewTime: document.querySelector('#preview-time')?.textContent?.trim() || '',
+      previewDistance: document.querySelector('#preview-distance')?.textContent?.trim() || '',
+      previewActions: ['#submit-capture-action', '#retake-capture-action', '#change-capture-target-action']
+        .map((selector) => document.querySelector(selector))
+        .filter(visible)
+        .map((node) => node.textContent.trim()),
+      receiptVisible: visible(document.querySelector('#report-receipt')),
+      receiptId: document.querySelector('#receipt-id')?.textContent?.trim() || '',
+      receiptClaim: document.querySelector('#receipt-claim')?.textContent?.trim() || '',
+      receiptTarget: document.querySelector('#receipt-target')?.textContent?.trim() || '',
+      receiptIssue: document.querySelector('#receipt-issue')?.textContent?.trim() || '',
+      receiptReceived: document.querySelector('#receipt-received')?.textContent?.trim() || '',
+      receiptRadius: document.querySelector('#receipt-radius')?.textContent?.trim() || ''
+    };
+  })()`;
+}
+
+async function waitForReportStage(client, expectedStage, timeoutMs = 12_000) {
+  try {
+    await waitForExpression(client, `document.querySelector('#report-section')?.dataset.reportStage === ${JSON.stringify(expectedStage)}`, timeoutMs);
+  } catch {
+    const snapshot = await evaluate(client, reportFlowSnapshot());
+    throw new Error(`report did not reach ${expectedStage}: ${JSON.stringify(snapshot)}`);
+  }
+}
+
+function reportFlowBrowserMocks() {
+  return `(() => {
+    const position = { coords: { longitude: 126.978, latitude: 37.5665, accuracy: 18 } };
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: { getCurrentPosition(success) { queueMicrotask(() => success(position)); } }
+    });
+    const stream = new MediaStream();
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: async () => { window.__musunilReportMediaRequests = Number(window.__musunilReportMediaRequests || 0) + 1; return stream; } }
+    });
+    class TestMediaRecorder {
+      static isTypeSupported() { return true; }
+      constructor() { this.mimeType = 'video/webm;codecs=vp8'; }
+      start() {}
+      stop() {
+        this.ondataavailable?.({ data: new Blob(['musunil-report-flow-video'], { type: this.mimeType }) });
+        queueMicrotask(() => this.onstop?.());
+      }
+    }
+    Object.defineProperty(window, 'MediaRecorder', { configurable: true, value: TestMediaRecorder });
+    const nativeSetTimeout = window.setTimeout.bind(window);
+    window.setTimeout = (callback, delay, ...rest) => nativeSetTimeout(callback, delay === 7000 ? 20 : delay, ...rest);
+  })();`;
 }
 
 function serviceDetail(metrics) {
