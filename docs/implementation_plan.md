@@ -15,7 +15,11 @@ Web/PWA, Mobile
     -> proof-of-presence verification
     -> lifecycle reconciliation
     -> manipulation detection
-    -> notification dispatch
+    -> Postgres lease 기반 단일 ops scheduler
+       -> notification dispatch
+       -> public source ingest
+       -> law source ingest
+       -> privacy purge
   -> Agent service
     -> claim normalization
     -> evidence matching

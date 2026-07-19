@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "node --disable-warning=ExperimentalWarning --experimental-strip-types src/server.ts",
     "start": "node --disable-warning=ExperimentalWarning --experimental-strip-types src/server.ts",
+    "ops-scheduler": "node --disable-warning=ExperimentalWarning --experimental-strip-types src/ops-scheduler.ts",
+    "ops-scheduler:check": "node --disable-warning=ExperimentalWarning --experimental-strip-types src/ops-scheduler-self-check.ts",
     "migrate": "node --disable-warning=ExperimentalWarning --experimental-strip-types src/migrate.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --disable-warning=ExperimentalWarning --experimental-strip-types src/self-check.ts && node --disable-warning=ExperimentalWarning --experimental-strip-types src/migrate.ts --check"
+    "test": "node --disable-warning=ExperimentalWarning --experimental-strip-types src/self-check.ts && node --disable-warning=ExperimentalWarning --experimental-strip-types src/ops-scheduler-self-check.ts && node --disable-warning=ExperimentalWarning --experimental-strip-types src/migrate.ts --check"
   },
   "dependencies": {
     "pg": "^8.16.3"

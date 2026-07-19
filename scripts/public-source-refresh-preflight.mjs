@@ -37,7 +37,7 @@ if (!hasInternalApiKey()) {
     mode: "needs_internal_source_post",
     apiBaseUrl,
     reason: beforeCheck.reason,
-    requiredAction: "Set MUSUNIL_INTERNAL_API_KEY, or wait for Render musunil-public-source-ingest cron to succeed, then rerun pnpm launch:final-gate.",
+    requiredAction: "Set MUSUNIL_INTERNAL_API_KEY, or wait for the Render musunil-ops-scheduler public_source_ingest task to succeed, then rerun pnpm launch:final-gate.",
     command: "MUSUNIL_API_BASE_URL=https://api.musunil.com MUSUNIL_INTERNAL_API_KEY=<render generated internal key> pnpm sources:assemblies:post"
   }, "error");
   process.exit(1);

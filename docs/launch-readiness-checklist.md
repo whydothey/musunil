@@ -71,8 +71,9 @@
 - `pnpm db:migrate -- --check`가 Claim/Evidence/Issue/Occurrence/ContinuousPresence, live report, redacted media 저장 계약을 확인한다.
 - Render API는 SIGTERM에서 서버를 닫고 snapshot 저장 후 종료한다.
 - 로컬 Web 정적 서버는 실제 HTTP 응답에서 CSP, `nosniff`, `DENY`, `no-referrer`, `Permissions-Policy` 헤더를 보낸다.
-- Render cron `musunil-public-source-ingest`, `musunil-law-source-ingest`, `musunil-notification-dispatch`가 있다.
-- Render cron `musunil-privacy-purge`가 있다.
+- Render cron은 `musunil-ops-scheduler` 하나만 둔다.
+- scheduler가 Postgres lease를 사용해 `notification_dispatch`, `public_source_ingest`, `law_source_ingest`, `privacy_purge`를 각각 5분·1시간·12시간·24시간 주기로 실행한다.
+- `ops_task_leases`의 due claim은 `FOR UPDATE SKIP LOCKED`로 한 번에 한 작업만 임대하고, 실행 중 lease를 갱신하며, 실패 작업은 task별 retry 주기로 다시 시도한다.
 - 공개 원천 cron은 ingest POST 실패 시 non-zero로 종료한다.
 - 공개 원천 cron은 원천 fetch 실패나 0건 파싱도 non-zero로 종료한다.
 - 공개 원천 Claim/Occurrence ingest는 같은 payload 반복 실행 시 중복 Claim을 만들지 않는다.

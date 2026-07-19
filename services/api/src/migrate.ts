@@ -40,7 +40,8 @@ function assertRequiredTables(sql: string): void {
     "reports",
     "audit_logs",
     "transparency_logs",
-    "store_snapshots"
+    "store_snapshots",
+    "ops_task_leases"
   ]) {
     if (!new RegExp(`create table if not exists ${table}\\b`, "i").test(sql)) {
       throw new Error(`Missing required migration table: ${table}`);
@@ -63,6 +64,13 @@ function assertRequiredTables(sql: string): void {
   }
   if (!/private_lng\s+double precision/i.test(sql) || !/private_lat\s+double precision/i.test(sql)) {
     throw new Error("private coordinate columns are missing for proof-of-presence area derivation.");
+  }
+  const schedulerSource = readFileSync(resolve(cwd, "services/api/src/ops-scheduler.ts"), "utf8");
+  if (!/for update skip locked\s+limit 1/i.test(schedulerSource) || !/renewLease\(task\)/.test(schedulerSource)) {
+    throw new Error("operations scheduler must claim one due task with FOR UPDATE SKIP LOCKED and renew its lease.");
+  }
+  for (const taskId of ["notification_dispatch", "public_source_ingest", "law_source_ingest", "privacy_purge"]) {
+    if (!sql.includes(`'${taskId}'`)) throw new Error(`operations scheduler migration seed is missing: ${taskId}`);
   }
 }
 

@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { ApiError, createApp, createSeedStore, stripPreviewData } from "./app.ts";
 import { enforcePublicWriteRateLimit, readJsonBody } from "./http-boundary.ts";
 import { createLiveMediaStorage } from "./live-media-storage.ts";
-import { loadPostgresStore, pingPostgres, savePostgresStore } from "./postgres-store.ts";
+import { loadPostgresStore, pingOpsSchedulerSchema, pingPostgres, savePostgresStore } from "./postgres-store.ts";
 import { loadUserInputs, validateLaunchConfig } from "../../../packages/config/src/index.ts";
 
 const apiDir = dirname(fileURLToPath(import.meta.url));
@@ -224,7 +224,7 @@ function loadRuntime() {
           ...issues.map((issue) => ({ id: issue.path, ok: false, message: issue.message })),
           ...(production && identityTestModeRequested ? [{ id: "identity.test_mode", ok: false, message: "MUSUNIL_IDENTITY_TEST_MODE is not allowed in production." }] : [])
         ];
-        if (databaseUrl) checks.push(await postgresReadyCheck(databaseUrl));
+        if (databaseUrl) checks.push(...await postgresReadyChecks(databaseUrl));
         if (redisUrl) checks.push(await tcpUrlReadyCheck("redis", redisUrl));
         return { ready: checks.every((check) => check.ok), checks };
       }
@@ -269,12 +269,26 @@ function loadRuntime() {
   }
 }
 
-async function postgresReadyCheck(databaseUrl: string): Promise<{ id: string; ok: boolean; message: string }> {
+async function postgresReadyChecks(databaseUrl: string): Promise<Array<{ id: string; ok: boolean; message: string }>> {
   try {
     await pingPostgres(databaseUrl);
-    return { id: "postgres", ok: true, message: "postgres reachable" };
   } catch {
-    return { id: "postgres", ok: false, message: "postgres unreachable" };
+    return [
+      { id: "postgres", ok: false, message: "postgres unreachable" },
+      { id: "ops_scheduler_schema", ok: false, message: "ops scheduler schema unavailable" }
+    ];
+  }
+  try {
+    await pingOpsSchedulerSchema(databaseUrl);
+    return [
+      { id: "postgres", ok: true, message: "postgres reachable" },
+      { id: "ops_scheduler_schema", ok: true, message: "ops scheduler task rows ready" }
+    ];
+  } catch {
+    return [
+      { id: "postgres", ok: true, message: "postgres reachable" },
+      { id: "ops_scheduler_schema", ok: false, message: "ops scheduler migration incomplete" }
+    ];
   }
 }
 

@@ -736,7 +736,7 @@ function requiredActions(result) {
     actions.push({
       id: "refresh_public_source_ingest",
       owner: "operator",
-      action: "공개 집회 원천 parser 준비만으로는 출시할 수 없다. `pnpm sources:refresh-preflight`를 실행하거나 Render `musunil-public-source-ingest` cron이 성공했는지 확인해 `/public-sources/coverage.sourceRefreshes`에 18개 활성 일정 원천의 실제 갱신 시각과 resultCount가 남게 한다.",
+      action: "공개 집회 원천 parser 준비만으로는 출시할 수 없다. `pnpm sources:refresh-preflight`를 실행하거나 Render `musunil-ops-scheduler`의 `public_source_ingest` task가 성공했는지 확인해 `/public-sources/coverage.sourceRefreshes`에 18개 활성 일정 원천의 실제 갱신 시각과 resultCount가 남게 한다.",
       verify: "pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes",
       reference: "docs/data-fixtures-and-real-sources.md"
     });

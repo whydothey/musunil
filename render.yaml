@@ -71,12 +71,12 @@ services:
         value: production
 
   - type: cron
-    name: musunil-public-source-ingest
+    name: musunil-ops-scheduler
     runtime: node
     region: singapore
-    schedule: "7 * * * *"
+    schedule: "*/5 * * * *"
     buildCommand: pnpm install --frozen-lockfile && pnpm check
-    startCommand: pnpm --filter @musunil/public-source-ingest dev -- --post
+    startCommand: pnpm ops:scheduler
     envVars:
       - key: NODE_VERSION
         value: 24
@@ -92,80 +92,15 @@ services:
           type: web
           name: musunil-api
           envVarKey: MUSUNIL_INTERNAL_API_KEY
-
-  - type: cron
-    name: musunil-law-source-ingest
-    runtime: node
-    region: singapore
-    schedule: "17 0,12 * * *"
-    buildCommand: pnpm install --frozen-lockfile && pnpm check
-    startCommand: pnpm --filter @musunil/public-source-ingest dev -- --laws --post
-    envVars:
-      - key: NODE_VERSION
-        value: 24
-      - key: MUSUNIL_RUNTIME_ENV
-        value: production
-      - key: MUSUNIL_API_HOSTPORT
-        fromService:
-          type: web
-          name: musunil-api
-          property: hostport
-      - key: MUSUNIL_INTERNAL_API_KEY
-        fromService:
-          type: web
-          name: musunil-api
-          envVarKey: MUSUNIL_INTERNAL_API_KEY
+      - key: DATABASE_URL
+        fromDatabase:
+          name: musunil-postgres
+          property: connectionString
       - key: MUSUNIL_USER_INPUTS_B64
         fromService:
           type: web
           name: musunil-api
           envVarKey: MUSUNIL_USER_INPUTS_B64
-
-  - type: cron
-    name: musunil-notification-dispatch
-    runtime: node
-    region: singapore
-    schedule: "*/5 * * * *"
-    buildCommand: pnpm install --frozen-lockfile && pnpm check
-    startCommand: pnpm dispatch:notifications
-    envVars:
-      - key: NODE_VERSION
-        value: 24
-      - key: MUSUNIL_RUNTIME_ENV
-        value: production
-      - key: MUSUNIL_API_HOSTPORT
-        fromService:
-          type: web
-          name: musunil-api
-          property: hostport
-      - key: MUSUNIL_INTERNAL_API_KEY
-        fromService:
-          type: web
-          name: musunil-api
-          envVarKey: MUSUNIL_INTERNAL_API_KEY
-
-  - type: cron
-    name: musunil-privacy-purge
-    runtime: node
-    region: singapore
-    schedule: "23 18 * * *"
-    buildCommand: pnpm install --frozen-lockfile && pnpm check
-    startCommand: pnpm privacy:purge
-    envVars:
-      - key: NODE_VERSION
-        value: 24
-      - key: MUSUNIL_RUNTIME_ENV
-        value: production
-      - key: MUSUNIL_API_HOSTPORT
-        fromService:
-          type: web
-          name: musunil-api
-          property: hostport
-      - key: MUSUNIL_INTERNAL_API_KEY
-        fromService:
-          type: web
-          name: musunil-api
-          envVarKey: MUSUNIL_INTERNAL_API_KEY
 
 databases:
   - name: musunil-postgres

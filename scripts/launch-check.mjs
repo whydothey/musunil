@@ -78,6 +78,9 @@ const githubPostDeployWorkflow = readFileSync(resolve(cwd, "scripts/github-post-
 const githubCiStatus = readFileSync(resolve(cwd, "scripts/github-ci-status.mjs"), "utf8");
 const publicSourceRefreshPreflight = readFileSync(resolve(cwd, "scripts/public-source-refresh-preflight.mjs"), "utf8");
 const lawSourceIngest = readFileSync(resolve(cwd, "workers/public-source-ingest/src/laws.ts"), "utf8");
+const opsScheduler = readFileSync(resolve(cwd, "services/api/src/ops-scheduler.ts"), "utf8");
+const opsSchedulerContract = readFileSync(resolve(cwd, "services/api/src/ops-scheduler-contract.ts"), "utf8");
+const opsSchedulerMigration = readFileSync(resolve(cwd, "services/api/migrations/011_ops_task_leases.sql"), "utf8");
 const rootPackageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
 const ciWorkflow = readFileSync(resolve(cwd, ".github/workflows/ci.yml"), "utf8");
 const postDeployWorkflow = readFileSync(resolve(cwd, ".github/workflows/post-deploy.yml"), "utf8");
@@ -87,10 +90,7 @@ const renderYaml = readFileSync(resolve(cwd, "render.yaml"), "utf8");
 const renderApi = renderServiceBlock(renderYaml, "musunil-api");
 const renderWeb = renderServiceBlock(renderYaml, "musunil-web");
 const renderRedis = renderServiceBlock(renderYaml, "musunil-redis");
-const renderPublicSourceIngest = renderServiceBlock(renderYaml, "musunil-public-source-ingest");
-const renderLawSourceIngest = renderServiceBlock(renderYaml, "musunil-law-source-ingest");
-const renderNotificationDispatch = renderServiceBlock(renderYaml, "musunil-notification-dispatch");
-const renderPrivacyPurge = renderServiceBlock(renderYaml, "musunil-privacy-purge");
+const renderOpsScheduler = renderServiceBlock(renderYaml, "musunil-ops-scheduler");
 const forbiddenPatterns = [
   /[🪧📊⛺🚇👥🚧➰]/u,
   /자유 댓글|추천\/비추천|찬반투표/u,
@@ -1780,10 +1780,7 @@ if (!/healthCheckPath:\s*\/ready/.test(renderYaml)) failures.push("Render API he
 for (const [serviceName, block] of [
   ["musunil-api", renderApi],
   ["musunil-web", renderWeb],
-  ["musunil-public-source-ingest", renderPublicSourceIngest],
-  ["musunil-law-source-ingest", renderLawSourceIngest],
-  ["musunil-notification-dispatch", renderNotificationDispatch],
-  ["musunil-privacy-purge", renderPrivacyPurge]
+  ["musunil-ops-scheduler", renderOpsScheduler]
 ]) {
   if (!/key:\s*MUSUNIL_RUNTIME_ENV[\s\S]*?value:\s*production/.test(block)) failures.push(`${serviceName} must set MUSUNIL_RUNTIME_ENV=production`);
 }
@@ -1851,48 +1848,37 @@ if (!hasRenderGeneratedEnv(renderApi, "MUSUNIL_ENCRYPTION_KEY")) {
 }
 if (!/key:\s*NODE_VERSION[\s\S]*?value:\s*24/.test(renderWeb)) failures.push("Render Web must set NODE_VERSION=24");
 if (!/key:\s*MUSUNIL_RUNTIME_ENV[\s\S]*?value:\s*production/.test(renderWeb)) failures.push("Render Web must set MUSUNIL_RUNTIME_ENV=production");
-for (const [serviceName, block] of [
-  ["musunil-public-source-ingest", renderPublicSourceIngest],
-  ["musunil-law-source-ingest", renderLawSourceIngest],
-  ["musunil-notification-dispatch", renderNotificationDispatch],
-  ["musunil-privacy-purge", renderPrivacyPurge]
-]) {
-  if (!hasRenderApiHostportEnv(block)) failures.push(`${serviceName} must receive MUSUNIL_API_HOSTPORT from musunil-api`);
-  if (!hasRenderInternalKeyFromApiEnv(block)) failures.push(`${serviceName} must receive MUSUNIL_INTERNAL_API_KEY from musunil-api`);
-  if (serviceName === "musunil-law-source-ingest") {
-    if (!hasRenderEnvFromApiEnv(block, "MUSUNIL_USER_INPUTS_B64")) failures.push(`${serviceName} must reuse MUSUNIL_USER_INPUTS_B64 from musunil-api`);
-  } else if (/key:\s*MUSUNIL_USER_INPUTS_B64/.test(block)) {
-    failures.push(`${serviceName} must not prompt for full user-input YAML`);
-  }
-}
+if (!hasRenderApiHostportEnv(renderOpsScheduler)) failures.push("musunil-ops-scheduler must receive MUSUNIL_API_HOSTPORT from musunil-api");
+if (!hasRenderInternalKeyFromApiEnv(renderOpsScheduler)) failures.push("musunil-ops-scheduler must receive MUSUNIL_INTERNAL_API_KEY from musunil-api");
+if (!hasRenderEnvFromApiEnv(renderOpsScheduler, "MUSUNIL_USER_INPUTS_B64")) failures.push("musunil-ops-scheduler must reuse MUSUNIL_USER_INPUTS_B64 from musunil-api");
+if (!hasRenderPostgresEnv(renderOpsScheduler, "DATABASE_URL")) failures.push("musunil-ops-scheduler must receive DATABASE_URL from musunil-postgres for durable task leases");
 if (!/maxShutdownDelaySeconds:\s*30/.test(renderYaml)) failures.push("Render API maxShutdownDelaySeconds must be set");
 if (!/SIGTERM/.test(readFileSync(resolve(cwd, "services/api/src/server.ts"), "utf8"))) failures.push("API graceful shutdown handler is missing");
-if (!/name:\s*musunil-public-source-ingest[\s\S]*?type:\s*cron|type:\s*cron[\s\S]*?name:\s*musunil-public-source-ingest/.test(renderYaml)) {
-  failures.push("public source ingest cron is missing from render.yaml");
+if (!/name:\s*musunil-ops-scheduler[\s\S]*?type:\s*cron|type:\s*cron[\s\S]*?name:\s*musunil-ops-scheduler/.test(renderYaml)) {
+  failures.push("durable operations scheduler cron is missing from render.yaml");
 }
-if (!/startCommand:\s*pnpm --filter @musunil\/public-source-ingest dev -- --post/.test(renderPublicSourceIngest)) {
-  failures.push("public source ingest cron startCommand must post parsed public occurrences");
+if (!/schedule:\s*"\*\/5 \* \* \* \*"/.test(renderOpsScheduler)) failures.push("operations scheduler cron must wake every five minutes");
+if (!/startCommand:\s*pnpm ops:scheduler/.test(renderOpsScheduler)) failures.push("operations scheduler cron startCommand must run pnpm ops:scheduler");
+for (const legacyCron of ["musunil-public-source-ingest", "musunil-law-source-ingest", "musunil-notification-dispatch", "musunil-privacy-purge"]) {
+  if (renderYaml.includes(`name: ${legacyCron}`)) failures.push(`legacy duplicate cron must be removed after scheduler consolidation: ${legacyCron}`);
 }
-if (!/name:\s*musunil-law-source-ingest[\s\S]*?type:\s*cron|type:\s*cron[\s\S]*?name:\s*musunil-law-source-ingest/.test(renderYaml)) {
-  failures.push("law source ingest cron is missing from render.yaml");
+for (const taskId of ["notification_dispatch", "public_source_ingest", "law_source_ingest", "privacy_purge"]) {
+  if (!opsSchedulerContract.includes(`id: "${taskId}"`)) failures.push(`operations scheduler task is missing: ${taskId}`);
 }
-if (!/schedule:\s*"17 0,12 \* \* \*"/.test(renderLawSourceIngest)) {
-  failures.push("law source ingest cron must run twice daily.");
+if (!/for update skip locked\s+limit 1/i.test(opsScheduler) || !/lease_owner = \$2/.test(opsScheduler) || !/lease_until <= now\(\)/.test(opsScheduler) || !/renewLease\(task\)/.test(opsScheduler)) {
+  failures.push("operations scheduler must atomically claim one expired due-task lease and renew it while the task runs");
 }
-if (!/startCommand:\s*pnpm --filter @musunil\/public-source-ingest dev -- --laws --post/.test(renderLawSourceIngest)) {
-  failures.push("law source ingest cron startCommand must post parsed law items");
+if (!/failure_count = failure_count \+ 1/.test(opsScheduler) || !/retry_seconds \* interval '1 second'/.test(opsScheduler)) {
+  failures.push("operations scheduler must persist failure retry state");
 }
-if (!/name:\s*musunil-notification-dispatch[\s\S]*?type:\s*cron|type:\s*cron[\s\S]*?name:\s*musunil-notification-dispatch/.test(renderYaml)) {
-  failures.push("notification dispatch cron is missing from render.yaml");
+if (!/create table if not exists ops_task_leases/i.test(opsSchedulerMigration) || !/ops_task_leases_due_idx/i.test(opsSchedulerMigration)) {
+  failures.push("operations scheduler durable lease migration is missing");
 }
-if (!/startCommand:\s*pnpm dispatch:notifications/.test(renderNotificationDispatch)) {
-  failures.push("notification dispatch cron startCommand must run pnpm dispatch:notifications");
+if (!/pingOpsSchedulerSchema/.test(readFileSync(resolve(cwd, "services/api/src/server.ts"), "utf8")) || !/ops_scheduler_schema/.test(readFileSync(resolve(cwd, "services/api/src/server.ts"), "utf8"))) {
+  failures.push("API readiness must verify the durable operations scheduler schema");
 }
-if (!/name:\s*musunil-privacy-purge[\s\S]*?type:\s*cron|type:\s*cron[\s\S]*?name:\s*musunil-privacy-purge/.test(renderYaml)) {
-  failures.push("privacy purge cron is missing from render.yaml");
-}
-if (!/startCommand:\s*pnpm privacy:purge/.test(renderPrivacyPurge)) {
-  failures.push("privacy purge cron startCommand must run pnpm privacy:purge");
+if (!/"ops:scheduler"/.test(packageJson) || !/"check:ops-scheduler"/.test(packageJson) || !/check:ops-scheduler/.test(packageScripts["check:release"] ?? "")) {
+  failures.push("operations scheduler scripts and release contract are missing");
 }
 
 if (failures.length > 0) {

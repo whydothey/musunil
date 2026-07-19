@@ -51,6 +51,21 @@ export async function pingPostgres(databaseUrl: string): Promise<void> {
   }
 }
 
+export async function pingOpsSchedulerSchema(databaseUrl: string): Promise<void> {
+  const pool = new Pool({ connectionString: databaseUrl, connectionTimeoutMillis: 1500 });
+  try {
+    const result = await pool.query<{ task_count: number }>(
+      `select count(*)::integer as task_count
+       from ops_task_leases
+       where task_id = any($1::text[])`,
+      [["notification_dispatch", "public_source_ingest", "law_source_ingest", "privacy_purge"]]
+    );
+    if (result.rows[0]?.task_count !== 4) throw new Error("ops scheduler task rows are incomplete");
+  } finally {
+    await pool.end();
+  }
+}
+
 async function ensureSnapshotTable(pool: pg.Pool): Promise<void> {
   await pool.query(`
     create table if not exists store_snapshots (
