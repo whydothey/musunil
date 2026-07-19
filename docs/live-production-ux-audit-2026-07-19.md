@@ -22,13 +22,28 @@
 | G4. 공정한 릴스형 증거 영상 탐색 | **Guard** | 공개·비식별·Proof-of-Presence·기기무결성 조건을 통과한 영상만 이슈·현장·지역 버킷으로 순환하고, 영상·현장·상세가 같은 OccurrenceDigest를 유지한다. production 공개 영상이 없으면 빈 상태만 표시한다. |
 | G5. 공식 법안 피드와 이슈 연결 | **Guard** | 국회 의안의 공식 발의일과 현행 법령의 공포·시행일을 분리하고, `현장 관심`/`최근 발의` 정렬 및 이슈·집회 현장 교차 이동을 local에서 통과했다. 실제 원천 적재·live 검증은 G7에서 다시 수행한다. |
 | G6. 현장 제보의 확신 가능한 완료 흐름 | **Guard** | 위치 기반 후보·대상 확정·본인확인·앱 내 촬영·미리보기·대상 변경·접수·새로고침 뒤 접수 상태를 local staging API와 브라우저에서 통과했다. 운영 비공개 저장소 PUT/GET/DELETE와 실제 영상 비식별 엔진 smoke도 통과했으며, 실제 PortOne·모바일 무결성 및 API 연동 리허설은 G7에서 수행한다. |
-| G7. 실제 운영 연결과 공식 원천 복구 | **Active** | API DNS, Render, DB/Redis, 원천, 보안 헤더, service watch가 live로 통과한다. |
+| G7. 실제 운영 연결과 공식 원천 복구 | **Deferred** | UI 출시 후보가 확정될 때까지 추가 유료 리소스 생성과 운영 연결을 보류한다. |
 | G8. 라이브 S+ 종결 감사 | Pending | 모든 행이 `S+` 또는 `Guard`이고 external blocker가 0건이다. |
+
+### UI/UX 전면 재구축 보드
+
+기존 정적 UI의 `Guard` 판정은 기능 존재 여부를 뜻할 뿐, 상업용 S+ 판정이 아니다. 2026-07-19 사용자 피드백을 기준으로 기존 화면의 S+ 선언을 무효화하고 아래 보드를 우선 실행한다. 새 앱은 검증이 끝날 때까지 `apps/web/dist`에만 빌드하며, 라이브 `apps/web/index.html`과 Render 게시 경로는 유지한다.
+
+| UI Goal | 상태 | 실제 완료 증거 |
+| --- | --- | --- |
+| UI-G1. React/Vite 기반과 데이터 격리 | **Guard** | React 19, TypeScript, Vite 앱 셸·라우팅·디자인 토큰을 추가했다. production 빌드에서 fixture 제목·ID·preview 미디어 문자열 0건, 초기 JS gzip 약 67KB를 확인했다. |
+| UI-G2. 홈·이슈·현장 흐름 | **Candidate** | 단일 주요 이슈 피드, 전체 화면 이슈, 전국 현장, 동일 현장 상세를 구현했다. 390/430/768/1440 시각·키보드 검증 전에는 Guard/S+로 올리지 않는다. |
+| UI-G3. 영상·지도 연결 | **Candidate** | 세로 snap 영상과 MapLibre GeoJSON 핀·인증 영역이 동일 `selectedOccurrenceId` 상세로 이동한다. 실제 pan/zoom·스와이프 캡처 전에는 Guard/S+로 올리지 않는다. |
+| UI-G4. 법안·제보 단순화 | **Candidate** | 법안 2개 정렬과 `근처 현장 → 대상 확정 → 본인확인 → 촬영 → 미리보기 → 접수` 점진 흐름을 구현했다. production API·PortOne은 G7까지 정직한 미연결 상태를 유지한다. |
+| UI-G5. 상업용 시각 완성 | **Active** | 독립 Visual Critique 체크리스트를 기준으로 대시보드형 KPI·중첩 카드·장식 글로우를 제거한다. 실제 화면 비교와 반복 수정이 남아 있다. |
+| UI-G6. S+ 출시 감사·배포 전환 | Pending | axe, 키보드, 뒤로가기, reduced motion, 4개 viewport, 정보 흐름, production strip이 통과한 뒤에만 Render 게시 경로를 `apps/web/dist`로 전환한다. |
+| UI-G7. 운영 연결 재개 | Deferred | UI 출시 후보가 확정된 뒤 기존 G7을 재개한다. |
 
 ## Change Log
 
 | 일시 | Goal | 사용자 문제 | 변경 | 검증 |
 | --- | --- | --- | --- | --- |
+| 2026-07-19 23:20 KST | UI-G1~G4 | 라이브가 약 1.2만 줄 단일 HTML과 다중 패널·과도한 조작 요소로 AI 대시보드처럼 보이고, 일반 사용자가 첫 행동을 알기 어려움 | 기존 라이브를 유지한 채 `apps/web/app`에 React/Vite 앱을 병렬 구축했다. 홈은 단일 이슈 링크 목록, 상세는 전체 화면, 지도는 핀·인증 영역, 영상은 세로 snap, 법안은 2개 정렬, 제보는 단계별 한 행동으로 재구성했다. fixture/production은 Vite alias로 빌드 단계부터 분리했다. | `@musunil/web typecheck`, fixture/production build 통과. production dist에서 fixture title/id/preview token 0건. 시각·접근성 검증은 UI-G5/G6 Active로 유지 |
 | 2026-07-19 | G1 | 홈·지도·상세가 서로 다른 선택 대상을 가리킬 수 있음 | `IssueOverview`/`OccurrenceDigest` additive API, `selectedOccurrenceId` 모듈 상태, ES module API/contract foundation, recursive static manifest를 도입 | `@musunil/api test`, `check:web-manifest`, `check:web-smoke`, `check:web-flow`, `check:ux-surface`, `check:visual-surface`, `check:web-render-build-command` 통과 |
 | 2026-07-19 | G2 | 이슈를 열어도 장소·시간별 집회 현장이 첫 답으로 나오지 않음 | 이슈 상세 첫 화면을 `전국 집회 현장` 목록으로 바꾸고, 현장 선택과 관련 공식 법안 이동을 같은 상세 흐름에 연결 | `check:web-smoke`, `check:web-flow`, `check:ux-surface`, 390/430/768/1440 `check:visual-surface` 통과 |
 | 2026-07-19 | G3 | 지도 상단이 선택 핀과 다른 이슈를 가리킬 수 있음 | 지도 맥락 스트립을 공유 `selectedOccurrenceId`에서 읽어 현장명·지역·공개 위치·영상 상태를 표시하도록 변경 | `check:web-smoke`, `check:web-flow` 통과. MapLibre 실제 interaction capture는 진행 중 |

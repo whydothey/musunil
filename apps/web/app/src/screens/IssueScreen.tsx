@@ -1,0 +1,98 @@
+import { FileText, MapPin, PlaySquare, Scale } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useAppState } from "../app-state";
+import { EmptyState, LoadingState, OccurrenceListItem, ScreenHeader, ServiceUnavailable, StatusDot } from "../components";
+import { evidenceLabel, formatRelativeTime, riskLabel, sourceLabel } from "../format";
+import { Link } from "../router";
+
+type IssueTab = "occurrences" | "videos" | "evidence" | "laws";
+const tabs: Array<{ id: IssueTab; label: string }> = [
+  { id: "occurrences", label: "현장" },
+  { id: "videos", label: "영상" },
+  { id: "evidence", label: "근거" },
+  { id: "laws", label: "법안" }
+];
+
+export function IssueScreen({ id }: { id: string }) {
+  const { dataset, serviceSyncState, selectIssue } = useAppState();
+  const [tab, setTab] = useState<IssueTab>("occurrences");
+  const issue = dataset?.issues.find((item) => item.id === id);
+  const occurrences = useMemo(() => dataset?.occurrences.filter((item) => item.issueId === id) || [], [dataset, id]);
+  const reels = useMemo(() => dataset?.reels.filter((item) => item.issueId === id) || [], [dataset, id]);
+  const laws = useMemo(() => dataset?.laws.filter((item) => item.linkedIssueIds?.includes(id)) || [], [dataset, id]);
+  const claims = dataset?.claimsByIssue[id] || [];
+  useEffect(() => { selectIssue(id); }, [id, selectIssue]);
+
+  if (serviceSyncState === "loading") return <section className="screen screen-detail"><LoadingState /></section>;
+  if (serviceSyncState === "unavailable") return <section className="screen screen-detail"><ServiceUnavailable /></section>;
+  if (!issue) return <section className="screen screen-detail"><ScreenHeader title="이슈를 찾을 수 없습니다" back /><EmptyState title="공개된 이슈가 아닙니다" description="주소를 다시 확인하거나 홈에서 다른 이슈를 선택해 주세요." actionHref="/" actionLabel="홈으로" /></section>;
+
+  return (
+    <section className="screen screen-detail" data-screen="issue">
+      <ScreenHeader title={issue.title} eyebrow="주요 이슈" back />
+      <div className="issue-hero">
+        <div className="hero-status"><StatusDot state={issue.lifecycleState} /><span>{formatRelativeTime(issue.latestUpdatedAt)}</span></div>
+        <p>{issue.latestChange || `${issue.regionCount}개 지역의 공개 현장을 확인하고 있습니다.`}</p>
+        <div className="hero-summary" aria-label="이슈 현황">
+          <span><strong>{issue.occurrenceCount}</strong> 현장</span>
+          <span><strong>{issue.regionCount}</strong> 지역</span>
+          <span><strong>{issue.publicVideoCount}</strong> 영상</span>
+          {issue.disputeCount ? <span className="has-dispute">다른 주장 있음</span> : null}
+        </div>
+      </div>
+
+      <div className="detail-tabs" role="tablist" aria-label="이슈 정보">
+        {tabs.map((item) => <button key={item.id} type="button" role="tab" aria-selected={tab === item.id} onClick={() => setTab(item.id)}>{item.label}</button>)}
+      </div>
+
+      <div className="detail-tab-panel" role="tabpanel">
+        {tab === "occurrences" ? (
+          <div className="section-list">
+            <div className="section-heading"><div><h2>전국 현장</h2><p>같은 주제로 확인되는 집회·시위입니다</p></div><MapPin aria-hidden="true" /></div>
+            {occurrences.length ? occurrences.map((occurrence) => <OccurrenceListItem key={occurrence.id} occurrence={occurrence} />) : <EmptyState title="공개된 현장이 없습니다" description="위치와 근거가 확인된 현장부터 표시합니다." />}
+          </div>
+        ) : null}
+
+        {tab === "videos" ? (
+          <div className="section-list">
+            <div className="section-heading"><div><h2>현장 영상</h2><p>위치·시각 확인과 비식별 검토를 마친 영상입니다</p></div><PlaySquare aria-hidden="true" /></div>
+            {reels.length ? reels.map((reel) => (
+              <Link key={reel.id} href={`/reels?issue=${encodeURIComponent(id)}&reel=${encodeURIComponent(reel.id)}`} className="video-list-row">
+                <img src={reel.media.redactedPosterUrl} alt="비식별 처리된 현장 영상 미리보기" />
+                <div><strong>{reel.occurrenceTitle}</strong><span>{reel.regionLabel} · 공개 반경 {reel.publicRadiusM}m</span></div>
+                <PlaySquare aria-hidden="true" />
+              </Link>
+            )) : <EmptyState title="공개된 현장 영상이 없습니다" description="현장성과 비식별 검토를 통과한 영상만 공개합니다." />}
+          </div>
+        ) : null}
+
+        {tab === "evidence" ? (
+          <div className="section-list evidence-section">
+            <div className="section-heading"><div><h2>확인 근거</h2><p>출처, 근거 강도, 공개 위험을 각각 구분합니다</p></div><FileText aria-hidden="true" /></div>
+            {claims.length ? claims.map((claim) => (
+              <article className="claim-row" key={claim.id}>
+                <div className="claim-source"><span>{sourceLabel(claim.sourceProvenance)}</span><time>{formatRelativeTime(claim.createdAt)}</time></div>
+                <p>{claim.normalizedStatement}</p>
+                <dl className="claim-meta"><div><dt>근거</dt><dd>{evidenceLabel(claim.evidenceStrength)}</dd></div><div><dt>공개</dt><dd>{riskLabel(claim.riskLevel)}</dd></div></dl>
+              </article>
+            )) : <EmptyState title="공개된 근거가 없습니다" description="검토를 통과한 Claim만 이곳에 표시합니다." />}
+          </div>
+        ) : null}
+
+        {tab === "laws" ? (
+          <div className="section-list">
+            <div className="section-heading"><div><h2>관련 법안</h2><p>국회·국가법령정보의 공식 자료입니다</p></div><Scale aria-hidden="true" /></div>
+            {laws.length ? laws.map((law) => (
+              <article key={law.id} className="law-inline-row">
+                <span>{law.source === "assembly_bill" ? "국회 의안" : "현행 법령"}</span>
+                <h3>{law.title}</h3>
+                <p>{law.stage} · {law.statusDate || law.proposedDate || "공식 날짜 확인 중"}</p>
+                {law.officialUrl ? <a href={law.officialUrl} target="_blank" rel="noreferrer">공식 자료</a> : null}
+              </article>
+            )) : <EmptyState title="연결된 법안이 없습니다" description="공식 법안 정보와 이슈의 연결 근거가 확인되면 표시합니다." actionHref="/laws" actionLabel="법안 전체 보기" />}
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
