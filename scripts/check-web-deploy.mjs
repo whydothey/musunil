@@ -123,6 +123,18 @@ await check("web_html_current", async () => {
   assert(!response.body.includes('data-tab-view="record"'), "HTML still contains the legacy detail tab");
 });
 
+await check("web_spa_routes", async () => {
+  const routes = ["/reels", "/explore", "/laws", "/report", "/issues/deploy-check", "/occurrences/deploy-check"];
+  for (const route of routes) {
+    const response = await text(`${webBaseUrl}${route}`);
+    assert(response.status === 200, `${route} returned ${response.status}; configure Render rewrite /* -> /index.html`);
+    checkWebHeaders(response.headers, route);
+    assert(response.body.includes('<div id="root"></div>'), `${route} did not return the React application shell`);
+    assert(/src="\/assets\/[^\"]+\.js"/.test(response.body), `${route} is missing the built Vite entry`);
+  }
+  return { routes };
+});
+
 await check("web_config_current", async () => {
   const response = await text(`${webBaseUrl}/config.js`);
   assert(response.status === 200, `/config.js returned ${response.status}`);

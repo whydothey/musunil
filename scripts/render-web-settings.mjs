@@ -6,6 +6,7 @@ const renderYaml = readFileSync(resolve(cwd, "render.yaml"), "utf8");
 const webBlock = renderServiceBlock(renderYaml, "musunil-web");
 const buildCommand = readScalar(webBlock, "buildCommand");
 const publishDirectory = readScalar(webBlock, "staticPublishPath");
+const hasSpaRewrite = /routes:\s*[\s\S]*?-\s+type:\s*rewrite\s*[\s\S]*?source:\s*\/\*\s*[\s\S]*?destination:\s*\/index\.html/.test(webBlock);
 const headers = readHeaders(webBlock);
 const envVars = readEnvVars(webBlock);
 const requiredHeaders = [
@@ -29,6 +30,8 @@ const forbiddenEnvKeys = [
 const failures = [];
 if (!buildCommand) failures.push("musunil-web buildCommand is missing");
 if (!publishDirectory) failures.push("musunil-web staticPublishPath is missing");
+if (publishDirectory !== "apps/web/dist") failures.push("musunil-web staticPublishPath must be apps/web/dist");
+if (!hasSpaRewrite) failures.push("musunil-web must rewrite /* to /index.html");
 if (!envVars.some((envVar) => envVar.key === "NODE_VERSION" && envVar.value === "24")) failures.push("musunil-web NODE_VERSION=24 env var is missing");
 if (!envVars.some((envVar) => envVar.key === "MUSUNIL_RUNTIME_ENV" && envVar.value === "production")) {
   failures.push("musunil-web MUSUNIL_RUNTIME_ENV=production env var is missing");
@@ -52,6 +55,7 @@ const settings = {
   rootDirectory: "",
   buildCommand,
   publishDirectory,
+  rewrite: { source: "/*", destination: "/index.html", action: "Rewrite" },
   portableHeadersFile: "apps/web/_headers",
   envVars,
   headers,
@@ -61,6 +65,7 @@ const settings = {
   },
   headerApplicationModes: [
     "Manual Static Site: open Render musunil-web > Settings > Headers and copy every header rule below. render.yaml does not sync into a manually created Static Site.",
+    "Manual Static Site: open Redirects/Rewrites and add Source=/*, Destination=/index.html, Action=Rewrite.",
     "Blueprint-managed service: sync render.yaml and confirm the musunil-web headers section is applied by Render."
   ],
   afterSave: [
@@ -87,6 +92,7 @@ if (process.argv.includes("--json")) {
   console.log("Root Directory: (blank)");
   console.log(`Build Command: ${settings.buildCommand}`);
   console.log(`Publish Directory: ${settings.publishDirectory}`);
+  console.log(`Rewrite: ${settings.rewrite.source} -> ${settings.rewrite.destination} (${settings.rewrite.action})`);
   console.log(`Portable Headers File: ${settings.portableHeadersFile}`);
   console.log("");
   console.log("Header application mode:");

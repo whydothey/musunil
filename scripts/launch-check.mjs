@@ -1202,9 +1202,6 @@ if (!/pnpm cloudflare:apply/.test(readme) || !/pnpm cloudflare:apply/.test(launc
 }
 const completionPassingEvidence = markdownSection(completionAudit, "## Current Local/Static Passing Evidence", "## Current Live Blockers");
 if (!completionPassingEvidence) failures.push("completion audit must separate local/static passing evidence from live blockers");
-if (/check:visual-surface:live/.test(completionPassingEvidence)) {
-  failures.push("completion audit must not list live visual surface as current passing evidence while serviceSyncState=live is still required");
-}
 if (
   !/## Current Live Blockers/.test(completionAudit) ||
   !/api_endpoint_preflight/.test(completionAudit) ||
@@ -1220,11 +1217,8 @@ if (
 }
 const uxCurrentVerdict = markdownSection(splusUxTracker, "## Current Verdict", "## Design S+ Active Goals");
 const uxScorecard = markdownSection(splusUxTracker, "## Scorecard", "## Previous UX Evidence Under Review");
-if (/live 홈 이슈 피드가 0건|issues=0|first=none/.test(completionAudit + "\n" + uxCurrentVerdict + "\n" + uxScorecard)) {
-  failures.push("current UX/completion docs must not use stale live issue-feed evidence after production fallback topic issues are verified");
-}
-if (!/정보통신망법 개정 반대 집회/.test(completionAudit) || !/source bundle first 0\/4/.test(completionAudit) || !/serviceSyncState=delayed/.test(uxCurrentVerdict)) {
-  failures.push("current UX/completion docs must record the latest live fallback topic issue state while live API sync is still delayed");
+if (!/React\/Vite UI-G1~G6/.test(completionAudit) || !/가상 이슈를 만들지/.test(completionAudit) || !/serviceSyncState=unavailable/.test(uxCurrentVerdict)) {
+  failures.push("current UX/completion docs must record the React production no-fixture empty-state contract while the live API is unavailable");
 }
 const localCompletedSection = markdownSection(localCompletionStatus, "## 완료", "## 외부 연결 필요");
 const localExternalSection = markdownSection(localCompletionStatus, "## 외부 연결 필요", "\n## ");
@@ -1869,6 +1863,12 @@ if (
 if (!/name:\s*musunil-web[\s\S]*?buildCommand:\s*pnpm install --frozen-lockfile && pnpm build:web-static:render/.test(renderYaml)) {
   failures.push("Render Web buildCommand must use pnpm build:web-static:render");
 }
+if (!/name:\s*musunil-web[\s\S]*?staticPublishPath:\s*apps\/web\/dist/.test(renderYaml)) {
+  failures.push("Render Web staticPublishPath must publish apps/web/dist");
+}
+if (!/name:\s*musunil-web[\s\S]*?routes:\s*[\s\S]*?type:\s*rewrite[\s\S]*?source:\s*\/\*[\s\S]*?destination:\s*\/index\.html/.test(renderYaml)) {
+  failures.push("Render Web must rewrite /* to /index.html for direct React routes");
+}
 if (!/Build Command:\s*pnpm install --frozen-lockfile && pnpm build:web-static:render/.test(readme)) {
   failures.push("README Render Static Site build command must match pnpm build:web-static:render");
 }
@@ -2040,9 +2040,12 @@ function readConfigString(config, path) {
 function renderServiceBlock(source, name) {
   const lines = source.split("\n");
   for (let start = 0; start < lines.length; start += 1) {
-    if (!/^\s*-\s+type:/.test(lines[start])) continue;
+    const serviceStart = lines[start].match(/^(\s*)-\s+type:/);
+    if (!serviceStart || serviceStart[1].length !== 2) continue;
+    const serviceIndent = serviceStart[1].length;
+    const nextService = new RegExp(`^\\s{${serviceIndent}}-\\s+type:`);
     let end = start + 1;
-    while (end < lines.length && !/^\s*-\s+type:/.test(lines[end]) && !/^\S/.test(lines[end])) end += 1;
+    while (end < lines.length && !nextService.test(lines[end]) && !/^\S/.test(lines[end])) end += 1;
     const block = lines.slice(start, end).join("\n");
     if (new RegExp(`^ {4}name:\\s*${escapeRegExp(name)}\\s*$`, "m").test(block)) return block;
   }

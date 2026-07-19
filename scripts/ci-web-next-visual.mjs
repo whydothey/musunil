@@ -43,7 +43,13 @@ try {
   if (server) await waitForExit(server);
 }
 
-const payload = { checked: externalBaseUrl ? "react_live_surface" : "react_splus_candidate", ok: failures.length === 0, baseUrl, results, failures };
+const payload = {
+  checked: externalBaseUrl ? "react_live_surface" : "react_splus_candidate",
+  ok: failures.length === 0,
+  baseUrl: externalBaseUrl ? baseUrl : "local-fixture",
+  results,
+  failures
+};
 writeFileSync(resolve(evidenceDir, "visual-evidence.json"), `${JSON.stringify(payload, null, 2)}\n`);
 if (failures.length) {
   console.error(failures.map((failure) => `- ${failure}`).join("\n"));
@@ -318,6 +324,20 @@ async function metrics(page) {
 }
 
 async function shot(page, file) {
+  await page.locator("video").evaluateAll(async (videos) => {
+    await Promise.all(videos.map(async (video) => {
+      video.pause();
+      if (video.readyState < HTMLMediaElement.HAVE_METADATA || video.currentTime === 0) return;
+      await new Promise((resolveSeek) => {
+        const timer = window.setTimeout(resolveSeek, 300);
+        video.addEventListener("seeked", () => {
+          window.clearTimeout(timer);
+          resolveSeek();
+        }, { once: true });
+        video.currentTime = 0;
+      });
+    }));
+  });
   await page.screenshot({ path: resolve(evidenceDir, file), fullPage: false });
 }
 

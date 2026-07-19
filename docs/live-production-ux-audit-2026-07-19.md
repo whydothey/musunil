@@ -1,6 +1,6 @@
 # 무슨일 라이브 서비스 감사 및 S+ 개선 방향
 
-작성 시각: 2026-07-19 16:45 KST  
+작성 시각: 2026-07-19 16:45 KST · 최신 UI 배포 감사: 2026-07-20 01:03 KST
 대상: [https://musunil.com](https://musunil.com) 실제 배포 화면, 390px 모바일 및 데스크톱 화면  
 판정: **출시 전 개선 필요. 현재 상태는 S+가 아니며, 공개 베타로도 판단하지 않는다.**
 
@@ -36,13 +36,14 @@
 | UI-G3. 영상·지도 연결 | **Guard** | 세로 snap 영상의 액션을 `현장/근거/이슈`로 제한하고 진입 맥락·뒤로가기를 표시했다. `근거`는 실제 근거 섹션으로 스크롤·포커스한다. MapLibre 핀·인증 영역과 검색 결과는 동일 `selectedOccurrenceId`를 쓰며, 지도 배경과 선택 후 화면의 픽셀 문맥·pan/zoom·선택 패널을 통과했다. |
 | UI-G4. 법안·제보 단순화 | **Guard** | 법안 행 전체가 44px 이상 semantic link로 상세를 열고 공식 원문·연결 이슈로 이동한다. `근처 현장 → 대상 확정 → 본인확인 → 촬영 → 미리보기 → 접수` 전 단계를 4개 viewport에서 캡처했다. production API·PortOne은 G7까지 정직한 미연결 상태를 유지한다. |
 | UI-G5. 상업용 시각 완성 | **Guard** | 대시보드형 KPI·중첩 카드·장식 글로우를 제거하고 단일 피드, 전체 화면 상세, 8px 이하 표면, Lucide 아이콘으로 통일했다. 68개 화면 캡처에서 오버플로우·중첩 조작 0건, 주요 화면/상태 axe serious/critical 0건이며 데스크톱 정보 열은 920px로 별도 조정했다. |
-| UI-G6. S+ 출시 감사·배포 전환 | **Active** | production fixture 누출 0건과 Render `apps/web/dist` build contract는 local에서 통과했다. 현재 커밋 배포 후 실제 `musunil.com` SHA·화면·빈 상태·보안 헤더 검증이 남아 있다. |
+| UI-G6. S+ 출시 감사·배포 전환 | **Guard** | Render 수동 서비스의 Publish Directory를 `apps/web/dist`로, SPA rewrite를 `/* → /index.html`로 수정했다. 라이브 SHA `b0db63ce`, 직접 경로 6개, production fixture 누출 0건, 보안 헤더, 390/430/768/1440 화면·빈 상태·지도 문맥 검증이 통과했다. 운영 데이터 연결은 UI-G7의 별도 외부 blocker다. |
 | UI-G7. 운영 연결 재개 | Deferred | UI 출시 후보가 확정된 뒤 기존 G7을 재개한다. |
 
 ## Change Log
 
 | 일시 | Goal | 사용자 문제 | 변경 | 검증 |
 | --- | --- | --- | --- | --- |
+| 2026-07-20 01:03 KST | UI-G6 | GitHub CI 성공 뒤에도 Render가 구형 단일 HTML을 배포했고, React 전환 후 직접 `/reels`·`/explore` 경로가 `Not Found`로 끝남 | Render 수동 서비스의 Publish Directory가 저장소 계약과 달리 `apps/web`인 것을 확인해 `apps/web/dist`로 수정했다. 이어 `/* → /index.html` Rewrite를 추가했다. 저장소 `render.yaml`, 운영 설정 출력기, launch check, 실제 배포 검사에도 두 계약을 넣어 재발을 차단했다. | GitHub Actions [run 29693678360](https://github.com/whydothey/musunil/actions/runs/29693678360) 성공. 라이브 `/build-info.json` SHA `b0db63ce2f3bb5ae3ccfe061dcefd8b4161be541`. `/reels`, `/explore`, `/laws`, `/report`, `/issues/*`, `/occurrences/*` 모두 React 셸 200. `pnpm check:visual-surface:live:evidence` 4개 viewport 통과, overflow/nested interactive/forbidden 0, 지도 픽셀 문맥 통과. [Live evidence](/Users/mk/Documents/Musunil/docs/visual-evidence/live-current/visual-evidence.json) |
 | 2026-07-20 00:50 KST | UI-G3~G6 | 독립 QA가 회색 지도, 릴스 근거 링크 오작동, 법안 상세 부재, 제보 첫 단계만 검증, 좁은 데스크톱 열을 이유로 전체 B·배포 불가 판정 | QA 판정을 수용해 완료 선언을 보류했다. 지도는 실제 타일의 idle과 캔버스 픽셀 문맥을 검사하고 선택 후 타일 완성까지 기다린다. 릴스는 현장/이슈 진입 맥락과 복귀를 표시하고 근거 섹션을 직접 포커스한다. 법안 전체 행 상세, 공식 원문, 연결 이슈 흐름을 추가했다. 현장 상세의 중복 영상 커버를 제거하고, 제보 7단계 및 데스크톱 920px 열을 검증했다. | `pnpm check:web-next:visual`, `pnpm check:web-next:production`, `pnpm check:launch-sample` 통과. [React S+ candidate evidence](/Users/mk/Documents/Musunil/docs/visual-evidence/react-splus-candidate/visual-evidence.json)의 지도 기본/선택 픽셀 문맥, 이슈 4개 탭, 법안 상세, 제보 후보~접수 4개 viewport 캡처 확인 |
 | 2026-07-20 00:15 KST | UI-G2~G6 | 후보 UI가 로컬에서만 보이고, 기존 배포·시각 검사가 구형 단일 HTML 구조를 다시 정답으로 고정할 위험 | 공통 현장 lazy detail 계약, 뒤로가기 포커스 복귀, MapLibre fallback과 실제 크기 검증, production fixture strip을 보강했다. Render publish를 `apps/web/dist`로 고정하고 config/build-info/headers/recursive manifest를 Vite public/dist 생명주기에 맞췄다. 기존 치수 검사는 이슈 가시성·중첩 조작·지도/상세 경쟁·네 탭·공통 현장·릴스 액션·제보 첫 행동·axe 검사로 교체했다. | `pnpm check`, `pnpm check:launch-sample`, `pnpm check:web-next:production`, `pnpm check:web-next:visual`, `pnpm check:web-render-build-command` 통과. [React S+ candidate evidence](/Users/mk/Documents/Musunil/docs/visual-evidence/react-splus-candidate/visual-evidence.json)에서 4개 viewport 모두 이슈 제목 4개, overflow 0, nested interactive 0, axe serious/critical 0 |
 | 2026-07-19 23:20 KST | UI-G1~G4 | 라이브가 약 1.2만 줄 단일 HTML과 다중 패널·과도한 조작 요소로 AI 대시보드처럼 보이고, 일반 사용자가 첫 행동을 알기 어려움 | 기존 라이브를 유지한 채 `apps/web/app`에 React/Vite 앱을 병렬 구축했다. 홈은 단일 이슈 링크 목록, 상세는 전체 화면, 지도는 핀·인증 영역, 영상은 세로 snap, 법안은 2개 정렬, 제보는 단계별 한 행동으로 재구성했다. fixture/production은 Vite alias로 빌드 단계부터 분리했다. | `@musunil/web typecheck`, fixture/production build 통과. production dist에서 fixture title/id/preview token 0건. 시각·접근성 검증은 UI-G5/G6 Active로 유지 |
@@ -87,14 +88,15 @@
 | G5 | local | `proposedDate` additive API, `/laws?sort=interest|proposed_desc`, trusted official URL guard, API/worker parser self-check, 390/430/768/1440 법안 정렬 및 법안 → 동일 집회 현장 이동 캡처 | Guard | 국회 API key 또는 법제처 OC 입력 후 실제 dry-run/post, live `/laws` 두 정렬과 공식 링크 재검증은 G7에서 수행 |
 | G6 | local staging + external storage | 테스트 전용 PortOne verifier, mock GPS/camera recorder, 실제 write API, 세션 복원. [390px 미리보기](/Users/mk/Documents/Musunil/docs/visual-evidence/goal6-report-flow-verified/report_flow_mobile_390_preview.png), [390px 접수 결과](/Users/mk/Documents/Musunil/docs/visual-evidence/goal6-report-flow-verified/report_flow_mobile_390_receipt.png), [검증 JSON](/Users/mk/Documents/Musunil/docs/visual-evidence/goal6-report-flow-verified/visual-surface-evidence.json), R2 private bucket 실제 PUT/GET/DELETE, 실제 영상 비식별 smoke | Guard | 테스트 영상과 test identity는 staging 한정이다. 실제 PortOne, Play Integrity/App Attest, 배포 worker end-to-end smoke는 G7에서 재실행 |
 | G7 | live + CI + Cloudflare R2 | Render Static Site가 실제 Git SHA를 기록해 배포되고 Cloudflare Web 전용 rule이 6개 보안 헤더를 실제 응답에 적용한다. schema 3 manifest의 안정 파일은 local commit과 일치하며 변동 파일을 포함한 16개 live 파일도 자체 hash를 통과한다. Web DNS, HTTPS, runtime config, 금지 UI, strict header smoke가 통과했다. 비공개 R2 bucket과 최소 권한 credential의 실제 PUT/GET/DELETE도 통과했다. 실제 영상 비식별 엔진, 내부 worker queue, 비공개 파생본 proxy와 Docker ffmpeg runtime이 local Guard다. Postgres lease 기반 단일 ops scheduler 계약도 local Guard다. 지도 코드 revision `ba5261d42fe3620253c318d0014434c808072f51`을 포함한 live에서 모바일 홈·탐색 지도 렌더와 OpenFreeMap glyph 오류 0건을 확인했다. | **Active / external blocker** | `api.musunil.com`은 NXDOMAIN이고 Render API/DB/Redis가 아직 없다. 이 때문에 live visual은 `serviceSyncState=delayed`다. scheduler·비식별 worker의 실제 lease/재시도, 공식 법 원천, PortOne, 모바일 무결성 credential과 smoke가 남아 있다. |
+| UI-G6 | live + CI | React/Vite production 번들, Render `apps/web/dist`, SPA direct-route rewrite, 실제 SHA, 4개 viewport 홈·영상·탐색·법안·제보 빈 상태와 지도 문맥. [Live evidence](/Users/mk/Documents/Musunil/docs/visual-evidence/live-current/visual-evidence.json)와 [fixture flow evidence](/Users/mk/Documents/Musunil/docs/visual-evidence/react-splus-candidate/visual-evidence.json) | **Guard** | API 미연결 때문에 실제 이슈·영상·법안 데이터가 있는 live 흐름은 UI-G7에서 재검증한다. production은 가상 데이터를 대신 표시하지 않는다. |
 
 ## Residual Risks
 
 - `api.musunil.com` DNS와 Render API/DB/Redis가 아직 live로 연결되지 않았다.
 - Render 로그인과 `musunil-web` 자동 배포는 확인했다. 그러나 계정에는 무슨일용 API·Postgres·Key Value가 없고, 기존 `whydothey-db`는 Free Postgres의 30일 만료·무백업 조건과 서비스 격리 원칙 때문에 운영 대체재가 아니다. `musunil-api` Starter + `musunil-postgres` Basic-256mb + 단일 scheduler의 월 최소 약 14 USD와 사용량·세금 발생 승인이 다음 외부 변경 게이트다.
-- 공개 Web 원본 `musunil-web.onrender.com`의 Build Command와 실제 SHA 배포는 수정 완료했다. 정적 보안 헤더는 Cloudflare Web 전용 rule로 적용 완료했으며 API 호스트에는 이 rule이 적용되지 않는다.
+- 공개 Web 원본 `musunil-web.onrender.com`의 Build Command, Publish Directory `apps/web/dist`, SPA rewrite `/* → /index.html`, 실제 SHA 배포를 수정 완료했다. 정적 보안 헤더는 Cloudflare Web 전용 rule로 적용 완료했으며 API 호스트에는 이 rule이 적용되지 않는다.
 - CI는 같은 ref의 구 실행을 취소하고 10분 안에 명시적으로 성공 또는 실패 로그를 남긴다. staging API orphan process 수정은 [GitHub Actions #29682268419](https://github.com/whydothey/musunil/actions/runs/29682268419) 성공으로 검증됐다.
-- Render Static Site는 Blueprint와 분리된 수동 설정을 사용하지만 Dashboard Build Command를 `pnpm install --frozen-lockfile && pnpm build:web-static:render`로 고정했고 자동 배포 SHA도 검증했다. 6개 Web 보안 헤더는 Cloudflare Web 전용 rule이 담당한다. Render native runtime에는 pnpm이 이미 설치되어 있으므로 `corepack enable`을 다시 넣으면 읽기 전용 `/usr/bin/pnpm` 변경 오류로 빌드가 실패한다.
+- Render Static Site는 Blueprint와 분리된 수동 설정을 사용한다. Dashboard Build Command, Publish Directory, SPA rewrite를 저장소 계약과 동일하게 고정했고 자동 배포 SHA와 직접 경로를 검증했다. 6개 Web 보안 헤더는 Cloudflare Web 전용 rule이 담당한다. Render native runtime에는 pnpm이 이미 설치되어 있으므로 `corepack enable`을 다시 넣으면 읽기 전용 `/usr/bin/pnpm` 변경 오류로 빌드가 실패한다.
 - API 서비스 생성 뒤 Render에서 얻는 `MUSUNIL_RENDER_API_DNS_TARGET`이 없으므로 `api.musunil.com` DNS는 아직 만들 수 없다. Web header rule은 Dashboard 세션으로 수동 적용했고, 향후 자동 변경에는 최소 권한 Cloudflare API token이 필요하다.
 - Cloudflare R2 비공개 저장소의 실제 PUT/GET/DELETE와 내장 ffmpeg 비식별 smoke는 검증 완료했다. 운영 API가 없으므로 암호화 원본 → worker → 비공개 파생본 → API proxy의 배포 end-to-end 검증은 남아 있다. 국회·법제처 원천 키, PortOne, 모바일 무결성 운영 credential은 아직 입력되지 않았다.
 - 단일 ops scheduler는 local 계약만 통과했다. 실제 Render Postgres에서 동시 claim이 한 번만 성공하고 실패 task가 retry 후 회복되는지는 운영 DB 생성 뒤 검증해야 한다.
@@ -108,15 +110,15 @@
 
 | 항목 | 실제 관찰 | 판정 |
 | --- | --- | --- |
-| 정적 웹 | `https://musunil.com`은 200으로 응답하고, 안정 정적 파일과 배포 SHA는 strict `check:web-deploy` 실행 시점의 로컬 `main`과 일치 | 최신 정적 화면은 배포됨 |
-| 빌드 식별 | `/build-info.json`이 실제 Render build time과 현재 배포 Git SHA를 반환 | 운영 Web 커밋 식별 통과 |
+| 정적 웹 | `https://musunil.com`은 React/Vite 셸을 제공하고 `/reels`, `/explore`, `/laws`, `/report`, 이슈·현장 직접 경로도 같은 셸로 200 응답 | 최신 React 화면과 SPA rewrite 배포됨 |
+| 빌드 식별 | `/build-info.json`이 Render build time과 `b0db63ce2f3bb5ae3ccfe061dcefd8b4161be541`을 반환 | 운영 Web 커밋 식별 통과 |
 | API 연결 | Web `config.js`는 `https://api.musunil.com`을 가리키지만 해당 호스트는 DNS 해석 실패 | 실제 API/원천/인증/제보 운영 불가 |
-| 홈 데이터 | `공개자료로 먼저 확인`, `일부 자료 확인 중` 배너와 4개의 fallback 이슈가 보임 | 실제 전국 원천 기반 피드 아님 |
-| 이슈 상세 | 이슈 제목, 위치 수, 현장 수, 근거 수, 반론·정정 탭은 보임 | 현장 단위가 이슈의 하위 핵심 화면으로 드러나지 않음 |
-| 영상 | 선택된 이슈 하나의 `공개 영상 대기` 카드만 보임 | 릴스 탐색과 균등 노출이 구현/검증되지 않음 |
-| 탐색 지도 | 지도와 핀, 현장 캡션은 보이나 선택 이슈와 지도 현장 캡션이 동시에 다른 대상을 가리킬 수 있음 | 같은 현장 상세로 연결되는 계약이 불명확 |
-| 법안 | `표시할 법령·의안이 없습니다`만 표시 | 실제 공식 법안 피드와 정렬 기능 없음 |
-| 제보 | `근처 현장 찾기` 단일 행동은 보임 | 본인확인, 위치 후보, 촬영, 미리보기, 접수까지의 실서비스 증거 없음 |
+| 홈 데이터 | API 미연결 시 가상 이슈를 만들지 않고 `자료 연결을 확인하고 있습니다` 상태와 재시도만 표시 | 정직한 운영 빈 상태 통과, 실제 원천 피드는 G7 blocker |
+| 이슈 상세 | production에는 공개 이슈가 없어 진입 대상이 없고, fixture에서는 전체 화면 `현장/영상/근거/법안`과 공통 현장 상세를 검증 | UI Guard, 실제 데이터 교차 검증은 G7 |
+| 영상 | 공개 통과 영상이 없으면 릴스처럼 보이는 가상 카드를 만들지 않고 빈 상태와 홈 복귀만 표시 | 정직한 빈 상태 및 fixture 세로 탐색 Guard |
+| 탐색 지도 | 실제 지리 배경 위에 자료 위치 핀과 인증 영역만 표시하며, 운영 현장이 없으면 핀을 만들지 않음 | 지도 문맥 Guard, 실제 GPS 영역은 G7 |
+| 법안 | `현장 관심/최근 발의` 정렬 UI를 유지하되 공식 원천이 없으면 법안을 만들지 않음 | UI Guard, 실제 공식 법안 피드는 G7 |
+| 제보 | 첫 행동은 `근처 현장 찾기` 하나이며, fixture에서 후보·대상·본인확인·촬영·미리보기·접수를 모두 검증 | UI Guard, 실제 PortOne/API 제출은 G7 |
 
 엄격한 배포 검증도 같은 결론이다.
 

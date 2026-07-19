@@ -1,0 +1,108 @@
+{
+  "checked": "react_live_surface",
+  "ok": true,
+  "baseUrl": "https://musunil.com",
+  "results": [
+    {
+      "viewport": {
+        "id": "mobile_390",
+        "width": 390,
+        "height": 844
+      },
+      "issueCount": 0,
+      "reelCount": 0,
+      "mapPixels": {
+        "colorGroups": 102,
+        "dominantRatio": 0.3754
+      },
+      "home": {
+        "overflowX": false,
+        "nestedInteractive": 0,
+        "mapCount": 0,
+        "forbidden": []
+      },
+      "finalMetrics": {
+        "overflowX": false,
+        "nestedInteractive": 0,
+        "mapCount": 0,
+        "forbidden": []
+      }
+    },
+    {
+      "viewport": {
+        "id": "mobile_430",
+        "width": 430,
+        "height": 932
+      },
+      "issueCount": 0,
+      "reelCount": 0,
+      "mapPixels": {
+        "colorGroups": 98,
+        "dominantRatio": 0.371
+      },
+      "home": {
+        "overflowX": false,
+        "nestedInteractive": 0,
+        "mapCount": 0,
+        "forbidden": []
+      },
+      "finalMetrics": {
+        "overflowX": false,
+        "nestedInteractive": 0,
+        "mapCount": 0,
+        "forbidden": []
+      }
+    },
+    {
+      "viewport": {
+        "id": "tablet_768",
+        "width": 768,
+        "height": 1024
+      },
+      "issueCount": 0,
+      "reelCount": 0,
+      "mapPixels": {
+        "colorGroups": 81,
+        "dominantRatio": 0.6216
+      },
+      "home": {
+        "overflowX": false,
+        "nestedInteractive": 0,
+        "mapCount": 0,
+        "forbidden": []
+      },
+      "finalMetrics": {
+        "overflowX": false,
+        "nestedInteractive": 0,
+        "mapCount": 0,
+        "forbidden": []
+      }
+    },
+    {
+      "viewport": {
+        "id": "desktop_1440",
+        "width": 1440,
+        "height": 960
+      },
+      "issueCount": 0,
+      "reelCount": 0,
+      "mapPixels": {
+        "colorGroups": 71,
+        "dominantRatio": 0.7061
+      },
+      "home": {
+        "overflowX": false,
+        "nestedInteractive": 0,
+        "mapCount": 0,
+        "forbidden": []
+      },
+      "finalMetrics": {
+        "overflowX": false,
+        "nestedInteractive": 0,
+        "mapCount": 0,
+        "forbidden": []
+      }
+    }
+  ],
+  "failures": []
+}

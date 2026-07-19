@@ -1,8 +1,8 @@
 # S+ Completion Audit
 
-Last updated: 2026-07-19 KST
+Last updated: 2026-07-20 01:03 KST
 
-상세 실행 상태와 증거는 [live-production-ux-audit-2026-07-19.md](/Users/mk/Documents/Musunil/docs/live-production-ux-audit-2026-07-19.md)를 유일한 기준으로 한다. 2026-07-19에 G1 공통 `OccurrenceDigest` 계약, G2 이슈 우선 현장 파일, G3 지도·상세 동일성, G4 공정 릴스 탐색, G5 공식 법안 연결, G6 현장 제보 완료 흐름을 local Guard로 전환했다. 전체 완료 판정은 여전히 G7-G8과 live 운영 blocker가 남아 있어 불가다.
+상세 실행 상태와 증거는 [live-production-ux-audit-2026-07-19.md](/Users/mk/Documents/Musunil/docs/live-production-ux-audit-2026-07-19.md)를 유일한 기준으로 한다. React/Vite UI-G1~G6는 독립 QA 수정, 실제 `musunil.com` 배포, SHA·SPA direct route·4개 viewport 라이브 검증까지 Guard로 전환했다. 전체 완료 판정은 여전히 G7-G8과 live 운영 blocker가 남아 있어 불가다.
 
 Status: 완료 아님.
 
@@ -26,6 +26,8 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - 공개 화면과 공개 API에 원문, 정밀 위치, private media key, 요구사항 문구가 나오지 않는다.
 
 ## Requirement Audit
+
+2026-07-20 최신 UI 판정은 `알권리 중심 UX`와 `지도·지역 UX` 모두 **Guard**다. 아래 장기 이력 행의 `A 후보 Active` 표기는 React/Vite 전면 재구축 전 판정이며, 최신 증거와 충돌할 때는 [라이브 감사 보드](/Users/mk/Documents/Musunil/docs/live-production-ux-audit-2026-07-19.md)의 UI-G1~G6 판정을 우선한다. 실제 운영 데이터가 있는 5·10·20초 흐름은 G7에서 다시 검증한다.
 
 | 요구사항 | 현재 판정 | 증거 | 남은 조건 |
 |---|---|---|---|
@@ -51,6 +53,8 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 - `pnpm check:web-flow`
 - `pnpm check:ux-surface`
 - `pnpm check:visual-surface`
+- `pnpm check:web-next:production`에서 production fixture token/media 0건
+- Render Publish Directory `apps/web/dist`, SPA rewrite `/* → /index.html`, live SHA `b0db63ce2f3bb5ae3ccfe061dcefd8b4161be541` 확인
 - `pnpm check:visual-surface:evidence`에서 390/430/768/1440px 20개 화면 PNG와 JSON 생성. 현재 로컬 첫 이슈는 `정보통신망법 개정 반대 집회`, 카드 주행동은 `근거 보기`, 검토 중 촬영자료는 공개 영상으로 세지 않음
 - `pnpm check:build-info-clean`
 - `pnpm check:source-diagnostics`
@@ -74,7 +78,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 `pnpm launch:blockers -- --refresh`를 실행해 freshness window 안에서 갱신된 결과만 live completion 증거로 본다. stale blocker report는 완료 판단에 쓰지 않는다. 최신 갱신 결과 기준 live completion은 아직 막혀 있다.
 
 - `api_endpoint_preflight`: `api.musunil.com` DNS가 아직 연결되지 않아 API `/health`, `/ready`, 공개 payload, identity boundary 검사가 skip 상태다.
-- `web_visual_surface`: 실제 `https://musunil.com` 화면 구조는 `pnpm check:visual-surface:live:evidence`에서 통과하지만 API 미연결 때문에 `serviceSyncState=delayed`다. 390/430/768/1440px 20개 live 화면 PNG와 JSON은 `docs/visual-evidence/live-current`에 저장됐고, 최신 live visual 결과는 첫 이슈 `정보통신망법 개정 반대 집회`, 홈 topic issue 3개, story 3개, source bundle first 0/4를 보여준다. 최종 완료에는 `serviceSyncState=live`, 홈 topic issue 3개 이상, `web_visual_surface=ok`, 남은 failure 0개가 필요하다.
+- `web_visual_surface`: 실제 `https://musunil.com` React 화면은 `pnpm check:visual-surface:live:evidence`에서 통과했다. API 미연결 시 가상 이슈를 만들지 않고 홈·영상·법안은 정직한 빈 상태, 탐색은 실제 배경 지도만 표시한다. 390/430/768/1440px PNG와 JSON은 `docs/visual-evidence/live-current`에 저장됐다. 최종 완료에는 `serviceSyncState=live`, 실제 이슈·영상·법안·제보 데이터 흐름, 남은 failure 0개가 필요하다.
 
 통과한 live gate: Cloudflare Web 전용 Response Header Transform Rule의 no-store, CSP, Permissions-Policy, Referrer-Policy, nosniff, X-Frame-Options와 Render build SHA 검증. 실제 `pnpm storage:smoke`는 비공개 Cloudflare R2의 격리된 key로 PUT/GET/DELETE와 read-back 일치를 통과했고, 실제 `pnpm redaction:smoke`는 영상 음성·메타데이터 제거와 시각 세부 감소를 통과했다.
 

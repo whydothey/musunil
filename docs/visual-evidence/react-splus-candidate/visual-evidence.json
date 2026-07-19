@@ -1,7 +1,7 @@
 {
   "checked": "react_splus_candidate",
   "ok": true,
-  "baseUrl": "http://127.0.0.1:58364",
+  "baseUrl": "local-fixture",
   "results": [
     {
       "viewport": {
