@@ -98,6 +98,7 @@ async function checkRuntimeConfigOverride() {
 
 async function checkWeb(port) {
   const base = `http://localhost:${port}`;
+  const publicApiModule = readFileSync(resolve(cwd, "apps/web/modules/public-api.js"), "utf8");
   const html = await fetch(`${base}/`);
   assert(html.status === 200, `index returned ${html.status}`);
   const index = await html.text();
@@ -110,6 +111,13 @@ async function checkWeb(port) {
   assert(html.headers.get("content-security-policy")?.includes("https://cdn.portone.io"), "PortOne SDK CSP allowlist missing");
   assert(html.headers.get("content-security-policy")?.includes("media-src 'self'"), "public media CSP allowlist missing");
   assert(index.includes("공개자료 기반 집회·시위"), "consumer issue-feed home title missing");
+  assert(index.includes('<script type="module">'), "web app entry must run as an ES module");
+  assert(index.includes('./modules/contracts.js'), "shared UI contracts module missing");
+  assert(index.includes('./modules/selection-state.js'), "shared occurrence selection module missing");
+  assert(index.includes('./modules/public-api.js'), "public API module missing");
+  assert(index.includes("selectedOccurrenceId"), "single selected occurrence state marker missing");
+  assert(index.includes("syncSelectedOccurrence(card)"), "card selection must sync shared occurrence state");
+  assert(index.includes("syncSelectedOccurrence(selected)"), "issue selection must sync shared occurrence state");
   for (const [id, title] of [
     ["issue_public_regional_schedule", "지역별 집회 공개 일정"],
     ["issue_public_daegu_stats", "대구 집회 신고·개최 현황"],
@@ -302,7 +310,7 @@ async function checkWeb(port) {
   assert(index.includes("requestIdentityVerification"), "PortOne identity SDK handoff missing");
   assert(index.includes('api("/auth/identity/start"'), "identity start API handoff missing");
   assert(index.includes('api("/auth/identity/complete"'), "identity complete API handoff missing");
-  assert(index.includes('credentials: "include"'), "API fetch must include HttpOnly identity cookies");
+  assert(publicApiModule.includes('credentials: "include"'), "API fetch must include HttpOnly identity cookies");
   assert(index.includes("restoreCookieSession"), "identity cookie session restore missing");
   assert(index.includes("persistIdentitySession"), "identity session persistence helper missing");
   assert(index.includes("shouldPersistIdentityToken"), "identity token storage policy missing");
@@ -459,8 +467,15 @@ async function checkWeb(port) {
   const manifestResponse = await fetch(`${base}/static-manifest.json`);
   assert(manifestResponse.status === 200, `static-manifest.json returned ${manifestResponse.status}`);
   const manifest = await manifestResponse.json();
+  assert(manifest.schemaVersion >= 2, "static manifest must recursively track modular assets");
   assert(manifest.files?.["index.html"]?.sha256 === sha256(index), "static manifest index hash mismatch");
   assert(manifest.files?.["config.js"]?.sha256 === sha256(config), "static manifest config hash mismatch");
+  for (const module of ["modules/contracts.js", "modules/selection-state.js", "modules/public-api.js"]) {
+    assert(manifest.files?.[module]?.sha256, `static manifest missing ${module}`);
+    const response = await fetch(`${base}/${module}`);
+    assert(response.status === 200, `${module} returned ${response.status}`);
+    assert(response.headers.get("content-type")?.startsWith("text/javascript"), `${module} content-type mismatch`);
+  }
 
   const packageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
   const webConfigWriter = readFileSync(resolve(cwd, "scripts/write-web-config.mjs"), "utf8");

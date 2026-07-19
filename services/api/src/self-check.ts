@@ -1287,12 +1287,25 @@ assert.equal(JSON.stringify(home.body).includes("ENDED"), true);
 assert.equal(JSON.stringify(home.body).includes("ARCHIVED"), true);
 assert.equal(JSON.stringify(home.body).includes("WEAKLY_OBSERVED"), false);
 assert.equal(JSON.stringify(home.body).includes("traffic_control"), false);
+const homeContract = home.body as {
+  issueOverviews: Array<{ id: string; representativeOccurrenceId?: string }>;
+  occurrenceDigests: Array<{ id: string; targetType: string; issueId?: string; title: string }>;
+};
+assert.equal(homeContract.issueOverviews.length > 0, true);
+assert.equal(homeContract.occurrenceDigests.length > 0, true);
+assert.equal(homeContract.occurrenceDigests.every((digest) => ["occurrence", "continuous_presence"].includes(digest.targetType)), true);
+assert.equal(homeContract.occurrenceDigests.every((digest) => Boolean(digest.id) && Boolean(digest.title)), true);
+assert.equal(JSON.stringify(homeContract).includes("privateLng"), false);
+assert.equal(JSON.stringify(homeContract).includes("privateLat"), false);
+assert.equal(JSON.stringify(homeContract).includes("storageKey"), false);
 
 const issue = await app.handle({ method: "GET", path: "/issues/issue_1" });
 assert.equal(issue.status, 200);
 assert.equal(JSON.stringify(issue.body).includes("targets"), true);
 assert.equal(JSON.stringify(issue.body).includes("transit_occurrence"), false);
 assert.equal(JSON.stringify(issue.body).includes("crowd_density_signal"), false);
+assert.equal(Array.isArray((issue.body as { occurrenceDigests?: unknown[] }).occurrenceDigests), true);
+assert.equal(typeof (issue.body as { issueOverview?: { representativeOccurrenceId?: string } }).issueOverview?.representativeOccurrenceId, "string");
 assert.equal(JSON.stringify(issue.body).includes("route_segment"), false);
 assert.equal(JSON.stringify(issue.body).includes("route_checkpoint"), false);
 assert.equal(JSON.stringify(issue.body).includes("nationalSummary"), true);
@@ -1440,6 +1453,14 @@ assert.equal(mapBody.geojson.pins.features.every((feature) => feature.geometry.t
 assert.equal(mapBody.geojson.presenceAreas.features.every((feature) => feature.geometry.type === "Polygon"), true);
 assert.equal(JSON.stringify(map.body).includes("LineString"), false);
 assert.equal(mapBody.geojson.presenceAreas.features.length >= 1, true);
+const mapContract = map.body as { occurrenceDigests: Array<{ id: string; targetType: string }> };
+assert.equal(mapContract.occurrenceDigests.some((digest) => digest.id === "occ_1" && digest.targetType === "occurrence"), true);
+const homeOccurrence = homeContract.occurrenceDigests.find((digest) => digest.id === "occ_1");
+const mapOccurrence = mapContract.occurrenceDigests.find((digest) => digest.id === "occ_1");
+assert.equal(homeOccurrence?.id, mapOccurrence?.id);
+assert.equal(homeOccurrence?.targetType, mapOccurrence?.targetType);
+assert.equal(JSON.stringify(mapContract).includes("privateLng"), false);
+assert.equal(JSON.stringify(mapContract).includes("privateLat"), false);
 
 const publicSourceBody = {
   targetType: "occurrence",

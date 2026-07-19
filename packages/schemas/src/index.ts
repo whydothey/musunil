@@ -200,6 +200,87 @@ export type PublicLocation = {
   source: "public_source" | "operator_review";
 };
 
+// Public UI contracts deliberately expose only derived, display-safe fields.
+// They never include raw report text, precise reporter coordinates, or private media paths.
+export type IssueOverview = {
+  id: string;
+  title: string;
+  status: Issue["status"];
+  lifecycleState: LifecycleState;
+  regionCount: number;
+  occurrenceCount: number;
+  officialClaimCount: number;
+  publicVideoCount: number;
+  disputeCount: number;
+  latestUpdatedAt?: string;
+  representativeOccurrenceId?: string;
+};
+
+export type OccurrenceDigest = {
+  id: string;
+  targetType: "occurrence" | "continuous_presence";
+  issueId?: string;
+  title: string;
+  regionLabel: string;
+  locationLabel?: string;
+  lifecycleState: LifecycleState;
+  startsAt?: string;
+  endsAt?: string;
+  updatedAt?: string;
+  evidenceStrength: EvidenceStrength;
+  riskLevel: RiskLevel;
+  officialClaimCount: number;
+  publicVideoCount: number;
+  disputeCount: number;
+  evidenceCount: number;
+  scale?: { minCount: number; maxCount: number; confidence: CrowdEstimate["confidence"] };
+};
+
+export type EvidenceReel = {
+  id: string;
+  claimId: string;
+  occurrenceId: string;
+  issueId?: string;
+  occurrenceTitle: string;
+  issueTitle?: string;
+  regionLabel: string;
+  capturedAt?: string;
+  publicRadiusM: number;
+  sourceProvenance: SourceProvenance;
+  evidenceStrength: EvidenceStrength;
+  riskLevel: RiskLevel;
+  media: { redactedClipUrl: string; redactedPosterUrl?: string };
+  hasDispute: boolean;
+};
+
+export type LawInterestItem = {
+  id: string;
+  source: LawItem["source"];
+  title: string;
+  stage: string;
+  statusDate?: string;
+  officialUrl?: string;
+  linkedIssueCount: number;
+  occurrenceCount: number;
+  regionCount: number;
+  interestScore: number;
+};
+
+export type ReportCandidate = {
+  targetType: "occurrence" | "continuous_presence";
+  targetId: string;
+  issueId?: string;
+  issueTitle?: string;
+  occurrenceTitle: string;
+  regionLabel: string;
+  distanceM: number;
+  distanceLabel: string;
+  statusTone: "live" | "schedule" | "pending" | "archive";
+  verificationCount: number;
+  riskLevel: RiskLevel;
+  evidenceStrength: EvidenceStrength;
+};
+
 export type CrowdEstimate = {
   id: string;
   targetType: "issue" | "occurrence" | "continuous_presence";

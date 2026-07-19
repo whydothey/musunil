@@ -57,9 +57,10 @@ if (renderBuildDetected && buildInfoJson.source !== "render") {
 for (const token of ["Cache-Control", "Content-Security-Policy", "Permissions-Policy", "Referrer-Policy", "X-Content-Type-Options", "X-Frame-Options"]) {
   if (!headersSource.includes(token)) failures.push(`_headers missing ${token}`);
 }
-for (const file of ["index.html", "config.js", "_headers", "media/redacted/preview-occ-live-1-poster.png", "media/redacted/preview-occ-live-1.webm"]) {
+for (const file of ["index.html", "config.js", "_headers", "modules/contracts.js", "modules/selection-state.js", "modules/public-api.js", "media/redacted/preview-occ-live-1-poster.png", "media/redacted/preview-occ-live-1.webm"]) {
   if (!manifest.files?.[file]?.sha256) failures.push(`static-manifest.json missing ${file}`);
 }
+if (manifest.schemaVersion < 2) failures.push("static-manifest.json must use recursive asset schemaVersion 2");
 
 if (failures.length > 0) {
   console.error(failures.map((failure) => `- ${failure}`).join("\n"));

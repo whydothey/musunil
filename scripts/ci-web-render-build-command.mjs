@@ -21,7 +21,8 @@ try {
     preserved.set(file, readFileSync(resolve(cwd, file)));
   }
 
-  const result = spawnSync(pnpmCommand(), ["build:web-static:render"], {
+  const packageManager = pnpmCommand();
+  const result = spawnSync(packageManager.command, [...packageManager.args, "build:web-static:render"], {
     cwd,
     env: {
       ...process.env,
@@ -68,7 +69,7 @@ try {
 process.exit(exitCode);
 
 function pnpmCommand() {
-  return process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+  return { command: process.platform === "win32" ? "corepack.cmd" : "corepack", args: ["pnpm"] };
 }
 
 function gitValue(...args) {

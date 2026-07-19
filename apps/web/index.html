@@ -2527,6 +2527,46 @@
         line-height: 1.45;
       }
 
+      .issue-occurrence-file {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+
+      .issue-occurrence-file-head,
+      .issue-occurrence-row-top,
+      .issue-occurrence-row-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .issue-occurrence-file-head strong { font-size: 15px; }
+      .issue-occurrence-file-head span,
+      .issue-occurrence-row-top span,
+      .issue-occurrence-row-meta span { color: var(--muted); font-size: 12px; line-height: 1.4; }
+
+      .issue-occurrence-list { display: grid; gap: 7px; }
+
+      .issue-occurrence-row {
+        display: grid;
+        gap: 7px;
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--ink);
+        text-align: left;
+        cursor: pointer;
+        transition: border-color var(--motion-fast) var(--ease-out), box-shadow var(--motion-fast) var(--ease-out), transform var(--motion-fast) var(--ease-out);
+      }
+
+      .issue-occurrence-row:hover { border-color: color-mix(in srgb, var(--brand) 30%, var(--line)); box-shadow: var(--shadow-soft); transform: translateY(-1px); }
+      .issue-occurrence-row:active { transform: scale(.995); }
+      .issue-occurrence-row strong { font-size: 14px; line-height: 1.4; }
+
       .detail-overview-card {
         display: grid;
         gap: 5px;
@@ -6224,12 +6264,17 @@
     <script src="./config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
     <script src="https://cdn.portone.io/v2/browser-sdk.js" defer></script>
-    <script>
+    <script type="module">
+      import { toOccurrenceDigest } from "./modules/contracts.js";
+      import { createOccurrenceSelectionState } from "./modules/selection-state.js";
+      import { createPublicApi } from "./modules/public-api.js";
+
       const webConfig = window.MUSUNIL_WEB_CONFIG || {};
       const isLocalPage = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
       const apiParam = isLocalPage ? new URLSearchParams(location.search).get("api") : null;
       const storedApi = isLocalPage ? localStorage.getItem("musunilApiBaseUrl") : null;
       const API = (apiParam || storedApi || safePublicApiBase(webConfig.apiBaseUrl) || defaultApiBase()).replace(/\/$/, "");
+      const publicApi = createPublicApi(API);
       if (apiParam) localStorage.setItem("musunilApiBaseUrl", API);
       const isPreviewApiBase = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::|\/|$)/.test(API);
       document.documentElement.dataset.previewApi = String(isPreviewApiBase);
@@ -6758,6 +6803,8 @@
 	      let selectedIssue = loadedIssueCards[0];
 	      let selectedLaw = loadedLaws[0];
 	      let selected = visibleCards(loadedCards)[0] || loadedCards[0];
+	      let occurrenceDigestsById = new Map();
+	      const occurrenceSelection = createOccurrenceSelectionState(selected);
 	      let detailMode = "issue";
       let latestCoverage;
       let latestMapData;
@@ -6786,17 +6833,28 @@
       }
 
       async function api(path, options) {
-        const response = await fetch(`${API}${path}`, {
-          ...options,
-          credentials: "include",
-          headers: {
-            "content-type": "application/json",
-            ...(options?.headers || {})
-          }
-        });
-        const body = await response.json();
-        if (!response.ok) throw new Error(body.error || "request_failed");
-        return body;
+        return publicApi.request(path, options);
+      }
+
+      function syncSelectedOccurrence(card) {
+        if (!card?.id) return occurrenceSelection.snapshot();
+        const digest = occurrenceDigestsById.get(card.id) || toOccurrenceDigest(card);
+        const snapshot = occurrenceSelection.select(digest);
+        document.documentElement.dataset.selectedOccurrenceId = snapshot.selectedOccurrenceId || "";
+        document.documentElement.dataset.selectedIssueId = snapshot.selectedIssueId || "";
+        return snapshot;
+      }
+
+      function replaceOccurrenceDigests(...collections) {
+        occurrenceDigestsById = new Map(
+          collections
+            .flat()
+            .filter((item) => item?.id)
+            .map((item) => {
+              const digest = toOccurrenceDigest(item);
+              return [digest.id, digest];
+            })
+        );
       }
 
       let pendingIdentityRequest;
@@ -7847,14 +7905,16 @@
 
       async function load() {
         try {
-	          const [home, map, coverage, laws] = await Promise.all([api("/home"), api("/map"), api("/public-sources/coverage").catch(() => null), api("/laws").catch(() => null)]);
+	          const [home, map, coverage, laws] = await Promise.all([publicApi.home(), publicApi.map(), api("/public-sources/coverage").catch(() => null), publicApi.laws().catch(() => null)]);
 	          loadedCards = normalizeCards(Array.isArray(home.cards) ? home.cards : fallback.cards);
 	          loadedIssueCards = normalizeIssueCards(Array.isArray(home.issueCards) ? home.issueCards : fallback.issueCards);
 	          loadedLaws = normalizeLaws(Array.isArray(laws?.laws) ? laws.laws : fallback.laws);
+	          replaceOccurrenceDigests(home.occurrenceDigests || [], map.occurrenceDigests || [], loadedCards);
 	          latestMapData = normalizeMapData(map, loadedCards, loadedIssueCards);
 	          selectedIssue = loadedIssueCards.find((issue) => issue.id === selectedIssue?.id) || loadedIssueCards[0];
 	          selectedLaw = loadedLaws.find((law) => law.id === selectedLaw?.id) || loadedLaws[0];
 	          selected = visibleCards(loadedCards).find((card) => card.id === selected?.id) || visibleCards(loadedCards)[0] || loadedCards[0] || fallback.cards[0];
+	          syncSelectedOccurrence(selected);
 	          latestCoverage = coverage?.coverage;
 	          setServiceSyncState("live");
 	          setStatus(homeStatusText(loadedIssueCards, latestMapData), { toast: false });
@@ -7862,10 +7922,12 @@
 	          loadedCards = sortCards(fallback.cards);
 	          loadedIssueCards = sortIssueCards(fallback.issueCards);
 	          loadedLaws = sortLaws(fallback.laws);
+	          replaceOccurrenceDigests(loadedCards);
 	          latestMapData = buildMapDataFromCards(loadedCards, loadedIssueCards);
 	          selectedIssue = loadedIssueCards.find((issue) => issue.id === selectedIssue?.id) || loadedIssueCards[0];
 	          selectedLaw = loadedLaws.find((law) => law.id === selectedLaw?.id) || loadedLaws[0];
 	          selected = visibleCards(loadedCards).find((card) => card.id === selected?.id) || visibleCards(loadedCards)[0] || loadedCards[0];
+	          syncSelectedOccurrence(selected);
 	          latestCoverage = undefined;
 	          setServiceSyncState("delayed", {
 	            title: "공개자료로 먼저 확인",
@@ -9215,17 +9277,18 @@
             node.setAttribute("aria-selected", String(node.dataset.issueId === issue.id));
           });
 	        });
-	        selected = visibleCards(loadedCards)[0] || selected;
+	        const issueCards = visibleCards(loadedCards).filter((card) => card.issueId === issue.id);
+	        selected = issueCards.find((card) => card.id === selected?.id) || issueCards[0] || selected;
+	        syncSelectedOccurrence(selected);
 	        renderCards(loadedCards, { renderDetail: false });
         renderExploreGrid(loadedCards, loadedIssueCards);
         updateIssueContextStrips();
         renderReelsView();
         activateReportFlow({ requestPosition: false });
 	        const detailRender = renderIssueDetail(issue);
-        if (options.initialTab) {
-          selectDetailTab(options.initialTab, { pulse: false, transition: false });
-          Promise.resolve(detailRender).finally(() => selectDetailTab(options.initialTab, { pulse: false, transition: false }));
-        }
+        const initialTab = options.initialTab || "summary";
+        selectDetailTab(initialTab, { pulse: false, transition: false });
+        Promise.resolve(detailRender).finally(() => selectDetailTab(initialTab, { pulse: false, transition: false }));
         if (options.openDetail) {
           openDetailPanel();
         } else if (innerWidth > 780) {
@@ -9382,6 +9445,7 @@
         const cardIssue = loadedIssueCards.find((issue) => issue.id === card.issueId);
         selected = card;
         if (cardIssue) selectedIssue = cardIssue;
+        syncSelectedOccurrence(card);
         withViewTransition(() => {
           document.querySelectorAll(".issue-card").forEach((node) => {
             node.setAttribute("aria-selected", String(node.dataset.issueId === selectedIssue?.id));
@@ -9727,13 +9791,11 @@
         const scaleText = issueScaleStatusText(issue)
           .replace("규모 추정 검토 중", "인원 추정 검토")
           .replace("인원 규모 확인 중", "인원 미확인");
-        const relatedRows = cards.slice(0, 4).map((card) => `
-          <article class="evidence-row">
-            <strong>${escapeHtml(cardDisplayTitle(card))}</strong>
-            <span>${escapeHtml(card.regionLabel || "전국")} · ${escapeHtml(labelState(card.lifecycleState))}</span>
-          </article>
-        `).join("");
+	        const occurrenceFile = renderIssueOccurrenceFile(cards);
+	        const relatedLaws = renderIssueRelatedLaws(issue);
 	        return `
+            ${occurrenceFile}
+            ${relatedLaws}
             <section class="detail-answer-list" aria-label="이슈 핵심">
               <div class="detail-answer-row">
                 <b>무슨 주제</b>
@@ -9765,7 +9827,6 @@
               <div class="detail-disclosure-body">
                 ${renderNationalSnapshot(issue, cards, claims, detail)}
                 ${renderRegionalSignals(detail.regionalSignals?.length ? detail.regionalSignals : fallbackRegionalSignals(cards))}
-                ${relatedRows}
               </div>
             </details>
             <details class="detail-disclosure">
@@ -9778,6 +9839,38 @@
             </details>
 	        `;
 	      }
+
+	      function renderIssueOccurrenceFile(cards) {
+        const rows = cards.slice(0, 8).map((card) => {
+          const scale = card.scale?.minCount && card.scale?.maxCount
+            ? `${card.scale.minCount}~${card.scale.maxCount}명`
+            : "인원 확인 중";
+          return `
+            <button class="issue-occurrence-row" type="button" data-issue-occurrence-id="${escapeHtml(card.id)}" aria-label="${escapeHtml(cardDisplayTitle(card))} 현장 보기">
+              <div class="issue-occurrence-row-top">
+                <strong>${escapeHtml(cardDisplayTitle(card))}</strong>
+                <span class="chip ${stateClass(card.lifecycleState)}">${escapeHtml(labelState(card.lifecycleState))}</span>
+              </div>
+              <span>${escapeHtml(cardPlaceTimeText(card))}</span>
+              <div class="issue-occurrence-row-meta">
+                <span>${escapeHtml(scale)}</span>
+                <span>${escapeHtml(cardEvidenceText(card))}</span>
+              </div>
+            </button>
+          `;
+        }).join("");
+        return `
+          <section class="issue-occurrence-file" aria-label="전국 집회 현장">
+            <div class="issue-occurrence-file-head">
+              <strong>전국 집회 현장</strong>
+              <span>${cards.length ? `${cards.length}곳` : "확인 중"}</span>
+            </div>
+            <div class="issue-occurrence-list">
+              ${rows || `<div class="empty-state"><strong>연결된 집회 현장을 확인 중입니다</strong><span>공개 장소·시간 자료가 확인되면 여기에 따로 정리합니다.</span></div>`}
+            </div>
+          </section>
+        `;
+      }
 
 	      function renderTopicGrouping(grouping) {
 	        if (!grouping) return "";
@@ -9797,6 +9890,31 @@
 	          </section>
 	        `;
 	      }
+
+      function renderIssueRelatedLaws(issue) {
+        const laws = loadedLaws.filter((law) => lawMatchesIssue(law, issue)).slice(0, 3);
+        if (!laws.length) return "";
+        return `
+          <section class="issue-occurrence-file" aria-label="관련 법안">
+            <div class="issue-occurrence-file-head">
+              <strong>관련 법안</strong>
+              <span>공식 자료</span>
+            </div>
+            <div class="issue-occurrence-list">
+              ${laws.map((law) => `
+                <button class="issue-occurrence-row" type="button" data-issue-law-id="${escapeHtml(law.id)}" aria-label="${escapeHtml(law.billTitle || law.lawName)} 법안 보기">
+                  <div class="issue-occurrence-row-top">
+                    <strong>${escapeHtml(law.billTitle || law.lawName)}</strong>
+                    <span class="chip schedule">${escapeHtml(lawSourceLabel(law.source))}</span>
+                  </div>
+                  <span>${escapeHtml(law.stage || "단계 확인 중")}</span>
+                  <div class="issue-occurrence-row-meta"><span>${escapeHtml(lawConnectionMetaText(law))}</span><span>공식 정보</span></div>
+                </button>
+              `).join("")}
+            </div>
+          </section>
+        `;
+      }
 
 	      function renderNationalSnapshot(issue, cards, claims, detail) {
 	        const summary = detail.nationalSummary || {};
@@ -11160,6 +11278,21 @@
       $("map-search").addEventListener("change", (event) => searchMap(event.currentTarget.value));
 
       $("record-section").addEventListener("click", (event) => {
+        const issueLawButton = event.target instanceof Element ? event.target.closest("[data-issue-law-id]") : null;
+        if (issueLawButton) {
+          const law = loadedLaws.find((item) => item.id === issueLawButton.dataset.issueLawId);
+          if (law) {
+            selectLaw(law);
+            setPrimaryView("laws");
+          }
+          return;
+        }
+        const occurrenceButton = event.target instanceof Element ? event.target.closest("[data-issue-occurrence-id]") : null;
+        if (occurrenceButton) {
+          const card = loadedCards.find((item) => item.id === occurrenceButton.dataset.issueOccurrenceId);
+          if (card) selectCard(card);
+          return;
+        }
         const jumpButton = event.target instanceof Element ? event.target.closest("[data-detail-jump]") : null;
         if (jumpButton) {
           const jump = jumpButton.dataset.detailJump;

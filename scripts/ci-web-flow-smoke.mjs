@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 
 const cwd = resolve(import.meta.dirname, "..");
 const index = readFileSync(resolve(cwd, "apps/web/index.html"), "utf8");
+const publicApiModule = readFileSync(resolve(cwd, "apps/web/modules/public-api.js"), "utf8");
 const packageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
 const failures = [];
 const checkedScenarios = [];
@@ -33,7 +34,8 @@ scenario("home_issue_card_to_evidence_and_dispute", [
   functionHas("openIssueCardAction", 'const initialTab = action === "dispute" ? "dispute" : "evidence";'),
   functionHas("selectIssue", "renderIssueDetail(issue)"),
   functionHas("selectIssue", "openDetailPanel()"),
-  functionHas("selectIssue", "selectDetailTab(options.initialTab")
+  functionHas("selectIssue", 'const initialTab = options.initialTab || "summary"'),
+  functionHas("selectIssue", "selectDetailTab(initialTab")
 ]);
 
 scenario("home_issue_card_to_map_and_video", [
@@ -103,6 +105,32 @@ scenario("map_selection_and_search_remain_contextual", [
   absent("preview-crowd")
 ]);
 
+scenario("shared_occurrence_selection_contract", [
+  has('<script type="module">'),
+  has('./modules/contracts.js'),
+  has('./modules/selection-state.js'),
+  has('./modules/public-api.js'),
+  has("selectedOccurrenceId"),
+  functionHas("syncSelectedOccurrence", "occurrenceSelection.select(digest)"),
+  functionHas("selectIssue", "syncSelectedOccurrence(selected)"),
+  functionHas("selectCard", "syncSelectedOccurrence(card)"),
+  functionHas("selectMapOccurrence", "selectCard(card")
+]);
+
+scenario("issue_file_opens_occurrence_first", [
+  has("전국 집회 현장"),
+  has("data-issue-occurrence-id"),
+  has("renderIssueOccurrenceFile(cards)"),
+  functionHas("renderIssueSummary", "${occurrenceFile}"),
+  functionHas("renderIssueOccurrenceFile", "cardPlaceTimeText(card)"),
+  functionHas("renderIssueOccurrenceFile", "cardEvidenceText(card)"),
+  functionHas("renderIssueSummary", "renderIssueRelatedLaws(issue)"),
+  has("data-issue-law-id"),
+  regex(/const occurrenceButton = event\.target[\s\S]*data-issue-occurrence-id/),
+  regex(/const card = loadedCards\.find\(\(item\) => item\.id === occurrenceButton\.dataset\.issueOccurrenceId\);[\s\S]*selectCard\(card\)/),
+  regex(/const law = loadedLaws\.find\(\(item\) => item\.id === issueLawButton\.dataset\.issueLawId\);[\s\S]*setPrimaryView\("laws"\)/)
+]);
+
 scenario("laws_to_issue_context", [
   has("법안·개정안"),
   has("법안이 어떤 이슈와 연결되는지 먼저 봅니다."),
@@ -137,7 +165,7 @@ scenario("identity_write_boundary_for_user_actions", [
   has('id="identity-start-action"'),
   has('api("/auth/identity/start"'),
   has('api("/auth/identity/complete"'),
-  has('credentials: "include"'),
+  hasPublicApi('credentials: "include"'),
   has("restoreCookieSession"),
   has("persistIdentitySession"),
   has("shouldPersistIdentityToken"),
@@ -173,6 +201,10 @@ function scenario(id, assertions) {
 
 function has(needle) {
   return () => assert(index.includes(needle), `missing ${needle}`);
+}
+
+function hasPublicApi(needle) {
+  return () => assert(publicApiModule.includes(needle), `public API module missing ${needle}`);
 }
 
 function absent(needle) {

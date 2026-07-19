@@ -1,19 +1,13 @@
 import { createHash } from "node:crypto";
-import { readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { relative, resolve, sep } from "node:path";
 
 const cwd = resolve(import.meta.dirname, "..");
 const webRoot = resolve(cwd, "apps/web");
 const manifestPath = resolve(webRoot, "static-manifest.json");
-const files = [
-  "index.html",
-  "config.js",
-  "_headers",
-  "media/redacted/preview-occ-live-1-poster.png",
-  "media/redacted/preview-occ-live-1.webm"
-];
+const files = staticFiles(webRoot);
 const manifest = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   generatedBy: "scripts/write-web-static-manifest.mjs",
   files: Object.fromEntries(files.map((file) => [file, digest(file)]))
 };
@@ -35,4 +29,25 @@ function digest(file) {
     sha256: createHash("sha256").update(bytes).digest("hex"),
     bytes: bytes.byteLength
   };
+}
+
+function staticFiles(root) {
+  const output = [];
+  const visit = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      if (entry.name === ".DS_Store") continue;
+      const absolute = resolve(directory, entry.name);
+      if (entry.isDirectory()) {
+        visit(absolute);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      const file = relative(root, absolute).split(sep).join("/");
+      if (file === "static-manifest.json") continue;
+      if (!statSync(absolute).isFile()) continue;
+      output.push(file);
+    }
+  };
+  visit(root);
+  return output.sort((left, right) => left.localeCompare(right));
 }

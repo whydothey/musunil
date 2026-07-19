@@ -1,6 +1,8 @@
 # Musunil S+ Master Tracker
 
-Last updated: 2026-07-12 22:51 KST
+Last updated: 2026-07-19 KST
+
+> 상세 실행 보드: [live-production-ux-audit-2026-07-19.md](/Users/mk/Documents/Musunil/docs/live-production-ux-audit-2026-07-19.md). G1 공통 `OccurrenceDigest`와 G2 이슈 우선 현장 파일은 Guard이며, 현재 순차 active goal은 `G3. 지도와 집회 현장 상세 동일성`이다. 라이브 S+ 판정은 이 문서가 아니라 감사 문서의 실제 운영 증거를 따른다.
 
 Active goal: 무슨일의 모든 제품 요소가 S+가 될 때까지 문서로 추적하고 순차 개선한다. 기준 사용 사례는 전국 단위 동일 주제 집회 확인이며, 주제 기반 전국 묶기, 뉴스 비의존성, 실시간 현장 인증, 전국 동시다발 인지, 규모 실시간 추정, 조작 방어, 개인정보/권리 보호, 알권리 중심 UX, 공개 원천 전국 균등성, 법안·개정안 연결, 운영 배포 준비를 모두 포함한다.
 

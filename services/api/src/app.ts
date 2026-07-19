@@ -19,11 +19,14 @@ import {
   type EvidenceStrength,
   type IdentityVerificationSession,
   type Issue,
+  type IssueOverview,
   type IssueLawLink,
+  type LawInterestItem,
   type LawItem,
   type LifecycleState,
   type NotificationOutbox,
   type Occurrence,
+  type OccurrenceDigest,
   type PublicAssemblySourceRefresh,
   type RiskLevel,
   type SourceProvenance,
@@ -876,9 +879,18 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
   if (request.method === "POST" && path === "/auth/logout") return postLogout(store, request, options);
   if (request.method === "GET" && path === "/home") {
     const cards = homeCards(store);
-    return json(200, { issueCards: issueCards(store, cards), cards });
+    const issues = issueCards(store, cards);
+    return json(200, {
+      issueCards: issues,
+      cards,
+      issueOverviews: issues.map((issue) => toIssueOverview(store, issue, cards)),
+      occurrenceDigests: cards.map((card) => toOccurrenceDigest(store, card.targetType as Extract<TargetType, "occurrence" | "continuous_presence">, card.id))
+    });
   }
-  if (request.method === "GET" && path === "/laws") return getLaws(store);
+  if (request.method === "GET" && path === "/laws") {
+    const sort = url.searchParams.get("sort");
+    return getLaws(store, sort === "proposed_desc" ? "proposed_desc" : "interest");
+  }
   if (request.method === "GET" && path.startsWith("/laws/")) return getLaw(store, path.split("/")[2]);
   if (request.method === "GET" && path.startsWith("/targets/") && path.endsWith("/live-claims")) {
     return getTargetLiveClaims(store, path.split("/")[2], path.split("/")[3]);
@@ -1454,6 +1466,66 @@ function homeCards(store: Store) {
   return [...occurrenceCards, ...specialCards].sort((a, b) => homeCardOrderScore(a) - homeCardOrderScore(b));
 }
 
+function toOccurrenceDigest(store: Store, targetType: Extract<TargetType, "occurrence" | "continuous_presence">, id: string): OccurrenceDigest {
+  const target = targetRecord(store, targetType, id);
+  if (!target) throw new Error("occurrence_digest_target_not_found");
+  const claims = publicClaimsForTarget(store, targetType, id);
+  const evidence = publicEvidenceForClaims(store, claims);
+  const strongestClaim = [...claims].sort((left, right) => evidenceStrengths.indexOf(right.evidenceStrength) - evidenceStrengths.indexOf(left.evidenceStrength))[0];
+  const highestRiskClaim = [...claims].sort((left, right) => riskLevels.indexOf(right.riskLevel) - riskLevels.indexOf(left.riskLevel))[0];
+  const estimate = store.crowdEstimates
+    .filter((item) => item.targetType === targetType && item.targetId === id)
+    .filter((item) => crowdEstimateHasPublicBasis(store, item))
+    .sort((left, right) => right.observedAt.getTime() - left.observedAt.getTime())[0];
+  const occurrence = targetType === "occurrence" ? target as Occurrence : undefined;
+  const continuous = targetType === "continuous_presence" ? target as ContinuousPresence : undefined;
+  const updatedAt = latestDate([
+    occurrence?.startsAt,
+    occurrence?.endsAt,
+    continuous?.lastProofOfPresenceAt,
+    continuous?.firstProofOfPresenceAt,
+    ...claims.map((claim) => claim.createdAt)
+  ]);
+
+  return {
+    id,
+    targetType,
+    issueId: "issueId" in target ? target.issueId : undefined,
+    title: targetTitle(targetType, target),
+    regionLabel: targetRegionLabel(store, targetType, target) ?? "지역 확인 중",
+    locationLabel: "publicLocation" in target ? target.publicLocation?.label : undefined,
+    lifecycleState: targetLifecycle(target) as LifecycleState,
+    startsAt: occurrence?.startsAt?.toISOString(),
+    endsAt: occurrence?.endsAt?.toISOString(),
+    updatedAt: updatedAt?.toISOString(),
+    evidenceStrength: strongestClaim?.evidenceStrength ?? "none",
+    riskLevel: highestRiskClaim?.riskLevel ?? "low",
+    officialClaimCount: claims.filter((claim) => claim.sourceProvenance === "government_or_police").length,
+    publicVideoCount: claims.filter((claim) => hasPublicLiveEvidence(store, claim)).length,
+    disputeCount: claims.filter(isDisputeSource).length,
+    evidenceCount: evidence.length,
+    scale: estimate ? { minCount: estimate.minCount, maxCount: estimate.maxCount, confidence: estimate.confidence } : undefined
+  };
+}
+
+function toIssueOverview(store: Store, issue: ReturnType<typeof issueCards>[number], cards = homeCards(store)): IssueOverview {
+  const relatedCards = cards.filter((card) => card.issueId === issue.id);
+  const digests = relatedCards.map((card) => toOccurrenceDigest(store, card.targetType as Extract<TargetType, "occurrence" | "continuous_presence">, card.id));
+  return {
+    id: issue.id,
+    title: issue.title,
+    status: issue.status,
+    lifecycleState: issue.lifecycleState as LifecycleState,
+    regionCount: issue.regionCount,
+    occurrenceCount: issue.targetCount,
+    officialClaimCount: issue.officialCount,
+    publicVideoCount: digests.reduce((count, digest) => count + digest.publicVideoCount, 0),
+    disputeCount: issue.disputeCount,
+    latestUpdatedAt: issue.updatedAt,
+    representativeOccurrenceId: digests[0]?.id
+  };
+}
+
 function issueCards(store: Store, cards = homeCards(store)) {
   return store.issues
     .filter((issue) => !isPublicSourceBundleIssue(issue))
@@ -1559,8 +1631,12 @@ function getIssue(store: Store, id: string | undefined): ApiResponse {
   if (!issue) return json(404, { error: "issue_not_found" });
   const targets = issueTargets(store, issue.id);
   const estimates = crowdEstimatesForIssue(store, issue.id);
+  const occurrenceDigests = targets.map(({ targetType, target }) => toOccurrenceDigest(store, targetType as Extract<TargetType, "occurrence" | "continuous_presence">, target.id));
+  const cards = homeCards(store);
+  const summaryCard = issueCards(store, cards).find((item) => item.id === issue.id);
   return json(200, {
     issue: toPublicIssue(issue),
+    issueOverview: summaryCard ? toIssueOverview(store, summaryCard, cards) : undefined,
     nationalSummary: issueNationalSummary(store, issue.id),
     topicGrouping: issueTopicGrouping(store, issue),
     regionalSignals: issueRegionalSignals(store, issue.id),
@@ -1575,7 +1651,8 @@ function getIssue(store: Store, id: string | undefined): ApiResponse {
     })),
     occurrences: store.occurrences
       .filter((occurrence) => occurrence.issueId === issue.id)
-      .map((occurrence) => toPublicOccurrence(occurrence, publicClaimsForTarget(store, "occurrence", occurrence.id)))
+      .map((occurrence) => toPublicOccurrence(occurrence, publicClaimsForTarget(store, "occurrence", occurrence.id))),
+    occurrenceDigests
   });
 }
 
@@ -1950,6 +2027,7 @@ function getOccurrence(store: Store, id: string | undefined): ApiResponse {
   const evidenceIds = new Set(claims.flatMap((claim) => claim.evidenceIds));
   return json(200, {
     occurrence: toPublicOccurrence(occurrence, claims),
+    occurrenceDigest: toOccurrenceDigest(store, "occurrence", occurrence.id),
     claims: claims.map(toPublicClaim),
     evidenceCount: evidenceIds.size
   });
@@ -2035,6 +2113,7 @@ function getMap(store: Store): ApiResponse {
       liveEvidenceCount: publicLiveEvidenceForUnit(store, unit).length,
       updatedAt: unit.updatedAt?.toISOString()
     })),
+    occurrenceDigests: units.map((unit) => toOccurrenceDigest(store, unit.targetType, unit.id)),
     geojson: {
       pins: { type: "FeatureCollection", features: pins },
       presenceAreas: { type: "FeatureCollection", features: presenceAreas }
@@ -2218,8 +2297,9 @@ function roundCoord(value: number): number {
   return Math.round(value * 1_000_000) / 1_000_000;
 }
 
-function getLaws(store: Store): ApiResponse {
-  return json(200, { laws: lawCards(store) });
+function getLaws(store: Store, sort: "interest" | "proposed_desc" = "interest"): ApiResponse {
+  const laws = lawCards(store, sort);
+  return json(200, { laws, lawInterestItems: laws.map(toLawInterestItem), sort });
 }
 
 function getLaw(store: Store, id: string | undefined): ApiResponse {
@@ -2244,10 +2324,30 @@ function getLaw(store: Store, id: string | undefined): ApiResponse {
   });
 }
 
-function lawCards(store: Store) {
-  return store.lawItems
+function lawCards(store: Store, sort: "interest" | "proposed_desc" = "interest") {
+  const laws = store.lawItems
     .map((law) => toPublicLawItem(store, law))
-    .sort((a, b) => Number(b.interestScore || 0) - Number(a.interestScore || 0) || new Date(b.lastUpdatedAt || 0).getTime() - new Date(a.lastUpdatedAt || 0).getTime());
+  return laws.sort((left, right) => {
+    if (sort === "proposed_desc") {
+      return new Date(right.statusDate || right.lastUpdatedAt || 0).getTime() - new Date(left.statusDate || left.lastUpdatedAt || 0).getTime();
+    }
+    return Number(right.interestScore || 0) - Number(left.interestScore || 0) || new Date(right.lastUpdatedAt || 0).getTime() - new Date(left.lastUpdatedAt || 0).getTime();
+  });
+}
+
+function toLawInterestItem(law: ReturnType<typeof toPublicLawItem>): LawInterestItem {
+  return {
+    id: law.id,
+    source: law.source,
+    title: law.billTitle || law.lawName,
+    stage: law.stage,
+    statusDate: law.statusDate,
+    officialUrl: law.officialUrl,
+    linkedIssueCount: law.linkedIssueCount,
+    occurrenceCount: law.occurrenceCount,
+    regionCount: law.regionCount,
+    interestScore: law.interestScore
+  };
 }
 
 function toPublicIssueLawLink(link: IssueLawLink | undefined) {

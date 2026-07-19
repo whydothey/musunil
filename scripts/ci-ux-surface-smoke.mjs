@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 
 const cwd = resolve(import.meta.dirname, "..");
 const index = readFileSync(resolve(cwd, "apps/web/index.html"), "utf8");
+const publicApiModule = readFileSync(resolve(cwd, "apps/web/modules/public-api.js"), "utf8");
 const packageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
 const failures = [];
 const checkedScenarios = [];
@@ -122,7 +123,7 @@ scenario("identity_write_boundary", [
   has('id="identity-start-action"'),
   has('api("/auth/identity/start"'),
   has('api("/auth/identity/complete"'),
-  has('credentials: "include"'),
+  hasPublicApi('credentials: "include"'),
   has("restoreCookieSession"),
   has("persistIdentitySession"),
   has("shouldPersistIdentityToken"),
@@ -170,6 +171,10 @@ function scenario(id, assertions) {
 
 function has(needle) {
   return () => assert(index.includes(needle), `missing ${needle}`);
+}
+
+function hasPublicApi(needle) {
+  return () => assert(publicApiModule.includes(needle), `public API module missing ${needle}`);
 }
 
 function absent(needle) {
