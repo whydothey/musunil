@@ -3,10 +3,11 @@ import { createServer } from "node:net";
 import { resolve } from "node:path";
 
 const cwd = resolve(import.meta.dirname, "..");
+const apiCwd = resolve(cwd, "services/api");
 const apiPort = await freePort();
 const webPort = await freePort();
-const api = spawn("corepack", ["pnpm", "--filter", "@musunil/api", "dev"], {
-  cwd,
+const api = spawn(process.execPath, ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", "src/server.ts"], {
+  cwd: apiCwd,
   env: {
     ...process.env,
     PORT: String(apiPort),
@@ -18,7 +19,7 @@ const api = spawn("corepack", ["pnpm", "--filter", "@musunil/api", "dev"], {
     MUSUNIL_PORTONE_IDENTITY_CHANNEL_KEY: "test-channel",
     MUSUNIL_USER_TOKEN_SECRET: "report-flow-staging-test-secret"
   },
-  stdio: ["ignore", "pipe", "pipe"]
+  stdio: "inherit"
 });
 const web = spawn(process.execPath, ["scripts/serve-web.mjs"], {
   cwd,
@@ -39,9 +40,7 @@ try {
   if (evidenceDir) args.push("--evidence-dir", evidenceDir);
   process.exitCode = await run(process.execPath, args);
 } finally {
-  api.kill("SIGTERM");
-  web.kill("SIGTERM");
-  await Promise.all([waitForExit(api), waitForExit(web)]);
+  await Promise.all([stop(api), stop(web)]);
 }
 
 function freePort() {
@@ -78,7 +77,17 @@ function run(command, args) {
   });
 }
 
-function waitForExit(child) {
+function stop(child) {
   if (child.exitCode !== null) return Promise.resolve(child.exitCode);
-  return new Promise((resolveExit) => child.once("exit", (code) => resolveExit(code ?? 0)));
+  child.kill("SIGTERM");
+  return new Promise((resolveExit) => {
+    const timeout = setTimeout(() => {
+      child.kill("SIGKILL");
+      resolveExit(1);
+    }, 8_000);
+    child.once("exit", (code) => {
+      clearTimeout(timeout);
+      resolveExit(code ?? 0);
+    });
+  });
 }

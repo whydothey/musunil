@@ -42,6 +42,7 @@
 | 2026-07-19 | G7 | 최신 정적 화면처럼 보이지만 운영 빌드·API·보안 상태를 증명할 수 없음 | live service watch와 운영 handoff를 갱신했다. 정적 manifest 16개 파일은 현재 로컬 해시와 일치하고 Web runtime config는 `https://api.musunil.com`을 가리킨다. 반면 build-info placeholder, Web 보안 헤더 누락, API DNS 미연결을 명시적 출시 blocker로 유지했다. | `service:watch -- --once --with-visual`, `launch:handoff`, `launch:apply -- --json` 실행. 외부 credential 없는 dry-run만 수행 |
 | 2026-07-19 | G7 | API가 끊긴 live Web에서 법안의 정직한 빈 상태가 시각 smoke의 가짜 실패로 섞임 | live visual smoke는 `serviceSyncState`가 non-live이면 법안 카드가 없는 공식 빈 상태를 허용하되, 전체 live service state는 계속 실패로 보고한다. | `check:visual-surface:production-fallback` 및 `ci-visual-surface-smoke --base-url https://musunil.com` 통과. service watch는 여전히 `delayed`를 출시 blocker로 처리 |
 | 2026-07-19 | G7 | GitHub Actions가 단일 `check:release` 단계에서 무기한 실행되면 최신 push의 검증 상태를 판단할 수 없음 | CI를 ref별 최신 실행만 유지하는 concurrency 그룹으로 바꾸고, `check` job에 10분 종료 상한을 추가했다. 로컬 전체 릴리스 게이트는 1분 14초로 통과했으므로 상한은 정상 검증 시간을 충분히 보장한다. | `check:launch-sample`, `check:release` (1m 14s) 통과. 새 GitHub Actions 실행에서 종료 결과와 로그를 재확인 중 |
+| 2026-07-19 | G7 | Linux GitHub runner에서 report/reels staging 검사가 `corepack → pnpm → API` 래퍼만 종료시키고 실제 API 자식을 남겨 `check:release`가 끝나지 않음 | staging API를 직접 Node로 실행하고, API/Web 프로세스를 SIGTERM 뒤 최대 8초 동안 기다린 후 SIGKILL하는 종료 경계를 추가했다. | 취소한 GitHub Actions 로그에서 `check:report-flow` 뒤의 orphan process를 확인. 수정 뒤 `check:report-flow`, `check:reels-staging` 통과 및 API graceful shutdown 확인 |
 
 ## Evidence Ledger
 
@@ -59,6 +60,7 @@
 
 - `api.musunil.com` DNS와 Render API/DB/Redis가 아직 live로 연결되지 않았다.
 - 이전 GitHub Actions 실행은 종료 상한 없이 `check:release` 단계에 장시간 머물렀다. 이후 push부터는 같은 ref의 구 실행을 취소하고 10분 안에 명시적으로 성공 또는 실패 로그를 남긴다.
+- GitHub runner에서 발견한 staging API orphan process는 직접 Node 실행과 강제 종료 fallback으로 수정했다. 다음 CI 성공 결과가 이 수정의 최종 증거가 된다.
 - Render Static Site가 Blueprint와 분리된 수동 설정을 사용 중이다. Dashboard의 Build Command를 `corepack enable && pnpm install --frozen-lockfile && pnpm build:web-static:render`로 바꾸고, `render:web-settings`의 6개 헤더를 적용한 뒤 Clear build cache & deploy가 필요하다.
 - `RENDER_API_TOKEN` 또는 Render에서 복사한 `MUSUNIL_RENDER_API_DNS_TARGET`, 그리고 `CLOUDFLARE_API_TOKEN` 없이는 api custom domain, DNS, Cloudflare header rule을 자동 적용할 수 없다. 자동화는 이 값이 생기기 전까지 dry-run만 수행한다.
 - 국회·법제처 원천 키, PortOne, storage, 비식별, 모바일 무결성 운영 credential은 Goal 7 전까지 실제 검증할 수 없다.
