@@ -8,6 +8,9 @@ const apiBlock = renderServiceBlock(renderYaml, "musunil-api");
 
 const envVars = readEnvVars(apiBlock);
 const settings = {
+  blueprintPath: "render.backend.yaml",
+  existingWebManagement: "manual_existing_preserved",
+  estimatedMinimumUsdPerMonth: 14,
   service: "musunil-api",
   type: readServiceType(apiBlock),
   runtime: readScalar(apiBlock, "runtime"),
@@ -38,6 +41,7 @@ const settings = {
     proxy: "DNS only until /health, /ready, CORS, media, and identity boundary smoke pass"
   },
   afterSave: [
+    "Before provisioning, run pnpm render:provisioning-plan and set the Render Blueprint Path to render.backend.yaml.",
     "Upload the validated YAML to both musunil-api and musunil-ops-scheduler: pnpm render:runtime-secret (dry-run first).",
     "Apply only with RENDER_API_TOKEN and MUSUNIL_RENDER_SECRET_APPLY_CONFIRM=APPLY_RUNTIME_SECRET_FILE: pnpm render:runtime-secret -- --apply.",
     "Optional API automation: RENDER_API_TOKEN=... pnpm render:apply -- --api-domain --apply",
@@ -81,6 +85,9 @@ if (process.argv.includes("--json")) {
 } else {
   console.log("Render API Service settings for musunil-api");
   console.log("");
+  console.log(`Blueprint Path: ${settings.blueprintPath}`);
+  console.log(`Existing Web: ${settings.existingWebManagement}`);
+  console.log(`Estimated minimum: USD ${settings.estimatedMinimumUsdPerMonth}/month, plus usage and tax`);
   console.log(`Branch: ${settings.branch}`);
   console.log("Root Directory: (blank)");
   console.log(`Runtime: ${settings.runtime}`);

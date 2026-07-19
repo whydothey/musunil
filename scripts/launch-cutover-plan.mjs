@@ -118,6 +118,7 @@ const plan = {
     "payments.* only after individual business account and PG contract are ready"
   ].filter((item) => template.includes(item.split(/[ ./]/)[0]) || item.includes("organization") || item.includes("payments")),
   verificationOrder: [
+    "pnpm render:provisioning-plan (use render.backend.yaml; preserve the existing manually managed musunil-web)",
     "pnpm launch:verify-inputs config/musunil.user-inputs.local.yaml",
     "pnpm render:runtime-secret (dry-run; validates the local YAML and both target services without writing)",
     "RENDER_API_TOKEN=... MUSUNIL_RENDER_SECRET_APPLY_CONFIRM=APPLY_RUNTIME_SECRET_FILE pnpm render:runtime-secret -- --apply",

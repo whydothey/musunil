@@ -390,13 +390,19 @@ function providerGroupLines(groups) {
 }
 
 function runtimeSecretLines(groups) {
-  return groups.flatMap((group) => [
+  return [
+    "- Backend provisioning preflight: `pnpm render:provisioning-plan`",
+    "- Render Blueprint Path: `render.backend.yaml` (기존 `musunil-web` 제외)",
+    "- 비용 승인 전에는 Blueprint의 Deploy를 누르지 않는다.",
+    "",
+    ...groups.flatMap((group) => [
     `### ${group.title}`,
     "",
     group.note ? `- ${group.note}` : "",
     ...group.fields.map((item) => `- \`${item}\``),
     ""
-  ].filter(Boolean));
+    ].filter(Boolean))
+  ];
 }
 
 function stepLines(steps) {

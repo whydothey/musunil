@@ -96,9 +96,15 @@ Header 적용 방식은 둘 중 하나만 믿는다.
 `musunil-api`는 Blueprint 기준으로 만든다. 수동 생성 시에도 아래 계약을 지킨다.
 
 ```bash
+pnpm render:provisioning-plan
 pnpm render:api-settings
 pnpm render:apply -- --api-domain
 ```
+
+- Blueprint Path: `render.backend.yaml`
+- 기존 `musunil-web`은 현재 수동 Static Site로 유지하며 백엔드 Blueprint에 포함하지 않는다.
+- Blueprint 미리보기에는 `musunil-api`, `musunil-postgres`, `musunil-ops-scheduler`, `musunil-redis`만 있어야 한다. 접미사가 붙은 Web 복제본이 보이면 배포하지 않는다.
+- 예상 최소 비용은 월 USD 14이며 cron 실행량, DB 스토리지, 대역폭, 빌드 초과분과 세금은 별도다.
 
 - Health Check Path: `/ready`
 - Build Command: `pnpm check`, `pnpm build:web-config`, `pnpm launch:check` 포함

@@ -38,6 +38,8 @@ const renderWebSettings = readFileSync(resolve(cwd, "scripts/render-web-settings
 const renderApply = readFileSync(resolve(cwd, "scripts/render-apply.mjs"), "utf8");
 const renderRuntimeSecret = readFileSync(resolve(cwd, "scripts/render-runtime-secret.mjs"), "utf8");
 const renderRuntimeSecretSafety = readFileSync(resolve(cwd, "scripts/ci-render-runtime-secret-safety.mjs"), "utf8");
+const renderProvisioningPlan = readFileSync(resolve(cwd, "scripts/render-provisioning-plan.mjs"), "utf8");
+const renderBlueprintContract = readFileSync(resolve(cwd, "scripts/ci-render-blueprint-contract.mjs"), "utf8");
 const launchCutoverPlan = readFileSync(resolve(cwd, "scripts/launch-cutover-plan.mjs"), "utf8");
 const launchApply = readFileSync(resolve(cwd, "scripts/launch-apply.mjs"), "utf8");
 const cloudflareDnsCheck = readFileSync(resolve(cwd, "scripts/cloudflare-dns-check.mjs"), "utf8");
@@ -90,6 +92,7 @@ const postDeployWorkflow = readFileSync(resolve(cwd, ".github/workflows/post-dep
 const gitignore = readFileSync(resolve(cwd, ".gitignore"), "utf8");
 const readme = readFileSync(resolve(cwd, "README.md"), "utf8");
 const renderYaml = readFileSync(resolve(cwd, "render.yaml"), "utf8");
+const renderBackendYaml = readFileSync(resolve(cwd, "render.backend.yaml"), "utf8");
 const renderApi = renderServiceBlock(renderYaml, "musunil-api");
 const renderWeb = renderServiceBlock(renderYaml, "musunil-web");
 const renderRedis = renderServiceBlock(renderYaml, "musunil-redis");
@@ -589,6 +592,23 @@ if (
   failures.push("Render runtime Secret File helper must validate inputs, require explicit apply confirmation, update API and scheduler, and have a release safety test");
 }
 if (
+  !/"render:provisioning-plan"/.test(packageJson) ||
+  !/"check:render-blueprint-contract"/.test(packageJson) ||
+  !/check:render-blueprint-contract/.test(JSON.parse(packageJson).scripts["check:release"] ?? "") ||
+  !/render_backend_provisioning_plan/.test(renderProvisioningPlan) ||
+  !/render\.backend\.yaml/.test(renderProvisioningPlan) ||
+  !/APPROVE_MINIMUM_14_USD_PLUS_USAGE_TAX/.test(renderProvisioningPlan) ||
+  !/estimatedMinimumUsdPerMonth/.test(renderProvisioningPlan) ||
+  !/Render backend Blueprint contract passed/.test(renderBlueprintContract) ||
+  /name:\s*musunil-web\b/.test(renderBackendYaml) ||
+  !/name:\s*musunil-api\b/.test(renderBackendYaml) ||
+  !/name:\s*musunil-postgres\b/.test(renderBackendYaml) ||
+  !/name:\s*musunil-ops-scheduler\b/.test(renderBackendYaml) ||
+  !/name:\s*musunil-redis\b/.test(renderBackendYaml)
+) {
+  failures.push("Render backend provisioning must preserve the existing Web, make paid resources explicit, and require a cost-aware preflight");
+}
+if (
   !/"launch:next-actions":\s*"node scripts\/launch-next-actions\.mjs"/.test(packageJson) ||
   !/"launch:blockers"/.test(packageJson) ||
   !/"launch:blockers:strict"/.test(packageJson) ||
@@ -917,7 +937,9 @@ if (
   !/pnpm launch:final-gate/.test(launchOperatorBriefDoc) ||
   !/api\.musunil\.com/.test(launchOperatorBriefDoc) ||
   !/MUSUNIL_USER_INPUTS_FILE_PATH/.test(launchOperatorBriefDoc) ||
-  !/pnpm render:runtime-secret/.test(launchOperatorBriefDoc)
+  !/pnpm render:runtime-secret/.test(launchOperatorBriefDoc) ||
+  !/render\.backend\.yaml/.test(launchOperatorBriefDoc) ||
+  !/pnpm render:provisioning-plan/.test(launchOperatorBriefDoc)
 ) {
   failures.push("Launch operator brief must combine current blockers, Render Web/API settings, Cloudflare DNS, user inputs, and final verification into one generated handoff document");
 }
@@ -1039,6 +1061,8 @@ if (
   !/Health Check Path/.test(renderApiSettings) ||
   !/MUSUNIL_USER_INPUTS_FILE_PATH/.test(renderApiSettings) ||
   !/pnpm render:runtime-secret/.test(renderApiSettings) ||
+  !/render\.backend\.yaml/.test(renderApiSettings) ||
+  !/pnpm render:provisioning-plan/.test(renderApiSettings) ||
   !/Render generated/.test(renderApiSettings) ||
   !/Cloudflare DNS/.test(renderApiSettings) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET/.test(renderApiSettings) ||

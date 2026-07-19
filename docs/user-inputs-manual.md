@@ -347,6 +347,14 @@ ai:
 
 운영 기본 방식은 Render Secret File이다. 로컬 파일은 저장소에 커밋하지 않고 권한을 `600`으로 유지한다.
 
+현재 `musunil-web`은 이미 수동 Static Site로 운영 중이다. 새 백엔드 리소스를 만들 때 Render의 Blueprint Path는 반드시 `render.backend.yaml`로 입력한다. 루트 `render.yaml`을 첫 백엔드 생성에 사용하면 기존 Web을 Blueprint 관리 대상으로 오인하거나 복제할 수 있다.
+
+```bash
+pnpm render:provisioning-plan
+```
+
+출력은 `musunil-api`, `musunil-postgres`, `musunil-ops-scheduler`, `musunil-redis` 네 리소스만 보여야 한다. 예상 최소 비용은 월 USD 14이며 cron 실행량, DB 스토리지, 대역폭, 빌드 초과분과 세금은 별도다. 명시적 비용 승인 전에는 Render의 `Deploy Blueprint`를 실행하지 않는다.
+
 ```bash
 pnpm launch:inputs
 chmod 600 config/musunil.user-inputs.local.yaml

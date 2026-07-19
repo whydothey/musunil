@@ -1,3 +1,5 @@
+# Backend-only Blueprint for the existing manually managed musunil-web site.
+# In Render, set Blueprint Path to render.backend.yaml.
 services:
   - type: keyvalue
     name: musunil-redis
@@ -38,38 +40,6 @@ services:
           property: connectionString
       - key: MUSUNIL_USER_INPUTS_FILE_PATH
         value: /etc/secrets/musunil.user-inputs.yaml
-
-  - type: web
-    name: musunil-web
-    runtime: static
-    branch: main
-    autoDeployTrigger: checksPass
-    buildCommand: pnpm install --frozen-lockfile && pnpm build:web-static:render
-    staticPublishPath: apps/web
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: no-store
-      - path: /*
-        name: Content-Security-Policy
-        value: "default-src 'self'; connect-src 'self' https:; img-src 'self' data: blob: https:; media-src 'self' https: blob:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.portone.io; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob:"
-      - path: /*
-        name: Permissions-Policy
-        value: camera=(self), microphone=(), geolocation=(self)
-      - path: /*
-        name: Referrer-Policy
-        value: no-referrer
-      - path: /*
-        name: X-Content-Type-Options
-        value: nosniff
-      - path: /*
-        name: X-Frame-Options
-        value: DENY
-    envVars:
-      - key: NODE_VERSION
-        value: 24
-      - key: MUSUNIL_RUNTIME_ENV
-        value: production
 
   - type: cron
     name: musunil-ops-scheduler

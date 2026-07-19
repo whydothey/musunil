@@ -5,12 +5,12 @@
 
 ## Current Gate
 
-- Generated: 2026-07-19T13:18:00.806Z
+- Generated: 2026-07-19T13:29:44.972Z
 - Source: local_file
 - Launch state: blocked
 - Current stage: connect_api_endpoint
 - Release blocked: yes
-- Blocker report: 2026-07-19T13:17:58.748Z (0m old, refresh after 15m)
+- Blocker report: 2026-07-19T13:17:58.748Z (12m old, refresh after 15m)
 - Report freshness: fresh
 - Before apply command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Immediate safe command: `pnpm launch:apply`
@@ -112,6 +112,10 @@
 
 
 ## Runtime Secrets
+
+- Backend provisioning preflight: `pnpm render:provisioning-plan`
+- Render Blueprint Path: `render.backend.yaml` (기존 `musunil-web` 제외)
+- 비용 승인 전에는 Blueprint의 Deploy를 누르지 않는다.
 
 ### Render API service secrets
 - `pnpm render:runtime-secret` dry-run 후 확인 문자열을 넣어 API와 scheduler에 같은 Secret File을 업로드한다. Static Web에는 넣지 않는다.

@@ -147,6 +147,7 @@ Last updated: 2026-07-12 19:25 KST
   - Render production runtime marker와 설정 실패 fallback mock/LIVE 자동 공개 차단
   - production runtime not-ready 상태의 POST/PATCH write fail-closed
   - Render API와 scheduler에 동일 이름의 사용자 입력 Secret File을 마운트하고 고정 파일 경로로 로드
+  - 기존 수동 `musunil-web`을 보존하는 `render.backend.yaml`과 월 최소 USD 14 비용 승인 preflight
   - Render API generated internal/user-token/encryption keys와 service env reference로 YAML 운영 secret 축소
   - Render cron worker private `MUSUNIL_API_HOSTPORT` 주입과 worker fallback
   - Render Static Site 보안 헤더 Blueprint 선언

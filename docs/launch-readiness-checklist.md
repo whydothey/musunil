@@ -58,6 +58,8 @@
 - Render API build에서 `pnpm check`, `pnpm build:web-config`, `pnpm launch:check`가 실행된다.
 - Render API pre-deploy에서 `pnpm db:migrate`가 실행된다.
 - Render Blueprint가 `musunil-postgres`와 `musunil-redis`를 생성하고 private-network-only로 둔다. Redis는 원문 IP를 저장하지 않는 HMAC key 기반 분산 쓰기 제한에만 사용하므로 비영속 Free plan을 사용한다.
+- 최초 백엔드 생성은 `render.backend.yaml`만 사용한다. 이미 운영 중인 수동 `musunil-web`은 Blueprint 미리보기와 생성 대상에서 제외한다.
+- `pnpm render:provisioning-plan`이 월 최소 USD 14 + 사용량 + 세금과 정확히 네 개의 백엔드 리소스를 표시해야 하며, 명시적 비용 승인 전에는 생성하지 않는다.
 - Render API는 `DATABASE_URL`, `REDIS_URL`을 관리형 Postgres/Key Value에서 자동 주입받는다.
 - Render 서비스는 `MUSUNIL_RUNTIME_ENV=production`을 설정해 설정 로드 실패 fallback에서도 preview/sample fixture와 LIVE 자동 공개를 끈다.
 - Render API와 scheduler는 각 서비스에 업로드된 동일 이름의 `musunil.user-inputs.yaml` Secret File을 `/etc/secrets/musunil.user-inputs.yaml`에서 읽는다. Static Web에는 사용자 입력 YAML, DB/Redis URL, user token secret, encryption key, internal API key를 주입하지 않는다.
