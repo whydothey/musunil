@@ -63,7 +63,7 @@
 | G4 | local + staging | `/reels` public serializer, 10,000 seed fairness simulation, production seed 0건, `check:reels-staging`에서 390/430/768/1440 영상 재생 surface와 `현장` → 동일 `selectedOccurrenceId`/지도·상세 제목 일치 | Guard | 실제 production 공개 Evidence가 생긴 뒤 production 화면에서 같은 검증을 G7/G8에 재실행 |
 | G5 | local | `proposedDate` additive API, `/laws?sort=interest|proposed_desc`, trusted official URL guard, API/worker parser self-check, 390/430/768/1440 법안 정렬 및 법안 → 동일 집회 현장 이동 캡처 | Guard | 국회 API key 또는 법제처 OC 입력 후 실제 dry-run/post, live `/laws` 두 정렬과 공식 링크 재검증은 G7에서 수행 |
 | G6 | local staging + external storage | 테스트 전용 PortOne verifier, mock GPS/camera recorder, 실제 write API, 세션 복원. [390px 미리보기](/Users/mk/Documents/Musunil/docs/visual-evidence/goal6-report-flow-verified/report_flow_mobile_390_preview.png), [390px 접수 결과](/Users/mk/Documents/Musunil/docs/visual-evidence/goal6-report-flow-verified/report_flow_mobile_390_receipt.png), [검증 JSON](/Users/mk/Documents/Musunil/docs/visual-evidence/goal6-report-flow-verified/visual-surface-evidence.json), R2 private bucket 실제 PUT/DELETE | Guard | 테스트 영상과 test identity는 staging 한정이다. 실제 PortOne, 비식별, Play Integrity/App Attest 운영 smoke는 G7에서 재실행 |
-| G7 | live + CI + Cloudflare R2 | Render Static Site가 실제 Git SHA를 기록해 배포되고 Cloudflare Web 전용 rule이 6개 보안 헤더를 실제 응답에 적용한다. schema 3 manifest의 안정 파일은 local commit과 일치하며 변동 파일을 포함한 16개 live 파일도 자체 hash를 통과한다. Web DNS, HTTPS, runtime config, 금지 UI, strict header smoke가 통과했다. 비공개 R2 bucket과 최소 권한 credential의 실제 PUT/DELETE도 통과했다. Postgres lease 기반 단일 ops scheduler 계약도 local Guard다. 최신 live SHA `ba5261d42fe3620253c318d0014434c808072f51`에서 모바일 홈·탐색 지도 렌더와 OpenFreeMap glyph 오류 0건을 확인했다. | **Active / external blocker** | `api.musunil.com`은 NXDOMAIN이고 Render API/DB/Redis가 아직 없다. 이 때문에 live visual은 `serviceSyncState=delayed`다. scheduler의 실제 lease/재시도, 공식 법 원천, PortOne, 비식별, 모바일 무결성 credential과 smoke가 남아 있다. |
+| G7 | live + CI + Cloudflare R2 | Render Static Site가 실제 Git SHA를 기록해 배포되고 Cloudflare Web 전용 rule이 6개 보안 헤더를 실제 응답에 적용한다. schema 3 manifest의 안정 파일은 local commit과 일치하며 변동 파일을 포함한 16개 live 파일도 자체 hash를 통과한다. Web DNS, HTTPS, runtime config, 금지 UI, strict header smoke가 통과했다. 비공개 R2 bucket과 최소 권한 credential의 실제 PUT/DELETE도 통과했다. Postgres lease 기반 단일 ops scheduler 계약도 local Guard다. 지도 코드 revision `ba5261d42fe3620253c318d0014434c808072f51`을 포함한 live에서 모바일 홈·탐색 지도 렌더와 OpenFreeMap glyph 오류 0건을 확인했다. | **Active / external blocker** | `api.musunil.com`은 NXDOMAIN이고 Render API/DB/Redis가 아직 없다. 이 때문에 live visual은 `serviceSyncState=delayed`다. scheduler의 실제 lease/재시도, 공식 법 원천, PortOne, 비식별, 모바일 무결성 credential과 smoke가 남아 있다. |
 
 ## Residual Risks
 
@@ -84,7 +84,7 @@
 
 | 항목 | 실제 관찰 | 판정 |
 | --- | --- | --- |
-| 정적 웹 | `https://musunil.com`은 200으로 응답하고, 안정 정적 파일과 배포 SHA는 로컬 `main`의 `ba5261d42fe3620253c318d0014434c808072f51`과 일치 | 최신 정적 화면은 배포됨 |
+| 정적 웹 | `https://musunil.com`은 200으로 응답하고, 안정 정적 파일과 배포 SHA는 strict `check:web-deploy` 실행 시점의 로컬 `main`과 일치 | 최신 정적 화면은 배포됨 |
 | 빌드 식별 | `/build-info.json`이 실제 Render build time과 현재 배포 Git SHA를 반환 | 운영 Web 커밋 식별 통과 |
 | API 연결 | Web `config.js`는 `https://api.musunil.com`을 가리키지만 해당 호스트는 DNS 해석 실패 | 실제 API/원천/인증/제보 운영 불가 |
 | 홈 데이터 | `공개자료로 먼저 확인`, `일부 자료 확인 중` 배너와 4개의 fallback 이슈가 보임 | 실제 전국 원천 기반 피드 아님 |
