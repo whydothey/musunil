@@ -147,6 +147,8 @@ async function checkWeb(port) {
   assert(!index.includes("issue-card-secondary-actions"), "legacy issue card secondary action row present");
   assert(index.includes("issue-location-strip"), "issue card lightweight map entry missing");
   assert(index.includes("issue-location-symbol"), "issue card map entry icon missing");
+  assert(index.includes('"text-font": ["Noto Sans Bold"]'), "map occurrence labels must use the OpenFreeMap glyph font");
+  assert(!index.includes('"text-font": ["Open Sans Bold", "Arial Unicode MS Bold"]'), "unsupported OpenFreeMap glyph font stack present");
   assert(!index.includes("issue-place-map"), "home issue card must not render a decorative mini-map");
   assert(!index.includes("issue-map-lane"), "home issue card must not render fake road lines");
   assert(!index.includes("issue-place-area"), "home issue card must not render a fake area shape");
