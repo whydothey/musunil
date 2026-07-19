@@ -153,7 +153,16 @@ async function runViewport(client, viewport, url, { liveUrl = false } = {}) {
   try {
     await waitForExpression(
       client,
-      "document.querySelectorAll('.issue-card').length >= 1 && document.querySelectorAll('.story-ring').length >= 1",
+      `(() => {
+        const visible = (node) => {
+          if (!node) return false;
+          const style = getComputedStyle(node);
+          const rect = node.getBoundingClientRect();
+          return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || 1) !== 0
+            && rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < innerHeight;
+        };
+        return visible(document.querySelector('.issue-card')) && visible(document.querySelector('.story-ring'));
+      })()`,
       20_000
     );
   } catch {
@@ -531,6 +540,7 @@ function serviceDetail(metrics) {
     sourceBundleFirst: metrics.sourceBundleFirst,
     issueCount: metrics.issueCount,
     storyCount: metrics.storyCount,
+    firstIssueRect: metrics.firstIssueRect,
     issueEmptyStateVisible: metrics.issueEmptyStateVisible,
     issueEmptyTitle: metrics.issueEmptyTitle,
     issueEmptyBody: metrics.issueEmptyBody,
