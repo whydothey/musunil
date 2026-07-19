@@ -22,7 +22,7 @@
 | G4. 공정한 릴스형 증거 영상 탐색 | **Guard** | 공개·비식별·Proof-of-Presence·기기무결성 조건을 통과한 영상만 이슈·현장·지역 버킷으로 순환하고, 영상·현장·상세가 같은 OccurrenceDigest를 유지한다. production 공개 영상이 없으면 빈 상태만 표시한다. |
 | G5. 공식 법안 피드와 이슈 연결 | **Guard** | 국회 의안의 공식 발의일과 현행 법령의 공포·시행일을 분리하고, `현장 관심`/`최근 발의` 정렬 및 이슈·집회 현장 교차 이동을 local에서 통과했다. 실제 원천 적재·live 검증은 G7에서 다시 수행한다. |
 | G6. 현장 제보의 확신 가능한 완료 흐름 | **Guard** | 위치 기반 후보·대상 확정·본인확인·앱 내 촬영·미리보기·대상 변경·접수·새로고침 뒤 접수 상태를 local staging API와 브라우저에서 통과했다. 실제 PortOne/저장소/비식별/모바일 무결성 운영 리허설은 G7에서 수행한다. |
-| G7. 실제 운영 연결과 공식 원천 복구 | Pending | API DNS, Render, DB/Redis, 원천, 보안 헤더, service watch가 live로 통과한다. |
+| G7. 실제 운영 연결과 공식 원천 복구 | **Active** | API DNS, Render, DB/Redis, 원천, 보안 헤더, service watch가 live로 통과한다. |
 | G8. 라이브 S+ 종결 감사 | Pending | 모든 행이 `S+` 또는 `Guard`이고 external blocker가 0건이다. |
 
 ## Change Log
@@ -39,6 +39,8 @@
 | 2026-07-19 | G5 | 법안 카드가 이슈 설명에서 끝나고 같은 집회 현장으로 내려가지 못함 | 법안 탭에 `현장 관심`/`최근 발의` 정렬을 추가하고, 상세의 연결 이슈와 연결 현장을 각각 동일한 이슈 파일과 `OccurrenceDigest` 지도·상세로 이동하게 했다. | `check:web-smoke`, `check:web-flow`, 390/430/768/1440 visual smoke 및 [Goal 5 visual evidence](/Users/mk/Documents/Musunil/docs/visual-evidence/goal5-laws-verified/visual-surface-evidence.json) 통과 |
 | 2026-07-19 | G6 | 첫 제보자가 촬영 전 대상·연결 이슈를 확신하지 못하고, 접수 뒤에도 자신의 영상 연결 상태를 확인하기 어려움 | 제보 흐름을 위치 후보 → 대상 확정 → 본인확인 → 앱 내 촬영 → 미리보기 → 제출 → 접수로 고정했다. 미리보기는 `검토로 제출/다시 촬영/대상 바꾸기`만 남기고, 접수 카드에는 사람이 읽을 수 있는 접수·자료 번호, 연결 현장·이슈·접수 시각·공개 반경을 표시한다. | `check:report-flow`, `check:web-smoke`, `check:web-flow`, `check:ux-surface`, API self-check, `check:release` 통과 |
 | 2026-07-19 | G6 | 법안 상세 요청이 늦게 끝나면 사용자가 고른 집회 현장 상세를 다시 법안으로 덮을 수 있음 | 모든 상세 렌더에 최신 선택 세대 번호를 적용해, 늦게 끝난 이슈·법안 요청이 선택된 `OccurrenceDigest` 화면을 덮지 못하게 했다. | 390/430/768/1440 local staging visual smoke에서 법안 → 동일 집회 현장 제목 일치 통과 |
+| 2026-07-19 | G7 | 최신 정적 화면처럼 보이지만 운영 빌드·API·보안 상태를 증명할 수 없음 | live service watch와 운영 handoff를 갱신했다. 정적 manifest 16개 파일은 현재 로컬 해시와 일치하고 Web runtime config는 `https://api.musunil.com`을 가리킨다. 반면 build-info placeholder, Web 보안 헤더 누락, API DNS 미연결을 명시적 출시 blocker로 유지했다. | `service:watch -- --once --with-visual`, `launch:handoff`, `launch:apply -- --json` 실행. 외부 credential 없는 dry-run만 수행 |
+| 2026-07-19 | G7 | API가 끊긴 live Web에서 법안의 정직한 빈 상태가 시각 smoke의 가짜 실패로 섞임 | live visual smoke는 `serviceSyncState`가 non-live이면 법안 카드가 없는 공식 빈 상태를 허용하되, 전체 live service state는 계속 실패로 보고한다. | `check:visual-surface:production-fallback` 및 `ci-visual-surface-smoke --base-url https://musunil.com` 통과. service watch는 여전히 `delayed`를 출시 blocker로 처리 |
 
 ## Evidence Ledger
 
@@ -50,11 +52,13 @@
 | G4 | local + staging | `/reels` public serializer, 10,000 seed fairness simulation, production seed 0건, `check:reels-staging`에서 390/430/768/1440 영상 재생 surface와 `현장` → 동일 `selectedOccurrenceId`/지도·상세 제목 일치 | Guard | 실제 production 공개 Evidence가 생긴 뒤 production 화면에서 같은 검증을 G7/G8에 재실행 |
 | G5 | local | `proposedDate` additive API, `/laws?sort=interest|proposed_desc`, trusted official URL guard, API/worker parser self-check, 390/430/768/1440 법안 정렬 및 법안 → 동일 집회 현장 이동 캡처 | Guard | 국회 API key 또는 법제처 OC 입력 후 실제 dry-run/post, live `/laws` 두 정렬과 공식 링크 재검증은 G7에서 수행 |
 | G6 | local staging | 테스트 전용 PortOne verifier, mock GPS/camera recorder, 실제 write API, 세션 복원. [390px 미리보기](/Users/mk/Documents/Musunil/docs/visual-evidence/goal6-report-flow-verified/report_flow_mobile_390_preview.png), [390px 접수 결과](/Users/mk/Documents/Musunil/docs/visual-evidence/goal6-report-flow-verified/report_flow_mobile_390_receipt.png), [검증 JSON](/Users/mk/Documents/Musunil/docs/visual-evidence/goal6-report-flow-verified/visual-surface-evidence.json) | Guard | 테스트 영상과 test identity는 staging 한정이다. 실제 PortOne, 외부 암호화 저장소, 비식별, Play Integrity/App Attest 운영 smoke는 G7에서 재실행 |
-| G7 | live | `https://musunil.com/build-info.json`, `https://api.musunil.com` DNS | 실패 | placeholder build metadata, API DNS 미연결 |
+| G7 | live | `service:watch -- --once --with-visual`: 정적 manifest 16개/2,458,357 bytes와 local hash 일치, Web config의 공개 필드 2개와 `https://api.musunil.com` 일치, 4 viewport 정직한 fallback surface | **Active / blocked** | `build-info.json`이 placeholder, `/`·`config.js`·`build-info.json` 보안 헤더 누락, `api.musunil.com` DNS 미연결, Render/Cloudflare token·API target·runtime Secret File·원천/PortOne/storage/비식별/무결성 credential 미입력 |
 
 ## Residual Risks
 
 - `api.musunil.com` DNS와 Render API/DB/Redis가 아직 live로 연결되지 않았다.
+- Render Static Site가 Blueprint와 분리된 수동 설정을 사용 중이다. Dashboard의 Build Command를 `corepack enable && pnpm install --frozen-lockfile && pnpm build:web-static:render`로 바꾸고, `render:web-settings`의 6개 헤더를 적용한 뒤 Clear build cache & deploy가 필요하다.
+- `RENDER_API_TOKEN` 또는 Render에서 복사한 `MUSUNIL_RENDER_API_DNS_TARGET`, 그리고 `CLOUDFLARE_API_TOKEN` 없이는 api custom domain, DNS, Cloudflare header rule을 자동 적용할 수 없다. 자동화는 이 값이 생기기 전까지 dry-run만 수행한다.
 - 국회·법제처 원천 키, PortOne, storage, 비식별, 모바일 무결성 운영 credential은 Goal 7 전까지 실제 검증할 수 없다.
 - G5의 운영 law feed는 실제 credential 없이 비어 있어야 하며, 현재 production fallback이 그 원칙을 지킨다. 실제 법안은 key/OC 입력과 ingest 성공 이후에만 표시할 수 있다.
 - production에는 공개 통과 실제 현장 영상이 없으므로, Goal 4는 staging fixture 검증과 정직한 production 빈 상태를 분리해 Guard로 두었다. 실제 공개 Evidence가 생기면 G7/G8에서 재검증한다.

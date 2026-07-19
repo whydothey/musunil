@@ -3,6 +3,12 @@ import { resolve } from "node:path";
 
 const cwd = resolve(import.meta.dirname, "..");
 const node = process.execPath;
+const handoffEnv = {
+  ...process.env,
+  // A launch handoff is a release artifact, so its docs must include the same
+  // mobile/desktop live surface check as the service-watch report it summarizes.
+  MUSUNIL_SERVICE_WATCH_VISUAL: process.env.MUSUNIL_SERVICE_WATCH_VISUAL || "1"
+};
 
 const steps = [
   {
@@ -23,12 +29,12 @@ const results = [];
 
 console.log("# Launch Handoff");
 console.log("");
-console.log("Refreshing live blockers once, then writing operator-facing docs from the same blocker report.");
+console.log("Refreshing live blockers and visual surface once, then writing operator-facing docs from the same blocker report.");
 
 for (const step of steps) {
   const result = spawnSync(step.command[0], step.command.slice(1), {
     cwd,
-    env: process.env,
+    env: handoffEnv,
     stdio: "inherit"
   });
   const status = result.status ?? (result.error || result.signal ? 1 : 0);

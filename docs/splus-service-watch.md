@@ -1,16 +1,16 @@
 # S+ Service Watch
 
-Last checked: 2026-07-12T13:47:04.490Z
+Last checked: 2026-07-19T09:31:19.777Z
 
 Status: Active
 
 | Check | Result | Detail |
 |---|---|---|
-| web_static_manifest | ok | {"files":5,"bytes":925123,"headersFile":"verified","mode":"matches_local_and_live_hashes"} |
+| web_static_manifest | ok | {"files":16,"bytes":2458357,"headersFile":"verified","mode":"matches_local_and_live_hashes"} |
 | web_runtime_config | ok | {"apiBaseUrl":"https://api.musunil.com","expectedApiBaseUrl":"https://api.musunil.com","mapStyleHost":"tiles.openfreemap.org","publicKeys":["apiBaseUrl","mapStyleUrl"]} |
 | web_build_info | fail | build-info placeholder deployed; set MUSUNIL_ALLOW_PLACEHOLDER_BUILD_INFO=1 only for a static-hash-only diagnostic |
 | web_header_contract | fail | invalid Web headers: / Cache-Control expected no-store, got public, max-age=0, s-maxage=300; / Content-Security-Policy expected CSP with self, https API/map, public media, PortOne, and blob worker/media allowances, got missing; / Permissions-Policy expected camera=(self), microphone=(), geolocation=(self), got missing; / Referrer-Policy expected no-referrer, got missing; / X-Frame-Options expected DENY, got missing; /config.js Cache-Control expected no-store, got public, max-age=14400, s-maxage=300; /config.js Content-Security-Policy expected CSP with self, https API/map, public media, PortOne, and blob worker/media allowances, got missing; /config.js Permissions-Policy expected camera=(self), microphone=(), geolocation=(self), got missing; /config.js Referrer-Policy expected no-referrer, got missing; /config.js X-Frame-Options expected DENY, got missing; /build-info.json Cache-Control expected no-store, got public, max-age=0, s-maxage=300; /build-info.json Content-Security-Policy expected CSP with self, https API/map, public media, PortOne, and blob worker/media allowances, got missing; /build-info.json Permissions-Policy expected camera=(self), microphone=(), geolocation=(self), got missing; /build-info.json Referrer-Policy expected no-referrer, got missing; /build-info.json X-Frame-Options expected DENY, got missing |
-| web_forbidden_ui_absent | ok | {"bytes":404922,"tokenCount":22} |
+| web_forbidden_ui_absent | ok | {"bytes":428352,"tokenCount":22} |
 | web_visual_surface | fail | live visual surface is rendering non-live data state: delayed; firstIssues=정보통신망법 개정 반대 집회; sourceBundleFirst=0/4 |
 | api_endpoint_preflight | fail | getaddrinfo ENOTFOUND api.musunil.com |
 | api_health_ready | skip | skipped: API endpoint preflight failed |

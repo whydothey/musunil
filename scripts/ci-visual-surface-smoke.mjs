@@ -86,7 +86,7 @@ async function main() {
         { id: "tablet_768", width: 768, height: 1024, mobile: true },
         { id: "desktop_1440", width: 1440, height: 960, mobile: false }
       ]) {
-        await runViewport(client, viewport, appUrl);
+        await runViewport(client, viewport, appUrl, { liveUrl: Boolean(visualBaseUrl) });
       }
       if (reportFlow) await runReportFlow(client, appUrl);
     } finally {
@@ -138,7 +138,7 @@ async function main() {
   process.exit(exitCode);
 }
 
-async function runViewport(client, viewport, url) {
+async function runViewport(client, viewport, url, { liveUrl = false } = {}) {
   await client.send("Emulation.setDeviceMetricsOverride", {
     width: viewport.width,
     height: viewport.height,
@@ -275,6 +275,10 @@ async function runViewport(client, viewport, url) {
   await selectPrimaryView(client, viewport, "laws");
   await waitForExpression(client, "document.querySelector('#law-section') && getComputedStyle(document.querySelector('#law-section')).display !== 'none'");
   await sleep(220);
+  // An offline live Web must disclose an empty official-law feed, not manufacture preview laws.
+  // The overall run still fails on its non-live service state; this branch keeps the failure
+  // focused on the actual deployment defect instead of treating the protected empty state as one.
+  const expectsEmptyLawFeed = productionFallbackMode || (liveUrl && home.serviceSyncState !== "live");
   const laws = await evaluate(client, `(() => {
     const visible = (node) => {
       if (!node) return false;
@@ -298,13 +302,13 @@ async function runViewport(client, viewport, url) {
     () => assert(laws.sortLabels.join('/') === '현장 관심/최근 발의', `law sort controls changed: ${laws.sortLabels.join('/')}`),
     () => assert(laws.selectedSort === 'interest', `law default sort changed: ${laws.selectedSort}`),
     () => assert(
-      productionFallbackMode ? laws.cardCount === 0 && /표시할 법령·의안이 없습니다/.test(laws.emptyTitle) : laws.cardCount >= 1,
-      productionFallbackMode ? `production law tab must be an honest empty state: ${laws.emptyTitle}` : `local law tab is missing preview coverage: ${laws.cardCount}`
+      expectsEmptyLawFeed ? laws.cardCount === 0 && /표시할 법령·의안이 없습니다/.test(laws.emptyTitle) : laws.cardCount >= 1,
+      expectsEmptyLawFeed ? `offline live law tab must be an honest empty state: ${laws.emptyTitle}` : `local law tab is missing preview coverage: ${laws.cardCount}`
     ),
-    () => assert(productionFallbackMode || laws.cardTexts.every((text) => /국회 의안|현행 법령/.test(text) && /발의|공포|시행/.test(text)), `law cards lack official source/date: ${laws.cardTexts.join(' / ')}`)
-  ], { ...serviceDetail(laws), laws });
+    () => assert(expectsEmptyLawFeed || laws.cardTexts.every((text) => /국회 의안|현행 법령/.test(text) && /발의|공포|시행/.test(text)), `law cards lack official source/date: ${laws.cardTexts.join(' / ')}`)
+  ], { ...serviceDetail(laws), expectsEmptyLawFeed, laws });
 
-  if (!productionFallbackMode) {
+  if (!expectsEmptyLawFeed) {
     await click(client, '[data-law-sort="proposed_desc"]');
     await waitForExpression(client, "document.querySelector('[data-law-sort=\"proposed_desc\"]')?.getAttribute('aria-pressed') === 'true'");
     await waitForExpression(client, "document.querySelectorAll('.law-card').length >= 1");
