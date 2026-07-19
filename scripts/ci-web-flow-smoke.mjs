@@ -140,11 +140,19 @@ scenario("issue_file_opens_occurrence_first", [
 scenario("laws_to_issue_context", [
   has("법안·개정안"),
   has("법안이 어떤 이슈와 연결되는지 먼저 봅니다."),
+  has('data-law-sort="interest"'),
+  has('data-law-sort="proposed_desc"'),
   has("data-law-issue-id"),
+  has("data-law-occurrence-id"),
+  functionHas("changeLawSort", "publicApi.laws(activeLawSort)"),
+  functionHas("sortLaws", 'sort === "proposed_desc"'),
   functionHas("openIssueFromLaw", 'setMobileTab("home"'),
   functionHas("openIssueFromLaw", 'setRailCurrent("home")'),
   functionHas("openIssueFromLaw", "selectIssue(issue"),
-  functionHas("renderLawSummary", "data-law-issue-id")
+  functionHas("openOccurrenceFromLaw", 'setPrimaryView("explore")'),
+  functionHas("openOccurrenceFromLaw", "selectCard(card"),
+  functionHas("renderLawSummary", "data-law-issue-id"),
+  functionHas("renderLawSummary", "data-law-occurrence-id")
 ]);
 
 scenario("report_target_first_capture_and_receipt", [

@@ -6,6 +6,7 @@ export type LawPayload = {
   lawName: string;
   billTitle?: string;
   stage: string;
+  proposedDate?: string;
   statusDate?: string;
   effectiveDate?: string;
   assemblyBillId?: string;
@@ -129,13 +130,22 @@ export async function fetchLawPayloads(runtime: LawRuntime): Promise<LawPayload[
 
 async function fetchAssemblyBills(runtime: LawRuntime): Promise<LawPayload[]> {
   if (!runtime.assemblyBillApiKey) return [];
+  const pageSize = 100;
+  const first = await fetchAssemblyBillPage(runtime, 1, pageSize);
+  const pageCount = Math.min(10, Math.max(1, Math.ceil(readTotalCount(first.payload) / pageSize)));
+  const pages = [first.rows];
+  for (let page = 2; page <= pageCount; page += 1) pages.push((await fetchAssemblyBillPage(runtime, page, pageSize)).rows);
+  return pages.flat().map((row) => assemblyBillPayload(row, runtime.keywords)).filter((payload): payload is LawPayload => Boolean(payload));
+}
+
+async function fetchAssemblyBillPage(runtime: LawRuntime, page: number, pageSize: number): Promise<{ payload: unknown; rows: Array<Record<string, unknown>> }> {
   const url = new URL(runtime.assemblyBillApiUrl);
-  url.searchParams.set("KEY", runtime.assemblyBillApiKey);
+  url.searchParams.set("KEY", runtime.assemblyBillApiKey!);
   url.searchParams.set("Type", "json");
-  url.searchParams.set("pIndex", "1");
-  url.searchParams.set("pSize", "100");
-  const rows = extractObjectRows(await fetchJson(url));
-  return rows.map((row) => assemblyBillPayload(row, runtime.keywords)).filter((payload): payload is LawPayload => Boolean(payload));
+  url.searchParams.set("pIndex", String(page));
+  url.searchParams.set("pSize", String(pageSize));
+  const payload = await fetchJson(url);
+  return { payload, rows: extractObjectRows(payload) };
 }
 
 async function fetchEffectiveLaws(runtime: LawRuntime): Promise<LawPayload[]> {
@@ -174,19 +184,26 @@ function assemblyBillPayload(row: Record<string, unknown>, keywords: string[]): 
   if (!billTitle || !keywords.some((keyword) => searchText(billTitle).includes(searchText(keyword)))) return undefined;
   const lawName = lawNameFromBillTitle(billTitle);
   const assemblyBillId = pickString(row, ["BILL_ID", "BILL_NO", "의안ID", "의안번호"]);
-  const statusDate = parseDateText(pickString(row, ["PROPOSE_DT", "제안일자", "의결일자"]));
+  const proposedDate = parseDateText(pickString(row, ["PROPOSE_DT", "제안일자"]));
+  const statusDate = parseDateText(pickString(row, ["PROC_DT", "PROC_RESULT_DT", "처리일자", "의결일자"]));
   return {
     id: idFor("assembly_bill", assemblyBillId ?? billTitle),
     source: "assembly_bill",
     lawName,
     billTitle,
     stage: pickString(row, ["PROC_RESULT", "처리결과", "COMMITTEE", "소관위원회"]) ?? "접수",
+    proposedDate,
     statusDate,
     assemblyBillId,
     summary: pickString(row, ["RST_PROPOSER", "제안자", "제안이유"]),
-    officialUrl: pickString(row, ["LINK_URL", "DETAIL_LINK", "URL", "의안상세링크"]),
+    officialUrl: officialAssemblyBillUrl(pickString(row, ["LINK_URL", "DETAIL_LINK", "URL", "의안상세링크"]), assemblyBillId),
     keywords: unique([lawName, ...keywords.filter((keyword) => searchText(billTitle).includes(searchText(keyword)))])
   };
+}
+
+function officialAssemblyBillUrl(candidate: string | undefined, assemblyBillId: string | undefined): string | undefined {
+  if (candidate && isOfficialUrl(candidate, "assembly.go.kr")) return candidate;
+  return assemblyBillId ? `https://likms.assembly.go.kr/bill/billDetail.do?billId=${encodeURIComponent(assemblyBillId)}` : undefined;
 }
 
 function effectiveLawPayload(row: Record<string, unknown>, keyword: string): LawPayload | undefined {
@@ -203,9 +220,24 @@ function effectiveLawPayload(row: Record<string, unknown>, keyword: string): Law
     effectiveDate: parseDateText(pickString(row, ["시행일자"])),
     lawId,
     summary: pickString(row, ["소관부처명", "소관부처"]),
-    officialUrl: pickString(row, ["법령상세링크"]) ?? `https://www.law.go.kr/법령/${encodeURIComponent(lawName)}`,
+    officialUrl: officialLawUrl(pickString(row, ["법령상세링크"]), lawId ?? lawName),
     keywords: unique([keyword, lawName])
   };
+}
+
+function officialLawUrl(candidate: string | undefined, lawIdOrName: string): string {
+  return candidate && isOfficialUrl(candidate, "law.go.kr")
+    ? candidate
+    : `https://www.law.go.kr/법령/${encodeURIComponent(lawIdOrName)}`;
+}
+
+function isOfficialUrl(value: string, host: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && (url.hostname === host || url.hostname.endsWith(`.${host}`));
+  } catch {
+    return false;
+  }
 }
 
 function lawNameFromBillTitle(title: string): string {
@@ -243,7 +275,36 @@ function extractObjectRows(value: unknown): Array<Record<string, unknown>> {
     for (const item of Object.values(node)) visit(item);
   };
   visit(value);
-  return arrays.sort((a, b) => b.length - a.length)[0] ?? [];
+  return arrays.sort((a, b) => rowArrayScore(b) - rowArrayScore(a))[0] ?? [];
+}
+
+function rowArrayScore(rows: Array<Record<string, unknown>>): number {
+  const rowKeyHits = rows.reduce((score, row) => score + (hasLawRowKey(row) ? 10_000 : 0), 0);
+  return rowKeyHits + rows.length;
+}
+
+function hasLawRowKey(row: Record<string, unknown>): boolean {
+  return ["BILL_NAME", "BILL_NM", "의안명", "법률안명", "법령명한글", "법령명_한글", "법령명"].some((key) => key in row);
+}
+
+function readTotalCount(value: unknown): number {
+  const values: number[] = [];
+  const visit = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item);
+      return;
+    }
+    if (!node || typeof node !== "object") return;
+    for (const [key, item] of Object.entries(node)) {
+      if (/^(list_)?total(_count|cnt)$/i.test(key) && (typeof item === "number" || typeof item === "string")) {
+        const parsed = Number(item);
+        if (Number.isFinite(parsed) && parsed > 0) values.push(parsed);
+      }
+      visit(item);
+    }
+  };
+  visit(value);
+  return Math.max(0, ...values);
 }
 
 function pickString(row: Record<string, unknown>, keys: string[]): string | undefined {

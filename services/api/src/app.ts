@@ -2427,11 +2427,13 @@ function getLaw(store: Store, id: string | undefined): ApiResponse {
 }
 
 function lawCards(store: Store, sort: "interest" | "proposed_desc" = "interest") {
-  const laws = store.lawItems
-    .map((law) => toPublicLawItem(store, law))
-  return laws.sort((left, right) => {
+  const laws = store.lawItems.map((law) => toPublicLawItem(store, law));
+  // "최근 발의" is deliberately limited to National Assembly bills. Effective laws
+  // have promulgation/effective dates, not proposal dates, and must not be mislabeled.
+  const visibleLaws = sort === "proposed_desc" ? laws.filter((law) => law.source === "assembly_bill") : laws;
+  return visibleLaws.sort((left, right) => {
     if (sort === "proposed_desc") {
-      return new Date(right.statusDate || right.lastUpdatedAt || 0).getTime() - new Date(left.statusDate || left.lastUpdatedAt || 0).getTime();
+      return new Date(right.proposedDate || 0).getTime() - new Date(left.proposedDate || 0).getTime();
     }
     return Number(right.interestScore || 0) - Number(left.interestScore || 0) || new Date(right.lastUpdatedAt || 0).getTime() - new Date(left.lastUpdatedAt || 0).getTime();
   });
@@ -2443,6 +2445,7 @@ function toLawInterestItem(law: ReturnType<typeof toPublicLawItem>): LawInterest
     source: law.source,
     title: law.billTitle || law.lawName,
     stage: law.stage,
+    proposedDate: law.proposedDate,
     statusDate: law.statusDate,
     officialUrl: law.officialUrl,
     linkedIssueCount: law.linkedIssueCount,
@@ -3410,6 +3413,7 @@ function toPublicLawItem(store: Store, law: LawItem) {
   const regions = new Set(relatedTargets.map(({ target }) => publicTargetRegionLabel(target)).filter(Boolean));
   const claims = publicClaimsForIssueIds(store, issueIds);
   const lastUpdatedAt = latestDate([
+    law.proposedDate,
     law.statusDate,
     law.effectiveDate,
     ...store.issues.filter((issue) => issueIds.has(issue.id)).map((issue) => issue.lastUpdatedAt),
@@ -3425,6 +3429,7 @@ function toPublicLawItem(store: Store, law: LawItem) {
     lawName: law.lawName,
     billTitle: law.billTitle,
     stage: law.stage,
+    proposedDate: law.proposedDate?.toISOString(),
     statusDate: law.statusDate?.toISOString(),
     effectiveDate: law.effectiveDate?.toISOString(),
     assemblyBillId: law.assemblyBillId,
@@ -3444,7 +3449,7 @@ function toPublicLawItem(store: Store, law: LawItem) {
 }
 
 function lawScheduleProximityScore(law: LawItem): number {
-  const date = law.effectiveDate ?? law.statusDate;
+  const date = law.effectiveDate ?? law.statusDate ?? law.proposedDate;
   if (!date) return 0;
   const days = Math.abs(Date.now() - date.getTime()) / dayMs;
   if (days <= 7) return 30;
@@ -3539,14 +3544,41 @@ function readLawItem(data: Record<string, unknown>): LawItem {
     lawName,
     billTitle,
     stage: readString(data, "stage"),
+    proposedDate: readOptionalDate(data, "proposedDate"),
     statusDate: readOptionalDate(data, "statusDate"),
     effectiveDate: readOptionalDate(data, "effectiveDate"),
     assemblyBillId: readOptionalString(data, "assemblyBillId"),
     lawId: readOptionalString(data, "lawId"),
     summary: readOptionalString(data, "summary"),
-    officialUrl: readOptionalString(data, "officialUrl"),
+    officialUrl: readOfficialLawUrl(source, data),
     keywords: readLawKeywords(data, lawName, billTitle)
   };
+}
+
+function readOfficialLawUrl(source: LawItem["source"], data: Record<string, unknown>): string | undefined {
+  const candidate = readOptionalString(data, "officialUrl");
+  if (candidate && isOfficialLawUrl(source, candidate)) return candidate;
+  const assemblyBillId = readOptionalString(data, "assemblyBillId");
+  if (source === "assembly_bill" && assemblyBillId) {
+    return `https://likms.assembly.go.kr/bill/billDetail.do?billId=${encodeURIComponent(assemblyBillId)}`;
+  }
+  const lawId = readOptionalString(data, "lawId");
+  if (source === "law_effective" && lawId) {
+    return `https://www.law.go.kr/법령/${encodeURIComponent(lawId)}`;
+  }
+  return undefined;
+}
+
+function isOfficialLawUrl(source: LawItem["source"], value: string): boolean {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:") return false;
+    return source === "assembly_bill"
+      ? url.hostname === "assembly.go.kr" || url.hostname.endsWith(".assembly.go.kr")
+      : url.hostname === "law.go.kr" || url.hostname.endsWith(".law.go.kr");
+  } catch {
+    return false;
+  }
 }
 
 function lawIdForInput(source: LawItem["source"], data: Record<string, unknown>, lawName: string, billTitle: string | undefined): string {

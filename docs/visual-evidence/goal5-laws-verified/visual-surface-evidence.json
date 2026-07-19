@@ -1,0 +1,589 @@
+{
+  "checked": "commercial_visual_surface",
+  "ok": true,
+  "mode": "local_static",
+  "baseUrl": "local-static://default",
+  "productionFallbackMode": false,
+  "serviceStates": [
+    "delayed"
+  ],
+  "serviceBannerVisibleCount": 19,
+  "evidenceDir": "docs/visual-evidence/goal5-laws-verified",
+  "evidenceScreenshots": [
+    "docs/visual-evidence/goal5-laws-verified/mobile_390_home.png",
+    "docs/visual-evidence/goal5-laws-verified/mobile_390_detail.png",
+    "docs/visual-evidence/goal5-laws-verified/mobile_390_reels.png",
+    "docs/visual-evidence/goal5-laws-verified/mobile_390_laws.png",
+    "docs/visual-evidence/goal5-laws-verified/mobile_390_map.png",
+    "docs/visual-evidence/goal5-laws-verified/mobile_390_report.png",
+    "docs/visual-evidence/goal5-laws-verified/mobile_430_home.png",
+    "docs/visual-evidence/goal5-laws-verified/mobile_430_detail.png",
+    "docs/visual-evidence/goal5-laws-verified/mobile_430_reels.png",
+    "docs/visual-evidence/goal5-laws-verified/mobile_430_laws.png",
+    "docs/visual-evidence/goal5-laws-verified/mobile_430_map.png",
+    "docs/visual-evidence/goal5-laws-verified/mobile_430_report.png",
+    "docs/visual-evidence/goal5-laws-verified/tablet_768_home.png",
+    "docs/visual-evidence/goal5-laws-verified/tablet_768_detail.png",
+    "docs/visual-evidence/goal5-laws-verified/tablet_768_reels.png",
+    "docs/visual-evidence/goal5-laws-verified/tablet_768_laws.png",
+    "docs/visual-evidence/goal5-laws-verified/tablet_768_map.png",
+    "docs/visual-evidence/goal5-laws-verified/tablet_768_report.png",
+    "docs/visual-evidence/goal5-laws-verified/desktop_1440_home.png",
+    "docs/visual-evidence/goal5-laws-verified/desktop_1440_detail.png",
+    "docs/visual-evidence/goal5-laws-verified/desktop_1440_reels.png",
+    "docs/visual-evidence/goal5-laws-verified/desktop_1440_laws.png",
+    "docs/visual-evidence/goal5-laws-verified/desktop_1440_map.png",
+    "docs/visual-evidence/goal5-laws-verified/desktop_1440_report.png"
+  ],
+  "scenarios": [
+    {
+      "id": "mobile_390_home",
+      "ok": true,
+      "assertions": 33,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 3,
+        "storyCount": 3,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "mobile_390_detail",
+      "ok": true,
+      "assertions": 11,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 3,
+        "storyCount": 3,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "mobile_390_reels",
+      "ok": true,
+      "assertions": 8,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 0,
+        "storyCount": 0,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "mobile_390_laws",
+      "ok": true,
+      "assertions": 5,
+      "detail": {
+        "laws": {
+          "scrollWidth": 390,
+          "sortLabels": [
+            "현장 관심",
+            "최근 발의"
+          ],
+          "selectedSort": "interest",
+          "cardCount": 2,
+          "cardTexts": [
+            "국회 의안\n              발의 2026. 7. 19.\n            \n\t            \n\t              정보통신망 이용촉진 및 정보보호 등에 관한 법률 일부개정법률안\n\t              정보통신망 이용촉진 및 정보보호 등에 관한 법률 · 심사 중\n\t            \n            정보통신망법 개정 논의와 연결되는 공개 의안 메타데이터입니다.\n\t            \n\t              연결 이슈 1건 · 현장 2건 · 권역 2개\n\t            \n\t            \n\t              연결 이슈 보기\n\t              ›",
+            "현행 법령\n              공포 2026. 7. 19.\n            \n\t            \n\t              탄핵소추 절차 관련 법령\n\t              국회법 · 현행 법령\n\t            \n            대통령 탄핵 요구 이슈와 연결될 수 있는 국회 절차 관련 법령입니다.\n\t            \n\t              연결 이슈 1건 · 현장 1건 · 권역 1개\n\t            \n\t            \n\t              연결 이슈 보기\n\t              ›"
+          ],
+          "emptyTitle": ""
+        }
+      }
+    },
+    {
+      "id": "mobile_390_laws_recent_proposals",
+      "ok": true,
+      "assertions": 2,
+      "detail": {
+        "recentBills": {
+          "selectedSort": "proposed_desc",
+          "cards": [
+            "국회 의안\n              발의 2026. 7. 19.\n            \n\t            \n\t              정보통신망 이용촉진 및 정보보호 등에 관한 법률 일부개정법률안\n\t              정보통신망 이용촉진 및 정보보호 등에 관한 법률 · 심사 중\n\t            \n            정보통신망법 개정 논의와 연결되는 공개 의안 메타데이터입니다.\n\t            \n\t              연결 이슈 1건 · 현장 2건 · 권역 2개\n\t            \n\t            \n\t              연결 이슈 보기\n\t              ›"
+          ]
+        }
+      }
+    },
+    {
+      "id": "mobile_390_law_occurrence_link",
+      "ok": true,
+      "assertions": 3,
+      "detail": {
+        "lawOccurrence": "occ_1",
+        "linkedOccurrence": {
+          "selectedOccurrenceId": "occ_1",
+          "mapTitle": "서울 인근 집회성 모임",
+          "detailTitle": "서울 인근 집회성 모임"
+        }
+      }
+    },
+    {
+      "id": "mobile_390_map",
+      "ok": true,
+      "assertions": 8,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 0,
+        "storyCount": 0,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "mobile_390_report",
+      "ok": true,
+      "assertions": 8,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 0,
+        "storyCount": 0,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "mobile_430_home",
+      "ok": true,
+      "assertions": 33,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 3,
+        "storyCount": 4,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "mobile_430_detail",
+      "ok": true,
+      "assertions": 11,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 3,
+        "storyCount": 4,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "mobile_430_reels",
+      "ok": true,
+      "assertions": 8,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 0,
+        "storyCount": 0,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "mobile_430_laws",
+      "ok": true,
+      "assertions": 5,
+      "detail": {
+        "laws": {
+          "scrollWidth": 430,
+          "sortLabels": [
+            "현장 관심",
+            "최근 발의"
+          ],
+          "selectedSort": "interest",
+          "cardCount": 2,
+          "cardTexts": [
+            "국회 의안\n              발의 2026. 7. 19.\n            \n\t            \n\t              정보통신망 이용촉진 및 정보보호 등에 관한 법률 일부개정법률안\n\t              정보통신망 이용촉진 및 정보보호 등에 관한 법률 · 심사 중\n\t            \n            정보통신망법 개정 논의와 연결되는 공개 의안 메타데이터입니다.\n\t            \n\t              연결 이슈 1건 · 현장 2건 · 권역 2개\n\t            \n\t            \n\t              연결 이슈 보기\n\t              ›",
+            "현행 법령\n              공포 2026. 7. 19.\n            \n\t            \n\t              탄핵소추 절차 관련 법령\n\t              국회법 · 현행 법령\n\t            \n            대통령 탄핵 요구 이슈와 연결될 수 있는 국회 절차 관련 법령입니다.\n\t            \n\t              연결 이슈 1건 · 현장 1건 · 권역 1개\n\t            \n\t            \n\t              연결 이슈 보기\n\t              ›"
+          ],
+          "emptyTitle": ""
+        }
+      }
+    },
+    {
+      "id": "mobile_430_laws_recent_proposals",
+      "ok": true,
+      "assertions": 2,
+      "detail": {
+        "recentBills": {
+          "selectedSort": "proposed_desc",
+          "cards": [
+            "국회 의안\n              발의 2026. 7. 19.\n            \n\t            \n\t              정보통신망 이용촉진 및 정보보호 등에 관한 법률 일부개정법률안\n\t              정보통신망 이용촉진 및 정보보호 등에 관한 법률 · 심사 중\n\t            \n            정보통신망법 개정 논의와 연결되는 공개 의안 메타데이터입니다.\n\t            \n\t              연결 이슈 1건 · 현장 2건 · 권역 2개\n\t            \n\t            \n\t              연결 이슈 보기\n\t              ›"
+          ]
+        }
+      }
+    },
+    {
+      "id": "mobile_430_law_occurrence_link",
+      "ok": true,
+      "assertions": 3,
+      "detail": {
+        "lawOccurrence": "occ_1",
+        "linkedOccurrence": {
+          "selectedOccurrenceId": "occ_1",
+          "mapTitle": "서울 인근 집회성 모임",
+          "detailTitle": "서울 인근 집회성 모임"
+        }
+      }
+    },
+    {
+      "id": "mobile_430_map",
+      "ok": true,
+      "assertions": 8,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 0,
+        "storyCount": 0,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "mobile_430_report",
+      "ok": true,
+      "assertions": 8,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 0,
+        "storyCount": 0,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "tablet_768_home",
+      "ok": true,
+      "assertions": 33,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 4,
+        "storyCount": 6,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "tablet_768_detail",
+      "ok": true,
+      "assertions": 11,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 4,
+        "storyCount": 6,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "tablet_768_reels",
+      "ok": true,
+      "assertions": 8,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 0,
+        "storyCount": 0,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "tablet_768_laws",
+      "ok": true,
+      "assertions": 5,
+      "detail": {
+        "laws": {
+          "scrollWidth": 768,
+          "sortLabels": [
+            "현장 관심",
+            "최근 발의"
+          ],
+          "selectedSort": "interest",
+          "cardCount": 2,
+          "cardTexts": [
+            "국회 의안\n              발의 2026. 7. 19.\n            \n\t            \n\t              정보통신망 이용촉진 및 정보보호 등에 관한 법률 일부개정법률안\n\t              정보통신망 이용촉진 및 정보보호 등에 관한 법률 · 심사 중\n\t            \n            정보통신망법 개정 논의와 연결되는 공개 의안 메타데이터입니다.\n\t            \n\t              연결 이슈 1건 · 현장 2건 · 권역 2개\n\t            \n\t            \n\t              연결 이슈 보기\n\t              ›",
+            "현행 법령\n              공포 2026. 7. 19.\n            \n\t            \n\t              탄핵소추 절차 관련 법령\n\t              국회법 · 현행 법령\n\t            \n            대통령 탄핵 요구 이슈와 연결될 수 있는 국회 절차 관련 법령입니다.\n\t            \n\t              연결 이슈 1건 · 현장 1건 · 권역 1개\n\t            \n\t            \n\t              연결 이슈 보기\n\t              ›"
+          ],
+          "emptyTitle": ""
+        }
+      }
+    },
+    {
+      "id": "tablet_768_laws_recent_proposals",
+      "ok": true,
+      "assertions": 2,
+      "detail": {
+        "recentBills": {
+          "selectedSort": "proposed_desc",
+          "cards": [
+            "국회 의안\n              발의 2026. 7. 19.\n            \n\t            \n\t              정보통신망 이용촉진 및 정보보호 등에 관한 법률 일부개정법률안\n\t              정보통신망 이용촉진 및 정보보호 등에 관한 법률 · 심사 중\n\t            \n            정보통신망법 개정 논의와 연결되는 공개 의안 메타데이터입니다.\n\t            \n\t              연결 이슈 1건 · 현장 2건 · 권역 2개\n\t            \n\t            \n\t              연결 이슈 보기\n\t              ›"
+          ]
+        }
+      }
+    },
+    {
+      "id": "tablet_768_law_occurrence_link",
+      "ok": true,
+      "assertions": 3,
+      "detail": {
+        "lawOccurrence": "occ_1",
+        "linkedOccurrence": {
+          "selectedOccurrenceId": "occ_1",
+          "mapTitle": "서울 인근 집회성 모임",
+          "detailTitle": "서울 인근 집회성 모임"
+        }
+      }
+    },
+    {
+      "id": "tablet_768_map",
+      "ok": true,
+      "assertions": 8,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 0,
+        "storyCount": 0,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "tablet_768_report",
+      "ok": true,
+      "assertions": 8,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 0,
+        "storyCount": 0,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "desktop_1440_home",
+      "ok": true,
+      "assertions": 33,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 3,
+        "storyCount": 8,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "desktop_1440_detail",
+      "ok": true,
+      "assertions": 11,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": false,
+        "serviceBannerTitle": "",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 4,
+        "storyCount": 8,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "desktop_1440_reels",
+      "ok": true,
+      "assertions": 8,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 0,
+        "storyCount": 0,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "desktop_1440_laws",
+      "ok": true,
+      "assertions": 5,
+      "detail": {
+        "laws": {
+          "scrollWidth": 1440,
+          "sortLabels": [
+            "현장 관심",
+            "최근 발의"
+          ],
+          "selectedSort": "interest",
+          "cardCount": 2,
+          "cardTexts": [
+            "국회 의안\n              발의 2026. 7. 19.\n            \n\t            \n\t              정보통신망 이용촉진 및 정보보호 등에 관한 법률 일부개정법률안\n\t              정보통신망 이용촉진 및 정보보호 등에 관한 법률 · 심사 중\n\t            \n            정보통신망법 개정 논의와 연결되는 공개 의안 메타데이터입니다.\n\t            \n\t              연결 이슈 1건 · 현장 2건 · 권역 2개\n\t            \n\t            \n\t              연결 이슈 보기\n\t              ›",
+            "현행 법령\n              공포 2026. 7. 19.\n            \n\t            \n\t              탄핵소추 절차 관련 법령\n\t              국회법 · 현행 법령\n\t            \n            대통령 탄핵 요구 이슈와 연결될 수 있는 국회 절차 관련 법령입니다.\n\t            \n\t              연결 이슈 1건 · 현장 1건 · 권역 1개\n\t            \n\t            \n\t              연결 이슈 보기\n\t              ›"
+          ],
+          "emptyTitle": ""
+        }
+      }
+    },
+    {
+      "id": "desktop_1440_laws_recent_proposals",
+      "ok": true,
+      "assertions": 2,
+      "detail": {
+        "recentBills": {
+          "selectedSort": "proposed_desc",
+          "cards": [
+            "국회 의안\n              발의 2026. 7. 19.\n            \n\t            \n\t              정보통신망 이용촉진 및 정보보호 등에 관한 법률 일부개정법률안\n\t              정보통신망 이용촉진 및 정보보호 등에 관한 법률 · 심사 중\n\t            \n            정보통신망법 개정 논의와 연결되는 공개 의안 메타데이터입니다.\n\t            \n\t              연결 이슈 1건 · 현장 2건 · 권역 2개\n\t            \n\t            \n\t              연결 이슈 보기\n\t              ›"
+          ]
+        }
+      }
+    },
+    {
+      "id": "desktop_1440_law_occurrence_link",
+      "ok": true,
+      "assertions": 3,
+      "detail": {
+        "lawOccurrence": "occ_1",
+        "linkedOccurrence": {
+          "selectedOccurrenceId": "occ_1",
+          "mapTitle": "서울 인근 집회성 모임",
+          "detailTitle": "서울 인근 집회성 모임"
+        }
+      }
+    },
+    {
+      "id": "desktop_1440_map",
+      "ok": true,
+      "assertions": 8,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 0,
+        "storyCount": 0,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    },
+    {
+      "id": "desktop_1440_report",
+      "ok": true,
+      "assertions": 8,
+      "detail": {
+        "serviceSyncState": "delayed",
+        "serviceBannerVisible": true,
+        "serviceBannerTitle": "공개자료로 먼저 확인",
+        "firstIssueTitle": "정보통신망법 개정 반대 집회",
+        "sourceBundleFirst": false,
+        "issueCount": 0,
+        "storyCount": 0,
+        "issueEmptyStateVisible": false,
+        "issueEmptyTitle": "",
+        "issueEmptyBody": "",
+        "issueEmptyActions": []
+      }
+    }
+  ],
+  "failures": []
+}

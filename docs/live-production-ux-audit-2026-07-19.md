@@ -20,7 +20,7 @@
 | G2. 이슈 우선 홈과 현장 파일 | **Guard** | 홈은 이슈 우선으로 유지되고, 상세 첫 화면의 `전국 집회 현장`에서 장소·시간·상태·규모 상태·근거·관련 법안으로 이동한다. |
 | G3. 지도와 집회 현장 상세 동일성 | **Guard** | 핀·영역·검색·홈 카드가 공유 선택 상태를 쓰고, 탐색 진입의 비동기 이슈 렌더가 현장 시트를 덮지 않는다. |
 | G4. 공정한 릴스형 증거 영상 탐색 | **Guard** | 공개·비식별·Proof-of-Presence·기기무결성 조건을 통과한 영상만 이슈·현장·지역 버킷으로 순환하고, 영상·현장·상세가 같은 OccurrenceDigest를 유지한다. production 공개 영상이 없으면 빈 상태만 표시한다. |
-| G5. 공식 법안 피드와 이슈 연결 | Pending | 실제 공식 법안과 두 정렬, 교차 이동이 라이브에서 통과한다. |
+| G5. 공식 법안 피드와 이슈 연결 | **Guard** | 국회 의안의 공식 발의일과 현행 법령의 공포·시행일을 분리하고, `현장 관심`/`최근 발의` 정렬 및 이슈·집회 현장 교차 이동을 local에서 통과했다. 실제 원천 적재·live 검증은 G7에서 다시 수행한다. |
 | G6. 현장 제보의 확신 가능한 완료 흐름 | Pending | 대상 확정·본인확인·촬영·미리보기·접수 상태가 실제 API에서 통과한다. |
 | G7. 실제 운영 연결과 공식 원천 복구 | Pending | API DNS, Render, DB/Redis, 원천, 보안 헤더, service watch가 live로 통과한다. |
 | G8. 라이브 S+ 종결 감사 | Pending | 모든 행이 `S+` 또는 `Guard`이고 external blocker가 0건이다. |
@@ -35,6 +35,8 @@
 | 2026-07-19 | G3 | 이슈 선택 뒤 탐색으로 이동할 때 비동기 이슈 상세가 현장 시트를 덮을 수 있음 | 탐색/지도 경로는 항상 선택 `OccurrenceDigest`의 상세를 렌더하도록 분기 | `check:web-smoke`, `check:web-flow`, 390/430/768/1440 `check:visual-surface` 통과 |
 | 2026-07-19 | G4 | 영상 탭이 선택 이슈 한 건에 묶여 있고 적은 노출 현장을 발견할 수 없음 | `GET /reels`를 추가했다. 공개 Claim 중 비식별 완료·Proof-of-Presence 통과·기기무결성 통과·공개 clip/poster가 모두 있는 Evidence만 `EvidenceReel`로 파생하고, 이슈 → 현장·지역 버킷 → 영상 순서의 seed 기반 round-robin으로 반환한다. | API self-check의 10,000 seed 순환, 공개 payload 비밀 필드 검사, production seed `/reels` 빈 목록 통과 |
 | 2026-07-19 | G4 | 전역 릴스의 재생 영상과 데스크톱 맥락 패널이 다른 현장을 가리킬 수 있음 | 재생 중 릴스의 `OccurrenceDigest`를 공유 선택 상태와 우측 패널에 동기화하고, `현장` 액션은 같은 현장 ID의 지도·상세로 이동하게 했다. 홈 카드에서는 대형 영상 미리보기를 제거해 이슈 스캔 밀도를 회복했다. | `check:web-smoke`, `check:web-flow`, `check:ux-surface`, `check:visual-surface`, `check:reels-staging` 통과 |
+| 2026-07-19 | G5 | `최근 발의`가 처리일·앱 갱신일을 뜻하거나 비공식 링크가 섞일 수 있음 | `LawItem.proposedDate`를 추가하고 국회 의안의 공식 발의일만 `최근 발의` 정렬에 사용했다. 수집기는 최대 10개 공식 페이지를 읽고 공식 국회·법제처 도메인만 원문 링크로 허용한다. | API/worker self-check, migration check, 법 원천 metadata 진단 통과 |
+| 2026-07-19 | G5 | 법안 카드가 이슈 설명에서 끝나고 같은 집회 현장으로 내려가지 못함 | 법안 탭에 `현장 관심`/`최근 발의` 정렬을 추가하고, 상세의 연결 이슈와 연결 현장을 각각 동일한 이슈 파일과 `OccurrenceDigest` 지도·상세로 이동하게 했다. | `check:web-smoke`, `check:web-flow`, 390/430/768/1440 visual smoke 및 [Goal 5 visual evidence](/Users/mk/Documents/Musunil/docs/visual-evidence/goal5-laws-verified/visual-surface-evidence.json) 통과 |
 
 ## Evidence Ledger
 
@@ -44,12 +46,14 @@
 | G2 | local | 홈 이슈 카드 → 전국 집회 현장 → 현장 상세, 이슈 → 관련 공식 법안 흐름 | Guard | 실제 원천 API가 연결된 live 화면에서 5·10초 검증은 G7/G8에서 재실행 |
 | G3 | local | 핀/영역/검색 → 선택 현장 상세, 지도 맥락 스트립과 상세의 대상 동기화 | Guard | 실제 production MapLibre interaction capture와 live API payload 비교는 G7/G8에서 재실행 |
 | G4 | local + staging | `/reels` public serializer, 10,000 seed fairness simulation, production seed 0건, `check:reels-staging`에서 390/430/768/1440 영상 재생 surface와 `현장` → 동일 `selectedOccurrenceId`/지도·상세 제목 일치 | Guard | 실제 production 공개 Evidence가 생긴 뒤 production 화면에서 같은 검증을 G7/G8에 재실행 |
+| G5 | local | `proposedDate` additive API, `/laws?sort=interest|proposed_desc`, trusted official URL guard, API/worker parser self-check, 390/430/768/1440 법안 정렬 및 법안 → 동일 집회 현장 이동 캡처 | Guard | 국회 API key 또는 법제처 OC 입력 후 실제 dry-run/post, live `/laws` 두 정렬과 공식 링크 재검증은 G7에서 수행 |
 | G7 | live | `https://musunil.com/build-info.json`, `https://api.musunil.com` DNS | 실패 | placeholder build metadata, API DNS 미연결 |
 
 ## Residual Risks
 
 - `api.musunil.com` DNS와 Render API/DB/Redis가 아직 live로 연결되지 않았다.
 - 국회·법제처 원천 키, PortOne, storage, 비식별, 모바일 무결성 운영 credential은 Goal 7 전까지 실제 검증할 수 없다.
+- G5의 운영 law feed는 실제 credential 없이 비어 있어야 하며, 현재 production fallback이 그 원칙을 지킨다. 실제 법안은 key/OC 입력과 ingest 성공 이후에만 표시할 수 있다.
 - production에는 공개 통과 실제 현장 영상이 없으므로, Goal 4는 staging fixture 검증과 정직한 production 빈 상태를 분리해 Guard로 두었다. 실제 공개 Evidence가 생기면 G7/G8에서 재검증한다.
 
 ## 1. 감사 범위와 실제 확인 결과

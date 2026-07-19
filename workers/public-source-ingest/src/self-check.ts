@@ -575,9 +575,20 @@ const originalFetch = globalThis.fetch;
 globalThis.fetch = (async (input: RequestInfo | URL) => {
   const url = String(input);
   if (url.includes("ALLBILLINFO")) {
+    const page = new URL(url).searchParams.get("pIndex");
     return new Response(
       JSON.stringify({
-        row: [
+        list_total_count: 200,
+        head: [{ list_total_count: 200 }, { RESULT: { CODE: "INFO-000", MESSAGE: "NORMAL SERVICE" } }],
+        row: page === "2" ? [
+          {
+            BILL_NAME: "공직선거법 일부개정법률안",
+            BILL_ID: "bill-election-newer",
+            PROC_RESULT: "접수",
+            PROPOSE_DT: "20260710",
+            LINK_URL: "https://untrusted.example/bill-election-newer"
+          }
+        ] : [
           {
             BILL_NAME: "정보통신망법 일부개정법률안",
             BILL_ID: "bill-info-network",
@@ -615,6 +626,8 @@ try {
     keywords: ["정보통신망법", "공직선거법"]
   });
   assert.equal(lawPayloads.some((payload) => payload.source === "assembly_bill" && payload.assemblyBillId === "bill-info-network"), true);
+  assert.equal(lawPayloads.some((payload) => payload.source === "assembly_bill" && payload.assemblyBillId === "bill-election-newer" && payload.proposedDate === "2026-07-10T00:00:00.000+09:00"), true);
+  assert.equal(lawPayloads.some((payload) => payload.officialUrl?.includes("untrusted.example")), false);
   assert.equal(lawPayloads.some((payload) => payload.source === "law_effective" && payload.lawName === "공직선거법"), true);
   assert.equal(lawPayloads.some((payload) => payload.billTitle === "관계없는 법률안"), false);
 } finally {

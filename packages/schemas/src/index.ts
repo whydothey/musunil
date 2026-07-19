@@ -119,6 +119,8 @@ export type LawItem = {
   lawName: string;
   billTitle?: string;
   stage: string;
+  /** The National Assembly's official proposal date, separate from status and ingest dates. */
+  proposedDate?: Date;
   statusDate?: Date;
   effectiveDate?: Date;
   assemblyBillId?: string;
@@ -263,6 +265,7 @@ export type LawInterestItem = {
   source: LawItem["source"];
   title: string;
   stage: string;
+  proposedDate?: string;
   statusDate?: string;
   officialUrl?: string;
   linkedIssueCount: number;

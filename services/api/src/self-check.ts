@@ -1727,13 +1727,42 @@ const ingestedLaw = await protectedApp.handle({
     lawName: "집회 및 시위에 관한 법률",
     billTitle: "집회 및 시위에 관한 법률 일부개정법률안",
     stage: "접수",
+    proposedDate: "2026-07-09T00:00:00.000+09:00",
     statusDate: "2026-07-09T00:00:00.000+09:00",
     assemblyBillId: "bill-test-assembly-act",
+    officialUrl: "https://not-an-official-source.example/bill-test-assembly-act",
     keywords: ["집회 및 시위에 관한 법률", "집회시위법", "집회"]
   }
 });
 assert.equal(ingestedLaw.status, 200);
 assert.equal(JSON.stringify(ingestedLaw.body).includes("집회 및 시위에 관한 법률"), true);
+assert.equal(JSON.stringify(ingestedLaw.body).includes("not-an-official-source.example"), false);
+assert.equal(JSON.stringify(ingestedLaw.body).includes("likms.assembly.go.kr"), true);
+const newerIngestedLaw = await protectedApp.handle({
+  method: "POST",
+  path: "/internal/ingest/laws",
+  headers: internalHeaders,
+  body: {
+    source: "assembly_bill",
+    lawName: "집회 및 시위에 관한 법률",
+    billTitle: "집회 및 시위에 관한 법률 일부개정법률안 (최근 발의)",
+    stage: "접수",
+    proposedDate: "2026-07-12T00:00:00.000+09:00",
+    statusDate: "2026-07-08T00:00:00.000+09:00",
+    assemblyBillId: "bill-test-assembly-act-newer",
+    keywords: ["집회 및 시위에 관한 법률", "집회시위법", "집회"]
+  }
+});
+assert.equal(newerIngestedLaw.status, 200);
+const recentProposals = await protectedApp.handle({ method: "GET", path: "/laws?sort=proposed_desc" });
+assert.equal(recentProposals.status, 200);
+const recentProposalRows = (recentProposals.body as { laws: Array<{ id: string; source: string; proposedDate?: string }> }).laws;
+assert.equal(recentProposalRows.every((law) => law.source === "assembly_bill"), true);
+const newerLawId = (newerIngestedLaw.body as { laws: Array<{ id: string }> }).laws[0]?.id;
+const firstLawId = (ingestedLaw.body as { laws: Array<{ id: string }> }).laws[0]?.id;
+const newerProposalIndex = recentProposalRows.findIndex((law) => law.id === newerLawId);
+const firstProposalIndex = recentProposalRows.findIndex((law) => law.id === firstLawId);
+assert.equal(newerProposalIndex >= 0 && firstProposalIndex >= 0 && newerProposalIndex < firstProposalIndex, true);
 const seededPublicRefresh = await protectedApp.handle({
   method: "POST",
   path: "/internal/ingest/public-occurrence",

@@ -110,10 +110,16 @@ for (const term of [
   "실제 `pnpm storage:smoke` 실행",
   "실제 `pnpm redaction:smoke` 실행",
   "운영 DB",
-  "모바일 앱 무결성 provider dry-run",
-  "법안·개정안 연결 | Active"
+  "모바일 앱 무결성 provider dry-run"
 ]) {
   if (!master.includes(term)) failures.push(`master tracker missing external S+ blocker: ${term}`);
+}
+
+const lawBoardRow = boardRows.find((row) => row["요소"] === "법안·개정안 연결");
+if (!lawBoardRow || !["Active", "Guard"].includes(lawBoardRow["상태"])) {
+  failures.push("master tracker must track the law feed as Active or Guard");
+} else if (lawBoardRow["상태"] === "Guard" && !/national_assembly_bill_api_key|law_go_kr_oc|실제 공개 API key|실제 원천/.test(`${lawBoardRow["S+ 차단 요인"]} ${lawBoardRow["다음 active goal"]}`)) {
+  failures.push("Guard law feed must retain its real official-source credential blocker");
 }
 
 for (const term of [

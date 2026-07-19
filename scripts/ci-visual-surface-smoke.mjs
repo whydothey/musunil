@@ -267,6 +267,67 @@ async function runViewport(client, viewport, url) {
     ], { ...serviceDetail(reels), reelTarget, linked });
   }
 
+  await selectPrimaryView(client, viewport, "laws");
+  await waitForExpression(client, "document.querySelector('#law-section') && getComputedStyle(document.querySelector('#law-section')).display !== 'none'");
+  await sleep(220);
+  const laws = await evaluate(client, `(() => {
+    const visible = (node) => {
+      if (!node) return false;
+      const style = getComputedStyle(node);
+      const rect = node.getBoundingClientRect();
+      return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+    };
+    const cards = [...document.querySelectorAll('.law-card')].filter(visible);
+    return {
+      scrollWidth: document.documentElement.scrollWidth,
+      sortLabels: [...document.querySelectorAll('[data-law-sort]')].filter(visible).map((node) => node.textContent.trim()),
+      selectedSort: document.querySelector('[data-law-sort][aria-pressed="true"]')?.dataset.lawSort || "",
+      cardCount: cards.length,
+      cardTexts: cards.map((node) => node.textContent.trim()),
+      emptyTitle: document.querySelector('#laws .empty-state strong')?.textContent?.trim() || ""
+    };
+  })()`);
+  await captureEvidence(client, `${viewport.id}_laws`);
+  scenario(`${viewport.id}_laws`, [
+    () => assert(laws.scrollWidth <= viewport.width, `laws overflows horizontally: ${laws.scrollWidth} > ${viewport.width}`),
+    () => assert(laws.sortLabels.join('/') === '현장 관심/최근 발의', `law sort controls changed: ${laws.sortLabels.join('/')}`),
+    () => assert(laws.selectedSort === 'interest', `law default sort changed: ${laws.selectedSort}`),
+    () => assert(
+      productionFallbackMode ? laws.cardCount === 0 && /표시할 법령·의안이 없습니다/.test(laws.emptyTitle) : laws.cardCount >= 1,
+      productionFallbackMode ? `production law tab must be an honest empty state: ${laws.emptyTitle}` : `local law tab is missing preview coverage: ${laws.cardCount}`
+    ),
+    () => assert(productionFallbackMode || laws.cardTexts.every((text) => /국회 의안|현행 법령/.test(text) && /발의|공포|시행/.test(text)), `law cards lack official source/date: ${laws.cardTexts.join(' / ')}`)
+  ], { ...serviceDetail(laws), laws });
+
+  if (!productionFallbackMode) {
+    await click(client, '[data-law-sort="proposed_desc"]');
+    await waitForExpression(client, "document.querySelector('[data-law-sort=\"proposed_desc\"]')?.getAttribute('aria-pressed') === 'true'");
+    await waitForExpression(client, "document.querySelectorAll('.law-card').length >= 1");
+    const recentBills = await evaluate(client, `({
+      selectedSort: document.querySelector('[data-law-sort][aria-pressed="true"]')?.dataset.lawSort || '',
+      cards: [...document.querySelectorAll('.law-card')].map((node) => node.textContent.trim())
+    })`);
+    scenario(`${viewport.id}_laws_recent_proposals`, [
+      () => assert(recentBills.selectedSort === 'proposed_desc', `recent proposal sort did not activate: ${recentBills.selectedSort}`),
+      () => assert(recentBills.cards.length >= 1 && recentBills.cards.every((text) => /국회 의안/.test(text) && /발의/.test(text)), `recent proposal list contains non-bill or missing date: ${recentBills.cards.join(' / ')}`)
+    ], { ...serviceDetail(laws), recentBills });
+    await click(client, '.law-card');
+    await waitForExpression(client, "document.querySelector('[data-law-occurrence-id]')");
+    const lawOccurrence = await evaluate(client, "document.querySelector('[data-law-occurrence-id]')?.dataset.lawOccurrenceId || ''");
+    await click(client, '[data-law-occurrence-id]');
+    await waitForExpression(client, `document.documentElement.dataset.selectedOccurrenceId === ${JSON.stringify(lawOccurrence)}`);
+    const linkedOccurrence = await evaluate(client, `({
+      selectedOccurrenceId: document.documentElement.dataset.selectedOccurrenceId || '',
+      mapTitle: document.querySelector('#map-title')?.textContent?.trim() || '',
+      detailTitle: document.querySelector('#detail-title')?.textContent?.trim() || ''
+    })`);
+    scenario(`${viewport.id}_law_occurrence_link`, [
+      () => assert(Boolean(lawOccurrence), 'law detail has no linked occurrence'),
+      () => assert(linkedOccurrence.selectedOccurrenceId === lawOccurrence, `law occurrence selection diverged: ${linkedOccurrence.selectedOccurrenceId} !== ${lawOccurrence}`),
+      () => assert(linkedOccurrence.mapTitle === linkedOccurrence.detailTitle, `law-linked map/detail titles diverged: ${linkedOccurrence.mapTitle} / ${linkedOccurrence.detailTitle}`)
+    ], { ...serviceDetail(laws), lawOccurrence, linkedOccurrence });
+  }
+
   await selectPrimaryView(client, viewport, "explore");
   await waitForExpression(client, "document.querySelector('#map-section') && getComputedStyle(document.querySelector('#map-section')).display !== 'none'");
   await sleep(260);

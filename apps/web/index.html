@@ -5942,6 +5942,10 @@
             </div>
             <button class="button ghost" id="close-laws">이슈 보기</button>
           </div>
+          <div class="segmented law-sort" role="group" aria-label="법안 정렬">
+            <button type="button" aria-pressed="true" data-law-sort="interest">현장 관심</button>
+            <button type="button" aria-pressed="false" data-law-sort="proposed_desc">최근 발의</button>
+          </div>
           <div class="law-list" id="laws" aria-label="법령과 의안"></div>
         </section>
 
@@ -6748,6 +6752,7 @@
             lawName: "정보통신망 이용촉진 및 정보보호 등에 관한 법률",
             billTitle: "정보통신망 이용촉진 및 정보보호 등에 관한 법률 일부개정법률안",
             stage: "심사 중",
+            proposedDate: new Date().toISOString(),
             statusDate: new Date().toISOString(),
             summary: "정보통신망법 개정 논의와 연결되는 공개 의안 메타데이터입니다.",
             officialUrl: "https://open.assembly.go.kr/",
@@ -6793,13 +6798,14 @@
       };
 	      let activeTimeFilter = "now";
 	      let activeSourceFilter = "all";
+	      let activeLawSort = "interest";
 	      let issueTimelineSourceFilter = "all";
 	      let issueTimelineRegionFilter = "all";
 	      let issueVideoRegionFilter = "all";
 	      let issueVideoStatusFilter = "all";
 	      let loadedCards = sortCards(fallback.cards);
 	      let loadedIssueCards = sortIssueCards(fallback.issueCards);
-	      let loadedLaws = sortLaws(fallback.laws);
+	      let loadedLaws = sortLaws(fallback.laws, activeLawSort);
 	      let selectedIssue = loadedIssueCards[0];
 	      let selectedLaw = loadedLaws[0];
 	      let selected = visibleCards(loadedCards)[0] || loadedCards[0];
@@ -7927,10 +7933,10 @@
 
       async function load() {
         try {
-	          const [home, map, coverage, laws] = await Promise.all([publicApi.home(), publicApi.map(), api("/public-sources/coverage").catch(() => null), publicApi.laws().catch(() => null)]);
+	          const [home, map, coverage, laws] = await Promise.all([publicApi.home(), publicApi.map(), api("/public-sources/coverage").catch(() => null), publicApi.laws(activeLawSort).catch(() => null)]);
 	          loadedCards = normalizeCards(Array.isArray(home.cards) ? home.cards : fallback.cards);
 	          loadedIssueCards = normalizeIssueCards(Array.isArray(home.issueCards) ? home.issueCards : fallback.issueCards);
-	          loadedLaws = normalizeLaws(Array.isArray(laws?.laws) ? laws.laws : fallback.laws);
+	          loadedLaws = normalizeLaws(Array.isArray(laws?.laws) ? laws.laws : fallback.laws, activeLawSort);
 	          replaceOccurrenceDigests(home.occurrenceDigests || [], map.occurrenceDigests || [], loadedCards);
 	          latestMapData = normalizeMapData(map, loadedCards, loadedIssueCards);
 	          selectedIssue = loadedIssueCards.find((issue) => issue.id === selectedIssue?.id) || loadedIssueCards[0];
@@ -7943,7 +7949,7 @@
 	        } catch {
 	          loadedCards = sortCards(fallback.cards);
 	          loadedIssueCards = sortIssueCards(fallback.issueCards);
-	          loadedLaws = sortLaws(fallback.laws);
+	          loadedLaws = sortLaws(fallback.laws, activeLawSort);
 	          replaceOccurrenceDigests(loadedCards);
 	          latestMapData = buildMapDataFromCards(loadedCards, loadedIssueCards);
 	          selectedIssue = loadedIssueCards.find((issue) => issue.id === selectedIssue?.id) || loadedIssueCards[0];
@@ -8103,7 +8109,7 @@
         return Math.round(value * 1_000_000) / 1_000_000;
       }
 
-	      function normalizeLaws(laws) {
+	      function normalizeLaws(laws, sort = activeLawSort) {
         return sortLaws(laws.map((law) => ({
           linkedIssueCount: 0,
           relatedTargetCount: 0,
@@ -8111,7 +8117,7 @@
           interestScore: 0,
           keywords: [],
           ...law
-        })));
+	        })), sort);
 	      }
 
       async function hydrateIssueLivePreviews(issues) {
@@ -8163,8 +8169,16 @@
 	        return [...issues].sort((a, b) => issueOrderScore(a) - issueOrderScore(b));
 	      }
 
-	      function sortLaws(laws) {
-	        return [...laws].sort((a, b) => lawOrderScore(b) - lawOrderScore(a));
+	      function sortLaws(laws, sort = activeLawSort) {
+        const normalized = sort === "proposed_desc"
+          ? laws.filter((law) => law.source === "assembly_bill")
+          : laws;
+        return [...normalized].sort((a, b) => {
+          if (sort === "proposed_desc") {
+            return new Date(b.proposedDate || 0).getTime() - new Date(a.proposedDate || 0).getTime();
+          }
+          return lawOrderScore(b) - lawOrderScore(a);
+        });
 	      }
 
       function issueOrderScore(issue) {
@@ -9206,9 +9220,12 @@
 	      function renderLaws(laws) {
 	        const root = $("laws");
 	        const linkedIssueCount = laws.reduce((sum, law) => sum + Number(law.linkedIssueCount || 0), 0);
+        const modeLabel = activeLawSort === "proposed_desc" ? "최근 발의 의안" : "현장 관심 법령·의안";
         $("law-context").textContent = laws.length
-          ? `공개 법령·의안 ${laws.length}개 · ${linkedIssueCount ? `연결 이슈 ${linkedIssueCount}건` : "연결 이슈 확인 중"}`
-	          : "법안이 어떤 이슈와 연결되는지 먼저 봅니다.";
+          ? `${modeLabel} ${laws.length}건 · ${linkedIssueCount ? `연결 이슈 ${linkedIssueCount}건` : "연결 이슈 확인 중"}`
+          : activeLawSort === "proposed_desc"
+            ? "최근 발의된 연결 의안을 확인 중입니다."
+            : "법안이 어떤 이슈와 연결되는지 먼저 봅니다.";
 	        root.classList.add("is-refreshing");
 	        root.innerHTML = "";
 	        if (!laws.length) {
@@ -9229,18 +9246,15 @@
 	          button.dataset.lawId = law.id;
 	          button.setAttribute("aria-selected", String(law.id === selectedLaw?.id));
 	          button.innerHTML = `
-	            <div class="card-top">
-	              <span class="chip schedule">${escapeHtml(lawSourceLabel(law.source))}</span>
-	              <span class="fine">업데이트 ${relative(law.lastUpdatedAt || law.statusDate || law.effectiveDate)}</span>
-	            </div>
+            <div class="card-top">
+              <span class="chip schedule">${escapeHtml(lawSourceLabel(law.source))}</span>
+              <span class="fine">${escapeHtml(lawOfficialDateText(law))}</span>
+            </div>
 	            <div>
 	              <div class="title">${escapeHtml(law.billTitle || law.lawName)}</div>
 	              <p class="fine">${escapeHtml(law.lawName)} · ${escapeHtml(law.stage)}</p>
 	            </div>
-	            <div class="fact-line">
-	              <strong>${escapeHtml(law.summary || "공개 법령·의안 메타데이터입니다.")}</strong>
-	              <span>이슈 연결과 근거 자료는 별도로 표시합니다.</span>
-	            </div>
+            <div class="fact-line"><strong>${escapeHtml(law.summary || "공식 법령·의안 메타데이터입니다.")}</strong></div>
 	            <div class="issue-file-meta">
 	              <span><strong>연결</strong> ${lawConnectionMetaText(law)}</span>
 	            </div>
@@ -9254,6 +9268,22 @@
 	        }
 	        setTimeout(() => root.classList.remove("is-refreshing"), 320);
 	      }
+
+      async function changeLawSort(sort) {
+        const nextSort = sort === "proposed_desc" ? "proposed_desc" : "interest";
+        if (activeLawSort === nextSort) return;
+        activeLawSort = nextSort;
+        try {
+          const response = await publicApi.laws(activeLawSort);
+          loadedLaws = normalizeLaws(Array.isArray(response?.laws) ? response.laws : [], activeLawSort);
+          setServiceSyncState("live");
+        } catch {
+          loadedLaws = sortLaws(fallback.laws, activeLawSort);
+        }
+        selectedLaw = loadedLaws.find((law) => law.id === selectedLaw?.id) || loadedLaws[0];
+        renderLaws(loadedLaws);
+        if (selectedLaw && currentPrimaryView === "laws") renderLawDetail(selectedLaw);
+      }
 
 	      function selectLaw(law, options = {}) {
 	        if (!law) return;
@@ -9271,7 +9301,7 @@
 	        }
 	      }
 
-	      function openIssueFromLaw(issueId) {
+      function openIssueFromLaw(issueId) {
 	        const issue = loadedIssueCards.find((item) => item.id === issueId);
 	        if (!issue) return;
 	        if (innerWidth <= 780) {
@@ -9281,11 +9311,33 @@
           setRailCurrent("home");
 	        }
 	        selectIssue(issue, { toast: "연결 이슈로 이동했습니다.", openDetail: true, scrollToCards: false });
-	        focusPanel($("home-section"));
-	      }
+        focusPanel($("home-section"));
+      }
+
+      function openOccurrenceFromLaw(card) {
+        if (!card) return;
+        setPrimaryView("explore");
+        selectCard(card, { toast: "연결 현장으로 이동했습니다." });
+        focusPanel(document.querySelector(".map-sheet"));
+      }
 
       function lawSourceLabel(source) {
-        return source === "assembly_bill" ? "의안" : "법령";
+        return source === "assembly_bill" ? "국회 의안" : "현행 법령";
+      }
+
+      function lawOfficialDateText(law) {
+        if (law.source === "assembly_bill") {
+          return law.proposedDate ? `발의 ${lawDate(law.proposedDate)}` : "발의일 확인 중";
+        }
+        if (law.effectiveDate) return `시행 ${lawDate(law.effectiveDate)}`;
+        if (law.statusDate) return `공포 ${lawDate(law.statusDate)}`;
+        return "공식 날짜 확인 중";
+      }
+
+      function lawDate(value) {
+        const date = new Date(value || 0);
+        if (Number.isNaN(date.getTime())) return "확인 중";
+        return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "numeric", day: "numeric" }).format(date);
       }
 
       function lawConnectionMetaText(law) {
@@ -9670,7 +9722,7 @@
         return String(value).normalize("NFKC").toLowerCase().split(/\s/).join("");
       }
 
-	      function renderLawSummary(law, issues, relatedTargets) {
+      function renderLawSummary(law, issues, relatedTargets) {
 	        const issueRows = issues.length
 	          ? issues.slice(0, 4).map((issue) => `
 	            <button class="evidence-row law-link" type="button" data-law-issue-id="${escapeHtml(issue.id)}">
@@ -9678,26 +9730,44 @@
 	              <span>${escapeHtml((issue.topicTags || []).join(" · ") || "주제 확인 중")}</span>
 	            </button>
 	          `).join("")
-	          : `
+          : `
 	            <article class="evidence-row">
 	              <strong>연결 이슈</strong>
 	              <span>아직 연결된 이슈가 없습니다.</span>
 	            </article>
-	          `;
-	        return `
-	          <div class="summary-section-title">연결 이슈</div>
-	          ${issueRows}
-	          <div class="summary-sections">
-	            <article class="evidence-row">
-	              <strong>법령·의안</strong>
-	              <span>${escapeHtml(law.lawName)} · ${escapeHtml(law.stage)}</span>
-	            </article>
-	            <article class="evidence-row">
-	              <strong>연결 현장</strong>
-	              <span>${relatedTargets.length}건의 현장 자료가 연결 이슈 아래에서 확인됩니다.</span>
-	            </article>
-	            <article class="evidence-row">
-	              <strong>공식 링크</strong>
+          `;
+        const occurrenceRows = relatedTargets.length
+          ? relatedTargets.slice(0, 6).map(({ item }) => `
+            <button class="evidence-row law-link" type="button" data-law-occurrence-id="${escapeHtml(item.id)}">
+              <strong>${escapeHtml(publicDisplayTitle(item.title || item.id))}</strong>
+              <span>${escapeHtml(cardPlaceWhenText(item))}</span>
+            </button>
+          `).join("")
+          : `
+            <article class="evidence-row">
+              <strong>연결 현장</strong>
+              <span>연결 이슈 아래의 집회 현장을 확인 중입니다.</span>
+            </article>
+          `;
+        return `
+          <div class="summary-section-title">개요</div>
+          <div class="summary-sections">
+            <article class="evidence-row">
+              <strong>공식 날짜</strong>
+              <span>${escapeHtml(lawOfficialDateText(law))}</span>
+            </article>
+            <article class="evidence-row">
+              <strong>법령·의안</strong>
+              <span>${escapeHtml(law.lawName)} · ${escapeHtml(law.stage)}</span>
+            </article>
+          </div>
+          <div class="summary-section-title">연결 이슈</div>
+          ${issueRows}
+          <div class="summary-section-title">연결 현장</div>
+          ${occurrenceRows}
+          <div class="summary-sections">
+            <article class="evidence-row">
+              <strong>공식 링크</strong>
 	              <span>${law.officialUrl ? `<a href="${escapeHtml(law.officialUrl)}" target="_blank" rel="noreferrer">원문 보기</a>` : "공식 링크 확인 중"}</span>
 	            </article>
 	          </div>
@@ -9706,10 +9776,10 @@
 
 	      function renderLawTimeline(law, issues, relatedTargets) {
 	        const rows = [
-	          {
-	            title: law.billTitle || law.lawName,
-	            body: `${lawSourceLabel(law.source)} · ${law.stage}`,
-	            at: law.statusDate || law.effectiveDate || law.lastUpdatedAt
+          {
+            title: law.billTitle || law.lawName,
+            body: `${lawSourceLabel(law.source)} · ${law.stage}`,
+            at: law.proposedDate || law.statusDate || law.effectiveDate || law.lastUpdatedAt
 	          },
 	          ...issues.map((issue) => ({ title: issue.title, body: "연결 이슈", at: issue.lastUpdatedAt })),
 	          ...relatedTargets.slice(0, 4).map(({ item }) => ({ title: publicDisplayTitle(item.title || item.id), body: item.regionLabel || "연결 현장", at: item.updatedAt }))
@@ -9748,16 +9818,16 @@
 	        `;
 	      }
 
-	      function renderLawLinks(detail) {
+      function renderLawLinks(detail) {
 	        const links = detail.issueLinks || [];
 	        if (!links.length) {
 	          return `<article class="evidence-row"><strong>연결 근거 없음</strong><span>명확한 주제어 일치가 확인되면 이슈와 연결됩니다.</span></article>`;
 	        }
 	        return links
-	          .map((link) => `
-	            <article class="evidence-row">
-	              <strong>${escapeHtml(link.matchBasis)} · ${escapeHtml(link.confidence)}</strong>
-	              <span>${Number(link.claimCount || 0) ? `연결 공개 자료 ${Number(link.claimCount)}건` : "연결 공개 자료 확인 중"}</span>
+          .map((link) => `
+            <article class="evidence-row">
+              <strong>${escapeHtml(lawLinkBasisLabel(link.matchBasis))} · ${escapeHtml(lawLinkConfidenceLabel(link.confidence))}</strong>
+              <span>${Number(link.claimCount || 0) ? `연결 공개 자료 ${Number(link.claimCount)}건` : "연결 공개 자료 확인 중"}</span>
 	            </article>
 	          `)
 	          .join("");
@@ -10400,6 +10470,14 @@
           `;
           })
           .join("");
+      }
+
+      function lawLinkBasisLabel(value) {
+        return { law_name: "법령명 일치", keyword: "주제어 일치", bill_title: "의안명 일치", manual: "검토 연결" }[value] || "연결 기준";
+      }
+
+      function lawLinkConfidenceLabel(value) {
+        return { high: "명확", medium: "검토", low: "참고" }[value] || "확인 중";
       }
 
 	      function renderLiveClaimFilters(liveClaims) {
@@ -11432,6 +11510,10 @@
           withViewTransition(() => {
             button.parentElement.querySelectorAll("button").forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
           });
+          if (button.dataset.lawSort) {
+            void changeLawSort(button.dataset.lawSort);
+            return;
+          }
           if (button.dataset.timeFilter) activeTimeFilter = button.dataset.timeFilter;
           if (button.dataset.sourceFilter) activeSourceFilter = button.dataset.sourceFilter;
           renderCards(loadedCards, { renderDetail: detailMode !== "issue" });
@@ -11459,6 +11541,12 @@
         if (occurrenceButton) {
           const card = loadedCards.find((item) => item.id === occurrenceButton.dataset.issueOccurrenceId);
           if (card) selectCard(card);
+          return;
+        }
+        const lawOccurrenceButton = event.target instanceof Element ? event.target.closest("[data-law-occurrence-id]") : null;
+        if (lawOccurrenceButton) {
+          const card = loadedCards.find((item) => item.id === lawOccurrenceButton.dataset.lawOccurrenceId);
+          if (card) openOccurrenceFromLaw(card);
           return;
         }
         const jumpButton = event.target instanceof Element ? event.target.closest("[data-detail-jump]") : null;

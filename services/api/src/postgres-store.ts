@@ -88,6 +88,7 @@ function hydrateStore(store: Store): Store {
     issue.lastUpdatedAt = date(issue.lastUpdatedAt);
   }
   for (const law of store.lawItems) {
+    law.proposedDate = optionalDate(law.proposedDate);
     law.statusDate = optionalDate(law.statusDate);
     law.effectiveDate = optionalDate(law.effectiveDate);
   }
