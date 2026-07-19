@@ -6,7 +6,7 @@
 
 ## Current State
 
-- Generated: 2026-07-19T09:57:44.822Z
+- Generated: 2026-07-19T10:10:28.992Z
 - Expected deploy SHA: run `git rev-parse HEAD` immediately before Render deploy and `pnpm launch:final-gate`.
 - Refresh command: `pnpm launch:handoff`
 - Active goal: active
@@ -14,7 +14,7 @@
 - Stage: connect_api_endpoint
 - Release blocked: yes
 - Push CI: run `pnpm ci:status` after every push. `queued` means GitHub has accepted the workflow but has not assigned a runner yet; use the printed watch command for the final result.
-- Service watch: 2026-07-19T09:57:44.717Z (fresh)
+- Service watch: 2026-07-19T10:10:28.876Z (fresh)
 - Checks: 3 ok, 4 fail, 13 skip, 4 actions
 - Before apply command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Immediate safe command: `pnpm launch:apply`
@@ -54,7 +54,7 @@ Required launch inputs from current dry-run:
 | cloudflare_api_token | yes | missing | CLOUDFLARE_API_TOKEN<br>alt:CF_API_TOKEN | Create or update Cloudflare DNS records and optional response header rule | Cloudflare user API token with musunil.com zone DNS edit and response header rule permissions | pnpm cloudflare:dns or pnpm launch:apply can resolve zone and plan records |
 | cloudflare_zone | no | default_zone_name_lookup | CLOUDFLARE_ZONE_ID<br>alt:CF_ZONE_ID<br>alt:CLOUDFLARE_ZONE_NAME=musunil.com | Optional fallback when the Cloudflare token cannot resolve the musunil.com zone by name | Cloudflare musunil.com Overview page Zone ID | pnpm cloudflare:dns reports zoneResolution without an error |
 | render_api_dns_target | no | missing_manual_fallback | MUSUNIL_RENDER_API_DNS_TARGET<br>alt:RENDER_API_TOKEN | Manual fallback CNAME target for api.musunil.com when Render API target derivation is unavailable | Render musunil-api custom-domain CNAME target or service onrender.com host | pnpm cloudflare:dns plans api.musunil.com as DNS only CNAME to this host |
-| render_web_dns_target | no | not_required_for_current_request | MUSUNIL_RENDER_WEB_DNS_TARGET<br>alt:RENDER_API_TOKEN | Manual fallback CNAME target for musunil.com when a Web DNS record is being applied | Render musunil-web custom-domain CNAME target | pnpm cloudflare:dns plans musunil.com/www only when Web DNS apply is requested |
+| render_web_dns_target | no | configured | MUSUNIL_RENDER_WEB_DNS_TARGET<br>alt:RENDER_API_TOKEN | Manual fallback CNAME target for musunil.com when a Web DNS record is being applied | Render musunil-web custom-domain CNAME target | pnpm cloudflare:dns plans musunil.com/www only when Web DNS apply is requested |
 
 Split apply paths from current blockers:
 
