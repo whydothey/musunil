@@ -1,6 +1,14 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "generatedBy": "scripts/write-web-static-manifest.mjs",
+  "buildVariantFiles": [
+    "build-info.js",
+    "build-info.json",
+    "media/redacted/preview-busan-live-poster.png",
+    "media/redacted/preview-daejeon-live-poster.png",
+    "media/redacted/preview-occ-live-1-poster.png",
+    "media/redacted/preview-presence-1-poster.png"
+  ],
   "files": {
     "_headers": {
       "sha256": "6868d3b4a2941a6a081d5953ccac3af9be3fa56a1246fb1ba725534abd914400",

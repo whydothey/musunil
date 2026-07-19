@@ -1799,10 +1799,10 @@ if (
 ) {
   failures.push("package.json must define build:web-static:render with production API base, build-info writing, static build, and web smoke");
 }
-if (!/name:\s*musunil-web[\s\S]*?buildCommand:\s*corepack enable && pnpm install --frozen-lockfile && pnpm build:web-static:render/.test(renderYaml)) {
+if (!/name:\s*musunil-web[\s\S]*?buildCommand:\s*pnpm install --frozen-lockfile && pnpm build:web-static:render/.test(renderYaml)) {
   failures.push("Render Web buildCommand must use pnpm build:web-static:render");
 }
-if (!/Build Command:\s*corepack enable && pnpm install --frozen-lockfile && pnpm build:web-static:render/.test(readme)) {
+if (!/Build Command:\s*pnpm install --frozen-lockfile && pnpm build:web-static:render/.test(readme)) {
   failures.push("README Render Static Site build command must match pnpm build:web-static:render");
 }
 if (

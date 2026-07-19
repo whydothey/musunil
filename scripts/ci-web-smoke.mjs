@@ -472,7 +472,9 @@ async function checkWeb(port) {
   const manifestResponse = await fetch(`${base}/static-manifest.json`);
   assert(manifestResponse.status === 200, `static-manifest.json returned ${manifestResponse.status}`);
   const manifest = await manifestResponse.json();
-  assert(manifest.schemaVersion >= 2, "static manifest must recursively track modular assets");
+  assert(manifest.schemaVersion >= 3, "static manifest must distinguish build-variant assets from stable commit assets");
+  assert(manifest.buildVariantFiles?.includes("build-info.json"), "static manifest must mark build-info as build-variant");
+  assert(manifest.buildVariantFiles?.includes("media/redacted/preview-occ-live-1-poster.png"), "static manifest must mark generated posters as build-variant");
   assert(manifest.files?.["index.html"]?.sha256 === sha256(index), "static manifest index hash mismatch");
   assert(manifest.files?.["config.js"]?.sha256 === sha256(config), "static manifest config hash mismatch");
   for (const module of ["modules/contracts.js", "modules/selection-state.js", "modules/public-api.js"]) {

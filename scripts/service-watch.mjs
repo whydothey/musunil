@@ -156,12 +156,14 @@ async function runChecks() {
     if (localManifest && manifest.schemaVersion !== localManifest.schemaVersion) {
       throw new Error("live static manifest schemaVersion does not match local manifest");
     }
-    if (localManifest && JSON.stringify(manifest.files) !== JSON.stringify(localManifest.files)) {
-      throw new Error("live static manifest does not match local manifest");
-    }
+    if (localManifest) assertStableManifestMatch(manifest, localManifest);
     const liveFiles = await verifyLiveManifestFiles(manifest);
     webStaticManifestVerified = true;
-    return { ...liveFiles, mode: localManifest ? "matches_local_and_live_hashes" : "live_hashes_only" };
+    return {
+      ...liveFiles,
+      buildVariantFiles: Array.isArray(manifest.buildVariantFiles) ? manifest.buildVariantFiles.length : 0,
+      mode: localManifest ? "matches_stable_local_and_all_live_hashes" : "live_hashes_only"
+    };
   });
   webStaticManifestTransient = Boolean(checks.find((item) => item.id === "web_static_manifest")?.transient);
   await check(checks, "web_runtime_config", async () => {
@@ -344,6 +346,25 @@ async function runChecks() {
   };
   result.requiredActions = requiredActions(result);
   return result;
+}
+
+function assertStableManifestMatch(liveManifest, localManifest) {
+  const liveVariants = liveManifest.buildVariantFiles;
+  const localVariants = localManifest.buildVariantFiles;
+  if (!Array.isArray(liveVariants)) throw new Error("live static manifest is missing buildVariantFiles");
+  if (JSON.stringify(liveVariants) !== JSON.stringify(localVariants)) {
+    throw new Error("live static manifest buildVariantFiles do not match local contract");
+  }
+  const livePaths = Object.keys(liveManifest.files ?? {});
+  const localPaths = Object.keys(localManifest.files ?? {});
+  if (JSON.stringify(livePaths) !== JSON.stringify(localPaths)) throw new Error("live static manifest file set does not match local manifest");
+  const variants = new Set(liveVariants);
+  for (const path of localPaths) {
+    if (variants.has(path)) continue;
+    if (JSON.stringify(liveManifest.files[path]) !== JSON.stringify(localManifest.files[path])) {
+      throw new Error(`live static file differs from local commit: ${path}`);
+    }
+  }
 }
 
 function localStaticManifest() {

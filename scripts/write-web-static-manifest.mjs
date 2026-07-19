@@ -6,9 +6,18 @@ const cwd = resolve(import.meta.dirname, "..");
 const webRoot = resolve(cwd, "apps/web");
 const manifestPath = resolve(webRoot, "static-manifest.json");
 const files = staticFiles(webRoot);
+const buildVariantFiles = [
+  "build-info.js",
+  "build-info.json",
+  "media/redacted/preview-busan-live-poster.png",
+  "media/redacted/preview-daejeon-live-poster.png",
+  "media/redacted/preview-occ-live-1-poster.png",
+  "media/redacted/preview-presence-1-poster.png"
+];
 const manifest = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   generatedBy: "scripts/write-web-static-manifest.mjs",
+  buildVariantFiles,
   files: Object.fromEntries(files.map((file) => [file, digest(file)]))
 };
 const output = `${JSON.stringify(manifest, null, 2)}\n`;

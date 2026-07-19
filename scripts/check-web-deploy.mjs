@@ -17,7 +17,7 @@ const warnings = [];
 let staticManifestVerified = false;
 const renderStaticHint =
   "Expected Render Static Site settings: Branch=main, Root Directory blank, " +
-  "Build Command=\"corepack enable && pnpm install --frozen-lockfile && pnpm build:web-static:render\", " +
+  "Build Command=\"pnpm install --frozen-lockfile && pnpm build:web-static:render\", " +
   "Publish Directory=apps/web, headers copied from render.yaml musunil-web. " +
   "If static-manifest and live file hashes match but build-info is placeholder, the latest committed static files are deployed but Render did not publish build metadata. " +
   "Use MUSUNIL_ALLOW_PLACEHOLDER_BUILD_INFO=1 only for a static-hash-only diagnostic, never for a launch/final expected-commit check.";
@@ -78,10 +78,10 @@ await check("web_static_manifest", async () => {
   assert(response.status === 200, `/static-manifest.json returned ${response.status}`);
   const localManifest = JSON.parse(readFileSync(resolve(cwd, "apps/web/static-manifest.json"), "utf8"));
   assert(response.body?.schemaVersion === localManifest.schemaVersion, "deployed static manifest schemaVersion does not match local manifest");
-  assert(JSON.stringify(response.body?.files) === JSON.stringify(localManifest.files), "deployed static manifest does not match local manifest");
+  assertStableManifestMatch(response.body, localManifest);
   const detail = await assertAllLiveManifestFiles(response.body);
   staticManifestVerified = true;
-  return detail;
+  return { ...detail, buildVariantFiles: response.body.buildVariantFiles.length };
 });
 
 await check("web_build_info", async () => {
@@ -186,6 +186,21 @@ async function assertAllLiveManifestFiles(manifest) {
   }
   assert(headersFileVerified, "manifest must include and verify _headers");
   return { files: entries.length, bytes, headersFile: "verified" };
+}
+
+function assertStableManifestMatch(liveManifest, localManifest) {
+  const liveVariants = liveManifest.buildVariantFiles;
+  const localVariants = localManifest.buildVariantFiles;
+  assert(Array.isArray(liveVariants), "deployed static manifest is missing buildVariantFiles");
+  assert(JSON.stringify(liveVariants) === JSON.stringify(localVariants), "deployed static manifest buildVariantFiles do not match local contract");
+  const livePaths = Object.keys(liveManifest.files ?? {});
+  const localPaths = Object.keys(localManifest.files ?? {});
+  assert(JSON.stringify(livePaths) === JSON.stringify(localPaths), "deployed static manifest file set does not match local manifest");
+  const variants = new Set(liveVariants);
+  for (const path of localPaths) {
+    if (variants.has(path)) continue;
+    assert(JSON.stringify(liveManifest.files[path]) === JSON.stringify(localManifest.files[path]), `deployed static file differs from local commit: ${path}`);
+  }
 }
 
 function assertStaticHeadersFile(bytes) {

@@ -98,7 +98,7 @@ Split apply paths from current blockers:
 - Service: `musunil-web`
 - Branch: `main`
 - Root Directory: blank
-- Build Command: `corepack enable && pnpm install --frozen-lockfile && pnpm build:web-static:render`
+- Build Command: `pnpm install --frozen-lockfile && pnpm build:web-static:render`
 - Publish Directory: `apps/web`
 - Static Web에는 DB/Redis, 사용자 입력 YAML, token secret, encryption key, internal API key를 넣지 않는다.
 
@@ -162,7 +162,7 @@ Render API automation:
 - Runtime: `node`
 - Region: `singapore`
 - Plan: `starter`
-- Build Command: `corepack enable && pnpm install --frozen-lockfile && pnpm check && pnpm build:web-config && pnpm launch:check`
+- Build Command: `pnpm install --frozen-lockfile && pnpm check && pnpm build:web-config && pnpm launch:check`
 - Pre Deploy Command: `pnpm db:migrate`
 - Start Command: `pnpm start:api`
 - Health Check Path: `/ready`

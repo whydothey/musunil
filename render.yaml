@@ -12,7 +12,7 @@ services:
     runtime: node
     region: singapore
     plan: starter
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm check && pnpm build:web-config && pnpm launch:check
+    buildCommand: pnpm install --frozen-lockfile && pnpm check && pnpm build:web-config && pnpm launch:check
     preDeployCommand: pnpm db:migrate
     startCommand: pnpm start:api
     healthCheckPath: /ready
@@ -43,7 +43,7 @@ services:
   - type: web
     name: musunil-web
     runtime: static
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build:web-static:render
+    buildCommand: pnpm install --frozen-lockfile && pnpm build:web-static:render
     staticPublishPath: apps/web
     headers:
       - path: /*
@@ -75,7 +75,7 @@ services:
     runtime: node
     region: singapore
     schedule: "7 * * * *"
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm check
+    buildCommand: pnpm install --frozen-lockfile && pnpm check
     startCommand: pnpm --filter @musunil/public-source-ingest dev -- --post
     envVars:
       - key: NODE_VERSION
@@ -98,7 +98,7 @@ services:
     runtime: node
     region: singapore
     schedule: "17 0,12 * * *"
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm check
+    buildCommand: pnpm install --frozen-lockfile && pnpm check
     startCommand: pnpm --filter @musunil/public-source-ingest dev -- --laws --post
     envVars:
       - key: NODE_VERSION
@@ -126,7 +126,7 @@ services:
     runtime: node
     region: singapore
     schedule: "*/5 * * * *"
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm check
+    buildCommand: pnpm install --frozen-lockfile && pnpm check
     startCommand: pnpm dispatch:notifications
     envVars:
       - key: NODE_VERSION
@@ -149,7 +149,7 @@ services:
     runtime: node
     region: singapore
     schedule: "23 18 * * *"
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm check
+    buildCommand: pnpm install --frozen-lockfile && pnpm check
     startCommand: pnpm privacy:purge
     envVars:
       - key: NODE_VERSION

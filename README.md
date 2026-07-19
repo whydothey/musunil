@@ -56,7 +56,7 @@ pnpm render:web-settings
 ```text
 Branch: main
 Root Directory: 비움
-Build Command: corepack enable && pnpm install --frozen-lockfile && pnpm build:web-static:render
+Build Command: pnpm install --frozen-lockfile && pnpm build:web-static:render
 Publish Directory: apps/web
 Required headers: render.yaml의 musunil-web headers 블록과 동일하게 적용
 ```

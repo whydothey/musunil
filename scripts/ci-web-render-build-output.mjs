@@ -60,7 +60,17 @@ for (const token of ["Cache-Control", "Content-Security-Policy", "Permissions-Po
 for (const file of ["index.html", "config.js", "_headers", "modules/contracts.js", "modules/selection-state.js", "modules/public-api.js", "media/redacted/preview-occ-live-1-poster.png", "media/redacted/preview-occ-live-1.webm"]) {
   if (!manifest.files?.[file]?.sha256) failures.push(`static-manifest.json missing ${file}`);
 }
-if (manifest.schemaVersion < 2) failures.push("static-manifest.json must use recursive asset schemaVersion 2");
+if (manifest.schemaVersion < 3) failures.push("static-manifest.json must use build-variant-aware schemaVersion 3");
+for (const file of [
+  "build-info.js",
+  "build-info.json",
+  "media/redacted/preview-busan-live-poster.png",
+  "media/redacted/preview-daejeon-live-poster.png",
+  "media/redacted/preview-occ-live-1-poster.png",
+  "media/redacted/preview-presence-1-poster.png"
+]) {
+  if (!manifest.buildVariantFiles?.includes(file)) failures.push(`static-manifest.json buildVariantFiles missing ${file}`);
+}
 
 if (failures.length > 0) {
   console.error(failures.map((failure) => `- ${failure}`).join("\n"));
