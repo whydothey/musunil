@@ -31,6 +31,7 @@
 | --- | --- | --- | --- | --- |
 | 2026-07-19 | G1 | 홈·지도·상세가 서로 다른 선택 대상을 가리킬 수 있음 | `IssueOverview`/`OccurrenceDigest` additive API, `selectedOccurrenceId` 모듈 상태, ES module API/contract foundation, recursive static manifest를 도입 | `@musunil/api test`, `check:web-manifest`, `check:web-smoke`, `check:web-flow`, `check:ux-surface`, `check:visual-surface`, `check:web-render-build-command` 통과 |
 | 2026-07-19 | G2 | 이슈를 열어도 장소·시간별 집회 현장이 첫 답으로 나오지 않음 | 이슈 상세 첫 화면을 `전국 집회 현장` 목록으로 바꾸고, 현장 선택과 관련 공식 법안 이동을 같은 상세 흐름에 연결 | `check:web-smoke`, `check:web-flow`, `check:ux-surface`, 390/430/768/1440 `check:visual-surface` 통과 |
+| 2026-07-19 | G3 | 지도 상단이 선택 핀과 다른 이슈를 가리킬 수 있음 | 지도 맥락 스트립을 공유 `selectedOccurrenceId`에서 읽어 현장명·지역·공개 위치·영상 상태를 표시하도록 변경 | `check:web-smoke`, `check:web-flow` 통과. MapLibre 실제 interaction capture는 진행 중 |
 
 ## Evidence Ledger
 

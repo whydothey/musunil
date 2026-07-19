@@ -92,6 +92,8 @@ scenario("shared_issue_context_strips", [
 scenario("map_selection_and_search_remain_contextual", [
   has("occurrence-pins"),
   has("presence-areas"),
+  has('id="map-anchor-kicker"'),
+  has("선택 현장"),
   has("자료 위치"),
   has("현장 인증 범위"),
   has("근거 보기"),
@@ -99,6 +101,8 @@ scenario("map_selection_and_search_remain_contextual", [
   functionHas("selectCard", "flyToCard(card)"),
   functionHas("selectCard", "renderDetail(card).then"),
   functionHas("renderMapSelectionContext", "현장 인증 범위"),
+  functionHas("updateIssueContextStrips", "occurrenceSelection.snapshot().occurrence"),
+  functionHas("updateIssueContextStrips", 'mapKicker.textContent = "선택 현장"'),
   regex(/selectCard\(match, \{ openDetail: false, toast: "지도에서 검색 결과를 봅니다\." \}\)/),
   absent("preview-route"),
   absent("preview-transit"),

@@ -5982,7 +5982,7 @@
             <div class="issue-context-copy">
               <span class="issue-context-meta">
                 <span class="issue-context-status" id="map-anchor-status" data-state="pending">확인 중</span>
-                <span class="issue-context-kicker">선택 이슈</span>
+                <span class="issue-context-kicker" id="map-anchor-kicker">선택 현장</span>
               </span>
               <strong class="issue-context-title" id="map-anchor-title">이슈를 선택해 주세요</strong>
               <span class="issue-context-line" id="map-anchor-line">지도는 선택 이슈의 위치 맥락만 보조합니다.</span>
@@ -7227,6 +7227,28 @@
           if (titleNode) titleNode.textContent = title;
           if (lineNode) lineNode.textContent = issue ? issueContextLine(issue, mode) : fallbackLine;
         });
+        const selectedOccurrence = occurrenceSelection.snapshot().occurrence;
+        const mapKicker = $("map-anchor-kicker");
+        if (selectedOccurrence) {
+          const mapStatus = $("map-anchor-status");
+          const mapTitle = $("map-anchor-title");
+          const mapLine = $("map-anchor-line");
+          if (mapKicker) mapKicker.textContent = "선택 현장";
+          if (mapStatus) {
+            mapStatus.textContent = labelState(selectedOccurrence.lifecycleState);
+            mapStatus.dataset.state = stateClass(selectedOccurrence.lifecycleState) || "pending";
+          }
+          if (mapTitle) mapTitle.textContent = selectedOccurrence.title;
+          if (mapLine) {
+            mapLine.textContent = [
+              selectedOccurrence.regionLabel,
+              selectedOccurrence.locationLabel || "공개 위치 확인 중",
+              selectedOccurrence.publicVideoCount ? `공개 영상 ${selectedOccurrence.publicVideoCount}건` : "영상 확인 중"
+            ].join(" · ");
+          }
+        } else if (mapKicker) {
+          mapKicker.textContent = "선택 이슈";
+        }
         const reportContextTitle = $("report-context-title");
         const reportContextLine = $("report-context-line");
         if (reportContextTitle) reportContextTitle.textContent = title;
