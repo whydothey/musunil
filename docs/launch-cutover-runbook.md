@@ -107,7 +107,8 @@ pnpm render:apply -- --api-domain
 - `MUSUNIL_RUNTIME_ENV=production`
 - `DATABASE_URL`, `REDIS_URL`은 Render 관리형 Postgres/Key Value에서 주입
 - `MUSUNIL_INTERNAL_API_KEY`, `MUSUNIL_USER_TOKEN_SECRET`, `MUSUNIL_ENCRYPTION_KEY`는 Render generated value
-- `MUSUNIL_USER_INPUTS_B64`는 API 서비스에만 입력
+- `MUSUNIL_USER_INPUTS_FILE_PATH=/etc/secrets/musunil.user-inputs.yaml`은 API와 scheduler에 고정
+- `pnpm render:runtime-secret` dry-run 뒤, `MUSUNIL_RENDER_SECRET_APPLY_CONFIRM=APPLY_RUNTIME_SECRET_FILE` 확인을 넣어 같은 Secret File을 API와 scheduler에 업로드
 - Render API token이 있으면 `RENDER_API_TOKEN=... pnpm render:apply -- --api-domain --apply`로 `api.musunil.com` custom domain을 생성할 수 있다. DNS 적용 뒤 `pnpm render:apply -- --api-domain --verify-domains --apply`로 Render verification을 요청한다.
 
 ## 4. Cloudflare

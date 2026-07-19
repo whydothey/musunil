@@ -119,7 +119,8 @@ const plan = {
   ].filter((item) => template.includes(item.split(/[ ./]/)[0]) || item.includes("organization") || item.includes("payments")),
   verificationOrder: [
     "pnpm launch:verify-inputs config/musunil.user-inputs.local.yaml",
-    "pnpm config:encode -- --check config/musunil.user-inputs.local.yaml",
+    "pnpm render:runtime-secret (dry-run; validates the local YAML and both target services without writing)",
+    "RENDER_API_TOKEN=... MUSUNIL_RENDER_SECRET_APPLY_CONFIRM=APPLY_RUNTIME_SECRET_FILE pnpm render:runtime-secret -- --apply",
     "pnpm launch:ready -- config/musunil.user-inputs.local.yaml --post-laws",
     "pnpm launch:apply",
     "pnpm render:api-settings",

@@ -21,8 +21,8 @@ if (!process.env.MUSUNIL_API_HOSTPORT && !process.env.MUSUNIL_API_BASE_URL) {
 if (!process.env.MUSUNIL_INTERNAL_API_KEY) {
   throw new Error("MUSUNIL_INTERNAL_API_KEY is required for scheduled workers.");
 }
-if (!process.env.MUSUNIL_USER_INPUTS_B64) {
-  throw new Error("MUSUNIL_USER_INPUTS_B64 is required for scheduled law ingestion.");
+if (!process.env.MUSUNIL_USER_INPUTS_FILE_PATH && !process.env.MUSUNIL_USER_INPUTS_B64) {
+  throw new Error("MUSUNIL_USER_INPUTS_FILE_PATH or MUSUNIL_USER_INPUTS_B64 is required for scheduled law ingestion.");
 }
 
 const workerId = `ops-${randomUUID()}`;

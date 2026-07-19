@@ -60,11 +60,11 @@
 - Render Blueprint가 `musunil-postgres`와 `musunil-redis`를 생성하고 private-network-only로 둔다. Redis는 원문 IP를 저장하지 않는 HMAC key 기반 분산 쓰기 제한에만 사용하므로 비영속 Free plan을 사용한다.
 - Render API는 `DATABASE_URL`, `REDIS_URL`을 관리형 Postgres/Key Value에서 자동 주입받는다.
 - Render 서비스는 `MUSUNIL_RUNTIME_ENV=production`을 설정해 설정 로드 실패 fallback에서도 preview/sample fixture와 LIVE 자동 공개를 끈다.
-- Render API만 `MUSUNIL_USER_INPUTS_B64`를 prompt 받는다. Static Web에는 사용자 입력 YAML, DB/Redis URL, user token secret, encryption key, internal API key를 주입하지 않는다.
+- Render API와 scheduler는 각 서비스에 업로드된 동일 이름의 `musunil.user-inputs.yaml` Secret File을 `/etc/secrets/musunil.user-inputs.yaml`에서 읽는다. Static Web에는 사용자 입력 YAML, DB/Redis URL, user token secret, encryption key, internal API key를 주입하지 않는다.
 - Render API는 `MUSUNIL_INTERNAL_API_KEY`, `MUSUNIL_USER_TOKEN_SECRET`, `MUSUNIL_ENCRYPTION_KEY`를 생성한다.
 - Render Web은 공개 정적 빌드에 필요한 `NODE_VERSION`, `MUSUNIL_RUNTIME_ENV`만 env var로 두고, API base와 build metadata 작성은 `pnpm build:web-static:render` 단일 build command 안에서 고정한다.
 - Render cron worker는 API 서비스의 `MUSUNIL_INTERNAL_API_KEY`를 참조한다.
-- Render cron worker는 `MUSUNIL_USER_INPUTS_B64`를 요구하지 않는다.
+- Render cron worker는 API와 동일한 Secret File을 별도로 마운트하며 `MUSUNIL_USER_INPUTS_FILE_PATH`만 참조한다.
 - Render Web Static Site headers가 `render.yaml`에 선언되어 있다.
 - `pnpm build:web-static`은 `render.yaml`의 Web headers에서 `apps/web/_headers`를 생성하고, `static-manifest.json`은 `_headers` hash를 포함한다. Render 수동 Static Site는 여전히 Dashboard Headers 실제 반영을 별도 검증한다.
 - Render Web build에서 `pnpm build:web-config` 후 `pnpm launch:check`가 실행된다.

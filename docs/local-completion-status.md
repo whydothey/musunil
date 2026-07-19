@@ -146,7 +146,7 @@ Last updated: 2026-07-12 19:25 KST
   - Render Blueprint 관리형 Postgres/Key Value 자동 생성과 `DATABASE_URL`/`REDIS_URL` 주입
   - Render production runtime marker와 설정 실패 fallback mock/LIVE 자동 공개 차단
   - production runtime not-ready 상태의 POST/PATCH write fail-closed
-  - Render Web의 API `MUSUNIL_USER_INPUTS_B64` 참조로 YAML secret 입력을 API 한 곳으로 축소
+  - Render API와 scheduler에 동일 이름의 사용자 입력 Secret File을 마운트하고 고정 파일 경로로 로드
   - Render API generated internal/user-token/encryption keys와 service env reference로 YAML 운영 secret 축소
   - Render cron worker private `MUSUNIL_API_HOSTPORT` 주입과 worker fallback
   - Render Static Site 보안 헤더 Blueprint 선언
@@ -170,7 +170,7 @@ Last updated: 2026-07-12 19:25 KST
   - `docs/splus-completion-audit.md`
   - `pnpm launch:inputs` 운영 YAML 초안 생성: Render generated secret은 비워 두고 실제 운영 값만 `CHANGE_ME_*`로 남김
   - `pnpm launch:verify-inputs` 로컬 검증: Render 관리형 DB/Redis를 모의 주입해 사용자 YAML만 검증
-  - `pnpm config:encode` launch 검증 후 `MUSUNIL_USER_INPUTS_B64` 생성, placeholder YAML 인코딩 차단
+  - `pnpm render:runtime-secret` dry-run으로 YAML·권한·대상 서비스를 검사하고 명시적 확인 뒤에만 API/scheduler Secret File 적용
   - 기본 템플릿과 `pnpm launch:inputs` 모두 운영 입력값만 `CHANGE_ME_*`로 남김
   - GitHub Actions `pnpm check:release` CI는 Node 24 호환 action 버전 사용
   - `pnpm ci:status`로 현재 Git SHA의 GitHub Actions `ci.yml` run 상태, queued/in-progress/completed 구분, watch 명령을 확인
@@ -182,7 +182,7 @@ Last updated: 2026-07-12 19:25 KST
 - 실제 Play Integrity 또는 App Attest verifier dry-run으로 `pnpm mobile:integrity-smoke` 통과.
 - 실제 PortOne 본인확인 완료 ID를 `MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID`에 넣고 `pnpm identity:smoke` 통과.
 - 실제 법 원천 키로 `pnpm sources:laws` 1건 이상 dry-run과 `--post` 검증.
-- Render Dashboard에서 Blueprint 생성과 `MUSUNIL_USER_INPUTS_B64` 1회 입력.
+- Render Dashboard에서 Blueprint 생성 후 `pnpm render:runtime-secret`으로 API/scheduler Secret File 적용.
 - 운영 DB/Redis 연결 상태에서 `/ready` 200 확인.
 - Render Static headers 적용 뒤 `pnpm cloudflare:check:strict` 통과.
 - API DNS와 운영 API 연결 뒤 `pnpm service:watch:visual`에서 `serviceSyncState=live`, `web_visual_surface=ok`, 남은 skipped/fail check 0 확인.

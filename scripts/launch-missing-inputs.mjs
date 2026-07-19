@@ -226,12 +226,13 @@ function runtimeSecretGroups() {
       fields: [
         "DATABASE_URL",
         "REDIS_URL",
-        "MUSUNIL_USER_INPUTS_B64",
+        "Render Secret File: musunil.user-inputs.yaml",
+        "MUSUNIL_USER_INPUTS_FILE_PATH=/etc/secrets/musunil.user-inputs.yaml",
         "MUSUNIL_INTERNAL_API_KEY",
         "MUSUNIL_USER_TOKEN_SECRET",
         "MUSUNIL_ENCRYPTION_KEY"
       ],
-      note: "API/worker Secret File 또는 Render 환경변수에만 넣는다. Static Web에는 넣지 않는다."
+      note: "`pnpm render:runtime-secret` dry-run 후 확인 문자열을 넣어 API와 scheduler에 같은 Secret File을 업로드한다. Static Web에는 넣지 않는다."
     },
     {
       id: "cloudflare_render_cutover",

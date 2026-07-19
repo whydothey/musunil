@@ -36,6 +36,8 @@ const webRenderBuildOutputCheck = readFileSync(resolve(cwd, "scripts/ci-web-rend
 const webRenderBuildCommandCheck = readFileSync(resolve(cwd, "scripts/ci-web-render-build-command.mjs"), "utf8");
 const renderWebSettings = readFileSync(resolve(cwd, "scripts/render-web-settings.mjs"), "utf8");
 const renderApply = readFileSync(resolve(cwd, "scripts/render-apply.mjs"), "utf8");
+const renderRuntimeSecret = readFileSync(resolve(cwd, "scripts/render-runtime-secret.mjs"), "utf8");
+const renderRuntimeSecretSafety = readFileSync(resolve(cwd, "scripts/ci-render-runtime-secret-safety.mjs"), "utf8");
 const launchCutoverPlan = readFileSync(resolve(cwd, "scripts/launch-cutover-plan.mjs"), "utf8");
 const launchApply = readFileSync(resolve(cwd, "scripts/launch-apply.mjs"), "utf8");
 const cloudflareDnsCheck = readFileSync(resolve(cwd, "scripts/cloudflare-dns-check.mjs"), "utf8");
@@ -100,7 +102,7 @@ const forbiddenPatterns = [
 if (!/Ensure ffmpeg runtime/.test(ciWorkflow) || !/command -v ffmpeg/.test(ciWorkflow)) {
   failures.push("GitHub Actions must install ffmpeg when the runner image does not provide it");
 }
-for (const key of ["DATABASE_URL", "REDIS_URL", "MUSUNIL_USER_INPUTS_B64", "MUSUNIL_USER_TOKEN_SECRET", "MUSUNIL_ENCRYPTION_KEY", "MUSUNIL_INTERNAL_API_KEY"]) {
+for (const key of ["DATABASE_URL", "REDIS_URL", "MUSUNIL_USER_INPUTS_B64", "MUSUNIL_USER_INPUTS_FILE_PATH", "MUSUNIL_USER_TOKEN_SECRET", "MUSUNIL_ENCRYPTION_KEY", "MUSUNIL_INTERNAL_API_KEY"]) {
   if (new RegExp(`key:\\s*${key}\\b`).test(renderWeb)) {
     failures.push(`Render Static Web must not receive backend secret/runtime env var: ${key}`);
   }
@@ -570,6 +572,23 @@ if (
   failures.push("Render apply helper must provide dry-run-first Web header, API custom-domain, and deploy automation through the official Render API");
 }
 if (
+  !/"render:runtime-secret"/.test(packageJson) ||
+  !/"check:render-runtime-secret-safety"/.test(packageJson) ||
+  !/check:render-runtime-secret-safety/.test(JSON.parse(packageJson).scripts["check:release"] ?? "") ||
+  !/render_runtime_secret_file/.test(renderRuntimeSecret) ||
+  !/MUSUNIL_RENDER_SECRET_APPLY_CONFIRM/.test(renderRuntimeSecret) ||
+  !/APPLY_RUNTIME_SECRET_FILE/.test(renderRuntimeSecret) ||
+  !/owner_only_permissions_required/.test(renderRuntimeSecret) ||
+  !/check-launch-inputs\.mjs/.test(renderRuntimeSecret) ||
+  !/musunil-api/.test(renderRuntimeSecret) ||
+  !/musunil-ops-scheduler/.test(renderRuntimeSecret) ||
+  !/\/secret-files\//.test(renderRuntimeSecret) ||
+  !/\/env-vars\//.test(renderRuntimeSecret) ||
+  !/Render runtime secret safety check passed/.test(renderRuntimeSecretSafety)
+) {
+  failures.push("Render runtime Secret File helper must validate inputs, require explicit apply confirmation, update API and scheduler, and have a release safety test");
+}
+if (
   !/"launch:next-actions":\s*"node scripts\/launch-next-actions\.mjs"/.test(packageJson) ||
   !/"launch:blockers"/.test(packageJson) ||
   !/"launch:blockers:strict"/.test(packageJson) ||
@@ -897,7 +916,8 @@ if (
   !/docs\/launch-missing-inputs\.md/.test(launchOperatorBriefDoc) ||
   !/pnpm launch:final-gate/.test(launchOperatorBriefDoc) ||
   !/api\.musunil\.com/.test(launchOperatorBriefDoc) ||
-  !/MUSUNIL_USER_INPUTS_B64/.test(launchOperatorBriefDoc)
+  !/MUSUNIL_USER_INPUTS_FILE_PATH/.test(launchOperatorBriefDoc) ||
+  !/pnpm render:runtime-secret/.test(launchOperatorBriefDoc)
 ) {
   failures.push("Launch operator brief must combine current blockers, Render Web/API settings, Cloudflare DNS, user inputs, and final verification into one generated handoff document");
 }
@@ -1017,7 +1037,8 @@ if (
 if (
   !/api\.musunil\.com/.test(renderApiSettings) ||
   !/Health Check Path/.test(renderApiSettings) ||
-  !/MUSUNIL_USER_INPUTS_B64/.test(renderApiSettings) ||
+  !/MUSUNIL_USER_INPUTS_FILE_PATH/.test(renderApiSettings) ||
+  !/pnpm render:runtime-secret/.test(renderApiSettings) ||
   !/Render generated/.test(renderApiSettings) ||
   !/Cloudflare DNS/.test(renderApiSettings) ||
   !/MUSUNIL_RENDER_API_DNS_TARGET/.test(renderApiSettings) ||
@@ -1878,8 +1899,8 @@ if (!/disableOfflineQueue:\s*true/.test(httpBoundary) || !/Promise\.race\(\[clie
 if (!hasRenderPostgresEnv(renderApi, "DATABASE_URL") || !hasRenderKeyValueEnv(renderApi, "REDIS_URL")) {
   failures.push("Render API must receive DATABASE_URL and REDIS_URL from managed resources");
 }
-if (!hasRenderSyncFalseEnv(renderApi, "MUSUNIL_USER_INPUTS_B64")) {
-  failures.push("Render API must prompt once for MUSUNIL_USER_INPUTS_B64");
+if (!hasRenderFixedEnv(renderApi, "MUSUNIL_USER_INPUTS_FILE_PATH", "/etc/secrets/musunil.user-inputs.yaml")) {
+  failures.push("Render API must load user inputs from the mounted Render Secret File");
 }
 if (!hasRenderGeneratedEnv(renderApi, "MUSUNIL_INTERNAL_API_KEY")) {
   failures.push("Render API must generate MUSUNIL_INTERNAL_API_KEY for internal cron/admin calls");
@@ -1894,7 +1915,9 @@ if (!/key:\s*NODE_VERSION[\s\S]*?value:\s*24/.test(renderWeb)) failures.push("Re
 if (!/key:\s*MUSUNIL_RUNTIME_ENV[\s\S]*?value:\s*production/.test(renderWeb)) failures.push("Render Web must set MUSUNIL_RUNTIME_ENV=production");
 if (!hasRenderApiHostportEnv(renderOpsScheduler)) failures.push("musunil-ops-scheduler must receive MUSUNIL_API_HOSTPORT from musunil-api");
 if (!hasRenderInternalKeyFromApiEnv(renderOpsScheduler)) failures.push("musunil-ops-scheduler must receive MUSUNIL_INTERNAL_API_KEY from musunil-api");
-if (!hasRenderEnvFromApiEnv(renderOpsScheduler, "MUSUNIL_USER_INPUTS_B64")) failures.push("musunil-ops-scheduler must reuse MUSUNIL_USER_INPUTS_B64 from musunil-api");
+if (!hasRenderFixedEnv(renderOpsScheduler, "MUSUNIL_USER_INPUTS_FILE_PATH", "/etc/secrets/musunil.user-inputs.yaml")) {
+  failures.push("musunil-ops-scheduler must load the same named Render Secret File as musunil-api");
+}
 if (!hasRenderPostgresEnv(renderOpsScheduler, "DATABASE_URL")) failures.push("musunil-ops-scheduler must receive DATABASE_URL from musunil-postgres for durable task leases");
 if (!/maxShutdownDelaySeconds:\s*30/.test(renderYaml)) failures.push("Render API maxShutdownDelaySeconds must be set");
 if (!/SIGTERM/.test(readFileSync(resolve(cwd, "services/api/src/server.ts"), "utf8"))) failures.push("API graceful shutdown handler is missing");
@@ -1949,7 +1972,8 @@ function validateWebRuntimeConfig(source, failures, config) {
     /database_url/i,
     /postgres/i,
     /redis/i,
-    /MUSUNIL_USER_INPUTS_B64/i
+    /MUSUNIL_USER_INPUTS_B64/i,
+    /MUSUNIL_USER_INPUTS_FILE_PATH/i
   ];
   for (const pattern of forbiddenPublicBundlePatterns) {
     if (pattern.test(source)) failures.push(`forbidden web config secret/internal pattern found: ${pattern}`);
@@ -2027,16 +2051,12 @@ function hasRenderInternalKeyFromApiEnv(block) {
   return new RegExp(`key:\\s*MUSUNIL_INTERNAL_API_KEY\\s*[\\s\\S]*fromService:\\s*[\\s\\S]*type:\\s*web\\s*[\\s\\S]*name:\\s*musunil-api\\s*[\\s\\S]*envVarKey:\\s*MUSUNIL_INTERNAL_API_KEY`).test(block);
 }
 
-function hasRenderEnvFromApiEnv(block, key) {
-  return new RegExp(`key:\\s*${escapeRegExp(key)}\\s*[\\s\\S]*fromService:\\s*[\\s\\S]*type:\\s*web\\s*[\\s\\S]*name:\\s*musunil-api\\s*[\\s\\S]*envVarKey:\\s*${escapeRegExp(key)}`).test(block);
-}
-
 function hasRenderGeneratedEnv(block, key) {
   return new RegExp(`key:\\s*${escapeRegExp(key)}\\s*\\n\\s*generateValue:\\s*true`).test(block);
 }
 
-function hasRenderSyncFalseEnv(block, key) {
-  return new RegExp(`key:\\s*${escapeRegExp(key)}\\s*\\n\\s*sync:\\s*false`).test(block);
+function hasRenderFixedEnv(block, key, value) {
+  return new RegExp(`key:\\s*${escapeRegExp(key)}\\s*\\n\\s*value:\\s*${escapeRegExp(value)}`).test(block);
 }
 
 function hasRenderHeader(block, name) {

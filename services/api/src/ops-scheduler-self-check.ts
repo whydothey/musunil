@@ -28,8 +28,10 @@ assert.equal(publicSourceEnv.MUSUNIL_USER_INPUTS_FILE_PATH, undefined);
 assert.equal(publicSourceEnv.MUSUNIL_INTERNAL_API_KEY, "internal-key");
 const lawEnv = childEnvironment(taskById("law_source_ingest")!, sourceEnv);
 assert.equal(lawEnv.MUSUNIL_USER_INPUTS_B64, "secret-yaml");
+assert.equal(lawEnv.MUSUNIL_USER_INPUTS_FILE_PATH, "/secret/file");
 const redactionEnv = childEnvironment(taskById("media_redaction")!, sourceEnv);
 assert.equal(redactionEnv.MUSUNIL_USER_INPUTS_B64, "secret-yaml");
+assert.equal(redactionEnv.MUSUNIL_USER_INPUTS_FILE_PATH, "/secret/file");
 
 const schedulerSource = readFileSync(new URL("./ops-scheduler.ts", import.meta.url), "utf8");
 assert.match(schedulerSource, /for update skip locked\s+limit 1/i);
@@ -42,5 +44,6 @@ console.log(JSON.stringify({
   leaseSeconds: opsLeaseSeconds,
   singleTaskClaims: true,
   leaseHeartbeat: true,
-  nonLawSecretScrub: true
+  nonLawSecretScrub: true,
+  secretFilePropagation: true
 }, null, 2));

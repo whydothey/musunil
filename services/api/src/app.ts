@@ -1010,7 +1010,7 @@ function readinessAction(group: string): { id: string; action: string; verify: s
       verify: "GET /ready shows the redis check as ok."
     },
     runtime_config: {
-      action: "Provide production user-inputs through MUSUNIL_USER_INPUTS_B64 or a Render Secret File.",
+      action: "Mount the production user-inputs as a Render Secret File and set MUSUNIL_USER_INPUTS_FILE_PATH.",
       verify: "GET /ready shows config_source as ok."
     },
     security: {

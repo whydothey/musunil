@@ -24,13 +24,13 @@ export function loadUserInputs(options: LoadUserInputsOptions = {}): LoadedUserI
   const cwd = options.cwd ?? process.cwd();
   const env = options.env ?? process.env;
 
-  if (env.MUSUNIL_USER_INPUTS_B64) {
-    return parseUserInputs(Buffer.from(env.MUSUNIL_USER_INPUTS_B64, "base64").toString("utf8"), "env_b64");
-  }
-
   if (env.MUSUNIL_USER_INPUTS_FILE_PATH) {
     const path = resolve(cwd, env.MUSUNIL_USER_INPUTS_FILE_PATH);
     return parseUserInputs(readFileSync(path, "utf8"), "env_file", path);
+  }
+
+  if (env.MUSUNIL_USER_INPUTS_B64) {
+    return parseUserInputs(Buffer.from(env.MUSUNIL_USER_INPUTS_B64, "base64").toString("utf8"), "env_b64");
   }
 
   const templatePath = resolve(cwd, "config/musunil.user-inputs.template.yaml");

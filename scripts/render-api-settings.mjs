@@ -38,8 +38,10 @@ const settings = {
     proxy: "DNS only until /health, /ready, CORS, media, and identity boundary smoke pass"
   },
   afterSave: [
+    "Upload the validated YAML to both musunil-api and musunil-ops-scheduler: pnpm render:runtime-secret (dry-run first).",
+    "Apply only with RENDER_API_TOKEN and MUSUNIL_RENDER_SECRET_APPLY_CONFIRM=APPLY_RUNTIME_SECRET_FILE: pnpm render:runtime-secret -- --apply.",
     "Optional API automation: RENDER_API_TOKEN=... pnpm render:apply -- --api-domain --apply",
-    "Deploy musunil-api after MUSUNIL_USER_INPUTS_B64 and generated secrets are present.",
+    "Deploy musunil-api after the Secret File and generated secrets are present.",
     "Attach api.musunil.com in Render Custom Domains and copy the Render target to Cloudflare DNS.",
     ': "${MUSUNIL_RENDER_API_DNS_TARGET:?set exact Render API target from Render first}"',
     "pnpm cloudflare:dns",
@@ -55,7 +57,7 @@ const failures = [];
 for (const key of ["buildCommand", "preDeployCommand", "startCommand", "healthCheckPath", "dockerfilePath", "dockerContext"]) {
   if (!settings[key]) failures.push(`musunil-api ${key} is missing`);
 }
-for (const key of ["MUSUNIL_RUNTIME_ENV", "MUSUNIL_INTERNAL_API_KEY", "MUSUNIL_USER_TOKEN_SECRET", "MUSUNIL_ENCRYPTION_KEY", "DATABASE_URL", "REDIS_URL", "MUSUNIL_USER_INPUTS_B64"]) {
+for (const key of ["MUSUNIL_RUNTIME_ENV", "MUSUNIL_INTERNAL_API_KEY", "MUSUNIL_USER_TOKEN_SECRET", "MUSUNIL_ENCRYPTION_KEY", "DATABASE_URL", "REDIS_URL", "MUSUNIL_USER_INPUTS_FILE_PATH"]) {
   if (!envVars.some((item) => item.key === key)) failures.push(`musunil-api env var missing: ${key}`);
 }
 if (settings.runtime !== "docker") failures.push("musunil-api runtime must be docker");
@@ -63,8 +65,11 @@ if (!dockerfile.includes("pnpm install --frozen-lockfile && pnpm check")) failur
 if (!dockerfile.includes('CMD ["pnpm", "start:api"]')) failures.push("musunil-api Dockerfile must start the API");
 if (!/apt-get install[^\n]*ffmpeg/.test(dockerfile)) failures.push("musunil-api Dockerfile must install ffmpeg");
 if (settings.healthCheckPath !== "/ready") failures.push("musunil-api healthCheckPath must be /ready");
-if (settings.envSummary.operatorInput.length !== 1 || settings.envSummary.operatorInput[0] !== "MUSUNIL_USER_INPUTS_B64") {
-  failures.push("musunil-api must require only MUSUNIL_USER_INPUTS_B64 as manual secret input in render.yaml");
+if (!settings.envSummary.fixed.includes("MUSUNIL_USER_INPUTS_FILE_PATH=/etc/secrets/musunil.user-inputs.yaml")) {
+  failures.push("musunil-api must load the Render Secret File from /etc/secrets/musunil.user-inputs.yaml");
+}
+if (settings.envSummary.operatorInput.length !== 0) {
+  failures.push("musunil-api render.yaml must not contain a sync:false secret placeholder; use render:runtime-secret instead");
 }
 if (failures.length > 0) {
   console.error(failures.map((failure) => `- ${failure}`).join("\n"));

@@ -5,12 +5,12 @@
 
 ## Current Gate
 
-- Generated: 2026-07-19T12:47:59.801Z
+- Generated: 2026-07-19T13:18:00.806Z
 - Source: local_file
 - Launch state: blocked
 - Current stage: connect_api_endpoint
 - Release blocked: yes
-- Blocker report: 2026-07-19T12:47:57.897Z (0m old, refresh after 15m)
+- Blocker report: 2026-07-19T13:17:58.748Z (0m old, refresh after 15m)
 - Report freshness: fresh
 - Before apply command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Immediate safe command: `pnpm launch:apply`
@@ -114,10 +114,11 @@
 ## Runtime Secrets
 
 ### Render API service secrets
-- API/worker Secret File 또는 Render 환경변수에만 넣는다. Static Web에는 넣지 않는다.
+- `pnpm render:runtime-secret` dry-run 후 확인 문자열을 넣어 API와 scheduler에 같은 Secret File을 업로드한다. Static Web에는 넣지 않는다.
 - `DATABASE_URL`
 - `REDIS_URL`
-- `MUSUNIL_USER_INPUTS_B64`
+- `Render Secret File: musunil.user-inputs.yaml`
+- `MUSUNIL_USER_INPUTS_FILE_PATH=/etc/secrets/musunil.user-inputs.yaml`
 - `MUSUNIL_INTERNAL_API_KEY`
 - `MUSUNIL_USER_TOKEN_SECRET`
 - `MUSUNIL_ENCRYPTION_KEY`

@@ -23,6 +23,15 @@ const sampleAndroidServiceAccountB64 = Buffer.from(
 const envLoaded = loadUserInputs({ cwd, env: { MUSUNIL_USER_INPUTS_B64: b64 } });
 assert.equal(envLoaded.source, "env_b64");
 
+const secretFilePreferred = loadUserInputs({
+  cwd,
+  env: {
+    MUSUNIL_USER_INPUTS_FILE_PATH: resolve(cwd, "config/musunil.user-inputs.template.yaml"),
+    MUSUNIL_USER_INPUTS_B64: Buffer.from("features:\n  free_comments_enabled: true\n  voting_enabled: false\n").toString("base64")
+  }
+});
+assert.equal(secretFilePreferred.source, "env_file");
+
 assert.throws(() =>
   loadUserInputs({
     cwd,

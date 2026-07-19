@@ -345,26 +345,30 @@ ai:
 
 ## 14. Render 주입
 
-방법 A: YAML 전체를 base64로 넣는다.
+운영 기본 방식은 Render Secret File이다. 로컬 파일은 저장소에 커밋하지 않고 권한을 `600`으로 유지한다.
 
 ```bash
 pnpm launch:inputs
-pnpm launch:verify-inputs
-pnpm config:encode -- --check config/musunil.user-inputs.local.yaml
-pnpm config:encode -- config/musunil.user-inputs.local.yaml
+chmod 600 config/musunil.user-inputs.local.yaml
+pnpm launch:verify-inputs config/musunil.user-inputs.local.yaml
+pnpm render:runtime-secret
 ```
 
-Render 환경변수:
+마지막 명령은 기본적으로 dry-run이다. 로컬 YAML 검증, 파일 권한, Render API와 scheduler 서비스 존재 여부만 확인하고 쓰지 않는다. 실제 적용은 두 서비스가 생성되고 모든 입력값을 채운 뒤에만 실행한다.
 
-```text
-MUSUNIL_USER_INPUTS_B64=<base64 결과>
+```bash
+RENDER_API_TOKEN=... \
+MUSUNIL_RENDER_SECRET_APPLY_CONFIRM=APPLY_RUNTIME_SECRET_FILE \
+pnpm render:runtime-secret -- --apply
 ```
 
-방법 B: Render Secret File을 사용한다.
+이 명령은 같은 `musunil.user-inputs.yaml`을 `musunil-api`와 `musunil-ops-scheduler`에 업로드하고 두 서비스의 경로를 아래와 같이 맞춘다.
 
 ```text
 MUSUNIL_USER_INPUTS_FILE_PATH=/etc/secrets/musunil.user-inputs.yaml
 ```
+
+`MUSUNIL_USER_INPUTS_B64`는 로컬/CI 호환 경로일 뿐 운영 기본값이 아니다. Static Web에는 YAML, Secret File, DB/Redis URL, token, 암호화 키를 넣지 않는다.
 
 ## 15. 운영 전 최종 확인
 

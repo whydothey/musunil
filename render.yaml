@@ -34,8 +34,8 @@ services:
           type: keyvalue
           name: musunil-redis
           property: connectionString
-      - key: MUSUNIL_USER_INPUTS_B64
-        sync: false
+      - key: MUSUNIL_USER_INPUTS_FILE_PATH
+        value: /etc/secrets/musunil.user-inputs.yaml
 
   - type: web
     name: musunil-web
@@ -92,11 +92,8 @@ services:
         fromDatabase:
           name: musunil-postgres
           property: connectionString
-      - key: MUSUNIL_USER_INPUTS_B64
-        fromService:
-          type: web
-          name: musunil-api
-          envVarKey: MUSUNIL_USER_INPUTS_B64
+      - key: MUSUNIL_USER_INPUTS_FILE_PATH
+        value: /etc/secrets/musunil.user-inputs.yaml
 
 databases:
   - name: musunil-postgres
