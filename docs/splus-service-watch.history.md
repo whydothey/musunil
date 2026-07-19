@@ -181,3 +181,5 @@
 | 2026-07-19T09:57:44.717Z | Active | web_build_info, web_header_contract, web_visual_surface, api_endpoint_preflight |
 | 2026-07-19T10:09:21.677Z | Active | web_build_info, web_header_contract, web_visual_surface, api_endpoint_preflight |
 | 2026-07-19T10:10:28.876Z | Active | web_build_info, web_header_contract, web_visual_surface, api_endpoint_preflight |
+| 2026-07-19T10:53:43.043Z | Active | api_endpoint_preflight |
+| 2026-07-19T10:54:15.912Z | Active | web_visual_surface, api_endpoint_preflight |
