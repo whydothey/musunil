@@ -46,6 +46,7 @@ scenario("home_issue_card_to_map_and_video", [
   functionHas("openIssueCardAction", 'setPrimaryView("reels");'),
   functionHas("openIssueCardAction", 'if (action === "map")'),
   functionHas("openIssueCardAction", 'setPrimaryView("explore");'),
+  functionHas("openIssueCardAction", "renderDetail(selected)"),
   functionHas("openIssueCardAction", "liveMap?.resize()"),
   functionHas("openIssueCardAction", 'focusPanel(document.querySelector(".map-shell"))')
 ]);
@@ -100,6 +101,7 @@ scenario("map_selection_and_search_remain_contextual", [
   functionHas("renderDetail", "renderMapSelectionContext(card)"),
   functionHas("selectCard", "flyToCard(card)"),
   functionHas("selectCard", "renderDetail(card).then"),
+  functionHas("selectIssue", 'options.mapContext || currentPrimaryView === "explore"'),
   functionHas("renderMapSelectionContext", "현장 인증 범위"),
   functionHas("updateIssueContextStrips", "occurrenceSelection.snapshot().occurrence"),
   functionHas("updateIssueContextStrips", 'mapKicker.textContent = "선택 현장"'),

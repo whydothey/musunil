@@ -8973,11 +8973,11 @@
           return;
         }
         if (action === "map") {
-          selectIssue(issue, { openDetail: false, scrollToCards: false });
+          selectIssue(issue, { openDetail: false, scrollToCards: false, mapContext: true });
           setPrimaryView("explore");
-          renderIssueDetail(issue);
+          if (selected) renderDetail(selected);
           setTimeout(() => {
-            renderIssueDetail(issue);
+            if (selected) renderDetail(selected);
             liveMap?.resize();
             focusPanel(document.querySelector(".map-shell"));
           }, 140);
@@ -9307,7 +9307,9 @@
         updateIssueContextStrips();
         renderReelsView();
         activateReportFlow({ requestPosition: false });
-	        const detailRender = renderIssueDetail(issue);
+	        const detailRender = (options.mapContext || currentPrimaryView === "explore") && selected
+          ? renderDetail(selected)
+          : renderIssueDetail(issue);
         const initialTab = options.initialTab || "summary";
         selectDetailTab(initialTab, { pulse: false, transition: false });
         Promise.resolve(detailRender).finally(() => selectDetailTab(initialTab, { pulse: false, transition: false }));
