@@ -24,13 +24,17 @@ try {
   process.exit(1);
 }
 try {
+  const expected = Buffer.from(`musunil storage smoke ${new Date().toISOString()}\n`);
   await storage.put({
     storageKey,
     mediaMimeType: "text/plain; charset=utf-8",
-    bytes: Buffer.from(`musunil storage smoke ${new Date().toISOString()}\n`)
+    bytes: expected
   });
+  if (!storage.get) throw new Error("storage get is unavailable.");
+  const actual = await storage.get(storageKey);
+  if (!actual.equals(expected)) throw new Error("storage read-back did not match uploaded bytes.");
   await storage.delete?.(storageKey);
-  console.log(JSON.stringify({ checked: "storage_put_delete", source, path }, null, 2));
+  console.log(JSON.stringify({ checked: "storage_put_get_delete", readBackVerified: true, source, path }, null, 2));
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);

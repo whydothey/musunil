@@ -74,7 +74,7 @@ storage:
   access_key_id: "MUSUNILPRODACCESSKEY0001"
   secret_access_key: "R4nd0mStorageSecretValueForValidation32"
 redaction:
-  engine_smoke_command: "cp {input} {output}"
+  engine_smoke_command: "node scripts/redact-media.mjs {input} {output}"
 ai:
   provider: ""
 public_data_sources:

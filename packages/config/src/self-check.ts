@@ -40,7 +40,7 @@ assert.equal(launchIssues.some((issue) => issue.path === "security.encryption_ke
 assert.equal(launchIssues.some((issue) => issue.path === "security.internal_api_key"), true);
 assert.equal(launchIssues.some((issue) => issue.path === "security.media_encryption_key"), true);
 assert.equal(launchIssues.some((issue) => issue.path === "storage.bucket"), true);
-assert.equal(launchIssues.some((issue) => issue.path === "redaction.engine_smoke_command"), true);
+assert.equal(launchIssues.some((issue) => issue.path === "redaction.engine_smoke_command"), false);
 assert.equal(launchIssues.some((issue) => issue.path === "ai.api_key"), false);
 assert.equal(launchIssues.some((issue) => issue.path === "public_data_sources.national_assembly_bill_api_key"), true);
 assert.equal(launchIssues.some((issue) => issue.path === "mobile.android_package_name"), true);
@@ -86,6 +86,11 @@ const noStorageProductionConfig = JSON.parse(JSON.stringify(loaded.config));
 noStorageProductionConfig.render.environment = "production";
 noStorageProductionConfig.storage.provider = "";
 assert.equal(validateLaunchConfig(noStorageProductionConfig, {}).some((issue) => issue.path === "storage.provider"), true);
+
+const invalidRedactionCommandProductionConfig = JSON.parse(JSON.stringify(loaded.config));
+invalidRedactionCommandProductionConfig.render.environment = "production";
+invalidRedactionCommandProductionConfig.redaction.engine_smoke_command = "node scripts/redact-media.mjs";
+assert.equal(validateLaunchConfig(invalidRedactionCommandProductionConfig, {}).some((issue) => issue.path === "redaction.engine_smoke_command"), true);
 
 const unsafeLiveProductionConfig = JSON.parse(JSON.stringify(loaded.config));
 unsafeLiveProductionConfig.render.environment = "production";

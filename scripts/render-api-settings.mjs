@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 
 const cwd = resolve(import.meta.dirname, "..");
 const renderYaml = readFileSync(resolve(cwd, "render.yaml"), "utf8");
+const dockerfile = readFileSync(resolve(cwd, "Dockerfile"), "utf8");
 const apiBlock = renderServiceBlock(renderYaml, "musunil-api");
 
 const envVars = readEnvVars(apiBlock);
@@ -14,9 +15,11 @@ const settings = {
   plan: readScalar(apiBlock, "plan"),
   branch: "main",
   rootDirectory: "",
-  buildCommand: readScalar(apiBlock, "buildCommand"),
+  buildCommand: readScalar(apiBlock, "buildCommand") || "Dockerfile RUN pnpm install --frozen-lockfile && pnpm check",
   preDeployCommand: readScalar(apiBlock, "preDeployCommand"),
-  startCommand: readScalar(apiBlock, "startCommand"),
+  startCommand: readScalar(apiBlock, "startCommand") || "Dockerfile CMD pnpm start:api",
+  dockerfilePath: readScalar(apiBlock, "dockerfilePath"),
+  dockerContext: readScalar(apiBlock, "dockerContext"),
   healthCheckPath: readScalar(apiBlock, "healthCheckPath"),
   maxShutdownDelaySeconds: readScalar(apiBlock, "maxShutdownDelaySeconds"),
   customDomain: "api.musunil.com",
@@ -49,13 +52,16 @@ const settings = {
 };
 
 const failures = [];
-for (const key of ["buildCommand", "preDeployCommand", "startCommand", "healthCheckPath"]) {
+for (const key of ["buildCommand", "preDeployCommand", "startCommand", "healthCheckPath", "dockerfilePath", "dockerContext"]) {
   if (!settings[key]) failures.push(`musunil-api ${key} is missing`);
 }
-for (const key of ["NODE_VERSION", "MUSUNIL_RUNTIME_ENV", "MUSUNIL_INTERNAL_API_KEY", "MUSUNIL_USER_TOKEN_SECRET", "MUSUNIL_ENCRYPTION_KEY", "DATABASE_URL", "REDIS_URL", "MUSUNIL_USER_INPUTS_B64"]) {
+for (const key of ["MUSUNIL_RUNTIME_ENV", "MUSUNIL_INTERNAL_API_KEY", "MUSUNIL_USER_TOKEN_SECRET", "MUSUNIL_ENCRYPTION_KEY", "DATABASE_URL", "REDIS_URL", "MUSUNIL_USER_INPUTS_B64"]) {
   if (!envVars.some((item) => item.key === key)) failures.push(`musunil-api env var missing: ${key}`);
 }
-if (!settings.buildCommand.includes("pnpm launch:check")) failures.push("musunil-api buildCommand must run pnpm launch:check");
+if (settings.runtime !== "docker") failures.push("musunil-api runtime must be docker");
+if (!dockerfile.includes("pnpm install --frozen-lockfile && pnpm check")) failures.push("musunil-api Dockerfile must run pnpm check");
+if (!dockerfile.includes('CMD ["pnpm", "start:api"]')) failures.push("musunil-api Dockerfile must start the API");
+if (!/apt-get install[^\n]*ffmpeg/.test(dockerfile)) failures.push("musunil-api Dockerfile must install ffmpeg");
 if (settings.healthCheckPath !== "/ready") failures.push("musunil-api healthCheckPath must be /ready");
 if (settings.envSummary.operatorInput.length !== 1 || settings.envSummary.operatorInput[0] !== "MUSUNIL_USER_INPUTS_B64") {
   failures.push("musunil-api must require only MUSUNIL_USER_INPUTS_B64 as manual secret input in render.yaml");
@@ -76,6 +82,8 @@ if (process.argv.includes("--json")) {
   console.log(`Region: ${settings.region}`);
   console.log(`Plan: ${settings.plan}`);
   console.log(`Build Command: ${settings.buildCommand}`);
+  console.log(`Dockerfile Path: ${settings.dockerfilePath}`);
+  console.log(`Docker Context: ${settings.dockerContext}`);
   console.log(`Pre Deploy Command: ${settings.preDeployCommand}`);
   console.log(`Start Command: ${settings.startCommand}`);
   console.log(`Health Check Path: ${settings.healthCheckPath}`);

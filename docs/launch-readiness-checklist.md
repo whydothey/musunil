@@ -46,7 +46,7 @@
 - `pnpm mobile:integrity-smoke` 통과.
 - 실제 PortOne 본인확인 완료 ID로 `pnpm identity:smoke` 통과.
 - 실제 storage credential 입력 후 `pnpm storage:smoke` 통과. `MUSUNIL_STORAGE_SMOKE_KEY`를 직접 지정해야 할 때도 `private/live/smoke/` 아래 값만 사용하며, 기존 원본 미디어 key를 smoke key로 넣지 않는다.
-- 실제 비식별 엔진 명령 입력 후 `pnpm redaction:smoke` 통과. smoke 출력에 샘플 얼굴/차량번호 토큰이 그대로 남으면 실패해야 한다.
+- 내장 비식별 엔진 기본값으로 실제 `pnpm redaction:smoke` 실행 통과. smoke는 영상의 음성·메타데이터 제거와 시각 세부 감소를 검증하며 단순 복사는 실패해야 한다.
 - `pnpm ops:diagnose`가 storage, redaction, mobile integrity, identity의 metadata 준비 상태와 다음 조치를 secret 원문 없이 출력한다.
 - `/health` 200.
 - `/ready` 200, `config_source`, `postgres`, `redis` check가 모두 ok. 쓰기 제한은 Redis `INCR`+`PEXPIRE` 원자 연산을 사용하고 Redis 장애 시 503으로 닫혀야 한다.
@@ -205,7 +205,7 @@
 - LIVE 미디어 운영을 위한 `security.media_encryption_key`, `storage.provider`, `storage.bucket`, `storage.region`, `storage.access_key_id`, `storage.secret_access_key`
 - 법 관련 탭 운영을 위한 `public_data_sources.national_assembly_bill_api_key` 또는 `public_data_sources.law_go_kr_oc`
 - 쓰기 기능 운영을 위한 `identity.portone_store_id`, `identity.portone_identity_channel_key`, `identity.portone_api_secret`
-- LIVE 공개본 생성을 위한 `redaction.engine_smoke_command`
+- LIVE 공개본 생성을 위한 `redaction.engine_smoke_command`는 내장 기본값을 유지한다. 외부 엔진으로 교체할 때만 수정한다.
 - LIVE 현장 인증 운영을 위한 Android Play Integrity service account 또는 iOS App Attest team id와 앱 식별자, `mobile.integrity_smoke_command`
 - AI provider를 켤 경우 `ai.api_key`
 - 실제 push provider를 켤 경우 `notifications.*`
@@ -238,13 +238,13 @@ PG 계약 후에만 아래 값을 입력하고 `payments.operating_support_enabl
 
 - 공공 원천 worker dry-run 결과가 실제 게시판 최신 목록과 맞는다.
 - 전국 coverage report의 `schedule_active`, `schedule_candidate`, `statistics_only`, `needs_discovery`, 다음 점검 시각, 공백 사유가 운영 리포트에 반영된다.
-- `pnpm launch:external-smoke`가 storage PUT/DELETE, redaction proof, 모바일 무결성 dry-run, PortOne 본인확인 결과 조회, 법 원천 1건 이상 dry-run을 한 번에 통과한다.
+- `pnpm launch:external-smoke`가 storage PUT/GET/DELETE, redaction proof, 모바일 무결성 dry-run, PortOne 본인확인 결과 조회, 법 원천 1건 이상 dry-run을 한 번에 통과한다.
 - 외부 credential 입력 직후 `pnpm ops:diagnose`로 metadata 누락을 먼저 확인하고, `readyForExternalSmoke`가 false이면 `requiredActions` 순서대로 수정한 뒤 실제 smoke를 실행한다.
 - storage/redaction/mobile smoke는 private storage key나 provider raw output을 운영 로그에 그대로 남기지 않는다.
 - `pnpm mobile:integrity-smoke`가 실제 모바일 verifier dry-run을 실행하고 `mobile_integrity_provider_dry_run` structured proof JSON을 출력한다. marker 문자열만 출력하거나 package/bundle이 운영 설정과 다르면 실패해야 한다.
 - 실제 PortOne 본인확인을 1회 완료한 뒤 완료된 verification id를 로컬 셸의 `MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID`에만 넣고 `pnpm identity:smoke`를 실행한다. 이 값은 YAML, Git, 문서에 저장하지 않는다.
-- storage bucket credential로 `pnpm storage:smoke`가 실제 PUT/DELETE dry-run에 성공한다. `MUSUNIL_STORAGE_SMOKE_KEY` override는 `private/live/smoke/` prefix만 허용되므로 운영 원본 media key를 넣지 않는다.
-- 비식별 엔진 command로 `pnpm redaction:smoke`가 입력 파일을 처리해 공개본 후보 파일과 proof hash를 만든다. 단순 copy처럼 샘플 민감 토큰을 그대로 남기는 command는 실패해야 한다.
+- storage bucket credential로 `pnpm storage:smoke`가 실제 PUT/GET/DELETE와 read-back 일치에 성공한다. `MUSUNIL_STORAGE_SMOKE_KEY` override는 `private/live/smoke/` prefix만 허용되므로 운영 원본 media key를 넣지 않는다.
+- 내장 비식별 엔진으로 `pnpm redaction:smoke`가 실제 영상의 음성·메타데이터를 제거하고 시각 세부를 낮춘 공개본 후보와 proof hash를 만든다. 단순 copy command는 실패해야 한다.
 - Web `config.js`에는 `apiBaseUrl`, `mapStyleUrl`만 있고 내부 키/secret 필드가 없으며 현재 YAML 값과 일치한다.
 - Render Web 응답 헤더는 Blueprint 선언값이 실제 응답에 반영되는지 배포 후 확인한다.
 - 관리자 검수 큐에서 권리침해 신고/반론/고위험 Claim을 볼 수 있다.

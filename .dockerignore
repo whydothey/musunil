@@ -1,0 +1,9 @@
+.git
+.github
+.DS_Store
+**/node_modules
+config/musunil.user-inputs.local.yaml
+docs/visual-evidence
+test-results
+playwright-report
+*.log

@@ -8,17 +8,15 @@ services:
 
   - type: web
     name: musunil-api
-    runtime: node
+    runtime: docker
     region: singapore
     plan: starter
-    buildCommand: pnpm install --frozen-lockfile && pnpm check && pnpm build:web-config && pnpm launch:check
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     preDeployCommand: pnpm db:migrate
-    startCommand: pnpm start:api
     healthCheckPath: /ready
     maxShutdownDelaySeconds: 30
     envVars:
-      - key: NODE_VERSION
-        value: 24
       - key: MUSUNIL_RUNTIME_ENV
         value: production
       - key: MUSUNIL_INTERNAL_API_KEY
@@ -71,14 +69,13 @@ services:
 
   - type: cron
     name: musunil-ops-scheduler
-    runtime: node
+    runtime: docker
     region: singapore
     schedule: "*/5 * * * *"
-    buildCommand: pnpm install --frozen-lockfile && pnpm check
-    startCommand: pnpm ops:scheduler
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: pnpm ops:scheduler
     envVars:
-      - key: NODE_VERSION
-        value: 24
       - key: MUSUNIL_RUNTIME_ENV
         value: production
       - key: MUSUNIL_API_HOSTPORT

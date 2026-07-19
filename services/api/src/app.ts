@@ -89,6 +89,7 @@ type LiveUploadRecord = {
 
 export type LiveMediaStorage = {
   put: (object: { storageKey: string; mediaMimeType: string; bytes: Buffer }) => Promise<void>;
+  get?: (storageKey: string) => Promise<Buffer>;
   delete?: (storageKey: string) => Promise<void>;
 };
 
@@ -950,6 +951,9 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
   if (request.method === "PATCH" && path.startsWith("/internal/evidence/") && path.endsWith("/redaction")) {
     return withInternalAuth(request, options, () => patchInternalEvidenceRedaction(store, path.split("/")[3], request.body));
   }
+  if (request.method === "GET" && path === "/internal/redaction-queue") {
+    return withInternalAuth(request, options, () => getInternalRedactionQueue(store, url.searchParams.get("limit"), Boolean(options.liveMediaEncryptionKey)));
+  }
   if (request.method === "POST" && path === "/internal/agents/reconcile-lifecycle") return withInternalAuth(request, options, () => postReconcileLifecycle(store, request.body));
   if (request.method === "POST" && path === "/internal/notifications/dispatch") return withInternalAuth(request, options, () => postNotificationDispatch(store));
   if (request.method === "POST" && path === "/internal/privacy/purge-expired") return await withInternalAuth(request, options, () => postPrivacyPurgeExpired(store, options));
@@ -1018,7 +1022,7 @@ function readinessAction(group: string): { id: string; action: string; verify: s
       verify: "pnpm storage:smoke succeeds and GET /ready has no failed storage.* checks."
     },
     redaction: {
-      action: "Configure a redaction smoke command that accepts {input} and {output}.",
+      action: "Run the bundled ffmpeg redaction smoke and keep the worker command available in the scheduler image.",
       verify: "pnpm redaction:smoke succeeds and GET /ready has no failed redaction.* checks."
     },
     mobile_integrity: {
@@ -2631,6 +2635,22 @@ export function decryptLiveMediaBytes(payload: Buffer, secret: string): Buffer {
   return Buffer.concat([decipher.update(Buffer.from(readString(data, "ciphertext"), "base64")), decipher.final()]);
 }
 
+export function canServePublicRedactedMedia(store: Store, pathname: string): boolean {
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    return false;
+  }
+  const evidence = store.evidence.find((item) =>
+    item.evidenceType === "live_media" &&
+    item.redactionStatus === "completed" &&
+    (item.publicStorageKey === decoded || item.publicPosterKey === decoded)
+  );
+  if (!evidence) return false;
+  return store.claims.some((claim) => isPublicClaim(claim) && claim.evidenceIds.includes(evidence.id));
+}
+
 function mediaEncryptionKey(secret: string): Buffer {
   return createHash("sha256").update(secret).digest();
 }
@@ -3174,6 +3194,31 @@ function getAdminPrivacyDashboard(store: Store, options: AppOptions): ApiRespons
       .filter((claim) => claim.visibility === "held_private" || claim.riskLevel === "rights_risk" || claim.sourceProvenance === "rights_violation_report")
       .map(toPublicClaim)
   });
+}
+
+function getInternalRedactionQueue(store: Store, rawLimit: string | null, encrypted: boolean): ApiResponse {
+  const requestedLimit = Number(rawLimit ?? 1);
+  const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 10) : 1;
+  const jobs = store.evidence
+    .filter((item) =>
+      item.evidenceType === "live_media" &&
+      item.redactionStatus !== "completed" &&
+      item.proofOfPresenceStatus === "pass" &&
+      Boolean(item.storageKey) &&
+      Boolean(item.hash) &&
+      Boolean(item.mediaMimeType)
+    )
+    .sort((a, b) => a.uploadedAt.getTime() - b.uploadedAt.getTime())
+    .slice(0, limit)
+    .map((item) => ({
+      evidenceId: item.id,
+      storageKey: item.storageKey,
+      mediaMimeType: item.mediaMimeType,
+      expectedHash: item.hash,
+      encrypted,
+      uploadedAt: item.uploadedAt.toISOString()
+    }));
+  return json(200, { jobs });
 }
 
 function patchInternalDeviceIntegrity(store: Store, id: string | undefined, body: unknown): ApiResponse {

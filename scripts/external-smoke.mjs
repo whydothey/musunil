@@ -5,7 +5,7 @@ const postLaws = process.argv.includes("--post-laws");
 const listOnly = process.argv.includes("--list");
 
 const steps = [
-  { id: "storage", args: ["storage:smoke"], requireRealOutput: "storage_put_delete" },
+  { id: "storage", args: ["storage:smoke"], requireRealOutput: "storage_put_get_delete" },
   { id: "redaction", args: ["redaction:smoke"], requireRealOutput: "redaction_engine_smoke" },
   {
     id: "mobile_integrity",

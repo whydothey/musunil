@@ -6,7 +6,7 @@
 
 ## Current State
 
-- Generated: 2026-07-19T11:32:06.487Z
+- Generated: 2026-07-19T12:47:58.011Z
 - Expected deploy SHA: run `git rev-parse HEAD` immediately before Render deploy and `pnpm launch:final-gate`.
 - Refresh command: `pnpm launch:handoff`
 - Active goal: active
@@ -14,7 +14,7 @@
 - Stage: connect_api_endpoint
 - Release blocked: yes
 - Push CI: run `pnpm ci:status` after every push. `queued` means GitHub has accepted the workflow but has not assigned a runner yet; use the printed watch command for the final result.
-- Service watch: 2026-07-19T11:32:06.379Z (fresh)
+- Service watch: 2026-07-19T12:47:57.897Z (fresh)
 - Checks: 5 ok, 2 fail, 13 skip, 2 actions
 - Before apply command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Immediate safe command: `pnpm launch:apply`
@@ -139,18 +139,17 @@ Render API automation:
 - Service: `musunil-api`
 - Branch: `main`
 - Root Directory: blank
-- Runtime: `node`
+- Runtime: `docker`
 - Region: `singapore`
 - Plan: `starter`
-- Build Command: `pnpm install --frozen-lockfile && pnpm check && pnpm build:web-config && pnpm launch:check`
+- Build Command: `Dockerfile RUN pnpm install --frozen-lockfile && pnpm check`
 - Pre Deploy Command: `pnpm db:migrate`
-- Start Command: `pnpm start:api`
+- Start Command: `Dockerfile CMD pnpm start:api`
 - Health Check Path: `/ready`
 - Custom Domain: `api.musunil.com`
 
 Environment source summary:
 - Fixed:
-  - `NODE_VERSION=24`
   - `MUSUNIL_RUNTIME_ENV=production`
 - Render generated:
   - `MUSUNIL_INTERNAL_API_KEY`
@@ -230,7 +229,7 @@ Cache rules:
 실제 운영 직전에는 아래 proof marker가 각 명령 출력에 있어야 한다. 이 단계는 mock 성공이나 문서상 준비 상태가 아니라 provider 연결 증거를 요구한다.
 storage smoke는 실제 PUT/DELETE를 수행한다. `MUSUNIL_STORAGE_SMOKE_KEY`를 직접 지정해야 할 때도 `private/live/smoke/` prefix 아래 값만 허용하고, 기존 원본 미디어 key를 쓰지 않는다.
 
-- storage: `pnpm storage:smoke`, proof: `storage_put_delete`
+- storage: `pnpm storage:smoke`, proof: `storage_put_get_delete`
 - redaction: `pnpm redaction:smoke`, proof: `redaction_engine_smoke`
 - mobile_integrity: `pnpm mobile:integrity-smoke`, proof: `mobile_integrity_provider_dry_run`, contract: structured JSON with checked, provider, packageName or bundleId/teamId, and verdict
 - identity: `pnpm identity:smoke`, proof: `identity_portone_verified_lookup`

@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 
 const nodeArgs = ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", "scripts/redaction-smoke.mjs"];
 
-const redacted = runRedactionSmoke("node scripts/redaction-smoke-fixture.mjs redact {input} {output}");
+const redacted = runRedactionSmoke("node scripts/redact-media.mjs {input} {output}");
 if (redacted.status !== 0) {
   process.stderr.write(redacted.stderr || redacted.stdout || "redaction smoke redact fixture failed without output\n");
   process.exit(1);
@@ -12,7 +12,7 @@ if (!redacted.stdout.includes("redaction_engine_smoke")) {
   process.exit(1);
 }
 
-const copied = runRedactionSmoke("node scripts/redaction-smoke-fixture.mjs copy {input} {output}");
+const copied = runRedactionSmoke("cp {input} {output}");
 if (copied.status === 0) {
   process.stderr.write("redaction smoke copy fixture unexpectedly passed with unredacted sample content.\n");
   process.exit(1);
@@ -28,7 +28,7 @@ for (const output of [redacted.stdout, redacted.stderr, copied.stdout, copied.st
   }
 }
 
-console.log(JSON.stringify({ checked: "redaction_smoke_safety", redactedFixture: "passed", copyFixture: "rejected" }, null, 2));
+console.log(JSON.stringify({ checked: "redaction_smoke_safety", builtInEngine: "passed", unredactedCopy: "rejected" }, null, 2));
 
 function runRedactionSmoke(command) {
   return spawnSync(process.execPath, nodeArgs, {

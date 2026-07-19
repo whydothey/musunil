@@ -58,7 +58,7 @@ storage:
   secret_access_key: "CHANGE_ME_MEDIA_SECRET_ACCESS_KEY"
 
 redaction:
-  engine_smoke_command: "CHANGE_ME_REDACTION_ENGINE_SMOKE_COMMAND_WITH_{input}_AND_{output}"
+  engine_smoke_command: "node scripts/redact-media.mjs {input} {output}"
 
 mobile:
   android_play_integrity_enabled: true

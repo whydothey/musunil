@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { dirname, extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ApiError, createApp, createSeedStore, stripPreviewData } from "./app.ts";
+import { ApiError, canServePublicRedactedMedia, createApp, createSeedStore, stripPreviewData } from "./app.ts";
 import { createPublicWriteRateLimiter, readJsonBody } from "./http-boundary.ts";
 import { createLiveMediaStorage } from "./live-media-storage.ts";
 import { loadPostgresStore, pingOpsSchedulerSchema, pingPostgres, savePostgresStore } from "./postgres-store.ts";
@@ -118,6 +118,10 @@ async function sendPublicRedactedMedia(
     send(req, res, 403, { error: "forbidden" });
     return true;
   }
+  if (!canServePublicRedactedMedia(app.store, url.pathname)) {
+    send(req, res, 404, { error: "not_found" });
+    return true;
+  }
 
   try {
     const body = await readFile(filePath);
@@ -125,7 +129,19 @@ async function sendPublicRedactedMedia(
     res.writeHead(200, headers);
     res.end(req.method === "HEAD" ? undefined : body);
   } catch {
-    send(req, res, 404, { error: "not_found" });
+    const storageKey = publicRedactedStorageKey(filePath);
+    if (!storageKey || !runtime.liveMediaStorage?.get) {
+      send(req, res, 404, { error: "not_found" });
+      return true;
+    }
+    try {
+      const body = await runtime.liveMediaStorage.get(storageKey);
+      const headers = publicMediaHeaders(req, publicMediaContentType(filePath));
+      res.writeHead(200, headers);
+      res.end(req.method === "HEAD" ? undefined : body);
+    } catch {
+      send(req, res, 404, { error: "not_found" });
+    }
   }
   return true;
 }
@@ -162,6 +178,13 @@ function publicMediaContentType(path: string): string {
       ".webp": "image/webp"
     }[extname(path).toLowerCase()] ?? "application/octet-stream"
   );
+}
+
+function publicRedactedStorageKey(filePath: string): string | undefined {
+  if (!filePath.startsWith(`${publicRedactedMediaRoot}${sep}`)) return undefined;
+  const relativePath = filePath.slice(publicRedactedMediaRoot.length + 1).split(sep).join("/");
+  if (!relativePath || relativePath.includes("..") || relativePath.includes("//")) return undefined;
+  return `public/redacted/${relativePath}`;
 }
 
 function publicMediaHeaders(req: { headers?: Record<string, string | string[] | undefined> }, type: string): Record<string, string> {

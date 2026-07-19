@@ -135,7 +135,7 @@ function storageGroup(component = {}) {
       field("security.media_encryption_key", component.mediaEncryptionKeyStatus)
     ],
     command: component.smokeCommand || "pnpm storage:smoke",
-    proof: "storage_put_delete"
+    proof: "storage_put_get_delete"
   };
 }
 

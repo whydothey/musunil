@@ -1,16 +1,16 @@
 # S+ Service Watch
 
-Last checked: 2026-07-19T11:32:06.379Z
+Last checked: 2026-07-19T12:47:57.897Z
 
 Status: Active
 
 | Check | Result | Detail |
 |---|---|---|
-| web_static_manifest | ok | {"files":16,"bytes":2460427,"headersFile":"verified","buildVariantFiles":6,"mode":"matches_stable_local_and_all_live_hashes"} |
+| web_static_manifest | ok | {"files":16,"bytes":2460348,"headersFile":"verified","buildVariantFiles":6,"mode":"matches_stable_local_and_all_live_hashes"} |
 | web_runtime_config | ok | {"apiBaseUrl":"https://api.musunil.com","expectedApiBaseUrl":"https://api.musunil.com","mapStyleHost":"tiles.openfreemap.org","publicKeys":["apiBaseUrl","mapStyleUrl"]} |
-| web_build_info | ok | {"commitSha":"c127a05836f9da378178284108f90c0a5a80e786","builtAt":"2026-07-19T11:20:59.887Z"} |
+| web_build_info | ok | {"commitSha":"10883379d809ec66991fe219391ff38931860071","builtAt":"2026-07-19T12:17:17.642Z"} |
 | web_header_contract | ok | {"checked":[{"path":"/","headers":{"cache-control":"no-store","content-security-policy":"default-src 'self'; connect-src 'self' https:; img-src 'self' data: blob: https:; media-src 'self' https: blob:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.portone.io; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob:","permissions-policy":"camera=(self), microphone=(), geolocation=(self)","referrer-policy":"no-referrer","x-content-type-options":"nosniff","x-frame-options":"DENY"}},{"path":"/config.js","headers":{"cache-control":"no-store","content-security-policy":"default-src 'self'; connect-src 'self' https:; img-src 'self' data: blob: https:; media-src 'self' https: blob:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.portone.io; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob:","permissions-policy":"camera=(self), microphone=(), geolocation=(self)","referrer-policy":"no-referrer","x-content-type-options":"nosniff","x-frame-options":"DENY"}},{"path":"/build-info.json","headers":{"cache-control":"no-store","content-security-policy":"default-src 'self'; connect-src 'self' https:; img-src 'self' data: blob: https:; media-src 'self' https: blob:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.portone.io; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; worker-src 'self' blob:","permissions-policy":"camera=(self), microphone=(), geolocation=(self)","referrer-policy":"no-referrer","x-content-type-options":"nosniff","x-frame-options":"DENY"}}]} |
-| web_forbidden_ui_absent | ok | {"bytes":428352,"tokenCount":22} |
+| web_forbidden_ui_absent | ok | {"bytes":428273,"tokenCount":22} |
 | web_visual_surface | fail | live visual surface is rendering non-live data state: delayed; firstIssues=정보통신망법 개정 반대 집회; sourceBundleFirst=0/4 |
 | api_endpoint_preflight | fail | getaddrinfo ENOTFOUND api.musunil.com |
 | api_health_ready | skip | skipped: API endpoint preflight failed |

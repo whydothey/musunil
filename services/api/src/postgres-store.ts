@@ -58,7 +58,7 @@ export async function pingOpsSchedulerSchema(databaseUrl: string): Promise<void>
       `select count(*)::integer as task_count
        from ops_task_leases
        where task_id = any($1::text[])`,
-      [["notification_dispatch", "public_source_ingest", "law_source_ingest", "privacy_purge"]]
+      [["notification_dispatch", "public_source_ingest", "law_source_ingest", "media_redaction", "privacy_purge"]]
     );
     if (result.rows[0]?.task_count !== 4) throw new Error("ops scheduler task rows are incomplete");
   } finally {

@@ -2,6 +2,7 @@ export type OpsTaskId =
   | "notification_dispatch"
   | "public_source_ingest"
   | "law_source_ingest"
+  | "media_redaction"
   | "privacy_purge";
 
 export type OpsTaskDefinition = {
@@ -40,6 +41,15 @@ export const opsTaskDefinitions: OpsTaskDefinition[] = [
     priority: 30,
     command: "pnpm",
     args: ["sources:laws:post"],
+    needsUserInputs: true
+  },
+  {
+    id: "media_redaction",
+    cadenceSeconds: 5 * 60,
+    retrySeconds: 2 * 60,
+    priority: 35,
+    command: "pnpm",
+    args: ["redaction:worker"],
     needsUserInputs: true
   },
   {

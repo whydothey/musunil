@@ -5,12 +5,12 @@
 
 ## Current Gate
 
-- Generated: 2026-07-19T11:32:08.351Z
+- Generated: 2026-07-19T12:47:59.801Z
 - Source: local_file
 - Launch state: blocked
 - Current stage: connect_api_endpoint
 - Release blocked: yes
-- Blocker report: 2026-07-19T11:32:06.379Z (0m old, refresh after 15m)
+- Blocker report: 2026-07-19T12:47:57.897Z (0m old, refresh after 15m)
 - Report freshness: fresh
 - Before apply command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
 - Immediate safe command: `pnpm launch:apply`
@@ -40,7 +40,7 @@
 
 - Status: ready_for_smoke
 - Command: `pnpm storage:smoke`
-- Proof marker: `storage_put_delete`
+- Proof marker: `storage_put_get_delete`
 - MUSUNIL_STORAGE_SMOKE_KEY를 직접 지정해야 할 때도 private/live/smoke/ prefix 아래 값만 허용한다. 기존 원본 미디어 key를 smoke key로 쓰지 않는다.
 
 | Field | Status |
@@ -54,13 +54,13 @@
 
 ### 비식별 엔진
 
-- Status: missing_inputs
+- Status: ready_for_smoke
 - Command: `pnpm redaction:smoke`
 - Proof marker: `redaction_engine_smoke`
 
 | Field | Status |
 |---|---|
-| `redaction.engine_smoke_command` | placeholder |
+| `redaction.engine_smoke_command` | configured |
 | `redaction.engine_smoke_command includes {input}` | configured |
 | `redaction.engine_smoke_command includes {output}` | configured |
 
@@ -138,7 +138,7 @@
 
 ## External Smoke Proofs
 
-- storage: `pnpm storage:smoke`, proof: `storage_put_delete`
+- storage: `pnpm storage:smoke`, proof: `storage_put_get_delete`
 - redaction: `pnpm redaction:smoke`, proof: `redaction_engine_smoke`
 - mobile_integrity: `pnpm mobile:integrity-smoke`, proof: `mobile_integrity_provider_dry_run`, contract: structured JSON with checked, provider, packageName or bundleId/teamId, and verdict
 - identity: `pnpm identity:smoke`, proof: `identity_portone_verified_lookup`
@@ -146,7 +146,6 @@
 
 ## Required Actions
 
-- redaction.engine_smoke_command에 {input}/{output}을 받는 실제 비식별 엔진 명령을 넣고 pnpm redaction:smoke를 실행한다.
 - Play Integrity 또는 App Attest 값과 mobile.integrity_smoke_command를 채운 뒤 pnpm mobile:integrity-smoke를 실행한다.
 - PortOne 본인확인 store/channel/API secret/cookie domain을 채우고 인증 리허설을 수행한다.
 - 국회 의안 API key 또는 법제처 OC 중 하나를 입력한다. 이후 pnpm sources:laws를 실행한다.

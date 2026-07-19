@@ -197,6 +197,10 @@ await check("internal_device_integrity", async () => {
 });
 
 await check("internal_redaction_worker", async () => {
+  const queueUnauthed = await rawRequest("GET", "/internal/redaction-queue?limit=1");
+  assert(queueUnauthed.status === 401, `redaction queue without internal key should return 401, got ${queueUnauthed.status}`);
+  const queue = await request("GET", "/internal/redaction-queue?limit=1", undefined, true);
+  assert(Array.isArray(queue.jobs), "redaction queue must return a jobs array");
   const unauthed = await rawRequest("PATCH", "/internal/evidence/ev_occ_live_1/redaction", JSON.stringify({ redactedClipUrl: "/media/redacted/runtime-live.webm" }));
   assert(unauthed.status === 401, `redaction patch without internal key should return 401, got ${unauthed.status}`);
   const invalid = await rawRequest(

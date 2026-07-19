@@ -109,6 +109,7 @@ for (const file of visualEvidenceFiles) {
 for (const term of [
   "실제 `pnpm storage:smoke` 실행",
   "실제 `pnpm redaction:smoke` 실행",
+  "배포 redaction worker end-to-end",
   "운영 DB",
   "모바일 앱 무결성 provider dry-run"
 ]) {
@@ -124,7 +125,7 @@ if (!lawBoardRow || !["Active", "Guard"].includes(lawBoardRow["상태"])) {
 
 for (const term of [
   "실제 storage credential 입력 후 `pnpm storage:smoke` 통과",
-  "실제 비식별 엔진 명령 입력 후 `pnpm redaction:smoke` 통과",
+  "내장 비식별 엔진 기본값으로 실제 `pnpm redaction:smoke` 실행 통과",
   "실제 PortOne 본인확인 완료 ID로 `pnpm identity:smoke` 통과",
   "모바일 LIVE 제보 출시 전 실제 기기에서 무결성 verifier dry-run"
 ]) {
@@ -132,7 +133,7 @@ for (const term of [
 }
 
 if (!national.includes("현재 종합 등급은 A+다.")) failures.push("national issue tracker must not claim S+ before external live verification gates pass");
-if (!national.includes("실제 모바일 attestation provider/storage/redaction/identity smoke 실행 남음")) {
+if (!national.includes("실제 배포 worker/모바일 attestation/PortOne end-to-end smoke 실행 남음")) {
   failures.push("national issue tracker missing remaining live verification blocker");
 }
 if (!packageJson.includes('"launch:external-smoke"')) failures.push("package.json missing launch:external-smoke");

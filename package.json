@@ -48,6 +48,7 @@
     "smoke:api": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/runtime-smoke.mjs",
     "storage:smoke": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/storage-smoke.mjs",
     "redaction:smoke": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/redaction-smoke.mjs",
+    "redaction:worker": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/redaction-worker.mjs",
     "mobile:integrity-smoke": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/mobile-integrity-smoke.mjs",
     "identity:smoke": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/identity-smoke.mjs",
     "launch:external-smoke": "node scripts/external-smoke.mjs",

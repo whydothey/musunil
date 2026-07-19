@@ -21,6 +21,17 @@ export function createLiveMediaStorage(config: Record<string, unknown>): LiveMed
       const response = await fetch(url, { method: "PUT", headers, body: new Blob([new Uint8Array(bytes)]) });
       if (!response.ok) throw new Error(`storage put failed: ${response.status}`);
     },
+    get: async (storageKey) => {
+      const url = storageUrl(endpoint, bucket, storageKey);
+      const payloadHash = createHash("sha256").update("").digest("hex");
+      const now = new Date();
+      const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
+      const shortDate = amzDate.slice(0, 8);
+      const headers = signedS3Headers({ method: "GET", accessKeyId, secretAccessKey, region, url, amzDate, shortDate, payloadHash, contentType: "application/octet-stream" });
+      const response = await fetch(url, { method: "GET", headers });
+      if (!response.ok) throw new Error(`storage get failed: ${response.status}`);
+      return Buffer.from(await response.arrayBuffer());
+    },
     delete: async (storageKey) => {
       const url = storageUrl(endpoint, bucket, storageKey);
       const payloadHash = createHash("sha256").update("").digest("hex");
@@ -55,7 +66,7 @@ function storageUrl(endpoint: string, bucket: string, storageKey: string): URL {
 }
 
 function signedS3Headers(input: {
-  method: "PUT" | "DELETE";
+  method: "PUT" | "GET" | "DELETE";
   accessKeyId: string;
   secretAccessKey: string;
   region: string;

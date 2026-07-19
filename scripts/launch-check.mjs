@@ -97,6 +97,9 @@ const forbiddenPatterns = [
   /자유 댓글|추천\/비추천|찬반투표/u,
   /hazard_area|service_disruption/u
 ];
+if (!/Ensure ffmpeg runtime/.test(ciWorkflow) || !/command -v ffmpeg/.test(ciWorkflow)) {
+  failures.push("GitHub Actions must install ffmpeg when the runner image does not provide it");
+}
 for (const key of ["DATABASE_URL", "REDIS_URL", "MUSUNIL_USER_INPUTS_B64", "MUSUNIL_USER_TOKEN_SECRET", "MUSUNIL_ENCRYPTION_KEY", "MUSUNIL_INTERNAL_API_KEY"]) {
   if (new RegExp(`key:\\s*${key}\\b`).test(renderWeb)) {
     failures.push(`Render Static Web must not receive backend secret/runtime env var: ${key}`);
@@ -240,6 +243,10 @@ const apiSelfCheck = readFileSync(resolve(cwd, "services/api/src/self-check.ts")
 const liveMediaStorage = readFileSync(resolve(cwd, "services/api/src/live-media-storage.ts"), "utf8");
 const storageSmoke = readFileSync(resolve(cwd, "scripts/storage-smoke.mjs"), "utf8");
 const redactionSmoke = readFileSync(resolve(cwd, "scripts/redaction-smoke.mjs"), "utf8");
+const redactionEngine = readFileSync(resolve(cwd, "scripts/redact-media.mjs"), "utf8");
+const redactionWorker = readFileSync(resolve(cwd, "scripts/redaction-worker.mjs"), "utf8");
+const dockerfile = readFileSync(resolve(cwd, "Dockerfile"), "utf8");
+const dockerignore = readFileSync(resolve(cwd, ".dockerignore"), "utf8");
 const mobileIntegritySmoke = readFileSync(resolve(cwd, "scripts/mobile-integrity-smoke.mjs"), "utf8");
 const identitySmoke = readFileSync(resolve(cwd, "scripts/identity-smoke.mjs"), "utf8");
 const operationalDiagnostics = readFileSync(resolve(cwd, "scripts/operational-readiness-diagnostics.mjs"), "utf8");
@@ -289,6 +296,9 @@ if (
 if (!/sendPublicRedactedMedia/.test(apiServer) || !/publicRedactedMediaRoot/.test(apiServer) || !/publicRedactedMediaPrefix/.test(apiServer)) {
   failures.push("API public redacted media route is missing");
 }
+if (!/canServePublicRedactedMedia\(app\.store, url\.pathname\)/.test(apiServer) || !/isPublicClaim\(claim\) && claim\.evidenceIds\.includes/.test(apiApp)) {
+  failures.push("redacted derivatives must remain inaccessible until a reviewed Claim is public");
+}
 if (!/autoPublishLiveReports/.test(apiServer) || !/moderation\.auto_publish_low_risk_live_reports/.test(apiServer)) {
   failures.push("LIVE report moderation auto-publish wiring is missing");
 }
@@ -298,8 +308,8 @@ if (!/createLiveMediaStorage/.test(apiServer) || !/liveMediaStorage:\s*runtime\.
 if (!/delete:\s*async/.test(liveMediaStorage) || !/method:\s*"DELETE"/.test(liveMediaStorage) || !/privacy_purge_storage_unavailable/.test(apiApp)) {
   failures.push("production privacy purge must delete external media objects before clearing storage keys");
 }
-if (!/createLiveMediaStorage/.test(storageSmoke) || !/storage_put_delete/.test(storageSmoke) || !/storage:smoke/.test(packageJson)) {
-  failures.push("storage PUT/DELETE launch smoke command is missing");
+if (!/createLiveMediaStorage/.test(storageSmoke) || !/storage_put_get_delete/.test(storageSmoke) || !/readBackVerified/.test(storageSmoke) || !/storage:smoke/.test(packageJson)) {
+  failures.push("storage PUT/GET/DELETE launch smoke command is missing");
 }
 if (
   !/storageSmokePrefix/.test(liveMediaStorage) ||
@@ -325,7 +335,7 @@ if (
 ) {
   failures.push("operator docs must warn that storage smoke key overrides are restricted to private/live/smoke/ and must not reuse real media keys");
 }
-if (/checked:\s*"storage_put_delete"[\s\S]*storageKey/.test(storageSmoke)) {
+if (/checked:\s*"storage_put_get_delete"[\s\S]*storageKey/.test(storageSmoke)) {
   failures.push("storage smoke must not print private storage keys");
 }
 if (
@@ -759,7 +769,7 @@ if (
   !/proofContract/.test(launchCutoverRehearsal) ||
   !/contract:/.test(launchCutoverRehearsal) ||
   !/proofContract/.test(externalSmoke) ||
-  !/storage_put_delete/.test(externalSmoke) ||
+  !/storage_put_get_delete/.test(externalSmoke) ||
   !/redaction_engine_smoke/.test(externalSmoke) ||
   !/mobile_integrity_provider_dry_run/.test(externalSmoke) ||
   !/structured JSON with checked, provider, packageName or bundleId\/teamId, and verdict/.test(externalSmoke) ||
@@ -863,7 +873,7 @@ if (
   !/Launch Ready Plan/.test(launchOperatorBriefDoc) ||
   !/External Smoke Proofs/.test(launchOperatorBriefDoc) ||
   !/provider 연결 증거/.test(launchOperatorBriefDoc) ||
-  !/proof: `storage_put_delete`/.test(launchOperatorBriefDoc) ||
+  !/proof: `storage_put_get_delete`/.test(launchOperatorBriefDoc) ||
   !/proof: `redaction_engine_smoke`/.test(launchOperatorBriefDoc) ||
   !/proof: `mobile_integrity_provider_dry_run`/.test(launchOperatorBriefDoc) ||
   !/contract: structured JSON with checked, provider, packageName or bundleId\/teamId, and verdict/.test(launchOperatorBriefDoc) ||
@@ -962,7 +972,7 @@ if (
   !/Runtime Secrets/.test(launchMissingInputsDoc) ||
   !/RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET/.test(launchMissingInputsDoc) ||
   !/CLOUDFLARE_API_TOKEN/.test(launchMissingInputsDoc) ||
-  !/storage_put_delete/.test(launchMissingInputsDoc) ||
+  !/storage_put_get_delete/.test(launchMissingInputsDoc) ||
   !/redaction_engine_smoke/.test(launchMissingInputsDoc) ||
   !/mobile_integrity_provider_dry_run/.test(launchMissingInputsDoc) ||
   !/Proof contract: structured JSON with checked, provider, packageName or bundleId\/teamId, and verdict/.test(launchMissingInputsDoc) ||
@@ -1427,8 +1437,11 @@ if (
   !/shellQuote/.test(redactionSmoke) ||
   !/stdio:\s*\["ignore",\s*"pipe",\s*"pipe"\]/.test(redactionSmoke) ||
   !/assertSampleRedacted/.test(redactionSmoke) ||
+  !/ffprobe/.test(redactionSmoke) ||
+  !/edgeEnergy/.test(redactionSmoke) ||
+  !/audioRemoved/.test(redactionSmoke) ||
   !/unredacted sensitive sample token/.test(redactionSmoke) ||
-  !/12가3456/.test(redactionSmoke) ||
+  !/12\\uAC003456/.test(redactionSmoke) ||
   !/sample face/.test(redactionSmoke) ||
   !/"redaction:smoke"/.test(packageJson) ||
   !/"check:redaction-smoke-safety"/.test(packageJson) ||
@@ -1439,17 +1452,29 @@ if (
   failures.push("redaction engine launch smoke command is missing");
 }
 const redactionSmokeSafety = readFileSync(resolve(cwd, "scripts/ci-redaction-smoke-safety.mjs"), "utf8");
-const redactionSmokeFixture = readFileSync(resolve(cwd, "scripts/redaction-smoke-fixture.mjs"), "utf8");
 if (
   !/redaction_smoke_safety/.test(redactionSmokeSafety) ||
   !/copy fixture unexpectedly passed/.test(redactionSmokeSafety) ||
   !/unredacted sensitive sample token/.test(redactionSmokeSafety) ||
   !/sample face/.test(redactionSmokeSafety) ||
   !/12가3456/.test(redactionSmokeSafety) ||
-  !/replaceAll\("sample face"/.test(redactionSmokeFixture) ||
-  !/replaceAll\("12가3456"/.test(redactionSmokeFixture)
+  !/scripts\/redact-media\.mjs/.test(redactionSmokeSafety) ||
+  !/cp \{input\} \{output\}/.test(redactionSmokeSafety)
 ) {
   failures.push("redaction smoke safety check must execute-test redacted and unredacted sample outputs without leaking sensitive samples");
+}
+if (
+  !/boxblur/.test(redactionEngine) ||
+  !/"-an"/.test(redactionEngine) ||
+  !/"-map_metadata"/.test(redactionEngine) ||
+  !/libvpx-vp9/.test(redactionEngine) ||
+  !/\/internal\/redaction-queue/.test(redactionWorker) ||
+  !/decryptLiveMediaBytes/.test(redactionWorker) ||
+  !/public\/redacted\//.test(redactionWorker) ||
+  !/status: "review_required"/.test(redactionWorker) ||
+  !/"redaction:worker"/.test(packageJson)
+) {
+  failures.push("built-in media redaction worker must decrypt, redact, upload private-bucket public derivatives, and preserve manual review");
 }
 if (/process\.(stdout|stderr)\.write\(data\)/.test(mobileIntegritySmoke)) {
   failures.push("mobile integrity smoke must not stream provider output into launch logs");
@@ -1786,8 +1811,14 @@ for (const [serviceName, block] of [
   if (!/key:\s*MUSUNIL_RUNTIME_ENV[\s\S]*?value:\s*production/.test(block)) failures.push(`${serviceName} must set MUSUNIL_RUNTIME_ENV=production`);
 }
 if (!/preDeployCommand:\s*pnpm db:migrate/.test(renderYaml)) failures.push("Render API preDeployCommand must run pnpm db:migrate");
-if (!/name:\s*musunil-api[\s\S]*?buildCommand:[^\n]*pnpm check[^\n]*pnpm build:web-config[^\n]*pnpm launch:check/.test(renderYaml)) {
-  failures.push("Render API build must run pnpm check, pnpm build:web-config, and pnpm launch:check");
+if (!/runtime:\s*docker/.test(renderApi) || !/dockerfilePath:\s*\.\/Dockerfile/.test(renderApi) || !/dockerContext:\s*\./.test(renderApi)) {
+  failures.push("Render API must use the ffmpeg-capable Docker runtime");
+}
+if (!/FROM node:24-bookworm-slim/.test(dockerfile) || !/apt-get install[^\n]*ca-certificates ffmpeg/.test(dockerfile) || !/pnpm install --frozen-lockfile && pnpm check/.test(dockerfile)) {
+  failures.push("API Docker image must pin Node 24, install ffmpeg, and run the repository check");
+}
+if (!/config\/musunil\.user-inputs\.local\.yaml/.test(dockerignore)) {
+  failures.push("Docker build context must exclude the local secret YAML");
 }
 const packageScripts = JSON.parse(packageJson).scripts ?? {};
 const renderWebBuildScript = packageScripts["build:web-static:render"] ?? "";
@@ -1871,11 +1902,13 @@ if (!/name:\s*musunil-ops-scheduler[\s\S]*?type:\s*cron|type:\s*cron[\s\S]*?name
   failures.push("durable operations scheduler cron is missing from render.yaml");
 }
 if (!/schedule:\s*"\*\/5 \* \* \* \*"/.test(renderOpsScheduler)) failures.push("operations scheduler cron must wake every five minutes");
-if (!/startCommand:\s*pnpm ops:scheduler/.test(renderOpsScheduler)) failures.push("operations scheduler cron startCommand must run pnpm ops:scheduler");
+if (!/runtime:\s*docker/.test(renderOpsScheduler) || !/dockerCommand:\s*pnpm ops:scheduler/.test(renderOpsScheduler)) {
+  failures.push("operations scheduler cron must use the ffmpeg-capable Docker image and run pnpm ops:scheduler");
+}
 for (const legacyCron of ["musunil-public-source-ingest", "musunil-law-source-ingest", "musunil-notification-dispatch", "musunil-privacy-purge"]) {
   if (renderYaml.includes(`name: ${legacyCron}`)) failures.push(`legacy duplicate cron must be removed after scheduler consolidation: ${legacyCron}`);
 }
-for (const taskId of ["notification_dispatch", "public_source_ingest", "law_source_ingest", "privacy_purge"]) {
+for (const taskId of ["notification_dispatch", "public_source_ingest", "law_source_ingest", "media_redaction", "privacy_purge"]) {
   if (!opsSchedulerContract.includes(`id: "${taskId}"`)) failures.push(`operations scheduler task is missing: ${taskId}`);
 }
 if (!/for update skip locked\s+limit 1/i.test(opsScheduler) || !/lease_owner = \$2/.test(opsScheduler) || !/lease_until <= now\(\)/.test(opsScheduler) || !/renewLease\(task\)/.test(opsScheduler)) {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { createApp, createSeedStore, decryptLiveMediaBytes } from "./app.ts";
+import { canServePublicRedactedMedia, createApp, createSeedStore, decryptLiveMediaBytes } from "./app.ts";
 import { enforcePublicWriteRateLimit, publicWriteRateLimitKey, readJsonBody } from "./http-boundary.ts";
 import { assertStorageSmokeKey, storageSmokeKey, storageSmokePrefix } from "./live-media-storage.ts";
 import { decryptSnapshot, encryptSnapshot } from "./postgres-store.ts";
@@ -820,6 +820,15 @@ assert.equal((privateRedactionPublishHeld.body as { error: string }).error, "red
 assert.equal(heldStore.occurrences.find((item) => item.id === "occ_1")?.claimIds.includes(heldClaimId), false);
 assert.equal(heldStore.evidence.find((item) => item.id === heldEvidenceId)?.redactionStatus, "pending");
 assert.equal(heldStore.evidence.find((item) => item.id === heldEvidenceId)?.publicStorageKey, undefined);
+const unauthedRedactionQueue = await heldApp.handle({ method: "GET", path: "/internal/redaction-queue?limit=1" });
+assert.equal(unauthedRedactionQueue.status, 401);
+const redactionQueue = await heldApp.handle({ method: "GET", path: "/internal/redaction-queue?limit=1", headers: internalHeaders });
+assert.equal(redactionQueue.status, 200);
+const queuedJob = (redactionQueue.body as { jobs: Array<{ evidenceId: string; storageKey: string; expectedHash: string; encrypted: boolean }> }).jobs[0];
+assert.equal(queuedJob?.evidenceId, heldEvidenceId);
+assert.equal(queuedJob?.storageKey, heldStore.evidence.find((item) => item.id === heldEvidenceId)?.storageKey);
+assert.equal(queuedJob?.expectedHash, heldStore.evidence.find((item) => item.id === heldEvidenceId)?.hash);
+assert.equal(queuedJob?.encrypted, false);
 const unauthedRedaction = await heldApp.handle({
   method: "PATCH",
   path: `/internal/evidence/${heldEvidenceId}/redaction`,
@@ -902,6 +911,9 @@ assert.equal((workerRedaction.body as { evidence: { publicPosterUrl?: string } }
 assert((workerRedaction.body as { evidence: { redactionProofHash: string } }).evidence.redactionProofHash.startsWith("sha256-"));
 assert.equal(JSON.stringify(workerRedaction.body).includes("trusted-redaction-report"), false);
 assert.equal(JSON.stringify(workerRedaction.body).includes("storageKey"), false);
+assert.equal(canServePublicRedactedMedia(heldStore, "/media/redacted/held-live.webm"), false);
+const completedRedactionQueue = await heldApp.handle({ method: "GET", path: "/internal/redaction-queue?limit=10", headers: internalHeaders });
+assert.equal((completedRedactionQueue.body as { jobs: Array<unknown> }).jobs.some((job) => JSON.stringify(job).includes(heldEvidenceId)), false);
 const publishBeforeDeviceIntegrity = await heldApp.handle({
   method: "PATCH",
   path: `/admin/claims/${heldClaimId}`,
@@ -926,6 +938,8 @@ const publishHeld = await heldApp.handle({
   body: { visibility: "public", riskLevel: "rights_risk", publicReason: "검수 후 공개" }
 });
 assert.equal(publishHeld.status, 200);
+assert.equal(canServePublicRedactedMedia(heldStore, "/media/redacted/held-live.webm"), true);
+assert.equal(canServePublicRedactedMedia(heldStore, "/media/redacted/held-live-poster.webp"), true);
 const publishedDetail = await heldApp.handle({ method: "GET", path: "/occurrences/occ_1" });
 assert.equal(JSON.stringify(publishedDetail.body).includes(heldClaimId), true);
 assert.equal(heldStore.occurrences.find((item) => item.id === "occ_1")?.claimIds.includes(heldClaimId), true);

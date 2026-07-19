@@ -18,6 +18,8 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
+      - name: Ensure ffmpeg runtime
+        run: command -v ffmpeg >/dev/null || (sudo apt-get update && sudo apt-get install -y ffmpeg)
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm check:release

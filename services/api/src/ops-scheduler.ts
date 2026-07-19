@@ -93,6 +93,7 @@ async function claimNextDueTask(): Promise<OpsTaskDefinition | undefined> {
                   when 'notification_dispatch' then 10
                   when 'public_source_ingest' then 20
                   when 'law_source_ingest' then 30
+                  when 'media_redaction' then 35
                   when 'privacy_purge' then 40
                   else 100
                 end

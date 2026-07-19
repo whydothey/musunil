@@ -70,7 +70,7 @@ storage:
   secret_access_key: "CHANGE_ME_MEDIA_SECRET_ACCESS_KEY"
 
 redaction:
-  engine_smoke_command: "CHANGE_ME_REDACTION_ENGINE_SMOKE_COMMAND_WITH_{input}_AND_{output}"
+  engine_smoke_command: "node scripts/redact-media.mjs {input} {output}"
 
 mobile:
   android_play_integrity_enabled: true
@@ -164,6 +164,6 @@ ai:
 
 writeFileSync(outputPath, yaml, { mode: 0o600 });
 console.log(`Created ${outputPath}`);
-console.log("Fill first: support email, organization contacts, PortOne identity verification keys, law source API key, media encryption key, storage provider/bucket/keys, redaction smoke command, mobile integrity verifier values/smoke command, and a one-time MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID env value for identity smoke.");
+console.log("Fill first: support email, organization contacts, PortOne identity verification keys, law source API key, media encryption key, storage provider/bucket/keys, mobile integrity verifier values/smoke command, and a one-time MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID env value for identity smoke. The built-in redaction command is already configured.");
 console.log("Fill later after business/PG setup: business registration number, business bank account holder, and PG keys. Keep personal bank account exposure and payment influence flags disabled.");
 console.log(`Then run: pnpm launch:ready -- ${outputPath}`);
