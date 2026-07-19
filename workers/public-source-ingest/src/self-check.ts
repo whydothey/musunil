@@ -604,15 +604,13 @@ globalThis.fetch = (async (input: RequestInfo | URL) => {
   return new Response(
     JSON.stringify({
       LawSearch: {
-        law: [
-          {
-            법령명한글: "공직선거법",
-            법령ID: "001",
-            제개정구분명: "현행 법령",
-            시행일자: "20260710",
-            법령상세링크: "https://www.law.go.kr/법령/공직선거법"
-          }
-        ]
+        law: {
+          법령명한글: "공직선거법",
+          법령ID: "001",
+          제개정구분명: "현행 법령",
+          시행일자: "20260710",
+          법령상세링크: "https://www.law.go.kr/법령/공직선거법"
+        }
       }
     })
   );

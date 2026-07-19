@@ -111,7 +111,7 @@ GET /ready -> 200
 - 실제 `pnpm redaction:smoke` 결과가 아직 없다.
 - 실제 `pnpm mobile:integrity-smoke` 결과가 아직 없다.
 - 실제 `pnpm identity:smoke` 결과가 아직 없다.
-- 실제 법 원천 `pnpm sources:laws` 1건 이상 dry-run/post 결과가 아직 없다.
+- 법제처 공식 live 응답 8건의 dry-run·재수집 upsert는 `pnpm check:laws-live`로 통과했다. 국회 실제 발의 의안 key와 운영 API post 결과는 아직 없다.
 - 실제 포트원 본인확인 채널로 인증 완료 리허설 결과가 아직 없다.
 - 운영 DB/Redis/Render `/ready` 결과가 아직 없다.
 - `pnpm launch:cutover-rehearsal -- --strict`는 현재 API DNS, Web headers, live issue sync blocker 때문에 실패해야 정상이다.

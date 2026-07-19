@@ -264,6 +264,7 @@ async function fetchJson(url: URL): Promise<unknown> {
 
 function extractObjectRows(value: unknown): Array<Record<string, unknown>> {
   const arrays: Array<Array<Record<string, unknown>>> = [];
+  const singletonRows: Array<Record<string, unknown>> = [];
   const visit = (node: unknown): void => {
     if (Array.isArray(node)) {
       const rows = node.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object" && !Array.isArray(item));
@@ -272,10 +273,13 @@ function extractObjectRows(value: unknown): Array<Record<string, unknown>> {
       return;
     }
     if (!node || typeof node !== "object") return;
+    const record = node as Record<string, unknown>;
+    if (hasLawRowKey(record)) singletonRows.push(record);
     for (const item of Object.values(node)) visit(item);
   };
   visit(value);
-  return arrays.sort((a, b) => rowArrayScore(b) - rowArrayScore(a))[0] ?? [];
+  const bestArray = arrays.sort((a, b) => rowArrayScore(b) - rowArrayScore(a))[0];
+  return bestArray && rowArrayScore(bestArray) >= rowArrayScore(singletonRows) ? bestArray : singletonRows;
 }
 
 function rowArrayScore(rows: Array<Record<string, unknown>>): number {

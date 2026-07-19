@@ -188,6 +188,14 @@ pnpm sources:laws
 pnpm sources:laws-diagnose -- --require-law-metadata
 ```
 
+공식 사이트 live 연결과 갱신 계약 검증:
+
+```bash
+pnpm check:laws-live
+```
+
+이 검사는 법제처 공식 활용가이드에 공개된 `OC=test`를 운영 credential이 아니라 live 연결 테스트에만 사용한다. 실제 국가법령정보 응답을 두 번 조회해 `집회 및 시위에 관한 법률`, `공직선거법`, `국회법`을 확인하고, 인메모리 API에 최초 적재 → 재수집 → 동일 ID 갱신 → 공식값 복원을 실행한다. 행 수가 늘어나거나 같은 ID가 중복되면 실패한다. 로컬 YAML에 실제 법제처 OC 또는 국회 API key가 있으면 해당 값을 우선 사용하며 credential 원문은 출력하지 않는다.
+
 운영 전 통합 외부 smoke:
 
 ```bash
@@ -198,6 +206,7 @@ pnpm launch:external-smoke
 
 현재 검증 범위:
 
+- `pnpm check:laws-live`가 법제처 실제 응답의 다건 배열과 1건 단일 객체 형태를 모두 파싱하고, 공식 LawItem 재수집의 멱등성과 갱신을 검증한다.
 - worker self-check가 국회 의안 API와 국가법령 API의 JSON 응답을 mock으로 파싱한다.
 - API self-check가 `/internal/ingest/laws` 반영과 IssueLawLink 자동 연결을 검증한다.
 - runtime smoke가 `/laws` 목록과 `/laws/:id` 상세 계약을 검증한다.
@@ -208,7 +217,7 @@ pnpm launch:external-smoke
 
 S+ 판정에 남은 것:
 
-- 실제 `national_assembly_bill_api_key` 또는 `law_go_kr_oc`를 넣고 `pnpm sources:laws`가 1건 이상을 dry-run으로 반환해야 한다.
+- 법제처 live 연결과 실제 현행 법령 dry-run은 통과했다. `national_assembly_bill_api_key`를 입력해 실제 발의 의안의 `최근 발의` 정렬을 추가 검증해야 한다.
 - 운영 API에 `--laws --post`가 성공하고 법 탭에서 새 LawItem이 이슈와 연결되어야 한다.
 
 법령·의안 API 반영:
