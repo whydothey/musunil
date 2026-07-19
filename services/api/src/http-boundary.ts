@@ -1,9 +1,100 @@
+import { createHmac } from "node:crypto";
+import { createClient } from "redis";
 import { ApiError } from "./app.ts";
 
 const maxJsonBodyBytes = 256 * 1024;
 const maxLiveUploadJsonBodyBytes = 6 * 1024 * 1024;
 const publicWriteLimit = { max: 30, windowMs: 60_000 };
 const publicWriteBuckets = new Map<string, { count: number; resetAt: number }>();
+const distributedRateLimitScript = `
+local current = redis.call('INCR', KEYS[1])
+if current == 1 then
+  redis.call('PEXPIRE', KEYS[1], ARGV[1])
+end
+return current
+`;
+
+export type PublicWriteRateLimiter = {
+  enforce: (req: RateLimitedRequest) => Promise<void>;
+  readiness: () => Promise<{ id: string; ok: boolean; message: string }>;
+  close: () => Promise<void>;
+};
+
+type RateLimitedRequest = {
+  method?: string;
+  url?: string;
+  headers?: Record<string, string | string[] | undefined>;
+  socket?: { remoteAddress?: string };
+};
+
+export async function createPublicWriteRateLimiter(redisUrl?: string, keySecret?: string): Promise<PublicWriteRateLimiter> {
+  if (!redisUrl) {
+    return {
+      enforce: async (req) => enforcePublicWriteRateLimit(req),
+      readiness: async () => ({ id: "redis", ok: false, message: "redis not configured" }),
+      close: async () => undefined
+    };
+  }
+  if (!keySecret) throw new Error("A secret is required to pseudonymize distributed rate-limit keys.");
+
+  const client = createClient({
+    url: redisUrl,
+    disableOfflineQueue: true,
+    socket: {
+      connectTimeout: 1_500,
+      reconnectStrategy: (retries) => Math.min(100 * 2 ** retries, 1_000)
+    }
+  });
+  client.on("error", () => undefined);
+  let connectTimer: NodeJS.Timeout | undefined;
+  const connectTimeout = new Promise<never>((_, reject) => {
+    connectTimer = setTimeout(() => reject(new Error("Redis connection timed out.")), 5_000);
+    connectTimer.unref();
+  });
+  try {
+    await Promise.race([client.connect(), connectTimeout]);
+  } catch (error) {
+    client.destroy();
+    throw error;
+  } finally {
+    clearTimeout(connectTimer);
+  }
+
+  return {
+    enforce: async (req) => {
+      const path = new URL(req.url ?? "/", "http://localhost").pathname;
+      if (!isPublicWrite(req.method, path)) return;
+      const key = publicWriteRateLimitKey(clientIp(req), keySecret);
+      try {
+        const count = Number(await client.eval(distributedRateLimitScript, {
+          keys: [key],
+          arguments: [String(publicWriteLimit.windowMs)]
+        }));
+        if (!Number.isFinite(count)) throw new Error("invalid Redis rate-limit response");
+        if (count > publicWriteLimit.max) throw new ApiError(429, "rate_limited");
+      } catch (error) {
+        if (error instanceof ApiError) throw error;
+        throw new ApiError(503, "rate_limiter_unavailable");
+      }
+    },
+    readiness: async () => {
+      try {
+        return await client.ping() === "PONG"
+          ? { id: "redis", ok: true, message: "redis authenticated and reachable" }
+          : { id: "redis", ok: false, message: "redis ping failed" };
+      } catch {
+        return { id: "redis", ok: false, message: "redis unreachable" };
+      }
+    },
+    close: async () => {
+      if (client.isOpen) client.destroy();
+    }
+  };
+}
+
+export function publicWriteRateLimitKey(ip: string, secret: string): string {
+  return `musunil:write-limit:${createHmac("sha256", secret).update(ip).digest("hex")}`;
+}
 
 export async function readJsonBody(req: {
   method?: string;
@@ -43,12 +134,7 @@ export async function readJsonBody(req: {
 }
 
 export function enforcePublicWriteRateLimit(
-  req: {
-    method?: string;
-    url?: string;
-    headers?: Record<string, string | string[] | undefined>;
-    socket?: { remoteAddress?: string };
-  },
+  req: RateLimitedRequest,
   buckets = publicWriteBuckets,
   now = Date.now()
 ): void {

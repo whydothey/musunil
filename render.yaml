@@ -2,10 +2,9 @@ services:
   - type: keyvalue
     name: musunil-redis
     region: singapore
-    plan: starter
+    plan: free
     ipAllowList: []
     maxmemoryPolicy: noeviction
-    persistenceMode: journal-snapshot
 
   - type: web
     name: musunil-api

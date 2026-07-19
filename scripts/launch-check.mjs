@@ -81,6 +81,7 @@ const lawSourceIngest = readFileSync(resolve(cwd, "workers/public-source-ingest/
 const opsScheduler = readFileSync(resolve(cwd, "services/api/src/ops-scheduler.ts"), "utf8");
 const opsSchedulerContract = readFileSync(resolve(cwd, "services/api/src/ops-scheduler-contract.ts"), "utf8");
 const opsSchedulerMigration = readFileSync(resolve(cwd, "services/api/migrations/011_ops_task_leases.sql"), "utf8");
+const httpBoundary = readFileSync(resolve(cwd, "services/api/src/http-boundary.ts"), "utf8");
 const rootPackageJson = readFileSync(resolve(cwd, "package.json"), "utf8");
 const ciWorkflow = readFileSync(resolve(cwd, ".github/workflows/ci.yml"), "utf8");
 const postDeployWorkflow = readFileSync(resolve(cwd, ".github/workflows/post-deploy.yml"), "utf8");
@@ -260,7 +261,7 @@ if (
   failures.push("launch input verification must check local YAML shape against the template before value validation");
 }
 if (!/pingPostgres/.test(apiServer)) failures.push("/ready postgres ping is missing");
-if (!/tcpUrlReadyCheck\("redis"/.test(apiServer)) failures.push("/ready redis reachability check is missing");
+if (!/publicWriteRateLimiter\.readiness\(\)/.test(apiServer)) failures.push("/ready authenticated Redis ping check is missing");
 if (
   !/function describeReadiness/.test(apiApp) ||
   !/summary:\s*\{[\s\S]*failedIds/.test(apiApp) ||
@@ -1830,6 +1831,18 @@ if (!/databases:\s*[\s\S]*-\s+name:\s*musunil-postgres\b[\s\S]*databaseName:\s*m
 }
 if (!/type:\s*keyvalue\b/.test(renderRedis) || !/ipAllowList:\s*\[\]/.test(renderRedis)) {
   failures.push("Render managed Key Value must be declared with private-network-only access");
+}
+if (!/plan:\s*free\b/.test(renderRedis) || /persistenceMode:/.test(renderRedis)) {
+  failures.push("Render Key Value should use the non-persistent free plan while it is limited to rate-limit counters");
+}
+if (!/createClient\(\{[\s\S]*?url:\s*redisUrl/.test(httpBoundary) || !/client\.eval\(distributedRateLimitScript/.test(httpBoundary) || !/PEXPIRE/.test(httpBoundary)) {
+  failures.push("Redis must enforce the public write rate limit atomically instead of serving as a readiness-only dependency");
+}
+if (!/createHmac\("sha256", secret\)/.test(httpBoundary) || !/rate_limiter_unavailable/.test(httpBoundary)) {
+  failures.push("distributed rate-limit keys must pseudonymize client IPs and fail closed when Redis is unavailable");
+}
+if (!/disableOfflineQueue:\s*true/.test(httpBoundary) || !/Promise\.race\(\[client\.connect\(\), connectTimeout\]\)/.test(httpBoundary)) {
+  failures.push("Redis rate limiting must fail quickly instead of queuing writes or hanging API startup");
 }
 if (!hasRenderPostgresEnv(renderApi, "DATABASE_URL") || !hasRenderKeyValueEnv(renderApi, "REDIS_URL")) {
   failures.push("Render API must receive DATABASE_URL and REDIS_URL from managed resources");

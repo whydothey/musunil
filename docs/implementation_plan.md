@@ -41,7 +41,7 @@ Web/PWA, Mobile
 
 1. 설정
    - 사용자 입력값은 단일 YAML 파일 또는 Render Secret 주입만 사용한다.
-   - 제품/운영 입력값은 단일 YAML에서 읽고, Render 관리형 DB/Redis URL과 generated secret만 환경변수로 받는다.
+   - 제품/운영 입력값은 단일 YAML에서 읽고, Render 관리형 DB/Redis URL과 generated secret만 환경변수로 받는다. Redis는 HMAC 처리된 단기 쓰기 제한 counter에만 사용하고 세션·Claim 영속성은 Postgres가 담당한다.
 
 2. 도메인 모델
    - Issue, Occurrence, ContinuousPresence.

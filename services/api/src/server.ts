@@ -1,10 +1,9 @@
 import { createServer } from "node:http";
-import { Socket } from "node:net";
 import { readFile } from "node:fs/promises";
 import { dirname, extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ApiError, createApp, createSeedStore, stripPreviewData } from "./app.ts";
-import { enforcePublicWriteRateLimit, readJsonBody } from "./http-boundary.ts";
+import { createPublicWriteRateLimiter, readJsonBody } from "./http-boundary.ts";
 import { createLiveMediaStorage } from "./live-media-storage.ts";
 import { loadPostgresStore, pingOpsSchedulerSchema, pingPostgres, savePostgresStore } from "./postgres-store.ts";
 import { loadUserInputs, validateLaunchConfig } from "../../../packages/config/src/index.ts";
@@ -14,11 +13,23 @@ const publicRedactedMediaRoot = resolve(apiDir, "../../../apps/web/media/redacte
 const publicRedactedMediaPrefix = "/media/redacted/";
 
 const runtime = loadRuntime();
+const publicWriteRateLimiter = await createPublicWriteRateLimiter(runtime.redisUrl, runtime.userTokenSecret || runtime.internalApiKey);
+const runtimeReadiness = async () => {
+  const report = await runtime.readiness();
+  if (!runtime.redisUrl) return report;
+  const redis = await publicWriteRateLimiter.readiness();
+  const checks = [...report.checks.filter((check) => check.id !== "redis"), redis];
+  return {
+    ...report,
+    ready: checks.every((check) => check.ok),
+    checks
+  };
+};
 const seedStore = createSeedStore({ includeMockData: runtime.includeMockData });
 const loadedStore = runtime.databaseUrl ? await loadPostgresStore(runtime.databaseUrl, seedStore, runtime.encryptionKey) : seedStore;
 const initialStore = runtime.includeMockData ? loadedStore : stripPreviewData(loadedStore);
 const app = createApp(initialStore, {
-  readiness: runtime.readiness,
+  readiness: runtimeReadiness,
   internalApiKey: runtime.internalApiKey,
   userTokenSecret: runtime.userTokenSecret,
   identity: runtime.identity,
@@ -41,7 +52,7 @@ const server = createServer(async (req, res) => {
       return;
     }
     if (await sendPublicRedactedMedia(req, res)) return;
-    enforcePublicWriteRateLimit(req);
+    await publicWriteRateLimiter.enforce(req);
     const body = await readJsonBody(req);
     const response = await app.handle({
       method: req.method ?? "GET",
@@ -73,6 +84,7 @@ async function shutdown(signal: string): Promise<void> {
 
   try {
     await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
+    await publicWriteRateLimiter.close();
     await persistQueue.catch(() => undefined);
     if (runtime.databaseUrl) await persistStore();
     console.log(`musunil api shutdown after ${signal}`);
@@ -210,6 +222,7 @@ function loadRuntime() {
       identity,
       encryptionKey,
       databaseUrl,
+      redisUrl,
       liveMediaStorage,
       liveMediaEncryptionKey,
       requireExternalLiveStorage: production,
@@ -225,7 +238,6 @@ function loadRuntime() {
           ...(production && identityTestModeRequested ? [{ id: "identity.test_mode", ok: false, message: "MUSUNIL_IDENTITY_TEST_MODE is not allowed in production." }] : [])
         ];
         if (databaseUrl) checks.push(...await postgresReadyChecks(databaseUrl));
-        if (redisUrl) checks.push(await tcpUrlReadyCheck("redis", redisUrl));
         return { ready: checks.every((check) => check.ok), checks };
       }
     };
@@ -247,6 +259,7 @@ function loadRuntime() {
       },
       encryptionKey: process.env.MUSUNIL_ENCRYPTION_KEY,
       databaseUrl: process.env.DATABASE_URL,
+      redisUrl: process.env.REDIS_URL,
       liveMediaStorage: undefined,
       liveMediaEncryptionKey: undefined,
       requireExternalLiveStorage: productionRuntime,
@@ -289,28 +302,6 @@ async function postgresReadyChecks(databaseUrl: string): Promise<Array<{ id: str
       { id: "postgres", ok: true, message: "postgres reachable" },
       { id: "ops_scheduler_schema", ok: false, message: "ops scheduler migration incomplete" }
     ];
-  }
-}
-
-async function tcpUrlReadyCheck(id: string, rawUrl: string): Promise<{ id: string; ok: boolean; message: string }> {
-  try {
-    const url = new URL(rawUrl);
-    const port = Number(url.port || (url.protocol === "rediss:" ? 6380 : 6379));
-    await new Promise<void>((resolve, reject) => {
-      const socket = new Socket();
-      const done = (error?: Error) => {
-        socket.destroy();
-        error ? reject(error) : resolve();
-      };
-      socket.setTimeout(1500);
-      socket.once("connect", () => done());
-      socket.once("timeout", () => done(new Error("timeout")));
-      socket.once("error", done);
-      socket.connect(port, url.hostname);
-    });
-    return { id, ok: true, message: `${id} reachable` };
-  } catch {
-    return { id, ok: false, message: `${id} unreachable` };
   }
 }
 

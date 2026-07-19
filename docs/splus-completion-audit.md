@@ -40,7 +40,7 @@ active goal은 아래 조건이 모두 증명될 때만 완료다.
 | 지도·지역 UX | A+ 후보 Active | 공개 지도는 자료 위치 핀과 현장 인증 범위만 유지, 지도 탭 숫자 타일 0개, 중복 지도 버튼 hidden, 지도-first 재배치, 데스크톱 홈 `지역 현황` 지도 visible, 모바일 홈 지도 미노출, 모바일 map top 215px/height 460px, 데스크톱 map top 211px/height 700px, 데스크톱 map width 1200px/viewport share 83%, 홈/전용 지도 시트 62px, 모바일 지도 시트 114px, `sheetMapRatio=0.09~0.25`, toolbar 52~54px, 탐색 tile 52px, summary hidden, 하단 내비 겹침 없음, 지도·상세 제목 동기화, 31차 fallback 지도 표면 개선, MapLibre `styledata/idle` layer sync, 32차 Evidence-gated presence area와 근접 줌, 공식 자료 핀 `현장 인증 영역은 아직 없습니다`, 검색 후 지도 맥락 `detailOpen=false`, `visibleRejected=[]`, surface50 홈 지도 648x403px 맥락화 | 사용자 수락, 독립 비평 재검증, 실제 GPS evidence 기반 영역 시각 검증 |
 | 법안·개정안 연결 | Guard | `proposedDate` 분리, 국회 의안 전용 최근 발의 정렬, 공식 도메인 원문 링크 guard, `/laws?sort=interest|proposed_desc`, 법안→이슈/집회 현장 동일성, production preview 비노출, 0건 dry-run 실패 가드 | 실제 법 API key 또는 OC로 dry-run 1건 이상, post, live `/laws` 두 정렬 검증 |
 | 본인확인 기반 쓰기 경계 | A+ Active | 포트원 provider 설정, identity start/complete, write endpoint `identity_required` 경계, 비-LIVE 사용자 제출 `held_private` 검수 대기, 검수 전 공개 detail 불변 write smoke, local staging에서 위치 후보·대상 확정·촬영 미리보기·접수·새로고침 뒤 접수 카드 복원 | 실제 포트원 채널 키와 운영 SDK 결제 전 인증 리허설 |
-| 운영 배포 준비 | A- Active | Render blueprint, `/ready`, not-ready write fail-closed, `launch:ready`, Postgres `FOR UPDATE SKIP LOCKED` 단건 임대·실행 중 갱신 기반 ops scheduler와 task별 retry 계약 | 실제 운영 YAML/Secret, DB/Redis, scheduler lease/retry, Render 배포 health 통과 |
+| 운영 배포 준비 | A- Active | Render blueprint, `/ready`, not-ready write fail-closed, Redis HMAC 분산 쓰기 제한, `launch:ready`, Postgres `FOR UPDATE SKIP LOCKED` 단건 임대·실행 중 갱신 기반 ops scheduler와 task별 retry 계약 | 실제 운영 YAML/Secret, DB/Redis, scheduler lease/retry, Render 배포 health 통과 |
 
 ## Current Local/Static Passing Evidence
 

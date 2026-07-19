@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import { createApp, createSeedStore, decryptLiveMediaBytes } from "./app.ts";
-import { enforcePublicWriteRateLimit, readJsonBody } from "./http-boundary.ts";
+import { enforcePublicWriteRateLimit, publicWriteRateLimitKey, readJsonBody } from "./http-boundary.ts";
 import { assertStorageSmokeKey, storageSmokeKey, storageSmokePrefix } from "./live-media-storage.ts";
 import { decryptSnapshot, encryptSnapshot } from "./postgres-store.ts";
 
@@ -464,6 +464,11 @@ assert.throws(
 );
 enforcePublicWriteRateLimit({ method: "POST", url: "/reports/material", headers: { "x-forwarded-for": "198.51.100.1" } }, rateBuckets, 62_000);
 enforcePublicWriteRateLimit({ method: "GET", url: "/home", headers: { "x-forwarded-for": "198.51.100.1" } }, rateBuckets, 1_000);
+const distributedRateLimitKey = publicWriteRateLimitKey("198.51.100.1", testUserTokenSecret);
+assert.match(distributedRateLimitKey, /^musunil:write-limit:[a-f0-9]{64}$/);
+assert.equal(distributedRateLimitKey.includes("198.51.100.1"), false);
+assert.equal(publicWriteRateLimitKey("198.51.100.1", testUserTokenSecret), distributedRateLimitKey);
+assert.notEqual(publicWriteRateLimitKey("198.51.100.2", testUserTokenSecret), distributedRateLimitKey);
 
 const forbiddenEngagementCounts = {
   claims: store.claims.length,
