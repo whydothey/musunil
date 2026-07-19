@@ -216,6 +216,7 @@ export type IssueOverview = {
   disputeCount: number;
   latestUpdatedAt?: string;
   representativeOccurrenceId?: string;
+  latestChange?: string;
 };
 
 export type OccurrenceDigest = {
@@ -236,6 +237,8 @@ export type OccurrenceDigest = {
   disputeCount: number;
   evidenceCount: number;
   scale?: { minCount: number; maxCount: number; confidence: CrowdEstimate["confidence"] };
+  issueTitle?: string;
+  keyPoint?: string;
 };
 
 export type EvidenceReel = {
@@ -272,6 +275,7 @@ export type LawInterestItem = {
   occurrenceCount: number;
   regionCount: number;
   interestScore: number;
+  linkedIssueIds?: string[];
 };
 
 export type ReportCandidate = {

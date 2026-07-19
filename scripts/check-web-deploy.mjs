@@ -18,7 +18,7 @@ let staticManifestVerified = false;
 const renderStaticHint =
   "Expected Render Static Site settings: Branch=main, Root Directory blank, " +
   "Build Command=\"pnpm install --frozen-lockfile && pnpm build:web-static:render\", " +
-  "Publish Directory=apps/web, headers copied from render.yaml musunil-web. " +
+  "Publish Directory=apps/web/dist, headers copied from render.yaml musunil-web. " +
   "If static-manifest and live file hashes match but build-info is placeholder, the latest committed static files are deployed but Render did not publish build metadata. " +
   "Use MUSUNIL_ALLOW_PLACEHOLDER_BUILD_INFO=1 only for a static-hash-only diagnostic, never for a launch/final expected-commit check.";
 const webHeaderContract = [
@@ -117,11 +117,10 @@ await check("web_html_current", async () => {
   assert(response.status === 200, `/ returned ${response.status}`);
   checkWebHeaders(response.headers, "/");
   assert(response.body.includes("build-info.js"), "HTML is missing build-info.js");
-  assert(response.body.includes('data-tab-view="explore"'), "HTML is missing current explore tab");
-  assert(response.body.includes("occurrence-pins"), "HTML is missing current MapLibre occurrence layer");
-  assert(response.body.includes("presence-areas"), "HTML is missing current presence area layer");
-  assert(!response.body.includes('data-tab-view="map"'), "HTML still contains old map tab");
-  assert(!response.body.includes('data-tab-view="record"'), "HTML still contains old detail tab");
+  assert(response.body.includes('<div id="root"></div>'), "HTML is missing the React application root");
+  assert(/src="\/assets\/[^\"]+\.js"/.test(response.body), "HTML is missing the built Vite application entry");
+  assert(!response.body.includes('data-tab-view="map"'), "HTML still contains the legacy map tab");
+  assert(!response.body.includes('data-tab-view="record"'), "HTML still contains the legacy detail tab");
 });
 
 await check("web_config_current", async () => {

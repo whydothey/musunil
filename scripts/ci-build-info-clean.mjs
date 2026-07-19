@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 
-const files = ["apps/web/build-info.js", "apps/web/build-info.json"];
+const files = ["apps/web/public/build-info.js", "apps/web/public/build-info.json"];
 const result = spawnSync("git", ["diff", "--exit-code", "--", ...files], {
   encoding: "utf8",
   stdio: ["ignore", "pipe", "pipe"]

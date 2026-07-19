@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, resolve, sep } from "node:path";
 
-const root = resolve(import.meta.dirname, "../apps/web");
+const root = resolve(import.meta.dirname, "../apps/web/dist");
 const preferredPort = Number(process.env.PORT ?? 4173);
 
 const { port } = await listen(preferredPort);
@@ -38,8 +38,15 @@ async function handler(req, res) {
       res.end(JSON.stringify({ error: "forbidden" }));
       return;
     }
-    const body = await readFile(filePath);
-    res.writeHead(200, responseHeaders(contentType(filePath)));
+    let body;
+    let servedPath = filePath;
+    try {
+      body = await readFile(filePath);
+    } catch {
+      servedPath = resolve(root, "index.html");
+      body = await readFile(servedPath);
+    }
+    res.writeHead(200, responseHeaders(contentType(servedPath)));
     res.end(body);
   } catch {
     res.writeHead(404, responseHeaders("application/json; charset=utf-8"));

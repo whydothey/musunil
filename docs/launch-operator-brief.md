@@ -79,7 +79,7 @@ Split apply paths from current blockers:
 - Branch: `main`
 - Root Directory: blank
 - Build Command: `pnpm install --frozen-lockfile && pnpm build:web-static:render`
-- Publish Directory: `apps/web`
+- Publish Directory: `apps/web/dist`
 - Static Web에는 DB/Redis, 사용자 입력 YAML, token secret, encryption key, internal API key를 넣지 않는다.
 
 Environment variables:

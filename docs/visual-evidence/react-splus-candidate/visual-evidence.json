@@ -1,0 +1,112 @@
+{
+  "checked": "react_splus_candidate",
+  "ok": true,
+  "baseUrl": "http://127.0.0.1:57319",
+  "results": [
+    {
+      "viewport": {
+        "id": "mobile_390",
+        "width": 390,
+        "height": 844
+      },
+      "visibleIssueTitles": [
+        "정보통신망법 개정안 관련 집회",
+        "선거 관리 절차 관련 집회",
+        "대통령 탄핵 관련 집회",
+        "노동조합법 개정 관련 집회"
+      ],
+      "home": {
+        "overflowX": false,
+        "nestedInteractive": 0,
+        "mapCount": 0,
+        "forbidden": []
+      },
+      "finalMetrics": {
+        "overflowX": false,
+        "nestedInteractive": 0,
+        "mapCount": 0,
+        "forbidden": []
+      },
+      "axeViolations": 0
+    },
+    {
+      "viewport": {
+        "id": "mobile_430",
+        "width": 430,
+        "height": 932
+      },
+      "visibleIssueTitles": [
+        "정보통신망법 개정안 관련 집회",
+        "선거 관리 절차 관련 집회",
+        "대통령 탄핵 관련 집회",
+        "노동조합법 개정 관련 집회"
+      ],
+      "home": {
+        "overflowX": false,
+        "nestedInteractive": 0,
+        "mapCount": 0,
+        "forbidden": []
+      },
+      "finalMetrics": {
+        "overflowX": false,
+        "nestedInteractive": 0,
+        "mapCount": 0,
+        "forbidden": []
+      },
+      "axeViolations": 0
+    },
+    {
+      "viewport": {
+        "id": "tablet_768",
+        "width": 768,
+        "height": 1024
+      },
+      "visibleIssueTitles": [
+        "정보통신망법 개정안 관련 집회",
+        "선거 관리 절차 관련 집회",
+        "대통령 탄핵 관련 집회",
+        "노동조합법 개정 관련 집회"
+      ],
+      "home": {
+        "overflowX": false,
+        "nestedInteractive": 0,
+        "mapCount": 0,
+        "forbidden": []
+      },
+      "finalMetrics": {
+        "overflowX": false,
+        "nestedInteractive": 0,
+        "mapCount": 0,
+        "forbidden": []
+      },
+      "axeViolations": 0
+    },
+    {
+      "viewport": {
+        "id": "desktop_1440",
+        "width": 1440,
+        "height": 960
+      },
+      "visibleIssueTitles": [
+        "정보통신망법 개정안 관련 집회",
+        "선거 관리 절차 관련 집회",
+        "대통령 탄핵 관련 집회",
+        "노동조합법 개정 관련 집회"
+      ],
+      "home": {
+        "overflowX": false,
+        "nestedInteractive": 0,
+        "mapCount": 0,
+        "forbidden": []
+      },
+      "finalMetrics": {
+        "overflowX": false,
+        "nestedInteractive": 0,
+        "mapCount": 0,
+        "forbidden": []
+      },
+      "axeViolations": 0
+    }
+  ],
+  "failures": []
+}

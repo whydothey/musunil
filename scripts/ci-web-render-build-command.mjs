@@ -5,10 +5,10 @@ import { acquireWebStaticFileLock } from "./web-static-file-lock.mjs";
 
 const cwd = resolve(import.meta.dirname, "..");
 const preservedFiles = [
-  "apps/web/config.js",
-  "apps/web/build-info.js",
-  "apps/web/build-info.json",
-  "apps/web/_headers",
+  "apps/web/public/config.js",
+  "apps/web/public/build-info.js",
+  "apps/web/public/build-info.json",
+  "apps/web/public/_headers",
   "apps/web/static-manifest.json"
 ];
 const releaseLock = acquireWebStaticFileLock("ci-web-render-build-command");

@@ -45,7 +45,7 @@ services:
     branch: main
     autoDeployTrigger: checksPass
     buildCommand: pnpm install --frozen-lockfile && pnpm build:web-static:render
-    staticPublishPath: apps/web
+    staticPublishPath: apps/web/dist
     headers:
       - path: /*
         name: Cache-Control

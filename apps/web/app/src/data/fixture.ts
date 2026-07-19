@@ -87,7 +87,7 @@ const occurrences: OccurrenceDigest[] = [
     disputeCount: 1,
     evidenceCount: 8,
     scale: { minCount: 700, maxCount: 1000, confidence: "medium" },
-    keyPoint: "개정안의 정보 유통 규제 범위를 두고 반대 주장이 제기됐습니다"
+    keyPoint: "개정안의 정보 유통 규제 범위에 반대하는 주장이 확인됐습니다"
   },
   {
     id: "occ-network-busan",
@@ -381,6 +381,19 @@ export const dataSource: DataSource = {
   async loadDataset() {
     await new Promise((resolve) => window.setTimeout(resolve, 120));
     return dataset;
+  },
+  async loadIssue(id) {
+    const issueOverview = dataset.issues.find((item) => item.id === id);
+    return {
+      issueOverview,
+      occurrenceDigests: dataset.occurrences.filter((item) => item.issueId === id),
+      claims: dataset.claimsByIssue[id] || []
+    };
+  },
+  async loadOccurrence(id) {
+    const occurrenceDigest = dataset.occurrences.find((item) => item.id === id);
+    if (!occurrenceDigest) throw new Error("occurrence_not_found");
+    return { occurrenceDigest, claims: dataset.claimsByOccurrence[id] || [], evidenceCount: occurrenceDigest.evidenceCount };
   }
 };
 

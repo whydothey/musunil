@@ -72,9 +72,8 @@ const cloudflareDnsRecordsDoc = readFileSync(resolve(cwd, "docs/cloudflare-dns-r
 const cloudflareDnsRecordsTerraform = readFileSync(resolve(cwd, "infra/cloudflare/dns-records.tf.example"), "utf8");
 const cloudflareResponseHeadersDoc = readFileSync(resolve(cwd, "docs/cloudflare-response-headers.md"), "utf8");
 const cloudflareResponseHeadersTerraform = readFileSync(resolve(cwd, "infra/cloudflare/response-headers.tf.example"), "utf8");
-const webFlowSmoke = readFileSync(resolve(cwd, "scripts/ci-web-flow-smoke.mjs"), "utf8");
-const uxSurfaceSmoke = readFileSync(resolve(cwd, "scripts/ci-ux-surface-smoke.mjs"), "utf8");
-const visualSurfaceSmoke = readFileSync(resolve(cwd, "scripts/ci-visual-surface-smoke.mjs"), "utf8");
+const webProductionSmoke = readFileSync(resolve(cwd, "scripts/ci-web-next-production.mjs"), "utf8");
+const visualSurfaceSmoke = readFileSync(resolve(cwd, "scripts/ci-web-next-visual.mjs"), "utf8");
 const publicApiRoutes = readFileSync(resolve(cwd, "scripts/public-api-routes.mjs"), "utf8");
 const webStaticManifestScript = readFileSync(resolve(cwd, "scripts/write-web-static-manifest.mjs"), "utf8");
 const postDeploySmokeRunner = readFileSync(resolve(cwd, "scripts/post-deploy-smoke-runner.mjs"), "utf8");
@@ -132,7 +131,7 @@ if (!/sensor는 영상 제보 proof로 인정하지 않는다/.test(userFacingDo
 for (const pattern of ["config/*.local.yaml", "config/*.secret.yaml", ".env", ".env.*", "*.pem", "*.key", "docs/cloudflare-dns-records.local.md", "infra/cloudflare/dns-records.local.tfvars"]) {
   if (!gitignore.split("\n").includes(pattern)) failures.push(`.gitignore must block local secret pattern: ${pattern}`);
 }
-for (const pattern of ["apps/web/build-info.js", "apps/web/build-info.json"]) {
+for (const pattern of ["apps/web/public/build-info.js", "apps/web/public/build-info.json"]) {
   if (gitignore.split("\n").includes(pattern)) failures.push(`web deploy build-info artifact must not be ignored: ${pattern}`);
   if (!trackedFiles.has(pattern)) failures.push(`web deploy build-info artifact must be tracked: ${pattern}`);
 }
@@ -1238,30 +1237,29 @@ if (
 ) {
   failures.push("local completion status must separate prepared live verification commands from external live completion evidence");
 }
-if (!/"check:web-flow"/.test(packageJson) || !/ci-web-flow-smoke\.mjs/.test(packageJson) || !/pnpm check:web-flow/.test(packageJson)) {
+if (!/"check:web-flow"/.test(packageJson) || !/ci-web-next-production\.mjs/.test(packageJson) || !/pnpm check:web-flow/.test(packageJson)) {
   failures.push("Web user-flow smoke must be wired into release checks");
 }
 if (
-	  !/home_issue_card_to_evidence_and_dispute/.test(webFlowSmoke) ||
-  !/detail_quick_actions_to_evidence_video_map/.test(webFlowSmoke) ||
-  !/reels_actions_keep_video_objective/.test(webFlowSmoke) ||
-  !/report_target_first_capture_and_receipt/.test(webFlowSmoke) ||
-  !/identity_write_boundary_for_user_actions/.test(webFlowSmoke)
+  !/fixtureTokens/.test(webProductionSmoke) ||
+  !/fixtureMedia/.test(webProductionSmoke) ||
+  !/public config keys changed/.test(webProductionSmoke) ||
+  !/production bundle contains preview asset/.test(webProductionSmoke)
 ) {
-  failures.push("Web user-flow smoke must cover home, detail, reels, report, and identity flows");
+  failures.push("Web production smoke must reject fixture data, preview media, and public config drift");
 }
-if (!/"check:ux-surface"/.test(packageJson) || !/ci-ux-surface-smoke\.mjs/.test(packageJson) || !/pnpm check:ux-surface/.test(packageJson)) {
+if (!/"check:ux-surface"/.test(packageJson) || !/ci-web-next-production\.mjs/.test(packageJson) || !/pnpm check:ux-surface/.test(packageJson)) {
   failures.push("Commercial UX surface smoke must be wired into release checks");
 }
 if (
-  !/home_issue_first/.test(uxSurfaceSmoke) ||
-  !/no_dashboard_regression/.test(uxSurfaceSmoke) ||
-  !/reels_objective/.test(uxSurfaceSmoke) ||
-  !/map_context_tool/.test(uxSurfaceSmoke) ||
-  !/report_beginner_flow/.test(uxSurfaceSmoke) ||
-  !/forbidden_social_surface/.test(uxSurfaceSmoke)
+  !/visibleIssueTitles/.test(visualSurfaceSmoke) ||
+  !/nestedInteractive/.test(visualSurfaceSmoke) ||
+  !/desktop home includes map/.test(visualSurfaceSmoke) ||
+  !/issue detail must expose exactly four tabs/.test(visualSurfaceSmoke) ||
+  !/reel action rail changed/.test(visualSurfaceSmoke) ||
+  !/report entry must expose one action/.test(visualSurfaceSmoke)
 ) {
-  failures.push("Commercial UX surface smoke must cover issue-first home, dashboard regression, reels, map, report, and forbidden social UI");
+  failures.push("Commercial UX surface smoke must cover issue-first home, flat actions, full-screen detail, reels, map, and report");
 }
 if (
   !/"check:visual-surface"/.test(packageJson) ||
@@ -1269,10 +1267,10 @@ if (
   !/"check:visual-surface:live"/.test(packageJson) ||
   !/"check:visual-surface:evidence"/.test(packageJson) ||
   !/"check:visual-surface:live:evidence"/.test(packageJson) ||
-  !/ci-visual-surface-smoke\.mjs/.test(packageJson) ||
-  !/--production-fallback/.test(packageJson) ||
+  !/ci-web-next-visual\.mjs/.test(packageJson) ||
+  !/check:web-next:production/.test(packageJson) ||
   !/--base-url https:\/\/musunil\.com/.test(packageJson) ||
-  !/--evidence-dir docs\/visual-evidence\/current/.test(packageJson) ||
+  !/"check:web-next:visual"/.test(packageJson) ||
   !/--evidence-dir docs\/visual-evidence\/live-current/.test(packageJson) ||
   !/pnpm check:visual-surface/.test(JSON.parse(packageJson).scripts["check:release"] ?? "") ||
   !/pnpm check:visual-surface:production-fallback/.test(JSON.parse(packageJson).scripts["check:release"] ?? "")
@@ -1284,40 +1282,32 @@ if (
   !/mobile_430/.test(visualSurfaceSmoke) ||
   !/tablet_768/.test(visualSurfaceSmoke) ||
   !/desktop_1440/.test(visualSurfaceSmoke) ||
-  !/visualBaseUrlFromArgs/.test(visualSurfaceSmoke) ||
+  !/externalBaseUrl/.test(visualSurfaceSmoke) ||
   !/MUSUNIL_VISUAL_BASE_URL/.test(visualSurfaceSmoke) ||
-  !/productionFallbackMode/.test(visualSurfaceSmoke) ||
-  !/local_static_production_fallback/.test(visualSurfaceSmoke) ||
-  !/정보통신망법 개정 반대 집회/.test(visualSurfaceSmoke) ||
-  !/dashboardVisible/.test(visualSurfaceSmoke) ||
-  !/navOverlap/.test(visualSurfaceSmoke) ||
-  !/mapSheetHeight/.test(visualSurfaceSmoke) ||
-  !/reportPrimaryAction/.test(visualSurfaceSmoke) ||
-  !/Page\.captureScreenshot/.test(visualSurfaceSmoke) ||
-  !/visual-surface-evidence\.json/.test(visualSurfaceSmoke) ||
-  !/MUSUNIL_VISUAL_EVIDENCE_DIR/.test(visualSurfaceSmoke)
+  !/verifyLiveViewport/.test(visualSurfaceSmoke) ||
+  !/fixture issue leaked to live/.test(visualSurfaceSmoke) ||
+  !/map canvas collapsed/.test(visualSurfaceSmoke) ||
+  !/live report entry changed/.test(visualSurfaceSmoke) ||
+  !/page\.screenshot/.test(visualSurfaceSmoke) ||
+  !/visual-evidence\.json/.test(visualSurfaceSmoke)
 ) {
-  failures.push("Commercial visual surface smoke must cover responsive viewports, dashboard regression, navigation overlap, map density, report first action, and optional screenshot evidence");
+  failures.push("Commercial visual surface smoke must cover responsive local/live screens, fixture leakage, map sizing, report entry, and screenshot evidence");
 }
 if (
-  !/firstIssueActionCount/.test(visualSurfaceSmoke) ||
-  !/firstIssuePrimaryActionCount/.test(visualSurfaceSmoke) ||
-  !/firstIssueInteractiveCount/.test(visualSurfaceSmoke) ||
-  !/firstIssueChipCount/.test(visualSurfaceSmoke) ||
-  !/firstIssueRect/.test(visualSurfaceSmoke) ||
-  !/first issue has too many visible action labels/.test(visualSurfaceSmoke) ||
-  !/first issue must not expose dashboard-like chips/.test(visualSurfaceSmoke)
+  !/visibleIssueTitles\.length >= 3/.test(visualSurfaceSmoke) ||
+  !/nested interactive controls/.test(visualSurfaceSmoke) ||
+  !/home includes map/.test(visualSurfaceSmoke) ||
+  !/horizontal overflow/.test(visualSurfaceSmoke) ||
+  !/axe serious violations/.test(visualSurfaceSmoke)
 ) {
-  failures.push("Commercial visual surface smoke must guard first issue card density, action count, primary action count, chip count, and card height");
+  failures.push("Commercial visual surface smoke must guard issue visibility, nested actions, dashboard map regression, overflow, and accessibility");
 }
 if (
-  !/issueEmptyTitle/.test(visualSurfaceSmoke) ||
-  !/issueEmptyBody/.test(visualSurfaceSmoke) ||
-  !/새 이슈를 확인 중입니다/.test(visualSurfaceSmoke) ||
-  !/지역별 현장 맥락/.test(visualSurfaceSmoke) ||
-  !/다시 확인\/지역 보기/.test(visualSurfaceSmoke)
+  !/확인된 주요 이슈가 없습니다/.test(visualSurfaceSmoke) ||
+  !/자료 연결을 확인하고 있습니다/.test(visualSurfaceSmoke) ||
+  !/live empty state is not honest/.test(visualSurfaceSmoke)
 ) {
-  failures.push("Commercial visual surface smoke must guard the live empty issue state copy and recovery actions");
+  failures.push("Commercial visual surface smoke must guard honest live empty and unavailable states");
 }
 if (
   !/MUSUNIL_STRICT_WEB_HEADERS=1/.test(renderWebSettings) ||
@@ -1899,7 +1889,7 @@ for (const header of ["Cache-Control", "Content-Security-Policy", "Permissions-P
 if (!/Content-Security-Policy[\s\S]*media-src\s+'self'\s+https:\s+blob:/.test(renderWeb)) {
   failures.push("Render Web static CSP must allow public redacted video via media-src");
 }
-if (!/render\.yaml/.test(webHeaderWriter) || !/apps\/web\/_headers/.test(webHeaderWriter) || !/Content-Security-Policy/.test(webHeaderWriter)) {
+if (!/render\.yaml/.test(webHeaderWriter) || !/apps\/web\/public\/_headers/.test(webHeaderWriter) || !/Content-Security-Policy/.test(webHeaderWriter)) {
   failures.push("static Web _headers writer must mirror render.yaml security headers");
 }
 if (!/databases:\s*[\s\S]*-\s+name:\s*musunil-postgres\b[\s\S]*databaseName:\s*musunil\b[\s\S]*ipAllowList:\s*\[\]/.test(renderYaml)) {

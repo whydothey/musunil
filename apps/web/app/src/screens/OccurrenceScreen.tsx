@@ -6,12 +6,15 @@ import { evidenceLabel, formatDateTime, formatRelativeTime, riskLabel, scaleLabe
 import { Link } from "../router";
 
 export function OccurrenceScreen({ id }: { id: string }) {
-  const { dataset, serviceSyncState, selectOccurrence } = useAppState();
+  const { dataset, serviceSyncState, selectOccurrence, ensureOccurrence } = useAppState();
   const occurrence = dataset?.occurrences.find((item) => item.id === id);
   const claims = dataset?.claimsByOccurrence[id] || [];
   const issue = useMemo(() => dataset?.issues.find((item) => item.id === occurrence?.issueId), [dataset, occurrence]);
   const reels = useMemo(() => dataset?.reels.filter((item) => item.occurrenceId === id) || [], [dataset, id]);
-  useEffect(() => { selectOccurrence(id); }, [id, selectOccurrence]);
+  useEffect(() => {
+    selectOccurrence(id);
+    if (!Object.prototype.hasOwnProperty.call(dataset?.claimsByOccurrence || {}, id)) ensureOccurrence(id).catch(() => undefined);
+  }, [id, selectOccurrence, ensureOccurrence, dataset?.claimsByOccurrence]);
 
   if (serviceSyncState === "loading") return <section className="screen screen-detail"><LoadingState /></section>;
   if (serviceSyncState === "unavailable") return <section className="screen screen-detail"><ServiceUnavailable /></section>;

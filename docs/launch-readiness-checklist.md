@@ -68,7 +68,7 @@
 - Render cron worker는 API 서비스의 `MUSUNIL_INTERNAL_API_KEY`를 참조한다.
 - Render cron worker는 API와 동일한 Secret File을 별도로 마운트하며 `MUSUNIL_USER_INPUTS_FILE_PATH`만 참조한다.
 - Render Web Static Site headers가 `render.yaml`에 선언되어 있다.
-- `pnpm build:web-static`은 `render.yaml`의 Web headers에서 `apps/web/_headers`를 생성하고, `static-manifest.json`은 `_headers` hash를 포함한다. Render 수동 Static Site는 여전히 Dashboard Headers 실제 반영을 별도 검증한다.
+- `pnpm build:web-static`은 `render.yaml`의 Web headers에서 `apps/web/public/_headers`를 생성하고 Vite가 `apps/web/dist/_headers`로 복사한다. `static-manifest.json`은 최종 dist의 `_headers` hash를 포함한다. Render 수동 Static Site는 여전히 Dashboard Headers 실제 반영을 별도 검증한다.
 - Render Web build에서 `pnpm build:web-config` 후 `pnpm launch:check`가 실행된다.
 - `pnpm db:migrate -- --check`가 Claim/Evidence/Issue/Occurrence/ContinuousPresence, live report, redacted media 저장 계약을 확인한다.
 - Render API는 SIGTERM에서 서버를 닫고 snapshot 저장 후 종료한다.
@@ -138,7 +138,7 @@
 - 출시 컷오버는 `pnpm launch:cutover-plan`, `pnpm cloudflare:dns`, [cloudflare-dns-records.md](/Users/mk/Documents/Musunil/docs/cloudflare-dns-records.md), [launch-cutover-runbook.md](/Users/mk/Documents/Musunil/docs/launch-cutover-runbook.md)를 기준으로 API DNS, Cloudflare DNS, Render Static headers, 검증 순서를 한 번에 확인한다.
 - production Web은 `build-info.json`의 `commitSha`가 배포 대상 Git SHA와 같아야 한다. `/static-manifest.json`과 live HTML/config/media SHA-256 일치는 최신 정적 파일 확인용 보조 증거지만, 출시 검증에서 build metadata placeholder를 대체하지 않는다.
 - live static manifest 확인이 timeout이면 구버전 배포로 단정하지 않는다. `service:watch`는 이 경우 `retry_live_static_manifest`를 남기고, 실제 manifest schema/hash mismatch가 확인될 때만 `deploy_latest_static`을 안내해야 한다.
-- Render Static Site는 repo root에서 `pnpm build:web-static:render`를 실행하고 `apps/web`만 publish한다. 이 단일 명령은 운영 API base 주입, 실제 build-info 작성, 정적 manifest 생성, Render output 검사, web smoke를 모두 포함한다. Dashboard 값을 바꾸기 전 `pnpm check:web-render-build-command`가 같은 계약을 로컬에서 통과해야 한다.
+- Render Static Site는 repo root에서 `pnpm build:web-static:render`를 실행하고 Vite 산출물인 `apps/web/dist`만 publish한다. 이 단일 명령은 운영 API base 주입, 실제 build-info 작성, production fixture 제거, 정적 manifest 생성, Render output 검사, web smoke를 모두 포함한다. Dashboard 값을 바꾸기 전 `pnpm check:web-render-build-command`가 같은 계약을 로컬에서 통과해야 한다.
 - Render 배포 뒤에는 `pnpm check:visual-surface:live`로 실제 `musunil.com` 화면의 이슈 스토리, 이슈 카드, 상세, 인증영상 대기/영상, 지도, 제보 첫 행동이 390px, 430px, 768px, 1440px에서 모두 유지되는지 확인한다.
 - 운영 감시 문서까지 갱신하려면 `pnpm service:watch:visual`을 실행한다.
 - `service:watch` 결과에서 `skip`은 검증 생략이지 통과가 아니다. 출시 판단은 모든 check가 `ok`이고 Required Actions가 비어 있을 때만 `S+ Guard`로 본다.
@@ -151,7 +151,7 @@
 - `apps/web/build-info.js`와 `apps/web/build-info.json`은 placeholder로 repo에 추적하고, Render build command가 실제 Git SHA로 덮어써야 한다.
 - `scripts/write-web-config.mjs`는 `MUSUNIL_WRITE_BUILD_INFO=1`뿐 아니라 Render 공식 build/deploy env(`RENDER`, `RENDER_GIT_COMMIT`, `RENDER_EXTERNAL_URL`, `RENDER_SERVICE_ID` 등)를 감지하면 build-info를 실제 배포 SHA로 쓴다. 따라서 Render Build Command가 `pnpm build:web-static`만 실행돼도 Render env가 주입되는 한 placeholder가 남지 않아야 한다.
 - 로컬 `check:release`와 smoke 명령은 tracked build-info placeholder를 변경하지 않아야 한다. 실제 build metadata 작성은 Render 또는 `MUSUNIL_WRITE_BUILD_INFO=1`에서만 허용한다.
-- `apps/web/static-manifest.json`은 `index.html`, `config.js`, `_headers`, 공개 poster/clip의 SHA-256과 byte size를 담는다. 배포 후 `pnpm check:web-deploy`와 `pnpm service:watch -- --once`는 manifest의 모든 live 파일을 다시 받아 hash/byte size가 현재 repo 산출물과 같은지 확인한다.
+- `apps/web/static-manifest.json`은 최종 Vite `index.html`, hashed JS/CSS, `config.js`, `_headers`, favicon의 SHA-256과 byte size를 담는다. production manifest에는 fixture poster/clip이 포함될 수 없다. 배포 후 `pnpm check:web-deploy`와 `pnpm service:watch -- --once`는 manifest의 모든 live 파일을 다시 받아 hash/byte size가 현재 repo 산출물과 같은지 확인한다.
 - 배포 후 `pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes`가 live Web config 정합성, strict Web headers, API smoke, 법안 원천, 공개 집회 원천 refresh ledger를 함께 통과해야 한다. build-info placeholder와 static hash 검증은 이어지는 `check:web-deploy`에서 처리하며, expected commit 검증 중 placeholder나 static hash 불일치가 있으면 실패다.
 - 헤더까지 strict하게 닫으려면 `MUSUNIL_STRICT_WEB_HEADERS=1 MUSUNIL_WEB_BASE_URL=https://musunil.com MUSUNIL_EXPECTED_API_BASE_URL=https://api.musunil.com MUSUNIL_EXPECTED_COMMIT_SHA=$(git rev-parse HEAD) pnpm check:web-deploy`가 통과해야 한다. 이때 live `config.js`의 `apiBaseUrl`도 `https://api.musunil.com`과 일치해야 한다.
 - 공개 홈 카드와 live public payload에는 `WEAKLY_OBSERVED`, `traffic_control`, `transit_occurrence`, `crowd_density_signal`, `route_segment`, `route_checkpoint`, `hazard_area`, `service_disruption` 같은 내부 enum/제거된 도메인 원문이 보이지 않는다.

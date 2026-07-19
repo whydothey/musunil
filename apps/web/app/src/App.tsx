@@ -35,9 +35,10 @@ function AppShell() {
   const { serviceSyncState } = useAppState();
   const activeRoute: RouteName = route.name === "issue" || route.name === "occurrence" ? "home" : route.name;
   const isImmersive = route.name === "reels" || route.name === "explore";
+  const isDetail = route.name === "issue" || route.name === "occurrence";
 
   return (
-    <div className={`app-shell ${isImmersive ? "is-immersive" : ""}`}>
+    <div className={`app-shell ${isImmersive ? "is-immersive" : ""} ${isDetail ? "is-detail" : ""}`}>
       <aside className="desktop-sidebar" aria-label="주요 메뉴">
         <Link href="/" className="brand-lockup" ariaLabel="무슨일 홈">
           <BrandMark />
@@ -62,7 +63,6 @@ function AppShell() {
           <BrandMark />
           <span>무슨일</span>
         </Link>
-        <span className={`sync-dot ${serviceSyncState}`} aria-label={serviceSyncState === "live" ? "최신 자료 연결됨" : "자료 상태 확인 중"} />
       </header>
 
       <main className="app-main" id="main-content">

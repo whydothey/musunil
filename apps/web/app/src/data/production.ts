@@ -32,8 +32,8 @@ export async function getOccurrenceDetail(id: string): Promise<OccurrenceDetailD
 }
 
 export async function getContinuousPresenceDetail(id: string): Promise<OccurrenceDetailData> {
-  const body = await request<{ item: OccurrenceDigest; claims: PublicClaim[]; evidenceCount: number }>(`/targets/continuous_presence/${encodeURIComponent(id)}`);
-  return { occurrenceDigest: body.item, claims: body.claims, evidenceCount: body.evidenceCount };
+  const body = await request<{ occurrenceDigest: OccurrenceDigest; claims: PublicClaim[]; evidenceCount: number }>(`/continuous-presences/${encodeURIComponent(id)}`);
+  return { occurrenceDigest: body.occurrenceDigest, claims: body.claims, evidenceCount: body.evidenceCount };
 }
 
 export const dataSource: DataSource = {
@@ -68,6 +68,10 @@ export const dataSource: DataSource = {
       claimsByOccurrence: {},
       map
     };
+  },
+  loadIssue: getIssueDetail,
+  loadOccurrence(id, targetType) {
+    return targetType === "continuous_presence" ? getContinuousPresenceDetail(id) : getOccurrenceDetail(id);
   }
 };
 

@@ -77,10 +77,10 @@ Header 적용 방식은 둘 중 하나만 믿는다.
 - Branch: `main`
 - Root Directory: 비움
 - Build Command: `render.yaml`의 `musunil-web.buildCommand`
-- Publish Directory: `apps/web`
+- Publish Directory: `apps/web/dist`
 - Environment Variables: `NODE_VERSION=24`, `MUSUNIL_RUNTIME_ENV=production`만 둔다. Static Web에는 DB/Redis URL, 사용자 입력 YAML, token secret, encryption key, internal API key를 넣지 않는다.
 - Headers: `Cache-Control`, `Content-Security-Policy`, `Permissions-Policy`, `Referrer-Policy`, `X-Content-Type-Options`, `X-Frame-Options`
-- Portable Headers File: `apps/web/_headers`. `pnpm build:web-static`이 `render.yaml`의 `musunil-web.headers`에서 생성한다. Cloudflare Pages/Netlify류 정적 호스트에서는 이 파일을 사용할 수 있지만, Render 수동 Static Site에서는 Dashboard Headers 입력을 대체하지 않는다.
+- Portable Headers File: `apps/web/public/_headers`. `pnpm build:web-static`이 `render.yaml`의 `musunil-web.headers`에서 생성하고 Vite가 `apps/web/dist/_headers`로 복사한다. Cloudflare Pages/Netlify류 정적 호스트에서는 이 파일을 사용할 수 있지만, Render 수동 Static Site에서는 Dashboard Headers 입력을 대체하지 않는다.
 - Render API token이 있으면 `RENDER_API_TOKEN=... pnpm render:apply -- --web-headers --apply`로 Headers를 적용할 수 있다.
 
 주의:

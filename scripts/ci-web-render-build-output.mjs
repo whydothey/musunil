@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const cwd = resolve(import.meta.dirname, "..");
-const webRoot = resolve(cwd, "apps/web");
+const webRoot = resolve(cwd, "apps/web/dist");
 const failures = [];
 const renderBuildDetected = Boolean(
   readEnv("RENDER") ||
@@ -24,7 +24,7 @@ if (!buildInfoWriteRequested) {
 const webConfig = parseWindowJson("config.js", "MUSUNIL_WEB_CONFIG");
 const buildInfoJson = parseJsonFile("build-info.json");
 const buildInfoJs = parseWindowJson("build-info.js", "MUSUNIL_BUILD_INFO");
-const headersSource = readText("apps/web/_headers");
+const headersSource = readText("_headers");
 const manifest = parseJsonFile("static-manifest.json");
 
 if (JSON.stringify(buildInfoJson) !== JSON.stringify(buildInfoJs)) {
@@ -57,19 +57,17 @@ if (renderBuildDetected && buildInfoJson.source !== "render") {
 for (const token of ["Cache-Control", "Content-Security-Policy", "Permissions-Policy", "Referrer-Policy", "X-Content-Type-Options", "X-Frame-Options"]) {
   if (!headersSource.includes(token)) failures.push(`_headers missing ${token}`);
 }
-for (const file of ["index.html", "config.js", "_headers", "modules/contracts.js", "modules/selection-state.js", "modules/public-api.js", "media/redacted/preview-occ-live-1-poster.png", "media/redacted/preview-occ-live-1.webm"]) {
+for (const file of ["index.html", "config.js", "_headers", "favicon.svg"]) {
   if (!manifest.files?.[file]?.sha256) failures.push(`static-manifest.json missing ${file}`);
 }
-if (manifest.schemaVersion < 3) failures.push("static-manifest.json must use build-variant-aware schemaVersion 3");
-for (const file of [
-  "build-info.js",
-  "build-info.json",
-  "media/redacted/preview-busan-live-poster.png",
-  "media/redacted/preview-daejeon-live-poster.png",
-  "media/redacted/preview-occ-live-1-poster.png",
-  "media/redacted/preview-presence-1-poster.png"
-]) {
+if (!Object.keys(manifest.files || {}).some((file) => file.startsWith("assets/") && file.endsWith(".js"))) failures.push("static-manifest.json missing built JavaScript assets");
+if (!Object.keys(manifest.files || {}).some((file) => file.startsWith("assets/") && file.endsWith(".css"))) failures.push("static-manifest.json missing built CSS assets");
+if (manifest.schemaVersion < 4) failures.push("static-manifest.json must use Vite build schemaVersion 4");
+for (const file of ["build-info.js", "build-info.json"]) {
   if (!manifest.buildVariantFiles?.includes(file)) failures.push(`static-manifest.json buildVariantFiles missing ${file}`);
+}
+for (const file of Object.keys(manifest.files || {})) {
+  if (/preview|_sample|_mock|\.(?:webm|mp4)$/i.test(file)) failures.push(`production manifest contains fixture asset ${file}`);
 }
 
 if (failures.length > 0) {
@@ -93,7 +91,7 @@ console.log(
 
 function parseJsonFile(path) {
   try {
-    return JSON.parse(readText(`apps/web/${path}`));
+    return JSON.parse(readText(path));
   } catch (error) {
     failures.push(`${path} contains invalid JSON: ${error instanceof Error ? error.message : String(error)}`);
     return {};
@@ -101,7 +99,7 @@ function parseJsonFile(path) {
 }
 
 function parseWindowJson(path, name) {
-  const source = readText(`apps/web/${path}`);
+  const source = readText(path);
   const match = source.match(new RegExp(`window\\.${name}\\s*=\\s*({[\\s\\S]*?})\\s*;?\\s*$`));
   if (!match) {
     failures.push(`${path} is missing window.${name} assignment`);
@@ -117,7 +115,7 @@ function parseWindowJson(path, name) {
 
 function readText(path) {
   try {
-    return readFileSync(resolve(cwd, path), "utf8");
+    return readFileSync(resolve(webRoot, path), "utf8");
   } catch (error) {
     failures.push(`${path} could not be read: ${error instanceof Error ? error.message : String(error)}`);
     return "";

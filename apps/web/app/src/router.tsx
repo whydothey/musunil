@@ -24,7 +24,7 @@ function readRoute(): Route {
 
 interface RouterValue {
   route: Route;
-  navigate: (href: string, options?: { replace?: boolean }) => void;
+  navigate: (href: string, options?: { replace?: boolean; restoreFocusHref?: string }) => void;
   back: () => void;
 }
 
@@ -33,13 +33,27 @@ const RouterContext = createContext<RouterValue | undefined>(undefined);
 export function RouterProvider({ children }: { children: ReactNode }) {
   const [route, setRoute] = useState(readRoute);
   useEffect(() => {
-    const onPopState = () => setRoute(readRoute());
+    const onPopState = (event: PopStateEvent) => {
+      setRoute(readRoute());
+      const restoreFocusHref = event.state?.restoreFocusHref;
+      if (typeof restoreFocusHref === "string") {
+        window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+          const target = document.querySelector<HTMLAnchorElement>(`a[href="${CSS.escape(restoreFocusHref)}"]`);
+          target?.focus({ preventScroll: true });
+        }));
+      }
+    };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
-  const navigate = useCallback((href: string, options?: { replace?: boolean }) => {
+  const navigate = useCallback((href: string, options?: { replace?: boolean; restoreFocusHref?: string }) => {
     if (options?.replace) window.history.replaceState({}, "", href);
-    else window.history.pushState({}, "", href);
+    else {
+      if (options?.restoreFocusHref) {
+        window.history.replaceState({ ...(window.history.state || {}), restoreFocusHref: options.restoreFocusHref }, "", window.location.href);
+      }
+      window.history.pushState({}, "", href);
+    }
     setRoute(readRoute());
     window.scrollTo({ top: 0, behavior: "instant" });
   }, []);
@@ -62,7 +76,7 @@ export function Link({ href, children, className, ariaLabel, onNavigate }: { hre
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     onNavigate?.();
-    navigate(href);
+    navigate(href, { restoreFocusHref: href });
   };
   return <a href={href} className={className} aria-label={ariaLabel} onClick={onClick}>{children}</a>;
 }

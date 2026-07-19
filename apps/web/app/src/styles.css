@@ -8,7 +8,7 @@
   --surface-muted: #edf1f2;
   --ink: #15181b;
   --ink-soft: #525c61;
-  --ink-faint: #7b858a;
+  --ink-faint: #687277;
   --line: #dfe5e7;
   --line-strong: #c8d1d3;
   --brand: #0b6c74;
@@ -55,17 +55,19 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   background: rgba(255, 255, 255, 0.96);
 }
 .mobile-brand, .brand-lockup { display: inline-flex; align-items: center; gap: 9px; font-size: 19px; font-weight: 800; }
-.brand-mark { position: relative; display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border: 2px solid var(--brand); border-radius: 50%; }
-.brand-mark::before, .brand-mark::after, .brand-mark span { content: ""; position: absolute; background: var(--brand); border-radius: 50%; }
-.brand-mark::before { width: 4px; height: 4px; left: 5px; top: 8px; }
-.brand-mark::after { width: 4px; height: 4px; right: 5px; top: 8px; }
-.brand-mark span { width: 10px; height: 2px; bottom: 5px; }
+.brand-mark { position: relative; display: inline-flex; width: 25px; height: 25px; align-items: center; justify-content: center; border-radius: 7px; background: var(--brand); }
+.brand-mark::before, .brand-mark::after { content: ""; position: absolute; left: 11px; width: 3px; background: white; }
+.brand-mark::before { top: 5px; height: 9px; border-radius: 2px; }
+.brand-mark::after { bottom: 5px; height: 3px; border-radius: 50%; }
+.brand-mark span { display: none; }
 .sync-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-faint); }
 .sync-dot.live { background: var(--verified); }
 .sync-dot.fixture { background: var(--pending); }
 .sync-dot.loading { animation: pulse 1.2s infinite; }
 
 .app-main { min-height: calc(100dvh - var(--mobile-header)); padding-bottom: calc(var(--mobile-tabbar) + env(safe-area-inset-bottom)); }
+.app-shell.is-detail, .app-shell.is-immersive { --mobile-header: 0px; }
+.app-shell.is-detail .mobile-header, .app-shell.is-immersive .mobile-header { display: none; }
 .mobile-tabbar {
   position: fixed;
   z-index: 50;
@@ -218,7 +220,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .reel-actions svg { width: 25px; height: 25px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
 
 .explore-screen { position: relative; height: calc(100dvh - var(--mobile-header) - var(--mobile-tabbar)); overflow: hidden; background: #dfe5e7; }
-.map-canvas { position: absolute; inset: 0; }
+.explore-screen > .map-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .map-topbar { position: absolute; z-index: 15; top: 12px; left: 12px; right: 12px; }
 .map-search { height: 48px; display: flex; align-items: center; gap: 9px; padding: 0 12px; border: 1px solid rgba(90,105,110,.18); border-radius: 8px; background: white; box-shadow: 0 3px 12px rgba(25,40,44,.12); }
 .map-search > svg { color: var(--ink-faint); }
@@ -237,6 +239,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .key-pin { width: 8px; height: 8px; border-radius: 50%; background: var(--brand); box-shadow: 0 0 0 3px white; }
 .key-area { width: 13px; height: 9px; border: 1px solid var(--brand); background: var(--brand-soft); }
 .map-notice { position: absolute; z-index: 9; top: 70px; left: 50%; transform: translateX(-50%); padding: 8px 12px; border-radius: 6px; background: rgba(255,255,255,.94); color: var(--ink-soft); font-size: 11px; white-space: nowrap; }
+.map-basemap-notice { position: absolute; z-index: 9; top: 70px; left: 50%; transform: translateX(-50%); padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255,255,255,.94); color: var(--ink-soft); font-size: 10px; white-space: nowrap; }
 .map-selection { position: absolute; z-index: 14; left: 10px; right: 10px; bottom: 10px; min-height: 172px; padding: 17px 54px 15px 17px; border: 1px solid var(--line-strong); border-radius: 8px; background: white; box-shadow: 0 8px 26px rgba(25,40,44,.18); animation: sheet-in 200ms var(--ease); }
 .map-selection-close { position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 50%; background: transparent; cursor: pointer; }
 .selection-state { display: inline-flex; align-items: center; gap: 6px; color: var(--verified); font-size: 11px; font-weight: 750; }

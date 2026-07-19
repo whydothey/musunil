@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import dataSource from "@musunil/data-source";
 import type { AppDataset } from "./contracts";
 
@@ -13,6 +13,8 @@ interface AppStateValue {
   selectedOccurrenceId?: string;
   selectIssue: (id?: string) => void;
   selectOccurrence: (id?: string) => void;
+  ensureIssue: (id: string) => Promise<void>;
+  ensureOccurrence: (id: string) => Promise<void>;
   retry: () => void;
 }
 
@@ -41,12 +43,38 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     return () => { active = false; };
   }, [attempt]);
 
-  const selectOccurrence = (id?: string) => {
+  const selectOccurrence = useCallback((id?: string) => {
     setSelectedOccurrenceId(id);
     if (!id || !dataset) return;
     const occurrence = dataset.occurrences.find((item) => item.id === id);
     if (occurrence?.issueId) selectIssue(occurrence.issueId);
-  };
+  }, [dataset]);
+
+  const ensureIssue = useCallback(async (id: string) => {
+    const detail = await dataSource.loadIssue(id);
+    setDataset((current) => {
+      if (!current) return current;
+      const issueOverview = detail.issueOverview;
+      const issues = issueOverview ? mergeById(current.issues, [issueOverview]) : current.issues;
+      return {
+        ...current,
+        issues,
+        occurrences: mergeById(current.occurrences, detail.occurrenceDigests || []),
+        claimsByIssue: { ...current.claimsByIssue, [id]: detail.claims || [] }
+      };
+    });
+  }, []);
+
+  const ensureOccurrence = useCallback(async (id: string) => {
+    const currentOccurrence = dataset?.occurrences.find((item) => item.id === id);
+    if (!currentOccurrence) return;
+    const detail = await dataSource.loadOccurrence(id, currentOccurrence.targetType);
+    setDataset((current) => current ? {
+      ...current,
+      occurrences: mergeById(current.occurrences, [detail.occurrenceDigest]),
+      claimsByOccurrence: { ...current.claimsByOccurrence, [id]: detail.claims || [] }
+    } : current);
+  }, [dataset]);
 
   const value = useMemo<AppStateValue>(() => ({
     dataset,
@@ -56,10 +84,18 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     selectedOccurrenceId,
     selectIssue,
     selectOccurrence,
+    ensureIssue,
+    ensureOccurrence,
     retry: () => setAttempt((current) => current + 1)
-  }), [dataset, serviceSyncState, identityState, selectedIssueId, selectedOccurrenceId]);
+  }), [dataset, serviceSyncState, identityState, selectedIssueId, selectedOccurrenceId, selectOccurrence, ensureIssue, ensureOccurrence]);
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
+}
+
+function mergeById<T extends { id: string }>(current: T[], incoming: T[]): T[] {
+  const merged = new Map(current.map((item) => [item.id, item]));
+  for (const item of incoming) merged.set(item.id, item);
+  return [...merged.values()];
 }
 
 export function useAppState() {

@@ -56,6 +56,8 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | undefined>(undefined);
+  const [mapReady, setMapReady] = useState(false);
+  const [baseMapFallback, setBaseMapFallback] = useState(false);
   const pinData = pins || { type: "FeatureCollection" as const, features: [] };
   const areaData = areas || { type: "FeatureCollection" as const, features: [] };
 
@@ -70,7 +72,10 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
     });
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
-    map.on("load", () => {
+    let interactionsBound = false;
+    let fallbackApplied = false;
+    const installLayers = () => {
+      if (map.getSource("occurrence-pins")) return;
       map.addSource("presence-areas", { type: "geojson", data: areaData as never });
       map.addLayer({ id: "presence-fill", type: "fill", source: "presence-areas", paint: { "fill-color": "#0b6c74", "fill-opacity": 0.14 } });
       map.addLayer({ id: "presence-outline", type: "line", source: "presence-areas", paint: { "line-color": "#0b6c74", "line-width": 2, "line-opacity": 0.7 } });
@@ -92,15 +97,30 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
           "circle-stroke-color": "#9dd8dc"
         }
       });
-      const handleClick = (event: MapLayerMouseEvent) => {
-        const feature = event.features?.[0] as MapGeoJSONFeature | undefined;
-        const id = String(feature?.properties?.occurrenceUnitId || "");
-        if (id) onSelect(id);
-      };
-      map.on("click", "occurrence-pins", handleClick);
-      map.on("click", "presence-fill", handleClick);
-      map.on("mouseenter", "occurrence-pins", () => { map.getCanvas().style.cursor = "pointer"; });
-      map.on("mouseleave", "occurrence-pins", () => { map.getCanvas().style.cursor = ""; });
+      if (!interactionsBound) {
+        const handleClick = (event: MapLayerMouseEvent) => {
+          const feature = event.features?.[0] as MapGeoJSONFeature | undefined;
+          const id = String(feature?.properties?.occurrenceUnitId || "");
+          if (id) onSelect(id);
+        };
+        map.on("click", "occurrence-pins", handleClick);
+        map.on("click", "presence-fill", handleClick);
+        map.on("mouseenter", "occurrence-pins", () => { map.getCanvas().style.cursor = "pointer"; });
+        map.on("mouseleave", "occurrence-pins", () => { map.getCanvas().style.cursor = ""; });
+        interactionsBound = true;
+      }
+      setMapReady(true);
+    };
+    map.on("style.load", installLayers);
+    map.on("error", () => {
+      if (fallbackApplied || map.isStyleLoaded()) return;
+      fallbackApplied = true;
+      setBaseMapFallback(true);
+      map.setStyle({
+        version: 8,
+        sources: {},
+        layers: [{ id: "fallback-background", type: "background", paint: { "background-color": "#e8edef" } }]
+      });
     });
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = undefined; };
@@ -124,7 +144,10 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
     }
   }, [selectedId, pinData.features]);
 
-  return <div ref={containerRef} className="map-canvas" aria-label={`${occurrences.length}개 공개 현장 지도`} />;
+  return <>
+    <div ref={containerRef} className="map-canvas" data-map-ready={mapReady ? "true" : "false"} aria-label={`${occurrences.length}개 공개 현장 지도`} />
+    {baseMapFallback ? <div className="map-basemap-notice">지도 배경 연결 중 · 현장 위치는 표시됩니다</div> : null}
+  </>;
 }
 
 function MapSelection({ occurrence, onClose }: { occurrence: OccurrenceDigest; onClose: () => void }) {

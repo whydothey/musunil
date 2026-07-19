@@ -27,22 +27,23 @@
 
 ### UI/UX 전면 재구축 보드
 
-기존 정적 UI의 `Guard` 판정은 기능 존재 여부를 뜻할 뿐, 상업용 S+ 판정이 아니다. 2026-07-19 사용자 피드백을 기준으로 기존 화면의 S+ 선언을 무효화하고 아래 보드를 우선 실행한다. 새 앱은 검증이 끝날 때까지 `apps/web/dist`에만 빌드하며, 라이브 `apps/web/index.html`과 Render 게시 경로는 유지한다.
+기존 정적 UI의 `Guard` 판정은 기능 존재 여부를 뜻할 뿐, 상업용 S+ 판정이 아니다. 2026-07-19 사용자 피드백을 기준으로 기존 화면의 S+ 선언을 무효화하고 아래 보드를 우선 실행한다. 새 앱은 `apps/web/dist`에 production 전용으로 빌드하며, fixture 시각 검증과 production 누출 검사를 통과한 뒤 Render 게시 경로도 같은 dist로 전환한다.
 
 | UI Goal | 상태 | 실제 완료 증거 |
 | --- | --- | --- |
 | UI-G1. React/Vite 기반과 데이터 격리 | **Guard** | React 19, TypeScript, Vite 앱 셸·라우팅·디자인 토큰을 추가했다. production 빌드에서 fixture 제목·ID·preview 미디어 문자열 0건, 초기 JS gzip 약 67KB를 확인했다. |
-| UI-G2. 홈·이슈·현장 흐름 | **Candidate** | 단일 주요 이슈 피드, 전체 화면 이슈, 전국 현장, 동일 현장 상세를 구현했다. 390/430/768/1440 시각·키보드 검증 전에는 Guard/S+로 올리지 않는다. |
-| UI-G3. 영상·지도 연결 | **Candidate** | 세로 snap 영상과 MapLibre GeoJSON 핀·인증 영역이 동일 `selectedOccurrenceId` 상세로 이동한다. 실제 pan/zoom·스와이프 캡처 전에는 Guard/S+로 올리지 않는다. |
-| UI-G4. 법안·제보 단순화 | **Candidate** | 법안 2개 정렬과 `근처 현장 → 대상 확정 → 본인확인 → 촬영 → 미리보기 → 접수` 점진 흐름을 구현했다. production API·PortOne은 G7까지 정직한 미연결 상태를 유지한다. |
-| UI-G5. 상업용 시각 완성 | **Active** | 독립 Visual Critique 체크리스트를 기준으로 대시보드형 KPI·중첩 카드·장식 글로우를 제거한다. 실제 화면 비교와 반복 수정이 남아 있다. |
-| UI-G6. S+ 출시 감사·배포 전환 | Pending | axe, 키보드, 뒤로가기, reduced motion, 4개 viewport, 정보 흐름, production strip이 통과한 뒤에만 Render 게시 경로를 `apps/web/dist`로 전환한다. |
+| UI-G2. 홈·이슈·현장 흐름 | **Guard** | 390/430/768/1440에서 홈 첫 viewport에 이슈 제목 4개, 중첩 조작 0건을 확인했다. 이슈는 전체 화면으로 열리고 `현장/영상/근거/법안` 네 탭, 현장은 공통 `OccurrenceDigest` 상세로 이동한다. |
+| UI-G3. 영상·지도 연결 | **Guard** | 세로 snap 영상의 액션을 `현장/근거/이슈`로 제한했다. MapLibre GeoJSON 핀·인증 영역, 검색 결과가 동일 `selectedOccurrenceId`를 사용하며 pan/zoom과 핀 선택 캡처를 통과했다. |
+| UI-G4. 법안·제보 단순화 | **Guard** | 법안 2개 정렬과 `근처 현장 → 대상 확정 → 본인확인 → 촬영 → 미리보기 → 접수` 점진 흐름을 구현했다. 첫 제보 화면의 주 행동은 1개다. production API·PortOne은 G7까지 정직한 미연결 상태를 유지한다. |
+| UI-G5. 상업용 시각 완성 | **Guard** | 대시보드형 KPI·중첩 카드·장식 글로우를 제거하고 단일 피드, 전체 화면 상세, 8px 이하 표면, Lucide 아이콘으로 통일했다. 28개 viewport/route 캡처에서 오버플로우 0건, axe serious/critical 0건이다. |
+| UI-G6. S+ 출시 감사·배포 전환 | **Active** | production fixture 누출 0건과 Render `apps/web/dist` build contract는 local에서 통과했다. 현재 커밋 배포 후 실제 `musunil.com` SHA·화면·빈 상태·보안 헤더 검증이 남아 있다. |
 | UI-G7. 운영 연결 재개 | Deferred | UI 출시 후보가 확정된 뒤 기존 G7을 재개한다. |
 
 ## Change Log
 
 | 일시 | Goal | 사용자 문제 | 변경 | 검증 |
 | --- | --- | --- | --- | --- |
+| 2026-07-20 00:15 KST | UI-G2~G6 | 후보 UI가 로컬에서만 보이고, 기존 배포·시각 검사가 구형 단일 HTML 구조를 다시 정답으로 고정할 위험 | 공통 현장 lazy detail 계약, 뒤로가기 포커스 복귀, MapLibre fallback과 실제 크기 검증, production fixture strip을 보강했다. Render publish를 `apps/web/dist`로 고정하고 config/build-info/headers/recursive manifest를 Vite public/dist 생명주기에 맞췄다. 기존 치수 검사는 이슈 가시성·중첩 조작·지도/상세 경쟁·네 탭·공통 현장·릴스 액션·제보 첫 행동·axe 검사로 교체했다. | `pnpm check`, `pnpm check:launch-sample`, `pnpm check:web-next:production`, `pnpm check:web-next:visual`, `pnpm check:web-render-build-command` 통과. [React S+ candidate evidence](/Users/mk/Documents/Musunil/docs/visual-evidence/react-splus-candidate/visual-evidence.json)에서 4개 viewport 모두 이슈 제목 4개, overflow 0, nested interactive 0, axe serious/critical 0 |
 | 2026-07-19 23:20 KST | UI-G1~G4 | 라이브가 약 1.2만 줄 단일 HTML과 다중 패널·과도한 조작 요소로 AI 대시보드처럼 보이고, 일반 사용자가 첫 행동을 알기 어려움 | 기존 라이브를 유지한 채 `apps/web/app`에 React/Vite 앱을 병렬 구축했다. 홈은 단일 이슈 링크 목록, 상세는 전체 화면, 지도는 핀·인증 영역, 영상은 세로 snap, 법안은 2개 정렬, 제보는 단계별 한 행동으로 재구성했다. fixture/production은 Vite alias로 빌드 단계부터 분리했다. | `@musunil/web typecheck`, fixture/production build 통과. production dist에서 fixture title/id/preview token 0건. 시각·접근성 검증은 UI-G5/G6 Active로 유지 |
 | 2026-07-19 | G1 | 홈·지도·상세가 서로 다른 선택 대상을 가리킬 수 있음 | `IssueOverview`/`OccurrenceDigest` additive API, `selectedOccurrenceId` 모듈 상태, ES module API/contract foundation, recursive static manifest를 도입 | `@musunil/api test`, `check:web-manifest`, `check:web-smoke`, `check:web-flow`, `check:ux-surface`, `check:visual-surface`, `check:web-render-build-command` 통과 |
 | 2026-07-19 | G2 | 이슈를 열어도 장소·시간별 집회 현장이 첫 답으로 나오지 않음 | 이슈 상세 첫 화면을 `전국 집회 현장` 목록으로 바꾸고, 현장 선택과 관련 공식 법안 이동을 같은 상세 흐름에 연결 | `check:web-smoke`, `check:web-flow`, `check:ux-surface`, 390/430/768/1440 `check:visual-surface` 통과 |

@@ -33,16 +33,18 @@ const buildInfo = {
   source: renderBuildDetected ? "render" : "local"
 };
 
+const publicDir = resolve(cwd, "apps/web/public");
+
 writeFileSync(
-  resolve(cwd, "apps/web/config.js"),
+  resolve(publicDir, "config.js"),
   `window.MUSUNIL_WEB_CONFIG = ${JSON.stringify(webConfig, null, 2)};\n`
 );
 if (writeBuildInfo) {
   writeFileSync(
-    resolve(cwd, "apps/web/build-info.js"),
+    resolve(publicDir, "build-info.js"),
     `window.MUSUNIL_BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};\n`
   );
-  writeFileSync(resolve(cwd, "apps/web/build-info.json"), `${JSON.stringify(buildInfo, null, 2)}\n`);
+  writeFileSync(resolve(publicDir, "build-info.json"), `${JSON.stringify(buildInfo, null, 2)}\n`);
 }
 
 function readString(config, path) {

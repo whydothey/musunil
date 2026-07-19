@@ -5,7 +5,7 @@ const cwd = resolve(import.meta.dirname, "..");
 const renderYaml = readFileSync(resolve(cwd, "render.yaml"), "utf8");
 const webBlock = renderServiceBlock(renderYaml, "musunil-web");
 const headers = readHeaders(webBlock);
-const outputPath = resolve(cwd, "apps/web/_headers");
+const outputPath = resolve(cwd, "apps/web/public/_headers");
 const requiredHeaders = [
   "Cache-Control",
   "Content-Security-Policy",
@@ -33,7 +33,7 @@ const output = [
 if (process.argv.includes("--check")) {
   const current = readFileSync(outputPath, "utf8");
   if (current !== output) {
-    console.error("apps/web/_headers is stale. Run pnpm build:web-headers.");
+    console.error("apps/web/public/_headers is stale. Run pnpm build:web-headers.");
     process.exit(1);
   }
 } else {

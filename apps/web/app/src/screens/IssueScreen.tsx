@@ -14,14 +14,17 @@ const tabs: Array<{ id: IssueTab; label: string }> = [
 ];
 
 export function IssueScreen({ id }: { id: string }) {
-  const { dataset, serviceSyncState, selectIssue } = useAppState();
+  const { dataset, serviceSyncState, selectIssue, ensureIssue } = useAppState();
   const [tab, setTab] = useState<IssueTab>("occurrences");
   const issue = dataset?.issues.find((item) => item.id === id);
   const occurrences = useMemo(() => dataset?.occurrences.filter((item) => item.issueId === id) || [], [dataset, id]);
   const reels = useMemo(() => dataset?.reels.filter((item) => item.issueId === id) || [], [dataset, id]);
   const laws = useMemo(() => dataset?.laws.filter((item) => item.linkedIssueIds?.includes(id)) || [], [dataset, id]);
   const claims = dataset?.claimsByIssue[id] || [];
-  useEffect(() => { selectIssue(id); }, [id, selectIssue]);
+  useEffect(() => {
+    selectIssue(id);
+    if (!Object.prototype.hasOwnProperty.call(dataset?.claimsByIssue || {}, id)) ensureIssue(id).catch(() => undefined);
+  }, [id, selectIssue, ensureIssue, dataset?.claimsByIssue]);
 
   if (serviceSyncState === "loading") return <section className="screen screen-detail"><LoadingState /></section>;
   if (serviceSyncState === "unavailable") return <section className="screen screen-detail"><ServiceUnavailable /></section>;

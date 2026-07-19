@@ -1488,6 +1488,8 @@ function toOccurrenceDigest(store: Store, targetType: Extract<TargetType, "occur
     .sort((left, right) => right.observedAt.getTime() - left.observedAt.getTime())[0];
   const occurrence = targetType === "occurrence" ? target as Occurrence : undefined;
   const continuous = targetType === "continuous_presence" ? target as ContinuousPresence : undefined;
+  const issueId = "issueId" in target ? target.issueId : undefined;
+  const issue = issueId ? store.issues.find((item) => item.id === issueId) : undefined;
   const updatedAt = latestDate([
     occurrence?.startsAt,
     occurrence?.endsAt,
@@ -1499,7 +1501,7 @@ function toOccurrenceDigest(store: Store, targetType: Extract<TargetType, "occur
   return {
     id,
     targetType,
-    issueId: "issueId" in target ? target.issueId : undefined,
+    issueId,
     title: targetTitle(targetType, target),
     regionLabel: targetRegionLabel(store, targetType, target) ?? "지역 확인 중",
     locationLabel: "publicLocation" in target ? target.publicLocation?.label : undefined,
@@ -1513,7 +1515,9 @@ function toOccurrenceDigest(store: Store, targetType: Extract<TargetType, "occur
     publicVideoCount: claims.filter((claim) => hasPublicLiveEvidence(store, claim)).length,
     disputeCount: claims.filter(isDisputeSource).length,
     evidenceCount: evidence.length,
-    scale: estimate ? { minCount: estimate.minCount, maxCount: estimate.maxCount, confidence: estimate.confidence } : undefined
+    scale: estimate ? { minCount: estimate.minCount, maxCount: estimate.maxCount, confidence: estimate.confidence } : undefined,
+    issueTitle: issue?.title,
+    keyPoint: strongestClaim?.normalizedStatement
   };
 }
 
@@ -2171,7 +2175,12 @@ function getTargetById(store: Store, targetType: TargetType, id: string | undefi
   const item = targetRecord(store, targetType, id);
   if (!item) return json(404, { error });
   const claims = publicClaimsForTarget(store, targetType, id);
-  return json(200, { item: toPublicTarget(targetType, item, claims), claims: claims.map(toPublicClaim), evidenceCount: publicCounts(claims).evidenceCount });
+  return json(200, {
+    item: toPublicTarget(targetType, item, claims),
+    occurrenceDigest: targetType === "continuous_presence" ? toOccurrenceDigest(store, targetType, id) : undefined,
+    claims: claims.map(toPublicClaim),
+    evidenceCount: publicCounts(claims).evidenceCount
+  });
 }
 
 function getMap(store: Store): ApiResponse {
@@ -2406,7 +2415,7 @@ function roundCoord(value: number): number {
 
 function getLaws(store: Store, sort: "interest" | "proposed_desc" = "interest"): ApiResponse {
   const laws = lawCards(store, sort);
-  return json(200, { laws, lawInterestItems: laws.map(toLawInterestItem), sort });
+  return json(200, { laws, lawInterestItems: laws.map((law) => toLawInterestItem(store, law)), sort });
 }
 
 function getLaw(store: Store, id: string | undefined): ApiResponse {
@@ -2444,7 +2453,7 @@ function lawCards(store: Store, sort: "interest" | "proposed_desc" = "interest")
   });
 }
 
-function toLawInterestItem(law: ReturnType<typeof toPublicLawItem>): LawInterestItem {
+function toLawInterestItem(store: Store, law: ReturnType<typeof toPublicLawItem>): LawInterestItem {
   return {
     id: law.id,
     source: law.source,
@@ -2456,7 +2465,8 @@ function toLawInterestItem(law: ReturnType<typeof toPublicLawItem>): LawInterest
     linkedIssueCount: law.linkedIssueCount,
     occurrenceCount: law.occurrenceCount,
     regionCount: law.regionCount,
-    interestScore: law.interestScore
+    interestScore: law.interestScore,
+    linkedIssueIds: store.issueLawLinks.filter((link) => link.lawItemId === law.id).map((link) => link.issueId)
   };
 }
 
