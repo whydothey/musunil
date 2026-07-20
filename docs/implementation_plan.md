@@ -46,7 +46,7 @@ Web/PWA, Mobile
 2. 도메인 모델
    - Issue, Occurrence, ContinuousPresence.
    - Claim, Evidence, AuditLog, TransparencyLog, Subscription, NotificationOutbox.
-   - LawItem, IssueLawLink. LawItem은 Event/Claim이 아니라 공식 법령·의안 참조 메타데이터이며, IssueLawLink가 주제어/법 이름/의안 제목/수동 연결 근거를 보존한다.
+   - LawItem, LawGroup, IssueLawGroupLink. LawItem은 Event/Claim이 아니라 공식 법령·의안 참조 메타데이터이며 동일 공식 법안명 그룹에 속한다. IssueLawGroupLink가 그룹 핵심 논점/법 이름/그룹 제목/수동 연결 근거와 승인 상태를 보존한다.
    - Issue 제목은 지역/형태가 아니라 주장 대상과 주장 성격이다. 예: `부정선거 의혹 제기 집회`, `정보통신망법 개정 반대 집회`, `대통령 탄핵 요구 집회`.
 
 3. 제보

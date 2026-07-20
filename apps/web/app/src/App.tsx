@@ -8,7 +8,7 @@ import { HomeScreen } from "./screens/HomeScreen";
 const ExploreScreen = lazy(() => import("./screens/ExploreScreen").then((module) => ({ default: module.ExploreScreen })));
 const IssueScreen = lazy(() => import("./screens/IssueScreen").then((module) => ({ default: module.IssueScreen })));
 const LawScreen = lazy(() => import("./screens/LawScreen").then((module) => ({ default: module.LawScreen })));
-const LawTopicScreen = lazy(() => import("./screens/LawTopicScreen").then((module) => ({ default: module.LawTopicScreen })));
+const LawGroupScreen = lazy(() => import("./screens/LawTopicScreen").then((module) => ({ default: module.LawGroupScreen })));
 const LawsScreen = lazy(() => import("./screens/LawsScreen").then((module) => ({ default: module.LawsScreen })));
 const OccurrenceScreen = lazy(() => import("./screens/OccurrenceScreen").then((module) => ({ default: module.OccurrenceScreen })));
 const ReelsScreen = lazy(() => import("./screens/ReelsScreen").then((module) => ({ default: module.ReelsScreen })));
@@ -35,9 +35,9 @@ export function App() {
 function AppShell() {
   const { route } = useRouter();
   const { serviceSyncState } = useAppState();
-  const activeRoute: RouteName = route.name === "issue" || route.name === "occurrence" ? "home" : route.name === "law" || route.name === "law-topic" ? "laws" : route.name;
+  const activeRoute: RouteName = route.name === "issue" || route.name === "occurrence" ? "home" : route.name === "law" || route.name === "law-group" ? "laws" : route.name;
   const isImmersive = route.name === "reels" || route.name === "explore";
-  const isDetail = route.name === "issue" || route.name === "occurrence" || route.name === "law" || route.name === "law-topic";
+  const isDetail = route.name === "issue" || route.name === "occurrence" || route.name === "law" || route.name === "law-group";
 
   return (
     <div className={`app-shell ${isImmersive ? "is-immersive" : ""} ${isDetail ? "is-detail" : ""}`}>
@@ -88,7 +88,7 @@ function Screen() {
   if (route.name === "issue") return <IssueScreen id={route.id || ""} />;
   if (route.name === "occurrence") return <OccurrenceScreen id={route.id || ""} />;
   if (route.name === "law") return <LawScreen id={route.id || ""} />;
-  if (route.name === "law-topic") return <LawTopicScreen id={route.id || ""} />;
+  if (route.name === "law-group") return <LawGroupScreen id={route.id || ""} />;
   if (route.name === "reels") return <ReelsScreen />;
   if (route.name === "explore") return <ExploreScreen />;
   if (route.name === "laws") return <LawsScreen />;

@@ -21,7 +21,7 @@ await check("home", async () => {
 await check("laws", async () => {
   const body = await request("GET", "/laws");
   assert(Array.isArray(body.laws), "laws list is missing");
-  assert(Array.isArray(body.lawTopics), "law topic list is missing");
+  assert(Array.isArray(body.lawGroups), "law group list is missing");
   assert(body.laws.length > 0, "laws list is empty");
   const law = body.laws[0];
   assert(law.id && law.lawName && law.source, "law card identity fields missing");
@@ -31,12 +31,12 @@ await check("laws", async () => {
   assert(detail.law?.id === law.id, "law detail identity mismatch");
   assert(Array.isArray(detail.issues), "law detail issues missing");
   assert(Array.isArray(detail.relatedTargets), "law detail relatedTargets missing");
-  const topic = body.lawTopics[0];
-  if (topic) {
-    assert(topic.id && topic.label && topic.billCount > 0, "law topic card fields missing");
-    const topicDetail = await request("GET", `/law-topics/${encodeURIComponent(topic.id)}`);
-    assert(topicDetail.topic?.id === topic.id, "law topic detail identity mismatch");
-    assert(Array.isArray(topicDetail.bills) && topicDetail.bills.length === topic.billCount, "law topic bill membership mismatch");
+  const group = body.lawGroups[0];
+  if (group) {
+    assert(group.id && group.billTitle && Array.isArray(group.coreTopics) && group.billCount > 0, "law group card fields missing");
+    const groupDetail = await request("GET", `/law-groups/${encodeURIComponent(group.id)}`);
+    assert(groupDetail.group?.id === group.id, "law group detail identity mismatch");
+    assert(Array.isArray(groupDetail.bills) && groupDetail.bills.length === group.billCount, "law group bill membership mismatch");
   }
 });
 
@@ -58,8 +58,10 @@ await check("ready", async () => {
 });
 
 await check("admin_auth_required", async () => {
-  const response = await fetch(`${runtime.apiBaseUrl}/admin/review-queue`);
-  assert(response.status === 401, `admin route should require internal auth, got ${response.status}`);
+  for (const path of ["/admin/review-queue", "/admin/law-group-link-candidates"]) {
+    const response = await fetch(`${runtime.apiBaseUrl}${path}`);
+    assert(response.status === 401, `${path} should require internal auth, got ${response.status}`);
+  }
 });
 
 await check("admin_wrong_key_rejected", async () => {

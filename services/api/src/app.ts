@@ -21,12 +21,12 @@ import {
   type IdentityVerificationSession,
   type Issue,
   type IssueOverview,
-  type IssueLawLink,
+  type IssueLawGroupLink,
   type LawInterestItem,
   type LawItem,
-  type LawTopic,
-  type LawTopicCard,
-  type LawTopicMembership,
+  type LawGroup,
+  type LawGroupCard,
+  type LawGroupMembership,
   type LifecycleState,
   type NotificationOutbox,
   type Occurrence,
@@ -41,15 +41,16 @@ import {
   type UserSession,
   type VerifiedUser
 } from "../../../packages/schemas/src/index.ts";
-import { buildLawTopics } from "./law-topics.ts";
+import { buildLawGroups } from "./law-topics.ts";
 
 export type Store = {
   areaClusters: AreaCluster[];
   issues: Issue[];
   lawItems: LawItem[];
-  lawTopics: LawTopic[];
-  lawTopicMemberships: LawTopicMembership[];
-  issueLawLinks: IssueLawLink[];
+  lawGroups: LawGroup[];
+  lawGroupMemberships: LawGroupMembership[];
+  issueLawGroupLinks: IssueLawGroupLink[];
+  legacyLawTopicAliases: Record<string, string>;
   occurrences: Occurrence[];
   continuousPresences: ContinuousPresence[];
   crowdEstimates: CrowdEstimate[];
@@ -160,7 +161,8 @@ export type IdentityRuntime = {
 };
 
 export function createApp(store: Store = emptyStore(), options: AppOptions = {}) {
-  synchronizeLawTopics(store, false);
+  synchronizeLawGroups(store, false);
+  refreshIssueLawGroupLinks(store);
   return {
     store,
     handle: async (request: ApiRequest) => {
@@ -179,9 +181,10 @@ export function emptyStore(): Store {
     areaClusters: [],
     issues: [],
     lawItems: [],
-    lawTopics: [],
-    lawTopicMemberships: [],
-    issueLawLinks: [],
+    lawGroups: [],
+    lawGroupMemberships: [],
+    issueLawGroupLinks: [],
+    legacyLawTopicAliases: {},
     occurrences: [],
     continuousPresences: [],
     crowdEstimates: [],
@@ -310,10 +313,6 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
       officialUrl: "https://www.law.go.kr/법령/공직선거법",
       keywords: ["부정선거", "선거 검증", "선관위", "공직선거법"]
     }
-  );
-  store.issueLawLinks.push(
-    { issueId: "issue_1", lawItemId: "law_info_network_amendment", matchBasis: "keyword", confidence: "high", claimIds: [] },
-    { issueId: "issue_sample_impeachment_march", lawItemId: "law_national_assembly_impeachment", matchBasis: "keyword", confidence: "high", claimIds: [] }
   );
   store.occurrences.push({
     id: "occ_police_national_stats_2023",
@@ -822,9 +821,10 @@ export function stripPreviewData(store: Store): Store {
   const claimIds = new Set(store.claims.map((item) => item.id));
   const evidenceIds = new Set(store.evidence.map((item) => item.id));
   const issueIds = new Set(store.issues.map((item) => item.id));
-  const lawIds = new Set(store.lawItems.map((item) => item.id));
-  store.issueLawLinks = store.issueLawLinks
-    .filter((item) => issueIds.has(item.issueId) && lawIds.has(item.lawItemId))
+  synchronizeLawGroups(store, false);
+  const lawGroupIds = new Set(store.lawGroups.map((item) => item.id));
+  store.issueLawGroupLinks = store.issueLawGroupLinks
+    .filter((item) => issueIds.has(item.issueId) && lawGroupIds.has(item.lawGroupId))
     .map((item) => ({ ...item, claimIds: item.claimIds.filter((id) => claimIds.has(id)) }));
   for (const item of store.occurrences) cleanRefs(item, claimIds, evidenceIds);
   for (const item of store.continuousPresences) cleanRefs(item, claimIds, evidenceIds);
@@ -903,7 +903,8 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
     const sort = url.searchParams.get("sort");
     return getLaws(store, sort === "proposed_desc" ? "proposed_desc" : "interest");
   }
-  if (request.method === "GET" && path.startsWith("/law-topics/")) return getLawTopic(store, path.split("/")[2]);
+  if (request.method === "GET" && path.startsWith("/law-groups/")) return getLawGroup(store, path.split("/")[2]);
+  if (request.method === "GET" && path.startsWith("/law-topics/")) return getLawGroup(store, path.split("/")[2], true);
   if (request.method === "GET" && path.startsWith("/laws/")) return getLaw(store, path.split("/")[2]);
   if (request.method === "GET" && path === "/reels") {
     return getReels(store, url.searchParams.get("seed"), url.searchParams.get("cursor"));
@@ -945,6 +946,12 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
   if (request.method === "GET" && path === "/admin/privacy-dashboard") return withInternalAuth(request, options, () => getAdminPrivacyDashboard(store, options));
   if (request.method === "GET" && path === "/admin/risk-dashboard") return withInternalAuth(request, options, () => getAdminRiskDashboard(store));
   if (request.method === "GET" && path === "/admin/review-queue") return withInternalAuth(request, options, () => getAdminReviewQueue(store));
+  if (request.method === "GET" && path === "/admin/law-group-link-candidates") {
+    return withInternalAuth(request, options, () => getAdminLawGroupLinkCandidates(store));
+  }
+  if (request.method === "PATCH" && path.startsWith("/admin/law-group-links/")) {
+    return withInternalAuth(request, options, () => patchAdminLawGroupLink(store, path.split("/")[3], path.split("/")[4], request.body));
+  }
   if (request.method === "PATCH" && path.startsWith("/admin/claims/")) {
     return withInternalAuth(request, options, () => patchAdminClaim(store, path.split("/")[3], request.body));
   }
@@ -2425,35 +2432,67 @@ function roundCoord(value: number): number {
 
 function getLaws(store: Store, sort: "interest" | "proposed_desc" = "interest"): ApiResponse {
   const laws = lawCards(store, sort);
+  const lawGroups = lawGroupCards(store, sort);
   return json(200, {
     laws,
     lawInterestItems: laws.map((law) => toLawInterestItem(store, law)),
-    lawTopics: lawTopicCards(store, sort),
+    lawGroups,
+    // One-release compatibility alias for clients that still render topic.label/representativeKeywords.
+    lawTopics: lawGroups.map(toLegacyLawTopicCard),
     sort
   });
 }
 
-function getLawTopic(store: Store, id: string | undefined): ApiResponse {
-  const topic = store.lawTopics.find((item) => item.id === id);
-  if (!topic) return json(404, { error: "law_topic_not_found" });
-  const bills = topic.billIds
+function getLawGroup(store: Store, id: string | undefined, legacyRoute = false): ApiResponse {
+  const resolvedId = id ? store.legacyLawTopicAliases[id] ?? id : undefined;
+  const group = store.lawGroups.find((item) => item.id === resolvedId);
+  if (!group) return json(404, { error: legacyRoute ? "law_topic_not_found" : "law_group_not_found" });
+  const bills = group.billIds
     .map((lawId) => store.lawItems.find((law) => law.id === lawId))
     .filter((law): law is LawItem => Boolean(law))
     .map((law) => toLawInterestItem(store, toPublicLawItem(store, law)))
     .sort((left, right) => new Date(right.proposedDate || right.statusDate || 0).getTime() - new Date(left.proposedDate || left.statusDate || 0).getTime());
-  return json(200, { topic: toLawTopicCard(store, topic), bills });
+  const links = approvedIssueLawGroupLinks(store).filter((link) => link.lawGroupId === group.id);
+  const issueIds = new Set(links.map((link) => link.issueId));
+  const cards = homeCards(store);
+  const overviewCards = new Map(issueCards(store, cards).map((issue) => [issue.id, issue]));
+  const issues = store.issues.filter((issue) => issueIds.has(issue.id)).map((issue): IssueOverview => {
+    const overviewCard = overviewCards.get(issue.id);
+    if (overviewCard) return toIssueOverview(store, overviewCard, cards);
+    return {
+      id: issue.id,
+      title: issue.title,
+      status: issue.status,
+      lifecycleState: issue.status === "archived" ? "ARCHIVED" : "UNKNOWN",
+      regionCount: 0,
+      occurrenceCount: 0,
+      officialClaimCount: 0,
+      publicVideoCount: 0,
+      disputeCount: 0,
+      latestUpdatedAt: issue.lastUpdatedAt.toISOString()
+    };
+  });
+  const card = toLawGroupCard(store, group);
+  return json(200, { group: card, topic: toLegacyLawTopicCard(card), bills, issueLinks: links.map(toPublicIssueLawGroupLink), issues });
 }
 
-function lawTopicCards(store: Store, sort: "interest" | "proposed_desc"): LawTopicCard[] {
-  return store.lawTopics.map((topic) => toLawTopicCard(store, topic)).sort((left, right) => sort === "proposed_desc"
-    ? new Date(right.latestProposedDate || 0).getTime() - new Date(left.latestProposedDate || 0).getTime() || left.label.localeCompare(right.label, "ko")
+function toLegacyLawTopicCard(group: LawGroupCard) {
+  return {
+    ...group,
+    label: group.billTitle,
+    representativeKeywords: group.coreTopics.slice(0, 3).map((topic) => topic.label)
+  };
+}
+
+function lawGroupCards(store: Store, sort: "interest" | "proposed_desc"): LawGroupCard[] {
+  return store.lawGroups.map((group) => toLawGroupCard(store, group)).sort((left, right) => sort === "proposed_desc"
+    ? new Date(right.latestProposedDate || 0).getTime() - new Date(left.latestProposedDate || 0).getTime() || left.billTitle.localeCompare(right.billTitle, "ko")
     : right.interestScore - left.interestScore || new Date(right.latestProposedDate || 0).getTime() - new Date(left.latestProposedDate || 0).getTime());
 }
 
-function toLawTopicCard(store: Store, topic: LawTopic): LawTopicCard {
-  const laws = topic.billIds.map((id) => store.lawItems.find((law) => law.id === id)).filter((law): law is LawItem => Boolean(law));
-  const lawIds = new Set(laws.map((law) => law.id));
-  const links = store.issueLawLinks.filter((link) => lawIds.has(link.lawItemId) && store.issues.some((issue) => issue.id === link.issueId));
+function toLawGroupCard(store: Store, group: LawGroup): LawGroupCard {
+  const laws = group.billIds.map((id) => store.lawItems.find((law) => law.id === id)).filter((law): law is LawItem => Boolean(law));
+  const links = approvedIssueLawGroupLinks(store).filter((link) => link.lawGroupId === group.id && store.issues.some((issue) => issue.id === link.issueId));
   const issueIds = new Set(links.map((link) => link.issueId));
   const relatedTargets = new Map<string, ReturnType<typeof issueTargets>[number]>();
   for (const issueId of issueIds) {
@@ -2466,10 +2505,10 @@ function toLawTopicCard(store: Store, topic: LawTopic): LawTopicCard {
   const latestProposedDate = latestDate(laws.map((law) => law.proposedDate))?.toISOString();
   const scheduleProximityScore = Math.max(0, ...laws.map(lawScheduleProximityScore));
   return {
-    id: topic.id,
-    lawName: topic.lawName,
-    label: topic.label,
-    representativeKeywords: topic.representativeKeywords,
+    id: group.id,
+    lawName: group.lawName,
+    billTitle: group.billTitle,
+    coreTopics: group.coreTopics,
     billCount: laws.length,
     latestProposedDate,
     stageCounts,
@@ -2483,22 +2522,13 @@ function toLawTopicCard(store: Store, topic: LawTopic): LawTopicCard {
 function getLaw(store: Store, id: string | undefined): ApiResponse {
   const law = store.lawItems.find((item) => item.id === id);
   if (!law) return json(404, { error: "law_not_found" });
-  const links = store.issueLawLinks.filter((item) => item.lawItemId === law.id && store.issues.some((issue) => issue.id === item.issueId));
-  const issueIds = new Set(links.map((item) => item.issueId));
-  const relatedTargets = [...issueIds].flatMap((issueId) => issueTargets(store, issueId));
+  const group = store.lawGroups.find((item) => item.id === law.lawGroupId);
   return json(200, {
     law: toPublicLawItem(store, law),
-    issueLinks: links.map(toPublicIssueLawLink),
-    issues: store.issues
-      .filter((issue) => issueIds.has(issue.id))
-      .map((issue) => ({
-        ...toPublicIssue(issue),
-        link: toPublicIssueLawLink(links.find((link) => link.issueId === issue.id))
-      })),
-    relatedTargets: relatedTargets.map(({ targetType, target }) => ({
-      targetType,
-      item: toPublicTarget(targetType, target, publicClaimsForTarget(store, targetType, target.id))
-    }))
+    lawGroup: group ? toLawGroupCard(store, group) : undefined,
+    issueLinks: [],
+    issues: [],
+    relatedTargets: []
   });
 }
 
@@ -2527,21 +2557,20 @@ function toLawInterestItem(store: Store, law: ReturnType<typeof toPublicLawItem>
     assemblyBillNo: law.assemblyBillNo,
     proposer: law.proposer,
     proposalSummary: law.proposalSummary,
-    topicKeywords: law.topicKeywords,
-    primaryLawTopicId: law.primaryLawTopicId,
+    lawGroupId: law.lawGroupId,
     linkedIssueCount: law.linkedIssueCount,
     occurrenceCount: law.occurrenceCount,
     regionCount: law.regionCount,
     interestScore: law.interestScore,
-    linkedIssueIds: store.issueLawLinks.filter((link) => link.lawItemId === law.id).map((link) => link.issueId)
+    linkedIssueIds: []
   };
 }
 
-function toPublicIssueLawLink(link: IssueLawLink | undefined) {
+function toPublicIssueLawGroupLink(link: IssueLawGroupLink | undefined) {
   if (!link) return undefined;
   return {
     issueId: link.issueId,
-    lawItemId: link.lawItemId,
+    lawGroupId: link.lawGroupId,
     matchBasis: link.matchBasis,
     confidence: link.confidence,
     claimCount: link.claimIds.length
@@ -3031,7 +3060,7 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
     riskLevel: readRiskLevel(data, "riskLevel", "low"),
     evidenceIds: [evidence.id]
   });
-  refreshIssueLawLinks(store);
+  refreshIssueLawGroupLinks(store);
   recordPublicSourceRefresh(store, data, 1);
   audit(store, created ? "split" : "correction", "occurrence", id, "public occurrence ingested as Claim/Evidence");
   return json(created ? 201 : 200, {
@@ -3068,8 +3097,8 @@ function postInternalIngestLaws(store: Store, body: unknown): ApiResponse {
     else store.lawItems.push(law);
     upserted.push(law);
   }
-  refreshIssueLawLinks(store);
-  synchronizeLawTopics(store, true);
+  synchronizeLawGroups(store, true);
+  refreshIssueLawGroupLinks(store);
   return json(200, {
     status: "laws_ingested",
     laws: upserted.map((law) => toPublicLawItem(store, law))
@@ -3545,22 +3574,12 @@ function getTransparencyMonthly(store: Store): ApiResponse {
 }
 
 function toPublicLawItem(store: Store, law: LawItem) {
-  const links = store.issueLawLinks.filter((link) => link.lawItemId === law.id && store.issues.some((issue) => issue.id === link.issueId));
-  const issueIds = new Set(links.map((link) => link.issueId));
-  const relatedTargets = [...issueIds].flatMap((issueId) => issueTargets(store, issueId));
-  const regions = new Set(relatedTargets.map(({ target }) => publicTargetRegionLabel(target)).filter(Boolean));
-  const claims = publicClaimsForIssueIds(store, issueIds);
   const lastUpdatedAt = latestDate([
     law.proposedDate,
     law.statusDate,
-    law.effectiveDate,
-    ...store.issues.filter((issue) => issueIds.has(issue.id)).map((issue) => issue.lastUpdatedAt),
-    ...claims.map((claim) => claim.createdAt)
+    law.effectiveDate
   ]);
   const scheduleProximityScore = lawScheduleProximityScore(law);
-  const occurrenceCount = relatedTargets.length;
-  const regionCount = regions.size;
-  const recentClaimCount = claims.length;
   return {
     id: law.id,
     source: law.source,
@@ -3575,18 +3594,17 @@ function toPublicLawItem(store: Store, law: LawItem) {
     lawId: law.lawId,
     proposer: law.proposer,
     proposalSummary: law.proposalSummary,
-    topicKeywords: law.topicKeywords ?? [],
-    primaryLawTopicId: law.primaryLawTopicId,
+    lawGroupId: law.lawGroupId,
     summary: law.summary,
     officialUrl: law.officialUrl,
     keywords: law.keywords,
-    linkedIssueCount: issueIds.size,
-    relatedTargetCount: occurrenceCount,
-    occurrenceCount,
-    regionCount,
-    recentClaimCount,
+    linkedIssueCount: 0,
+    relatedTargetCount: 0,
+    occurrenceCount: 0,
+    regionCount: 0,
+    recentClaimCount: 0,
     scheduleProximityScore,
-    interestScore: occurrenceCount * 25 + regionCount * 20 + recentClaimCount * 8 + scheduleProximityScore + links.length * 5,
+    interestScore: scheduleProximityScore,
     lastUpdatedAt: lastUpdatedAt?.toISOString()
   };
 }
@@ -3612,77 +3630,87 @@ function publicClaimsForIssueIds(store: Store, issueIds: Set<string>): Claim[] {
   return [...claims.values()];
 }
 
-function refreshIssueLawLinks(store: Store): void {
-  const next = new Map<string, IssueLawLink>();
+function approvedIssueLawGroupLinks(store: Store): IssueLawGroupLink[] {
+  return store.issueLawGroupLinks.filter((link) => link.status === "approved");
+}
+
+function refreshIssueLawGroupLinks(store: Store): void {
+  const next = new Map<string, IssueLawGroupLink>();
   const validClaimIds = new Set(store.claims.filter(isPublicClaim).map((claim) => claim.id));
-  for (const link of store.issueLawLinks.filter((item) => item.matchBasis === "manual")) {
-    if (!store.issues.some((issue) => issue.id === link.issueId) || !store.lawItems.some((law) => law.id === link.lawItemId)) continue;
-    next.set(`${link.issueId}:${link.lawItemId}`, { ...link, claimIds: uniqueStrings(link.claimIds.filter((id) => validClaimIds.has(id))) });
+  for (const link of store.issueLawGroupLinks) {
+    if (!store.issues.some((issue) => issue.id === link.issueId) || !store.lawGroups.some((group) => group.id === link.lawGroupId)) continue;
+    next.set(`${link.issueId}:${link.lawGroupId}`, { ...link, claimIds: uniqueStrings(link.claimIds.filter((id) => validClaimIds.has(id))) });
   }
 
-  for (const law of store.lawItems) {
+  for (const group of store.lawGroups) {
     for (const issue of store.issues) {
-      const match = matchLawToIssue(store, law, issue);
+      const match = matchLawGroupToIssue(store, group, issue);
       if (!match) continue;
-      const key = `${issue.id}:${law.id}`;
+      const key = `${issue.id}:${group.id}`;
       const existing = next.get(key);
       next.set(key, {
         issueId: issue.id,
-        lawItemId: law.id,
+        lawGroupId: group.id,
         matchBasis: existing?.matchBasis === "manual" ? "manual" : match.matchBasis,
         confidence: higherConfidence(existing?.confidence, match.confidence),
+        status: existing?.status ?? "candidate",
+        reviewedAt: existing?.reviewedAt,
+        reviewNote: existing?.reviewNote,
         claimIds: uniqueStrings([...(existing?.claimIds ?? []), ...match.claimIds.filter((id) => validClaimIds.has(id))])
       });
     }
   }
-  store.issueLawLinks = [...next.values()];
+  store.issueLawGroupLinks = [...next.values()];
 }
 
-function synchronizeLawTopics(store: Store, recordChanges: boolean): void {
-  store.lawTopics ??= [];
-  store.lawTopicMemberships ??= [];
-  const previousTopics = new Map(store.lawTopics.map((topic) => [topic.id, topic]));
-  const previousMemberships = new Map(store.lawTopicMemberships.map((membership) => [membership.lawItemId, membership]));
-  const next = buildLawTopics(store.lawItems);
+function synchronizeLawGroups(store: Store, recordChanges: boolean): void {
+  store.lawGroups ??= [];
+  store.lawGroupMemberships ??= [];
+  store.issueLawGroupLinks ??= [];
+  store.legacyLawTopicAliases ??= {};
+  const previousGroups = new Map(store.lawGroups.map((group) => [group.id, group]));
+  const previousMemberships = new Map(store.lawGroupMemberships.map((membership) => [membership.lawItemId, membership]));
+  const next = buildLawGroups(store.lawItems);
 
   for (const law of store.lawItems) {
     const assignment = next.assignments.get(law.id);
-    law.primaryLawTopicId = assignment?.topicId;
-    law.topicKeywords = assignment?.keywords ?? [];
+    law.lawGroupId = assignment?.groupId;
+    delete law.primaryLawTopicId;
+    delete law.topicKeywords;
   }
-  store.lawTopics = next.topics;
-  store.lawTopicMemberships = next.memberships;
+  store.lawGroups = next.groups;
+  store.lawGroupMemberships = next.memberships;
   if (!recordChanges) return;
 
-  for (const topic of next.topics) {
-    const previous = previousTopics.get(topic.id);
-    if (!previous) audit(store, "state_change", "law_topic", topic.id, `공식 법안 대표 키워드로 '${topic.label}' 주제가 자동 생성되었습니다.`);
-    else if (previous.label !== topic.label || previous.representativeKeywords.join("|") !== topic.representativeKeywords.join("|")) {
-      audit(store, "correction", "law_topic", topic.id, `공식 제안이유·주요내용 재분석으로 '${topic.label}' 대표 키워드가 갱신되었습니다.`);
+  for (const group of next.groups) {
+    const previous = previousGroups.get(group.id);
+    if (!previous) audit(store, "state_change", "law_group", group.id, `동일 공식 법안명 '${group.billTitle}' 그룹이 생성되었습니다.`);
+    else if (JSON.stringify(previous.coreTopics) !== JSON.stringify(group.coreTopics)) {
+      audit(store, "correction", "law_group", group.id, `소속 의안의 공식 제안요약을 반영해 '${group.billTitle}' 그룹 핵심 논점이 갱신되었습니다.`);
     }
   }
   for (const membership of next.memberships) {
     const previous = previousMemberships.get(membership.lawItemId);
-    if (!previous || previous.lawTopicId === membership.lawTopicId) continue;
-    audit(store, "split", "law_topic", previous.lawTopicId, "공식 개정 목적 키워드 변경으로 법안이 기존 주제에서 분리되었습니다.");
-    audit(store, "merge", "law_topic", membership.lawTopicId, "공식 개정 목적 키워드가 일치하여 법안이 이 주제로 자동 편입되었습니다.");
+    if (!previous || previous.lawGroupId === membership.lawGroupId) continue;
+    audit(store, "split", "law_group", previous.lawGroupId, "공식 법안명 변경으로 의안이 기존 그룹에서 분리되었습니다.");
+    audit(store, "merge", "law_group", membership.lawGroupId, "정규화된 공식 법안명이 일치하여 의안이 이 그룹에 편입되었습니다.");
   }
-  for (const previous of previousTopics.values()) {
-    if (!next.topics.some((topic) => topic.id === previous.id)) {
-      audit(store, "merge", "law_topic", previous.id, "소속 법안의 대표 키워드 변경으로 기존 주제가 다른 주제로 병합되었습니다.");
+  for (const previous of previousGroups.values()) {
+    if (!next.groups.some((group) => group.id === previous.id)) {
+      audit(store, "merge", "law_group", previous.id, "소속 의안이 다른 동일 법안명 그룹으로 이동해 기존 그룹이 병합되었습니다.");
     }
   }
 }
 
-function matchLawToIssue(
+function matchLawGroupToIssue(
   store: Store,
-  law: LawItem,
+  group: LawGroup,
   issue: Issue
-): { matchBasis: IssueLawLink["matchBasis"]; confidence: IssueLawLink["confidence"]; claimIds: string[] } | undefined {
+): { matchBasis: IssueLawGroupLink["matchBasis"]; confidence: IssueLawGroupLink["confidence"]; claimIds: string[] } | undefined {
   const directText = normalizeSearchText(`${issue.title} ${issue.topicTags.join(" ")}`);
   const claims = publicClaimsForIssueIds(store, new Set([issue.id]));
   const claimMatches = (term: string) => claims.filter((claim) => normalizeSearchText(claim.normalizedStatement).includes(term)).map((claim) => claim.id);
-  for (const { term, matchBasis } of lawSearchTerms(law)) {
+  for (const { term, matchBasis } of lawGroupSearchTerms(group)) {
     const normalizedTerm = normalizeSearchText(term);
     if (normalizedTerm.length < 2) continue;
     if (directText.includes(normalizedTerm)) return { matchBasis, confidence: "high", claimIds: claimMatches(normalizedTerm) };
@@ -3692,17 +3720,43 @@ function matchLawToIssue(
   return undefined;
 }
 
-function lawSearchTerms(law: LawItem): Array<{ term: string; matchBasis: IssueLawLink["matchBasis"] }> {
+function lawGroupSearchTerms(group: LawGroup): Array<{ term: string; matchBasis: IssueLawGroupLink["matchBasis"] }> {
   return [
-    ...law.keywords.map((term) => ({ term, matchBasis: "keyword" as const })),
-    { term: law.lawName, matchBasis: "law_name" as const },
-    ...(law.billTitle ? [{ term: law.billTitle, matchBasis: "bill_title" as const }] : [])
+    ...group.coreTopics.flatMap((topic) => [topic.label, ...topic.representativeKeywords]).map((term) => ({ term, matchBasis: "core_topic" as const })),
+    { term: group.billTitle, matchBasis: "group_title" as const },
+    { term: group.lawName, matchBasis: "law_name" as const }
   ];
 }
 
-function higherConfidence(left: IssueLawLink["confidence"] | undefined, right: IssueLawLink["confidence"]): IssueLawLink["confidence"] {
+function higherConfidence(left: IssueLawGroupLink["confidence"] | undefined, right: IssueLawGroupLink["confidence"]): IssueLawGroupLink["confidence"] {
   const rank = { low: 0, medium: 1, high: 2 };
   return left && rank[left] > rank[right] ? left : right;
+}
+
+function getAdminLawGroupLinkCandidates(store: Store): ApiResponse {
+  return json(200, {
+    candidates: store.issueLawGroupLinks
+      .filter((link) => link.status === "candidate")
+      .map((link) => ({
+        link,
+        group: store.lawGroups.find((group) => group.id === link.lawGroupId),
+        issue: store.issues.find((issue) => issue.id === link.issueId)
+      }))
+      .filter((item) => item.group && item.issue)
+  });
+}
+
+function patchAdminLawGroupLink(store: Store, issueId: string | undefined, lawGroupId: string | undefined, body: unknown): ApiResponse {
+  const link = store.issueLawGroupLinks.find((item) => item.issueId === issueId && item.lawGroupId === lawGroupId);
+  if (!link) return json(404, { error: "law_group_link_candidate_not_found" });
+  const data = asObject(body);
+  const status = readString(data, "status");
+  if (status !== "approved" && status !== "rejected") throw new ApiError(400, "law_group_link_status_invalid");
+  link.status = status;
+  link.reviewedAt = new Date();
+  link.reviewNote = readOptionalString(data, "reviewNote");
+  audit(store, "state_change", "law_group", link.lawGroupId, `이슈 '${link.issueId}' 그룹 연결 후보가 ${status === "approved" ? "승인" : "거절"}되었습니다.`);
+  return json(200, { link });
 }
 
 function uniqueStrings(values: string[]): string[] {
@@ -3731,6 +3785,8 @@ function readLawItem(data: Record<string, unknown>): LawItem {
     lawId: readOptionalString(data, "lawId"),
     proposer: readOptionalString(data, "proposer"),
     proposalSummary: readOptionalString(data, "proposalSummary"),
+    lawGroupId: readOptionalString(data, "lawGroupId"),
+    // Accepted only to hydrate one-release legacy snapshots; synchronizeLawGroups removes them.
     topicKeywords: readOptionalStringArray(data, "topicKeywords"),
     primaryLawTopicId: readOptionalString(data, "primaryLawTopicId"),
     summary: readOptionalString(data, "summary"),

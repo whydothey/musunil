@@ -1,6 +1,7 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import pg from "pg";
 import type { Store } from "./app.ts";
+import { buildLawGroups } from "./law-topics.ts";
 
 const { Pool } = pg;
 const snapshotId = "main";
@@ -97,19 +98,60 @@ function snapshotKey(secret: string): Buffer {
   return createHash("sha256").update(secret).digest();
 }
 
-function hydrateStore(store: Store): Store {
-  store.lawTopics ??= [];
-  store.lawTopicMemberships ??= [];
-  for (const issue of store.issues) {
-    issue.firstSeenAt = date(issue.firstSeenAt);
-    issue.lastUpdatedAt = date(issue.lastUpdatedAt);
-  }
-  for (const law of store.lawItems) {
+export function hydrateStore(store: Store): Store {
+  const legacy = store as unknown as Store & {
+    lawTopics?: Array<{ id: string; billIds: string[]; updatedAt: unknown }>;
+    lawTopicMemberships?: Array<{ lawItemId: string; lawTopicId: string }>;
+    issueLawLinks?: Array<{
+      issueId: string;
+      lawItemId: string;
+      matchBasis: "law_name" | "keyword" | "bill_title" | "manual";
+      confidence: "low" | "medium" | "high";
+      claimIds: string[];
+    }>;
+  };
+  for (const law of store.lawItems ?? []) {
     law.proposedDate = optionalDate(law.proposedDate);
     law.statusDate = optionalDate(law.statusDate);
     law.effectiveDate = optionalDate(law.effectiveDate);
   }
-  for (const topic of store.lawTopics) topic.updatedAt = date(topic.updatedAt);
+  const builtGroups = buildLawGroups(store.lawItems ?? []);
+  store.lawGroups ??= builtGroups.groups;
+  store.lawGroupMemberships ??= builtGroups.memberships;
+  store.issueLawGroupLinks ??= [];
+  store.legacyLawTopicAliases ??= {};
+  for (const law of store.lawItems ?? []) law.lawGroupId = builtGroups.assignments.get(law.id)?.groupId;
+  for (const topic of legacy.lawTopics ?? []) {
+    const groupId = topic.billIds.map((lawId) => builtGroups.assignments.get(lawId)?.groupId).find(Boolean);
+    if (groupId) store.legacyLawTopicAliases[topic.id] = groupId;
+  }
+  if (store.issueLawGroupLinks.length === 0) {
+    const migrated = new Map<string, Store["issueLawGroupLinks"][number]>();
+    for (const link of legacy.issueLawLinks ?? []) {
+      const lawGroupId = builtGroups.assignments.get(link.lawItemId)?.groupId;
+      if (!lawGroupId) continue;
+      const key = `${link.issueId}:${lawGroupId}`;
+      const existing = migrated.get(key);
+      migrated.set(key, {
+        issueId: link.issueId,
+        lawGroupId,
+        matchBasis: existing?.matchBasis === "manual" || link.matchBasis === "manual" ? "manual" : link.matchBasis === "bill_title" ? "group_title" : link.matchBasis === "law_name" ? "law_name" : "core_topic",
+        confidence: existing?.confidence === "high" || link.confidence === "high" ? "high" : existing?.confidence === "medium" || link.confidence === "medium" ? "medium" : "low",
+        status: existing?.status === "approved" || link.matchBasis === "manual" ? "approved" : "candidate",
+        claimIds: [...new Set([...(existing?.claimIds ?? []), ...link.claimIds])]
+      });
+    }
+    store.issueLawGroupLinks = [...migrated.values()];
+  }
+  delete legacy.lawTopics;
+  delete legacy.lawTopicMemberships;
+  delete legacy.issueLawLinks;
+  for (const issue of store.issues) {
+    issue.firstSeenAt = date(issue.firstSeenAt);
+    issue.lastUpdatedAt = date(issue.lastUpdatedAt);
+  }
+  for (const group of store.lawGroups) group.updatedAt = date(group.updatedAt);
+  for (const link of store.issueLawGroupLinks) link.reviewedAt = optionalDate(link.reviewedAt);
   for (const occurrence of store.occurrences) {
     occurrence.startsAt = optionalDate(occurrence.startsAt);
     occurrence.endsAt = optionalDate(occurrence.endsAt);

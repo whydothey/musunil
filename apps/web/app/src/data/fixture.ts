@@ -283,13 +283,11 @@ const laws = [
     assemblyBillNo: "2217001",
     proposer: "김예시의원 등 10인",
     proposalSummary: "온라인 정보 유통 과정의 책임과 이용자 보호 절차를 보완하려는 개정안입니다.",
-    topicKeywords: ["온라인 정보", "이용자 보호"],
-    primaryLawTopicId: "law-topic-network-protection",
-    linkedIssueCount: 1,
-    occurrenceCount: 5,
-    regionCount: 4,
-    interestScore: 87,
-    linkedIssueIds: ["issue-network-act"]
+    lawGroupId: "law-group-network-act",
+    linkedIssueCount: 0,
+    occurrenceCount: 0,
+    regionCount: 0,
+    interestScore: 87
   },
   {
     id: "law-election-act",
@@ -302,13 +300,11 @@ const laws = [
     assemblyBillNo: "2217002",
     proposer: "이예시의원 등 12인",
     proposalSummary: "투표용지 부족 상황을 예방하기 위한 인쇄 수량과 비상 공급 절차를 마련하려는 개정안입니다.",
-    topicKeywords: ["투표용지", "공급 대응", "비상 물류"],
-    primaryLawTopicId: "law-topic-ballot-supply",
-    linkedIssueCount: 1,
-    occurrenceCount: 9,
-    regionCount: 7,
-    interestScore: 82,
-    linkedIssueIds: ["issue-election-process"]
+    lawGroupId: "law-group-election-act",
+    linkedIssueCount: 0,
+    occurrenceCount: 0,
+    regionCount: 0,
+    interestScore: 82
   },
   {
     id: "law-labor-act",
@@ -317,11 +313,11 @@ const laws = [
     stage: "현행 법령",
     statusDate: "2026-06-30",
     officialUrl: "https://www.law.go.kr/",
-    linkedIssueCount: 1,
-    occurrenceCount: 3,
-    regionCount: 2,
-    interestScore: 61,
-    linkedIssueIds: ["issue-labor-act"]
+    lawGroupId: "law-group-effective-labor",
+    linkedIssueCount: 0,
+    occurrenceCount: 0,
+    regionCount: 0,
+    interestScore: 61
   }
 ];
 
@@ -384,13 +380,18 @@ const map = {
   }
 };
 
-const lawTopics: AppDataset["lawTopics"] = [
-  { id: "law-topic-network-protection", lawName: "정보통신망 이용촉진 및 정보보호 등에 관한 법률", label: "온라인 정보·이용자 보호", representativeKeywords: ["온라인 정보", "이용자 보호"], billCount: 1, latestProposedDate: "2026-07-08", stageCounts: { "위원회 심사": 1 }, linkedIssueCount: 1, occurrenceCount: 5, regionCount: 4, interestScore: 87 },
-  { id: "law-topic-ballot-supply", lawName: "공직선거법", label: "투표용지·공급 대응", representativeKeywords: ["투표용지", "공급 대응", "비상 물류"], billCount: 1, latestProposedDate: "2026-07-14", stageCounts: { "소관위 접수": 1 }, linkedIssueCount: 1, occurrenceCount: 9, regionCount: 7, interestScore: 82 },
-  { id: "law-topic-effective-labor", lawName: "노동조합 및 노동관계조정법", label: "현행 법령", representativeKeywords: ["현행 법령"], billCount: 1, stageCounts: { "현행 법령": 1 }, linkedIssueCount: 1, occurrenceCount: 3, regionCount: 2, interestScore: 61 }
+const lawGroups: AppDataset["lawGroups"] = [
+  { id: "law-group-network-act", lawName: "정보통신망 이용촉진 및 정보보호 등에 관한 법률", billTitle: "정보통신망 이용촉진 및 정보보호 등에 관한 법률 일부개정법률안", coreTopics: [{ key: "network-protection", label: "온라인 정보·이용자 보호", representativeKeywords: ["온라인 정보", "이용자 보호"], billCount: 1 }], billCount: 1, latestProposedDate: "2026-07-08", stageCounts: { "위원회 심사": 1 }, linkedIssueCount: 1, occurrenceCount: 5, regionCount: 4, interestScore: 87 },
+  { id: "law-group-election-act", lawName: "공직선거법", billTitle: "공직선거법 일부개정법률안", coreTopics: [{ key: "ballot-supply", label: "투표용지·공급 대응", representativeKeywords: ["투표용지", "공급 대응", "비상 물류"], billCount: 1 }], billCount: 1, latestProposedDate: "2026-07-14", stageCounts: { "소관위 접수": 1 }, linkedIssueCount: 1, occurrenceCount: 9, regionCount: 7, interestScore: 82 },
+  { id: "law-group-effective-labor", lawName: "노동조합 및 노동관계조정법", billTitle: "노동조합 및 노동관계조정법", coreTopics: [{ key: "effective-law", label: "현행 법령", representativeKeywords: ["현행 법령"], billCount: 1 }], billCount: 1, stageCounts: { "현행 법령": 1 }, linkedIssueCount: 1, occurrenceCount: 3, regionCount: 2, interestScore: 61 }
 ];
+const lawGroupIssueIds: Record<string, string[]> = {
+  "law-group-network-act": ["issue-network-act"],
+  "law-group-election-act": ["issue-election-process"],
+  "law-group-effective-labor": ["issue-labor-act"]
+};
 
-const dataset: AppDataset = { issues, occurrences, reels, laws, lawTopics, claimsByIssue, claimsByOccurrence, map };
+const dataset: AppDataset = { issues, occurrences, reels, laws, lawGroups, claimsByIssue, claimsByOccurrence, map };
 
 export const dataSource: DataSource = {
   mode: "fixture",
@@ -411,10 +412,12 @@ export const dataSource: DataSource = {
     if (!occurrenceDigest) throw new Error("occurrence_not_found");
     return { occurrenceDigest, claims: dataset.claimsByOccurrence[id] || [], evidenceCount: occurrenceDigest.evidenceCount };
   },
-  async loadLawTopic(id) {
-    const topic = dataset.lawTopics.find((item) => item.id === id);
-    if (!topic) throw new Error("law_topic_not_found");
-    return { topic, bills: dataset.laws.filter((law) => law.primaryLawTopicId === id || (id === "law-topic-effective-labor" && law.source === "law_effective")) };
+  async loadLawGroup(id) {
+    const group = dataset.lawGroups.find((item) => item.id === id);
+    if (!group) throw new Error("law_group_not_found");
+    const bills = dataset.laws.filter((law) => law.lawGroupId === id);
+    const linkedIssueIds = new Set(lawGroupIssueIds[id] || []);
+    return { group, bills, issues: dataset.issues.filter((issue) => linkedIssueIds.has(issue.id)) };
   }
 };
 

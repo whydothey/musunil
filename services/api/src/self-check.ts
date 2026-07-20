@@ -3,7 +3,7 @@ import { EventEmitter } from "node:events";
 import { canServePublicRedactedMedia, createApp, createSeedStore, decryptLiveMediaBytes } from "./app.ts";
 import { enforcePublicWriteRateLimit, publicWriteRateLimitKey, readJsonBody } from "./http-boundary.ts";
 import { assertStorageSmokeKey, storageSmokeKey, storageSmokePrefix } from "./live-media-storage.ts";
-import { decryptSnapshot, encryptSnapshot } from "./postgres-store.ts";
+import { decryptSnapshot, encryptSnapshot, hydrateStore } from "./postgres-store.ts";
 
 const now = new Date("2026-07-07T09:00:00.000Z");
 const store = createSeedStore();
@@ -29,7 +29,7 @@ assert.equal(productionSeed.occurrences.some((item) => item.id === "occ_1" || it
 assert.equal(productionSeed.claims.some((item) => item.id.includes("_mock") || item.id.includes("_sample") || item.targetId === "occ_1"), false);
 assert.equal(productionSeed.areaClusters.some((item) => item.id === "area_busan" || item.id === "area_seoul"), false);
 assert.equal(productionSeed.lawItems.length, 0);
-assert.equal(productionSeed.issueLawLinks.length, 0);
+assert.equal(productionSeed.issueLawGroupLinks.length, 0);
 const productionSeedText = JSON.stringify(productionSeed);
 for (const previewToken of [
   "_mock",
@@ -49,6 +49,38 @@ for (const previewToken of [
 ]) {
   assert.equal(productionSeedText.includes(previewToken), false);
 }
+const linkReviewStore = createSeedStore();
+createApp(linkReviewStore);
+const linkReviewGroup = linkReviewStore.lawGroups[0];
+linkReviewStore.issues.push({
+  id: "issue_law_group_review",
+  title: linkReviewGroup.coreTopics[0]?.label || linkReviewGroup.lawName,
+  normalizedTopicKey: "law-group-review",
+  topicTags: linkReviewGroup.coreTopics[0]?.representativeKeywords || [linkReviewGroup.lawName],
+  status: "active",
+  firstSeenAt: now,
+  lastUpdatedAt: now
+});
+const linkReviewApp = createApp(linkReviewStore, { internalApiKey: "test_internal_key" });
+const lawGroupCandidatesResponse = await linkReviewApp.handle({ method: "GET", path: "/admin/law-group-link-candidates", headers: internalHeaders });
+assert.equal(lawGroupCandidatesResponse.status, 200);
+const lawGroupCandidates = (lawGroupCandidatesResponse.body as { candidates: Array<{ link: { issueId: string; lawGroupId: string } }> }).candidates;
+assert.equal(lawGroupCandidates.length > 0, true);
+const firstLawGroupCandidate = lawGroupCandidates.find((candidate) => candidate.link.issueId === "issue_law_group_review")?.link;
+assert.ok(firstLawGroupCandidate);
+const approvedLawGroupLink = await linkReviewApp.handle({
+  method: "PATCH",
+  path: `/admin/law-group-links/${firstLawGroupCandidate.issueId}/${firstLawGroupCandidate.lawGroupId}`,
+  headers: internalHeaders,
+  body: { status: "approved", reviewNote: "self-check approval" }
+});
+assert.equal(approvedLawGroupLink.status, 200);
+const approvedLawGroupDetail = await linkReviewApp.handle({ method: "GET", path: `/law-groups/${firstLawGroupCandidate.lawGroupId}` });
+assert.equal((approvedLawGroupDetail.body as { issues: unknown[] }).issues.length > 0, true);
+const approvedGroup = linkReviewApp.store.lawGroups.find((group) => group.id === firstLawGroupCandidate.lawGroupId);
+const approvedGroupLawDetail = await linkReviewApp.handle({ method: "GET", path: `/laws/${approvedGroup?.billIds[0]}` });
+assert.equal((approvedGroupLawDetail.body as { issues: unknown[] }).issues.length, 0);
+assert.equal((approvedGroupLawDetail.body as { lawGroup?: { id: string } }).lawGroup?.id, firstLawGroupCandidate.lawGroupId);
 const productionHome = await createApp(productionSeed).handle({ method: "GET", path: "/home" });
 assert.equal(JSON.stringify(productionHome.body).includes("대구 0709(목) 오늘의 집회 공개 일정"), true);
 assert.equal(JSON.stringify(productionHome.body).includes("부산 도심 행진 가능성"), false);
@@ -65,6 +97,22 @@ const encryptedSnapshot = encryptSnapshot('{"raw":"사용자 원문"}', "test_en
 assert.equal(encryptedSnapshot.includes("사용자 원문"), false);
 assert.equal(decryptSnapshot(encryptedSnapshot, "test_encryption_key_32_bytes_minimum"), '{"raw":"사용자 원문"}');
 assert.throws(() => decryptSnapshot(encryptedSnapshot, "wrong_encryption_key_32_bytes_minimum"));
+const legacySourceStore = createSeedStore();
+createApp(legacySourceStore);
+const legacySourceGroup = legacySourceStore.lawGroups[0];
+const legacySnapshot = JSON.parse(JSON.stringify(legacySourceStore)) as Record<string, unknown>;
+legacySnapshot.lawTopics = [{ id: "law_topic_legacy", billIds: legacySourceGroup.billIds, updatedAt: legacySourceGroup.updatedAt }];
+legacySnapshot.lawTopicMemberships = legacySourceGroup.billIds.map((lawItemId) => ({ lawItemId, lawTopicId: "law_topic_legacy" }));
+legacySnapshot.issueLawLinks = [{ issueId: legacySourceStore.issues[0].id, lawItemId: legacySourceGroup.billIds[0], matchBasis: "manual", confidence: "high", claimIds: [] }];
+delete legacySnapshot.lawGroups;
+delete legacySnapshot.lawGroupMemberships;
+delete legacySnapshot.issueLawGroupLinks;
+delete legacySnapshot.legacyLawTopicAliases;
+const hydratedLegacyStore = hydrateStore(legacySnapshot as unknown as typeof legacySourceStore);
+assert.equal(hydratedLegacyStore.lawGroups.length > 0, true);
+assert.equal(hydratedLegacyStore.legacyLawTopicAliases.law_topic_legacy, hydratedLegacyStore.lawItems.find((law) => law.id === legacySourceGroup.billIds[0])?.lawGroupId);
+assert.equal(hydratedLegacyStore.issueLawGroupLinks.some((link) => link.status === "approved" && link.matchBasis === "manual"), true);
+assert.equal("lawTopics" in hydratedLegacyStore, false);
 const generatedStorageSmokeKey = storageSmokeKey();
 assert.equal(generatedStorageSmokeKey.startsWith(storageSmokePrefix()), true);
 assert.doesNotThrow(() => assertStorageSmokeKey(generatedStorageSmokeKey));
@@ -1776,7 +1824,7 @@ const newerIngestedLaw = await protectedApp.handle({
   body: {
     source: "assembly_bill",
     lawName: "집회 및 시위에 관한 법률",
-    billTitle: "집회 및 시위에 관한 법률 일부개정법률안 (최근 발의)",
+    billTitle: "집회 및 시위에 관한 법률 일부개정법률안",
     stage: "접수",
     proposedDate: "2026-07-12T00:00:00.000+09:00",
     statusDate: "2026-07-08T00:00:00.000+09:00",
@@ -1788,16 +1836,17 @@ const newerIngestedLaw = await protectedApp.handle({
   }
 });
 assert.equal(newerIngestedLaw.status, 200);
-const groupedTopics = await protectedApp.handle({ method: "GET", path: "/laws" });
-const assemblyActTopic = (groupedTopics.body as { lawTopics: Array<{ id: string; label: string; billCount: number }> }).lawTopics.find((topic) => topic.label.includes("미신고 집회"));
-assert.equal(assemblyActTopic?.billCount, 2);
-const groupedTopicDetail = await protectedApp.handle({ method: "GET", path: `/law-topics/${assemblyActTopic?.id}` });
-assert.equal(groupedTopicDetail.status, 200);
-assert.equal((groupedTopicDetail.body as { bills: Array<{ assemblyBillNo?: string; proposer?: string; proposalSummary?: string }> }).bills.length, 2);
-assert.equal(JSON.stringify(groupedTopicDetail.body).includes("2219001"), true);
-assert.equal(JSON.stringify(groupedTopicDetail.body).includes("김태선의원"), true);
-assert.equal(protectedApp.store.lawTopicMemberships.filter((membership) => membership.lawTopicId === assemblyActTopic?.id).length, 2);
-const topicAuditCount = protectedApp.store.auditLogs.filter((log) => log.targetType === "law_topic").length;
+const groupedLaws = await protectedApp.handle({ method: "GET", path: "/laws" });
+const assemblyActGroup = (groupedLaws.body as { lawGroups: Array<{ id: string; billTitle: string; billCount: number; coreTopics: Array<{ label: string; billCount: number }> }> }).lawGroups.find((group) => group.billTitle === "집회 및 시위에 관한 법률 일부개정법률안");
+assert.equal(assemblyActGroup?.billCount, 2);
+assert.equal(assemblyActGroup?.coreTopics.some((topic) => topic.label.includes("미신고 집회") && topic.billCount === 2), true);
+const groupedLawDetail = await protectedApp.handle({ method: "GET", path: `/law-groups/${assemblyActGroup?.id}` });
+assert.equal(groupedLawDetail.status, 200);
+assert.equal((groupedLawDetail.body as { bills: Array<{ assemblyBillNo?: string; proposer?: string; proposalSummary?: string }> }).bills.length, 2);
+assert.equal(JSON.stringify(groupedLawDetail.body).includes("2219001"), true);
+assert.equal(JSON.stringify(groupedLawDetail.body).includes("김태선의원"), true);
+assert.equal(protectedApp.store.lawGroupMemberships.filter((membership) => membership.lawGroupId === assemblyActGroup?.id).length, 2);
+const groupAuditCount = protectedApp.store.auditLogs.filter((log) => log.targetType === "law_group").length;
 await protectedApp.handle({
   method: "POST",
   path: "/internal/ingest/laws",
@@ -1805,7 +1854,7 @@ await protectedApp.handle({
   body: {
     source: "assembly_bill",
     lawName: "집회 및 시위에 관한 법률",
-    billTitle: "집회 및 시위에 관한 법률 일부개정법률안 (최근 발의)",
+    billTitle: "집회 및 시위에 관한 법률 일부개정법률안",
     stage: "접수",
     proposedDate: "2026-07-12T00:00:00.000+09:00",
     assemblyBillId: "bill-test-assembly-act-newer",
@@ -1815,7 +1864,7 @@ await protectedApp.handle({
     keywords: ["집회 및 시위에 관한 법률", "집회시위법", "집회"]
   }
 });
-assert.equal(protectedApp.store.auditLogs.filter((log) => log.targetType === "law_topic").length, topicAuditCount);
+assert.equal(protectedApp.store.auditLogs.filter((log) => log.targetType === "law_group").length, groupAuditCount);
 const recentProposals = await protectedApp.handle({ method: "GET", path: "/laws?sort=proposed_desc" });
 assert.equal(recentProposals.status, 200);
 const recentProposalRows = (recentProposals.body as { laws: Array<{ id: string; source: string; proposedDate?: string }> }).laws;

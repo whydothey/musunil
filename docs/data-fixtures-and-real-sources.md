@@ -208,7 +208,7 @@ pnpm launch:external-smoke
 
 - `pnpm check:laws-live`가 법제처 실제 응답의 다건 배열과 1건 단일 객체 형태를 모두 파싱하고, 공식 LawItem 재수집의 멱등성과 갱신을 검증한다.
 - worker self-check가 국회 의안 API와 국가법령 API의 JSON 응답을 mock으로 파싱한다.
-- API self-check가 `/internal/ingest/laws` 반영과 IssueLawLink 자동 연결을 검증한다.
+- API self-check가 `/internal/ingest/laws` 반영, 동일 공식 법안명 그룹화, IssueLawGroupLink 후보 승인 흐름을 검증한다.
 - runtime smoke가 `/laws` 목록과 `/laws/:id` 상세 계약을 검증한다.
 - production launch validation이 `national_assembly_bill_api_key` 또는 `law_go_kr_oc` 중 하나 없이는 법 관련 탭 운영 설정을 차단한다.
 - production runtime config smoke가 실제 ingest 전 `/laws`에 preview 법령이 나오지 않음을 검증한다.
