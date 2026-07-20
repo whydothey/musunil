@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { canServePublicRedactedMedia, createApp, createSeedStore, decryptLiveMediaBytes, emptyStore } from "./app.ts";
+import { backfillOfficialLocationScheduleIssues, canServePublicRedactedMedia, createApp, createSeedStore, decryptLiveMediaBytes, emptyStore } from "./app.ts";
 import { enforcePublicWriteRateLimit, publicWriteRateLimitKey, readJsonBody } from "./http-boundary.ts";
 import { assertStorageSmokeKey, storageSmokeKey, storageSmokePrefix } from "./live-media-storage.ts";
 import { decryptSnapshot, encryptSnapshot, hydrateStore } from "./postgres-store.ts";
@@ -1853,6 +1853,15 @@ assert.equal(emptyOfficialStore.issues.find((issue) => issue.id === individualIs
 assert.equal(emptyOfficialStore.auditLogs.some((log) => log.targetId === individualIssueId && log.action === "split"), true);
 const individualHome = await emptyOfficialApp.handle({ method: "GET", path: "/home" });
 assert.equal(JSON.stringify((individualHome.body as { issueCards: unknown }).issueCards).includes("서울광장·광화문 일대 집회 일정"), true);
+const legacyIndividualStore = structuredClone(emptyOfficialStore);
+const legacyIndividualOccurrence = legacyIndividualStore.occurrences.find((item) => item.id === "occ_seoul_2026_07_20_2021_1");
+if (!legacyIndividualOccurrence || !individualIssueId) throw new Error("individual schedule backfill fixture missing");
+legacyIndividualOccurrence.issueId = undefined;
+legacyIndividualStore.issues = legacyIndividualStore.issues.filter((issue) => issue.id !== individualIssueId);
+assert.equal(backfillOfficialLocationScheduleIssues(legacyIndividualStore), 1);
+assert.equal(legacyIndividualOccurrence.issueId, individualIssueId);
+assert.equal(legacyIndividualStore.auditLogs.some((log) => log.targetId === legacyIndividualOccurrence.id && log.action === "merge"), true);
+assert.equal(backfillOfficialLocationScheduleIssues(legacyIndividualStore), 0);
 const individualMap = await emptyOfficialApp.handle({ method: "GET", path: "/map" });
 assert.equal((individualMap.body as { geojson: { pins: { features: Array<{ properties: { targetId: string } }> } } }).geojson.pins.features.some((pin) => pin.properties.targetId === "occ_seoul_2026_07_20_2021_1"), true);
 const emptyOfficialBatch = await emptyOfficialApp.handle({

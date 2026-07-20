@@ -3451,6 +3451,23 @@ function ensureOfficialLocationScheduleIssue(store: Store, locationLabel: string
   }).id;
 }
 
+export function backfillOfficialLocationScheduleIssues(store: Store): number {
+  let linkedCount = 0;
+  for (const occurrence of store.occurrences) {
+    if (occurrence.issueId || occurrence.publicVisibility !== "public" || !occurrence.publicLocation) continue;
+    const hasIndividualOfficialSource = occurrence.evidenceIds.some((evidenceId) => {
+      const evidence = store.evidence.find((item) => item.id === evidenceId);
+      return evidence?.externalProvider === "official_public_source" && evidence.sourceGranularity === "individual_schedule";
+    });
+    if (!hasIndividualOfficialSource) continue;
+    const issueId = ensureOfficialLocationScheduleIssue(store, occurrence.publicLocation.label);
+    occurrence.issueId = issueId;
+    audit(store, "merge", "occurrence", occurrence.id, `기존 공식 개별 일정이 확인된 장소 일정 주제 '${issueId}'에 연결되었습니다.`);
+    linkedCount += 1;
+  }
+  return linkedCount;
+}
+
 function topicFromTitle(rawTitle: string): IssueTopicInput | undefined {
   const text = rawTitle.trim();
   if (!text) return undefined;
