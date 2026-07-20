@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import type { LawItem, LawTopic, LawTopicMembership } from "../../../packages/schemas/src/index.ts";
+import type { LawCoreTopic, LawGroup, LawGroupMembership, LawItem } from "../../../packages/schemas/src/index.ts";
 
-export const lawTopicClassificationVersion = "rules-v1";
+export const lawGroupClassificationVersion = "exact-title-groups-v1";
 
 type TopicRule = {
   key: string;
@@ -38,49 +38,62 @@ const stopwords = new Set([
   "제안이유", "주요내용", "현행법", "현행", "법률", "법률안", "개정", "일부개정", "규정", "경우", "사항", "필요", "문제", "지적", "따라", "통하여", "대하여", "위하여", "하도록", "하려는", "하고자", "이에", "있음", "없음", "있는", "없는", "등을", "대한", "관한", "국민", "최근", "제도", "위원회"
 ]);
 
-export type LawTopicBuild = {
-  topics: LawTopic[];
-  memberships: LawTopicMembership[];
-  assignments: Map<string, { topicId: string; keywords: string[] }>;
+export type LawGroupBuild = {
+  groups: LawGroup[];
+  memberships: LawGroupMembership[];
+  assignments: Map<string, { groupId: string }>;
 };
 
-export function buildLawTopics(laws: LawItem[]): LawTopicBuild {
-  const topicsById = new Map<string, LawTopic>();
-  const memberships: LawTopicMembership[] = [];
-  const assignments = new Map<string, { topicId: string; keywords: string[] }>();
+export function buildLawGroups(laws: LawItem[]): LawGroupBuild {
+  const groupsById = new Map<string, LawGroup>();
+  const coreTopicsByGroup = new Map<string, Map<string, LawCoreTopic>>();
+  const memberships: LawGroupMembership[] = [];
+  const assignments = new Map<string, { groupId: string }>();
 
   for (const law of laws) {
     const classification = classifyLaw(law);
-    const topicId = lawTopicId(law.lawName, classification.key);
-    const existing = topicsById.get(topicId);
+    const groupId = lawGroupId(law);
+    const existing = groupsById.get(groupId);
     const date = law.effectiveDate ?? law.statusDate ?? law.proposedDate ?? new Date(0);
-    const topic = existing ?? {
-      id: topicId,
+    const group = existing ?? {
+      id: groupId,
       lawName: law.lawName,
-      label: classification.label,
-      primaryKeyword: classification.key,
-      representativeKeywords: [],
+      billTitle: law.billTitle?.trim() || law.lawName,
       billIds: [],
-      classificationVersion: lawTopicClassificationVersion,
+      coreTopics: [],
+      classificationVersion: lawGroupClassificationVersion,
       updatedAt: date
     };
-    topic.billIds.push(law.id);
-    topic.representativeKeywords = rankedKeywords([...topic.representativeKeywords, ...classification.keywords]);
-    if (date.getTime() > topic.updatedAt.getTime()) topic.updatedAt = date;
-    topicsById.set(topicId, topic);
+    group.billIds.push(law.id);
+    if (date.getTime() > group.updatedAt.getTime()) group.updatedAt = date;
+    groupsById.set(groupId, group);
+
+    const groupTopics = coreTopicsByGroup.get(groupId) ?? new Map<string, LawCoreTopic>();
+    const existingCoreTopic = groupTopics.get(classification.key);
+    groupTopics.set(classification.key, {
+      key: classification.key,
+      label: classification.label,
+      representativeKeywords: rankedKeywords([...(existingCoreTopic?.representativeKeywords ?? []), ...classification.keywords]),
+      billCount: (existingCoreTopic?.billCount ?? 0) + 1
+    });
+    coreTopicsByGroup.set(groupId, groupTopics);
     memberships.push({
       lawItemId: law.id,
-      lawTopicId: topicId,
-      matchedKeywords: classification.keywords,
-      classificationVersion: lawTopicClassificationVersion
+      lawGroupId: groupId,
+      classificationVersion: lawGroupClassificationVersion
     });
-    assignments.set(law.id, { topicId, keywords: classification.keywords });
+    assignments.set(law.id, { groupId });
   }
 
-  const topics = [...topicsById.values()]
-    .map((topic) => ({ ...topic, billIds: [...new Set(topic.billIds)].sort(), representativeKeywords: rankedKeywords(topic.representativeKeywords) }))
-    .sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime() || left.label.localeCompare(right.label, "ko"));
-  return { topics, memberships, assignments };
+  const groups = [...groupsById.values()]
+    .map((group) => ({
+      ...group,
+      billIds: [...new Set(group.billIds)].sort(),
+      coreTopics: [...(coreTopicsByGroup.get(group.id)?.values() ?? [])]
+        .sort((left, right) => right.billCount - left.billCount || left.label.localeCompare(right.label, "ko"))
+    }))
+    .sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime() || left.billTitle.localeCompare(right.billTitle, "ko"));
+  return { groups, memberships, assignments };
 }
 
 function classifyLaw(law: LawItem): { key: string; label: string; keywords: string[] } {
@@ -122,8 +135,9 @@ function rankedKeywords(values: string[]): string[] {
   return [...counts.entries()].sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0], "ko")).map(([value]) => value).slice(0, 3);
 }
 
-function lawTopicId(lawName: string, key: string): string {
-  return `law_topic_${createHash("sha1").update(`${normalize(lawName)}:${key}`).digest("hex").slice(0, 16)}`;
+function lawGroupId(law: LawItem): string {
+  const key = law.billTitle?.trim() ? normalize(law.billTitle) : `${law.source}:${normalize(law.lawName)}`;
+  return `law_group_${createHash("sha1").update(key).digest("hex").slice(0, 16)}`;
 }
 
 function rule(key: string, label: string, keywords: string[], sources: string[]): TopicRule {

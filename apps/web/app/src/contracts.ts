@@ -99,8 +99,7 @@ export interface LawInterestItem {
   assemblyBillNo?: string;
   proposer?: string;
   proposalSummary?: string;
-  topicKeywords?: string[];
-  primaryLawTopicId?: string;
+  lawGroupId?: string;
   linkedIssueCount: number;
   occurrenceCount: number;
   regionCount: number;
@@ -108,11 +107,18 @@ export interface LawInterestItem {
   linkedIssueIds?: string[];
 }
 
-export interface LawTopicCard {
-  id: string;
-  lawName: string;
+export interface LawCoreTopic {
+  key: string;
   label: string;
   representativeKeywords: string[];
+  billCount: number;
+}
+
+export interface LawGroupCard {
+  id: string;
+  lawName: string;
+  billTitle: string;
+  coreTopics: LawCoreTopic[];
   billCount: number;
   latestProposedDate?: string;
   stageCounts: Record<string, number>;
@@ -122,9 +128,10 @@ export interface LawTopicCard {
   interestScore: number;
 }
 
-export interface LawTopicDetailData {
-  topic: LawTopicCard;
+export interface LawGroupDetailData {
+  group: LawGroupCard;
   bills: LawInterestItem[];
+  issues?: IssueOverview[];
 }
 
 export interface ReportCandidate {
@@ -176,7 +183,7 @@ export interface AppDataset {
   occurrences: OccurrenceDigest[];
   reels: EvidenceReel[];
   laws: LawInterestItem[];
-  lawTopics: LawTopicCard[];
+  lawGroups: LawGroupCard[];
   claimsByIssue: Record<string, PublicClaim[]>;
   claimsByOccurrence: Record<string, PublicClaim[]>;
   map: MapData;

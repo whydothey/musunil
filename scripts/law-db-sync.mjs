@@ -69,6 +69,10 @@ if (verifyUpdate) {
 const finalStore = await loadPostgresStore(databaseUrl, emptyStore(), encryptionKey);
 const assemblyBillCount = finalStore.lawItems.filter((item) => item.source === "assembly_bill").length;
 const effectiveLawCount = finalStore.lawItems.filter((item) => item.source === "law_effective").length;
+const lawGroupMembershipCount = finalStore.lawGroupMemberships.length;
+const uniqueGroupedLawCount = new Set(finalStore.lawGroupMemberships.map((item) => item.lawItemId)).size;
+assert.equal(lawGroupMembershipCount, finalStore.lawItems.length, "Every persisted law must belong to exactly one official-title group.");
+assert.equal(uniqueGroupedLawCount, finalStore.lawItems.length, "Official-title group memberships must be unique per law item.");
 
 console.log(JSON.stringify({
   checked: "law_db_sync",
@@ -83,6 +87,9 @@ console.log(JSON.stringify({
   finalCount: finalStore.lawItems.length,
   assemblyBillCount,
   effectiveLawCount,
+  lawGroupCount: finalStore.lawGroups.length,
+  lawGroupMembershipCount,
+  uniqueGroupedLawCount,
   duplicateCount: finalStore.lawItems.length - new Set(finalStore.lawItems.map((item) => item.id)).size,
   updateVerified,
   officialRestoreVerified

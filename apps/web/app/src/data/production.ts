@@ -3,8 +3,8 @@ import type {
   IssueDetailData,
   IssueOverview,
   LawInterestItem,
-  LawTopicCard,
-  LawTopicDetailData,
+  LawGroupCard,
+  LawGroupDetailData,
   MapData,
   OccurrenceDetailData,
   OccurrenceDigest,
@@ -38,8 +38,8 @@ export async function getContinuousPresenceDetail(id: string): Promise<Occurrenc
   return { occurrenceDigest: body.occurrenceDigest, claims: body.claims, evidenceCount: body.evidenceCount };
 }
 
-export async function getLawTopicDetail(id: string): Promise<LawTopicDetailData> {
-  return request<LawTopicDetailData>(`/law-topics/${encodeURIComponent(id)}`);
+export async function getLawGroupDetail(id: string): Promise<LawGroupDetailData> {
+  return request<LawGroupDetailData>(`/law-groups/${encodeURIComponent(id)}`);
 }
 
 export const dataSource: DataSource = {
@@ -48,7 +48,7 @@ export const dataSource: DataSource = {
     const results = await Promise.allSettled([
       request<{ issueOverviews?: IssueOverview[]; occurrenceDigests?: OccurrenceDigest[] }>("/home"),
       request<{ reels?: AppDataset["reels"] }>("/reels"),
-      request<{ lawInterestItems?: LawInterestItem[]; lawTopics?: LawTopicCard[] }>("/laws?sort=interest"),
+      request<{ lawInterestItems?: LawInterestItem[]; lawGroups?: LawGroupCard[] }>("/laws?sort=interest"),
       request<MapData>("/map")
     ]);
     const home = results[0].status === "fulfilled" ? results[0].value : {};
@@ -70,7 +70,7 @@ export const dataSource: DataSource = {
       occurrences,
       reels: reels.reels || [],
       laws: laws.lawInterestItems || [],
-      lawTopics: laws.lawTopics || [],
+      lawGroups: laws.lawGroups || [],
       claimsByIssue,
       claimsByOccurrence: {},
       map
@@ -80,7 +80,7 @@ export const dataSource: DataSource = {
   loadOccurrence(id, targetType) {
     return targetType === "continuous_presence" ? getContinuousPresenceDetail(id) : getOccurrenceDetail(id);
   },
-  loadLawTopic: getLawTopicDetail
+  loadLawGroup: getLawGroupDetail
 };
 
 export default dataSource;

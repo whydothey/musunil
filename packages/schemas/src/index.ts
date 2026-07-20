@@ -128,37 +128,48 @@ export type LawItem = {
   lawId?: string;
   proposer?: string;
   proposalSummary?: string;
+  lawGroupId?: string;
+  /** @deprecated Read-only snapshot compatibility during the law-group rollout. */
   topicKeywords?: string[];
+  /** @deprecated Read-only snapshot compatibility during the law-group rollout. */
   primaryLawTopicId?: string;
   summary?: string;
   officialUrl?: string;
   keywords: string[];
 };
 
-export type LawTopic = {
+export type LawCoreTopic = {
+  key: string;
+  label: string;
+  representativeKeywords: string[];
+  billCount: number;
+};
+
+export type LawGroup = {
   id: string;
   lawName: string;
-  label: string;
-  primaryKeyword: string;
-  representativeKeywords: string[];
+  billTitle: string;
   billIds: string[];
+  coreTopics: LawCoreTopic[];
   classificationVersion: string;
   updatedAt: Date;
 };
 
-export type LawTopicMembership = {
+export type LawGroupMembership = {
   lawItemId: string;
-  lawTopicId: string;
-  matchedKeywords: string[];
+  lawGroupId: string;
   classificationVersion: string;
 };
 
-export type IssueLawLink = {
+export type IssueLawGroupLink = {
   issueId: string;
-  lawItemId: string;
-  matchBasis: "law_name" | "keyword" | "bill_title" | "manual";
+  lawGroupId: string;
+  matchBasis: "law_name" | "group_title" | "core_topic" | "manual";
   confidence: "low" | "medium" | "high";
+  status: "candidate" | "approved" | "rejected";
   claimIds: string[];
+  reviewedAt?: Date;
+  reviewNote?: string;
 };
 
 export type AreaCluster = {
@@ -297,8 +308,7 @@ export type LawInterestItem = {
   assemblyBillNo?: string;
   proposer?: string;
   proposalSummary?: string;
-  topicKeywords?: string[];
-  primaryLawTopicId?: string;
+  lawGroupId?: string;
   linkedIssueCount: number;
   occurrenceCount: number;
   regionCount: number;
@@ -306,11 +316,11 @@ export type LawInterestItem = {
   linkedIssueIds?: string[];
 };
 
-export type LawTopicCard = {
+export type LawGroupCard = {
   id: string;
   lawName: string;
-  label: string;
-  representativeKeywords: string[];
+  billTitle: string;
+  coreTopics: LawCoreTopic[];
   billCount: number;
   latestProposedDate?: string;
   stageCounts: Record<string, number>;
@@ -428,7 +438,7 @@ export type NotificationOutbox = {
 export type AuditLog = {
   id: string;
   action: "mask" | "hold" | "delete" | "correction" | "rebuttal" | "merge" | "split" | "state_change" | "notification";
-  targetType: TargetType | "claim" | "evidence" | "law_topic";
+  targetType: TargetType | "claim" | "evidence" | "law_topic" | "law_group";
   targetId: string;
   createdAt: Date;
   reason: string;
@@ -437,7 +447,7 @@ export type AuditLog = {
 export type TransparencyLog = {
   id: string;
   action: AuditLog["action"] | "agency_request" | "rights_report" | "restore";
-  targetType: TargetType | "claim" | "evidence" | "law_topic";
+  targetType: TargetType | "claim" | "evidence" | "law_topic" | "law_group";
   targetId: string;
   createdAt: Date;
   publicReason: string;

@@ -163,9 +163,9 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     await assertAxe(page, `${viewport.id}: laws`);
     await shot(page, `${viewport.id}_laws.png`);
     await page.locator('.law-row').first().click();
-    await page.locator('[data-screen="law-topic"]').waitFor({ state: "visible" });
-    check((await page.locator('.law-row').count()) >= 1, `${viewport.id}: law topic bill rows missing`);
-    await assertAxe(page, `${viewport.id}: law topic detail`);
+    await page.locator('[data-screen="law-group"]').waitFor({ state: "visible" });
+    check((await page.locator('.law-row').count()) >= 1, `${viewport.id}: law group rows missing`);
+    await assertAxe(page, `${viewport.id}: law group detail`);
     await shot(page, `${viewport.id}_law_topic_detail.png`);
     await page.locator('.law-row').first().click();
     await page.locator('[data-screen="law"]').waitFor({ state: "visible" });

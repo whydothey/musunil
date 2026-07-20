@@ -121,7 +121,7 @@ await check("laws", async () => {
   const response = await raw("GET", "/laws");
   assert(response.status === 200, `/laws returned ${response.status}`);
   assert(Array.isArray(response.body?.laws), "/laws list missing");
-  assert(Array.isArray(response.body?.lawTopics), "/laws topic list missing");
+  assert(Array.isArray(response.body?.lawGroups), "/laws group list missing");
   if (requireLaws) assert(response.body.laws.length > 0, "--require-laws expected at least one law item");
   const lawId = firstId(response.body.laws);
   if (lawId) {
@@ -129,18 +129,20 @@ await check("laws", async () => {
     assert(detail.status === 200, `/laws/${lawId} returned ${detail.status}`);
     assertPublicPayloadSafe(`/laws/${lawId}`, detail.body);
   }
-  const topicId = firstId(response.body.lawTopics);
-  if (topicId) {
-    const topicDetail = await raw("GET", `/law-topics/${encodeURIComponent(topicId)}`);
-    assert(topicDetail.status === 200, `/law-topics/${topicId} returned ${topicDetail.status}`);
-    assert(Array.isArray(topicDetail.body?.bills) && topicDetail.body.bills.length > 0, `/law-topics/${topicId} bills missing`);
-    assertPublicPayloadSafe(`/law-topics/${topicId}`, topicDetail.body);
+  const groupId = firstId(response.body.lawGroups);
+  if (groupId) {
+    const groupDetail = await raw("GET", `/law-groups/${encodeURIComponent(groupId)}`);
+    assert(groupDetail.status === 200, `/law-groups/${groupId} returned ${groupDetail.status}`);
+    assert(Array.isArray(groupDetail.body?.bills) && groupDetail.body.bills.length > 0, `/law-groups/${groupId} bills missing`);
+    assertPublicPayloadSafe(`/law-groups/${groupId}`, groupDetail.body);
   }
 });
 
 await check("admin_auth_required", async () => {
-  const response = await raw("GET", "/admin/review-queue");
-  assert(response.status === 401, `admin route should require auth, got ${response.status}`);
+  for (const path of ["/admin/review-queue", "/admin/law-group-link-candidates"]) {
+    const response = await raw("GET", path);
+    assert(response.status === 401, `${path} should require auth, got ${response.status}`);
+  }
 });
 
 await check("forbidden_engagement_surface_absent", async () => {
