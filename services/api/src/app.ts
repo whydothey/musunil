@@ -894,7 +894,7 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
     const readiness = describeReadiness(await (options.readiness?.() ?? defaultReadiness()));
     return json(readiness.ready ? 200 : 503, readiness);
   }
-  if (options.requireReadyForWrites && request.method !== "GET") {
+  if (options.requireReadyForWrites && request.method !== "GET" && !path.startsWith("/internal/")) {
     const readiness = describeReadiness(await (options.readiness?.() ?? defaultReadiness()));
     if (!readiness.ready) return json(503, { error: "runtime_not_ready", checks: readiness.checks, summary: readiness.summary, requiredActions: readiness.requiredActions });
   }
