@@ -160,7 +160,7 @@ for (const source of ingestablePublicAssemblySources()) {
   const checkedAt = new Date().toISOString();
   try {
     const html = await fetchSourceHtml(source);
-    const parsedPayloads = parseSource(source, html).slice(0, 25);
+    const parsedPayloads = parseSource(source, html).slice(0, 100);
     if (parsedPayloads.length === 0) throw new Error("source_parse_empty");
     const eligiblePayloads = parsedPayloads.filter((payload) => isWithinOperationalWindow(payload));
     const payloads = eligiblePayloads.map((payload) => ({
