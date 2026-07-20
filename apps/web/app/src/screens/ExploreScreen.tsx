@@ -1,4 +1,4 @@
-import { ChevronRight, LocateFixed, Search, X } from "lucide-react";
+import { ChevronRight, FileText, LocateFixed, Search, X } from "lucide-react";
 import maplibregl, { type Map as MapLibreMap, type MapLayerMouseEvent, type MapGeoJSONFeature, type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -19,6 +19,11 @@ export function ExploreScreen() {
     if (!normalized) return dataset?.occurrences || [];
     return dataset?.occurrences.filter((item) => `${item.title} ${item.regionLabel} ${item.issueTitle || ""}`.toLocaleLowerCase("ko").includes(normalized)) || [];
   }, [dataset, query]);
+  const officialSchedules = useMemo(() => {
+    return (dataset?.occurrences || [])
+      .filter((item) => item.officialSources?.length)
+      .sort(compareOfficialSchedules);
+  }, [dataset]);
   useEffect(() => {
     if (requestedOccurrenceId) selectOccurrence(requestedOccurrenceId);
   }, [requestedOccurrenceId, selectOccurrence]);
@@ -42,9 +47,52 @@ export function ExploreScreen() {
       <div className="map-key" aria-label="지도 표시 설명"><span><i className="key-pin" />자료 위치</span><span><i className="key-area" />현장 인증 범위</span></div>
 
       {serviceSyncState === "unavailable" ? <div className="map-notice">공개 지도 자료 연결을 확인하고 있습니다</div> : null}
+      {!selected && !query && officialSchedules.length ? <OfficialScheduleList occurrences={officialSchedules} /> : null}
       {selected ? <MapSelection occurrence={selected} onClose={() => selectOccurrence(undefined)} /> : null}
     </section>
   );
+}
+
+function OfficialScheduleList({ occurrences }: { occurrences: OccurrenceDigest[] }) {
+  return (
+    <aside className="official-schedule-panel" aria-label="경찰 공개 일정">
+      <header>
+        <div><span><FileText aria-hidden="true" />경찰 공개자료</span><strong>최근 집회·시위 일정</strong></div>
+        <small>{occurrences.length}건</small>
+      </header>
+      <div className="official-schedule-items">
+        {occurrences.slice(0, 8).map((occurrence) => (
+          <Link key={occurrence.id} href={`/occurrences/${encodeURIComponent(occurrence.id)}`}>
+            <span>{occurrence.regionLabel} · {lifecycleLabel(occurrence.lifecycleState)} · {formatDateTime(occurrence.startsAt)}</span>
+            <strong>{occurrence.title}</strong>
+            <ChevronRight aria-hidden="true" />
+          </Link>
+        ))}
+      </div>
+      <p>경찰 공개자료를 중립적으로 정리한 목록입니다. 위치가 확인되지 않은 일정은 지도 핀으로 표시하지 않습니다.</p>
+    </aside>
+  );
+}
+
+function compareOfficialSchedules(left: OccurrenceDigest, right: OccurrenceDigest) {
+  const stateOrder = (state: OccurrenceDigest["lifecycleState"]) => ({
+    LIVE: 0,
+    STARTING_SOON: 1,
+    UPCOMING: 2,
+    ONGOING_SERIES: 3,
+    UNKNOWN: 4,
+    POSTPONED: 5,
+    PAUSED: 6,
+    ENDED: 7,
+    CANCELED: 8,
+    ARCHIVED: 9
+  })[state];
+  const stateDifference = stateOrder(left.lifecycleState) - stateOrder(right.lifecycleState);
+  if (stateDifference) return stateDifference;
+  const leftTime = left.startsAt ? new Date(left.startsAt).getTime() : Number.MAX_SAFE_INTEGER;
+  const rightTime = right.startsAt ? new Date(right.startsAt).getTime() : Number.MAX_SAFE_INTEGER;
+  if (["ENDED", "ARCHIVED", "CANCELED"].includes(left.lifecycleState)) return rightTime - leftTime;
+  return leftTime - rightTime;
 }
 
 function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
