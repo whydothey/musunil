@@ -1945,7 +1945,7 @@ if (!/runtime:\s*docker/.test(renderOpsScheduler) || !/dockerCommand:\s*pnpm ops
 for (const legacyCron of ["musunil-public-source-ingest", "musunil-law-source-ingest", "musunil-notification-dispatch", "musunil-privacy-purge"]) {
   if (renderYaml.includes(`name: ${legacyCron}`)) failures.push(`legacy duplicate cron must be removed after scheduler consolidation: ${legacyCron}`);
 }
-for (const taskId of ["notification_dispatch", "public_source_ingest", "law_source_ingest", "media_redaction", "privacy_purge"]) {
+for (const taskId of ["notification_dispatch", "public_source_ingest", "law_source_ingest", "news_source_ingest", "media_redaction", "privacy_purge"]) {
   if (!opsSchedulerContract.includes(`id: "${taskId}"`)) failures.push(`operations scheduler task is missing: ${taskId}`);
 }
 if (!/for update skip locked\s+limit 1/i.test(opsScheduler) || !/lease_owner = \$2/.test(opsScheduler) || !/lease_until <= now\(\)/.test(opsScheduler) || !/renewLease\(task\)/.test(opsScheduler)) {

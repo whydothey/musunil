@@ -87,6 +87,15 @@ export type Evidence = {
   deviceIntegrityProofHash?: string;
   deviceAttestationBucket?: string;
   proofOfPresenceStatus?: "pass" | "fail" | "material_only" | "unknown";
+  externalProvider?: "naver_api_hub";
+  externalId?: string;
+  sourceUrl?: string;
+  aggregatorUrl?: string;
+  publisherLabel?: string;
+  sourcePublishedAt?: Date;
+  sourceTitle?: string;
+  publicSummary?: string;
+  newsDirectBillMatch?: boolean;
 };
 
 export type LifecycleState =
@@ -170,6 +179,40 @@ export type IssueLawGroupLink = {
   claimIds: string[];
   reviewedAt?: Date;
   reviewNote?: string;
+};
+
+export type NewsIssueCandidate = {
+  id: string;
+  lawGroupId: string;
+  coreTopicKey: string;
+  suggestedTitle: string;
+  pendingEvidenceIds: string[];
+  approvedEvidenceIds: string[];
+  rejectedEvidenceIds: string[];
+  status: "candidate" | "approved" | "rejected";
+  issueId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  reviewedAt?: Date;
+  reviewNote?: string;
+};
+
+export type PublicNewsArticle = {
+  id: string;
+  issueId: string;
+  lawGroupId: string;
+  coreTopicKey: string;
+  publisherLabel: string;
+  publishedAt: string;
+  summary: string;
+  sourceUrl: string;
+};
+
+export type NewsProviderUsage = {
+  provider: "naver_api_hub";
+  month: string;
+  callCount: number;
+  updatedAt: Date;
 };
 
 export type AreaCluster = {
@@ -438,7 +481,7 @@ export type NotificationOutbox = {
 export type AuditLog = {
   id: string;
   action: "mask" | "hold" | "delete" | "correction" | "rebuttal" | "merge" | "split" | "state_change" | "notification";
-  targetType: TargetType | "claim" | "evidence" | "law_topic" | "law_group";
+  targetType: TargetType | "claim" | "evidence" | "law_topic" | "law_group" | "news_candidate";
   targetId: string;
   createdAt: Date;
   reason: string;
@@ -447,7 +490,7 @@ export type AuditLog = {
 export type TransparencyLog = {
   id: string;
   action: AuditLog["action"] | "agency_request" | "rights_report" | "restore";
-  targetType: TargetType | "claim" | "evidence" | "law_topic" | "law_group";
+  targetType: TargetType | "claim" | "evidence" | "law_topic" | "law_group" | "news_candidate";
   targetId: string;
   createdAt: Date;
   publicReason: string;

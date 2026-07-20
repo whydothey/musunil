@@ -81,6 +81,61 @@ const approvedGroup = linkReviewApp.store.lawGroups.find((group) => group.id ===
 const approvedGroupLawDetail = await linkReviewApp.handle({ method: "GET", path: `/laws/${approvedGroup?.billIds[0]}` });
 assert.equal((approvedGroupLawDetail.body as { issues: unknown[] }).issues.length, 0);
 assert.equal((approvedGroupLawDetail.body as { lawGroup?: { id: string } }).lawGroup?.id, firstLawGroupCandidate.lawGroupId);
+const newsReviewStore = createSeedStore();
+const newsReviewApp = createApp(newsReviewStore, { internalApiKey: "test_internal_key" });
+const newsReviewGroup = newsReviewStore.lawGroups.find((group) => group.coreTopics.length > 0)!;
+const newsReviewTopic = newsReviewGroup.coreTopics[0];
+for (const [index, hostname] of ["news-one.example", "news-two.example"].entries()) {
+  const response = await newsReviewApp.handle({
+    method: "POST",
+    path: "/internal/ingest/news",
+    headers: internalHeaders,
+    body: {
+      provider: "naver_api_hub",
+      lawGroupId: newsReviewGroup.id,
+      coreTopicKey: newsReviewTopic.key,
+      sourceTitle: `공개 응답에 노출하면 안 되는 원제목 ${index + 1}`,
+      sourceUrl: `https://${hostname}/article-${index + 1}`,
+      aggregatorUrl: `https://news.naver.com/article-${index + 1}`,
+      publisherLabel: `테스트매체${index + 1}`,
+      publishedAt: new Date(Date.now() - index * 60_000).toISOString(),
+      providerItemId: `news-provider-item-${index + 1}`,
+      directBillMatch: index === 0,
+      sourceId: "news_naver_api_hub",
+      sourceCheckedAt: new Date().toISOString(),
+      sourceBatchSize: 2
+    }
+  });
+  assert.equal(response.status, 201);
+}
+const newsCandidatesResponse = await newsReviewApp.handle({ method: "GET", path: "/admin/news-issue-candidates", headers: internalHeaders });
+assert.equal(newsCandidatesResponse.status, 200);
+const newsCandidate = (newsCandidatesResponse.body as { candidates: Array<{ id: string; eligibility: { eligibleForReview: boolean; publisherCount: number } }> }).candidates.find((candidate) => candidate.id.includes("news_candidate_"))!;
+assert.equal(newsCandidate.eligibility.eligibleForReview, true);
+assert.equal(newsCandidate.eligibility.publisherCount, 2);
+const newsBeforeApproval = await newsReviewApp.handle({ method: "GET", path: `/law-groups/${newsReviewGroup.id}` });
+assert.equal(JSON.stringify(newsBeforeApproval.body).includes("공개 응답에 노출하면 안 되는 원제목"), false);
+const approvedNewsCandidate = await newsReviewApp.handle({
+  method: "PATCH",
+  path: `/admin/news-issue-candidates/${newsCandidate.id}`,
+  headers: internalHeaders,
+  body: { status: "approved", reviewNote: "독립 매체 2곳과 법안 직접 언급 확인" }
+});
+assert.equal(approvedNewsCandidate.status, 200);
+const approvedNewsBody = approvedNewsCandidate.body as { issue: { id: string }; newsArticles: Array<{ publisherLabel: string; summary: string }> };
+assert.equal(approvedNewsBody.newsArticles.length, 2);
+assert.equal(approvedNewsBody.newsArticles.every((article) => article.summary.includes(newsReviewTopic.label)), true);
+const newsGroupDetail = await newsReviewApp.handle({ method: "GET", path: `/law-groups/${newsReviewGroup.id}` });
+assert.equal((newsGroupDetail.body as { issues: Array<{ newsCount: number; recentNews: unknown[] }> }).issues.some((issue) => issue.newsCount === 2 && issue.recentNews.length === 2), true);
+assert.equal(JSON.stringify(newsGroupDetail.body).includes("공개 응답에 노출하면 안 되는 원제목"), false);
+const newsIssueDetail = await newsReviewApp.handle({ method: "GET", path: `/issues/${approvedNewsBody.issue.id}` });
+assert.equal((newsIssueDetail.body as { newsArticles: unknown[] }).newsArticles.length, 2);
+assert.equal(JSON.stringify(newsIssueDetail.body).includes("공개 응답에 노출하면 안 되는 원제목"), false);
+const initialNewsBudget = await newsReviewApp.handle({ method: "GET", path: "/internal/news-ingest-budget", headers: internalHeaders });
+assert.equal((initialNewsBudget.body as { remaining: number }).remaining, 20_000);
+const updatedNewsBudget = await newsReviewApp.handle({ method: "POST", path: "/internal/news-ingest-usage", headers: internalHeaders, body: { provider: "naver_api_hub", month: new Date().toISOString().slice(0, 7), callCount: 24 } });
+assert.equal((updatedNewsBudget.body as { callCount: number; remaining: number }).callCount, 24);
+assert.equal((updatedNewsBudget.body as { remaining: number }).remaining, 19_976);
 const productionHome = await createApp(productionSeed).handle({ method: "GET", path: "/home" });
 assert.equal(JSON.stringify(productionHome.body).includes("대구 0709(목) 오늘의 집회 공개 일정"), true);
 assert.equal(JSON.stringify(productionHome.body).includes("부산 도심 행진 가능성"), false);

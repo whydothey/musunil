@@ -74,6 +74,12 @@ storage:
 redaction:
   engine_smoke_command: "node scripts/redact-media.mjs {input} {output}"
 public_data_sources:
+  naver_api_hub_client_id: ""
+  naver_api_hub_client_secret: ""
+  naver_api_hub_url: "https://naverapihub.apigw.ntruss.com/search/v1/news"
+  news_initial_lookback_days: 90
+  news_max_results_per_query: 20
+  news_max_queries_per_run: 100
   national_assembly_bill_api_key: "assembly_api_key"
   law_go_kr_oc: ""
 payments:

@@ -128,10 +128,26 @@ export interface LawGroupCard {
   interestScore: number;
 }
 
+export interface NewsArticle {
+  id: string;
+  issueId: string;
+  lawGroupId: string;
+  coreTopicKey: string;
+  publisherLabel: string;
+  publishedAt: string;
+  summary: string;
+  sourceUrl: string;
+}
+
+export interface LawGroupIssueOverview extends IssueOverview {
+  newsCount: number;
+  recentNews: NewsArticle[];
+}
+
 export interface LawGroupDetailData {
   group: LawGroupCard;
   bills: LawInterestItem[];
-  issues?: IssueOverview[];
+  issues?: LawGroupIssueOverview[];
 }
 
 export interface ReportCandidate {
@@ -153,6 +169,7 @@ export interface IssueDetailData {
   issueOverview?: IssueOverview;
   occurrenceDigests: OccurrenceDigest[];
   claims: PublicClaim[];
+  newsArticles?: NewsArticle[];
 }
 
 export interface OccurrenceDetailData {
@@ -185,6 +202,7 @@ export interface AppDataset {
   laws: LawInterestItem[];
   lawGroups: LawGroupCard[];
   claimsByIssue: Record<string, PublicClaim[]>;
+  newsByIssue: Record<string, NewsArticle[]>;
   claimsByOccurrence: Record<string, PublicClaim[]>;
   map: MapData;
 }

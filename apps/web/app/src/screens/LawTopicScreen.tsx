@@ -1,4 +1,4 @@
-import { ChevronRight, Layers3 } from "lucide-react";
+import { ChevronRight, ExternalLink, Layers3, Newspaper } from "lucide-react";
 import { useEffect, useState } from "react";
 import dataSource from "@musunil/data-source";
 import type { LawGroupDetailData } from "../contracts";
@@ -39,8 +39,19 @@ export function LawGroupScreen({ id }: { id: string }) {
         </div>
       </section>
       <section className="content-section">
-        <div className="section-heading"><div><h2>그룹에 연결된 이슈</h2><p>검토 승인된 그룹 단위 연결만 표시합니다</p></div></div>
-        {issues.length ? issues.map((issue) => <Link key={issue.id} href={`/issues/${encodeURIComponent(issue.id)}`} className="law-related-row"><span><strong>{issue.title}</strong><small>{issue.regionCount}개 지역 · 현장 {issue.occurrenceCount}곳</small></span><ChevronRight aria-hidden="true" /></Link>) : <EmptyState title="연결된 이슈가 없습니다" description="검토 승인된 그룹 연결이 확인되면 표시합니다." />}
+        <div className="section-heading"><div><h2>주요 이슈와 관련 뉴스</h2><p>검토 승인된 그룹 단위 이슈와 출처가 확인된 보도만 표시합니다</p></div><Newspaper aria-hidden="true" /></div>
+        {issues.length ? issues.map((issue) => (
+          <article className="law-issue-news-card" key={issue.id}>
+            <Link href={`/issues/${encodeURIComponent(issue.id)}`} className="law-related-row">
+              <span><strong>{issue.title}</strong><small>{issue.newsCount ? `관련 뉴스 ${issue.newsCount}건` : `${issue.regionCount}개 지역 · 현장 ${issue.occurrenceCount}곳`}</small></span><ChevronRight aria-hidden="true" />
+            </Link>
+            {issue.recentNews?.length ? <div className="news-link-list">{issue.recentNews.map((article) => (
+              <a key={article.id} href={article.sourceUrl} target="_blank" rel="noopener noreferrer" className="news-link-row">
+                <span><strong>{article.summary}</strong><small>{article.publisherLabel} · {new Date(article.publishedAt).toLocaleDateString("ko-KR")}</small></span><ExternalLink aria-hidden="true" />
+              </a>
+            ))}</div> : null}
+          </article>
+        )) : <EmptyState title="연결된 이슈가 없습니다" description="검토 승인된 이슈와 언론 보도가 확인되면 표시합니다." />}
       </section>
       <section className="content-section">
         <div className="section-heading"><div><h2>개별 법안</h2><p>발의자·발의일·진행단계가 서로 다른 공식 의안입니다</p></div></div>

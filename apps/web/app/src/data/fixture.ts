@@ -219,12 +219,14 @@ const claimsByIssue: Record<string, PublicClaim[]> = {
   "issue-network-act": [
     claim("claim-network-official", "개정안 관련 집회 일정과 장소가 관계 기관 공개자료에서 확인됐습니다.", "government_or_police", "independent_sources_with_field_evidence", "low"),
     claim("claim-network-organizer", "주최 측은 개정안의 정보 유통 규제 범위가 과도하다고 주장합니다.", "organizer_or_group", "multiple_sources", "misleading_possible"),
-    claim("claim-network-rebuttal", "개정 취지가 허위정보 피해 방지에 있다는 다른 설명도 제시됐습니다.", "rebuttal", "multiple_sources", "misleading_possible")
+    claim("claim-network-rebuttal", "개정 취지가 허위정보 피해 방지에 있다는 다른 설명도 제시됐습니다.", "rebuttal", "multiple_sources", "misleading_possible"),
+    claim("claim-network-news", "정보통신망법의 '온라인 정보·이용자 보호' 쟁점과 관련된 언론 보도입니다.", "media_report", "single_source", "misleading_possible")
   ],
   "issue-election-process": [
     claim("claim-election-official", "지역별 집회 일정이 공개자료에서 확인됐습니다.", "government_or_police", "independent_sources_with_field_evidence", "low"),
     claim("claim-election-field", "복수 지역에서 같은 주제의 현장 영상이 확인됐습니다.", "verified_citizen_report", "multiple_sources", "misleading_possible"),
-    claim("claim-election-rebuttal", "제기된 의혹을 반박하는 공식 설명이 함께 공개돼 있습니다.", "rebuttal", "independent_sources_with_field_evidence", "misleading_possible")
+    claim("claim-election-rebuttal", "제기된 의혹을 반박하는 공식 설명이 함께 공개돼 있습니다.", "rebuttal", "independent_sources_with_field_evidence", "misleading_possible"),
+    claim("claim-election-news", "공직선거법의 '투표용지·공급 대응' 쟁점과 관련된 언론 보도입니다.", "media_report", "single_source", "misleading_possible")
   ],
   "issue-impeachment": [claim("claim-impeachment-official", "주말 집회 신고 일정과 장소가 공개자료에서 확인됐습니다.", "government_or_police", "independent_sources_with_field_evidence", "low")],
   "issue-labor-act": [claim("claim-labor-official", "법 개정 관련 집회 일정이 공개자료에서 확인됐습니다.", "government_or_police", "independent_sources_with_field_evidence", "low")]
@@ -391,7 +393,18 @@ const lawGroupIssueIds: Record<string, string[]> = {
   "law-group-effective-labor": ["issue-labor-act"]
 };
 
-const dataset: AppDataset = { issues, occurrences, reels, laws, lawGroups, claimsByIssue, claimsByOccurrence, map };
+const newsByIssue: AppDataset["newsByIssue"] = {
+  "issue-network-act": [
+    { id: "news-network-1", issueId: "issue-network-act", lawGroupId: "law-group-network-act", coreTopicKey: "network-protection", publisherLabel: "연합뉴스", publishedAt: "2026-07-16T03:30:00.000Z", summary: "정보통신망법의 '온라인 정보·이용자 보호' 쟁점과 관련된 언론 보도입니다.", sourceUrl: "https://example.com/news/network-1" },
+    { id: "news-network-2", issueId: "issue-network-act", lawGroupId: "law-group-network-act", coreTopicKey: "network-protection", publisherLabel: "뉴시스", publishedAt: "2026-07-16T02:10:00.000Z", summary: "정보통신망법의 '온라인 정보·이용자 보호' 쟁점과 관련된 언론 보도입니다.", sourceUrl: "https://example.com/news/network-2" }
+  ],
+  "issue-election-process": [
+    { id: "news-election-1", issueId: "issue-election-process", lawGroupId: "law-group-election-act", coreTopicKey: "ballot-supply", publisherLabel: "연합뉴스", publishedAt: "2026-07-15T04:46:42.000Z", summary: "공직선거법의 '투표용지·공급 대응' 쟁점과 관련된 언론 보도입니다.", sourceUrl: "https://example.com/news/election-1" },
+    { id: "news-election-2", issueId: "issue-election-process", lawGroupId: "law-group-election-act", coreTopicKey: "ballot-supply", publisherLabel: "뉴시스", publishedAt: "2026-07-15T04:25:10.000Z", summary: "공직선거법의 '투표용지·공급 대응' 쟁점과 관련된 언론 보도입니다.", sourceUrl: "https://example.com/news/election-2" }
+  ]
+};
+
+const dataset: AppDataset = { issues, occurrences, reels, laws, lawGroups, claimsByIssue, newsByIssue, claimsByOccurrence, map };
 
 export const dataSource: DataSource = {
   mode: "fixture",
@@ -404,7 +417,8 @@ export const dataSource: DataSource = {
     return {
       issueOverview,
       occurrenceDigests: dataset.occurrences.filter((item) => item.issueId === id),
-      claims: dataset.claimsByIssue[id] || []
+      claims: dataset.claimsByIssue[id] || [],
+      newsArticles: dataset.newsByIssue[id] || []
     };
   },
   async loadOccurrence(id) {
@@ -417,7 +431,15 @@ export const dataSource: DataSource = {
     if (!group) throw new Error("law_group_not_found");
     const bills = dataset.laws.filter((law) => law.lawGroupId === id);
     const linkedIssueIds = new Set(lawGroupIssueIds[id] || []);
-    return { group, bills, issues: dataset.issues.filter((issue) => linkedIssueIds.has(issue.id)) };
+    return {
+      group,
+      bills,
+      issues: dataset.issues.filter((issue) => linkedIssueIds.has(issue.id)).map((issue) => ({
+        ...issue,
+        newsCount: (dataset.newsByIssue[issue.id] || []).length,
+        recentNews: (dataset.newsByIssue[issue.id] || []).slice(0, 3)
+      }))
+    };
   }
 };
 

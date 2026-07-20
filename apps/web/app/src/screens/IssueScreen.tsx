@@ -1,4 +1,4 @@
-import { FileText, MapPin, PlaySquare, Scale } from "lucide-react";
+import { ExternalLink, FileText, MapPin, Newspaper, PlaySquare, Scale } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useAppState } from "../app-state";
 import { EmptyState, LoadingState, OccurrenceListItem, ScreenHeader, ServiceUnavailable, StatusDot } from "../components";
@@ -21,6 +21,7 @@ export function IssueScreen({ id }: { id: string }) {
   const reels = useMemo(() => dataset?.reels.filter((item) => item.issueId === id) || [], [dataset, id]);
   const laws = useMemo(() => dataset?.laws.filter((item) => item.linkedIssueIds?.includes(id)) || [], [dataset, id]);
   const claims = dataset?.claimsByIssue[id] || [];
+  const news = dataset?.newsByIssue[id] || [];
   useEffect(() => {
     selectIssue(id);
     if (!Object.prototype.hasOwnProperty.call(dataset?.claimsByIssue || {}, id)) ensureIssue(id).catch(() => undefined);
@@ -79,6 +80,14 @@ export function IssueScreen({ id }: { id: string }) {
                 <dl className="claim-meta"><div><dt>근거</dt><dd>{evidenceLabel(claim.evidenceStrength)}</dd></div><div><dt>공개</dt><dd>{riskLabel(claim.riskLevel)}</dd></div></dl>
               </article>
             )) : <EmptyState title="공개된 근거가 없습니다" description="검토를 통과한 Claim만 이곳에 표시합니다." />}
+            {news.length ? <section className="issue-news-section" aria-labelledby="issue-news-heading">
+              <div className="section-heading"><div><h3 id="issue-news-heading">관련 언론 보도</h3><p>언론 보도는 사실 확정이 아니라 출처별 Claim입니다</p></div><Newspaper aria-hidden="true" /></div>
+              <div className="news-link-list">{news.map((article) => (
+                <a key={article.id} href={article.sourceUrl} target="_blank" rel="noopener noreferrer" className="news-link-row">
+                  <span><strong>{article.summary}</strong><small>{article.publisherLabel} · {new Date(article.publishedAt).toLocaleDateString("ko-KR")}</small></span><ExternalLink aria-hidden="true" />
+                </a>
+              ))}</div>
+            </section> : null}
           </div>
         ) : null}
 

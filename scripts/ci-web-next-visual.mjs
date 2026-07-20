@@ -165,6 +165,8 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     await page.locator('.law-row').first().click();
     await page.locator('[data-screen="law-group"]').waitFor({ state: "visible" });
     check((await page.locator('.law-row').count()) >= 1, `${viewport.id}: law group rows missing`);
+    check((await page.locator('.news-link-row').count()) >= 1, `${viewport.id}: approved law-group news links missing`);
+    check((await page.locator('.law-issue-news-card a a').count()) === 0, `${viewport.id}: law-group news contains nested links`);
     await assertAxe(page, `${viewport.id}: law group detail`);
     await shot(page, `${viewport.id}_law_topic_detail.png`);
     await page.locator('.law-row').first().click();
