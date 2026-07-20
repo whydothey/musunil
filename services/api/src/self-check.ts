@@ -1847,6 +1847,12 @@ assert.equal(individualDetail.status, 200);
 assert.equal(JSON.stringify(individualDetail.body).includes("광화문교차로 행진 경로"), false);
 assert.equal((individualDetail.body as { occurrence: { publicLocation: { label: string; precision: string } } }).occurrence.publicLocation.label, "서울광장·광화문 일대");
 assert.equal((individualDetail.body as { occurrence: { publicLocation: { label: string; precision: string } } }).occurrence.publicLocation.precision, "area");
+const individualIssueId = (individualDetail.body as { occurrence: { issueId?: string } }).occurrence.issueId;
+assert.equal(typeof individualIssueId, "string");
+assert.equal(emptyOfficialStore.issues.find((issue) => issue.id === individualIssueId)?.title, "서울광장·광화문 일대 집회 일정");
+assert.equal(emptyOfficialStore.auditLogs.some((log) => log.targetId === individualIssueId && log.action === "split"), true);
+const individualHome = await emptyOfficialApp.handle({ method: "GET", path: "/home" });
+assert.equal(JSON.stringify((individualHome.body as { issueCards: unknown }).issueCards).includes("서울광장·광화문 일대 집회 일정"), true);
 const individualMap = await emptyOfficialApp.handle({ method: "GET", path: "/map" });
 assert.equal((individualMap.body as { geojson: { pins: { features: Array<{ properties: { targetId: string } }> } } }).geojson.pins.features.some((pin) => pin.properties.targetId === "occ_seoul_2026_07_20_2021_1"), true);
 const emptyOfficialBatch = await emptyOfficialApp.handle({

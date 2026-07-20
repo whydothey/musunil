@@ -1,10 +1,10 @@
-import { ChevronRight, FileText, LocateFixed, Search, X } from "lucide-react";
+import { ChevronRight, LocateFixed, Search, X } from "lucide-react";
 import maplibregl, { type Map as MapLibreMap, type MapLayerMouseEvent, type MapGeoJSONFeature, type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppState } from "../app-state";
 import type { GeoJsonFeatureCollection, OccurrenceDigest } from "../contracts";
-import { formatDateTime, lifecycleLabel, scaleLabel } from "../format";
+import { formatDateTime, schedulePhase, schedulePhaseLabel, scaleLabel } from "../format";
 import { Link, useRouter } from "../router";
 
 export function ExploreScreen() {
@@ -19,11 +19,6 @@ export function ExploreScreen() {
     if (!normalized) return dataset?.occurrences || [];
     return dataset?.occurrences.filter((item) => `${item.title} ${item.regionLabel} ${item.issueTitle || ""}`.toLocaleLowerCase("ko").includes(normalized)) || [];
   }, [dataset, query]);
-  const officialSchedules = useMemo(() => {
-    return (dataset?.occurrences || [])
-      .filter((item) => item.officialSources?.length)
-      .sort(compareOfficialSchedules);
-  }, [dataset]);
   useEffect(() => {
     if (requestedOccurrenceId) selectOccurrence(requestedOccurrenceId);
   }, [requestedOccurrenceId, selectOccurrence]);
@@ -37,62 +32,19 @@ export function ExploreScreen() {
           {query ? <button type="button" onClick={() => setQuery("")} aria-label="검색어 지우기"><X /></button> : null}
         </label>
         {query ? <div className="map-results" aria-label="검색 결과">
-          {filtered.slice(0, 5).map((item) => <button key={item.id} type="button" onClick={() => { selectOccurrence(item.id); setQuery(""); }}><span>{item.regionLabel}</span><strong>{item.title}</strong><ChevronRight /></button>)}
+          {filtered.slice(0, 5).map((item) => <button key={item.id} type="button" onClick={() => { selectOccurrence(item.id); setQuery(""); }}><span>{item.regionLabel} · {schedulePhaseLabel(schedulePhase(item))}</span><strong>{item.title}</strong><ChevronRight /></button>)}
           {!filtered.length ? <p>일치하는 공개 현장이 없습니다</p> : null}
         </div> : null}
       </div>
 
       <OccurrenceMap pins={dataset?.map.geojson.pins} areas={dataset?.map.geojson.presenceAreas} occurrences={dataset?.occurrences || []} selectedId={selectedId} onSelect={selectOccurrence} />
 
-      <div className="map-key" aria-label="지도 표시 설명"><span><i className="key-pin" />자료 위치</span><span><i className="key-area" />현장 인증 범위</span></div>
+      <div className="map-key" aria-label="일정 상태 표시 설명"><span><i className="key-current" />진행 중</span><span><i className="key-upcoming" />예정</span><span><i className="key-past" />지난 일정</span><span><i className="key-area" />현장 인증 범위</span></div>
 
       {serviceSyncState === "unavailable" ? <div className="map-notice">공개 지도 자료 연결을 확인하고 있습니다</div> : null}
-      {!selected && !query && officialSchedules.length ? <OfficialScheduleList occurrences={officialSchedules} /> : null}
       {selected ? <MapSelection occurrence={selected} onClose={() => selectOccurrence(undefined)} /> : null}
     </section>
   );
-}
-
-function OfficialScheduleList({ occurrences }: { occurrences: OccurrenceDigest[] }) {
-  return (
-    <aside className="official-schedule-panel" aria-label="경찰 공개 일정">
-      <header>
-        <div><span><FileText aria-hidden="true" />경찰 공개자료</span><strong>최근 집회·시위 일정</strong></div>
-        <small>{occurrences.length}건</small>
-      </header>
-      <div className="official-schedule-items">
-        {occurrences.slice(0, 8).map((occurrence) => (
-          <Link key={occurrence.id} href={`/occurrences/${encodeURIComponent(occurrence.id)}`}>
-            <span>{occurrence.regionLabel} · {lifecycleLabel(occurrence.lifecycleState)} · {formatDateTime(occurrence.startsAt)}</span>
-            <strong>{occurrence.title}</strong>
-            <ChevronRight aria-hidden="true" />
-          </Link>
-        ))}
-      </div>
-      <p>경찰 게시물 안의 시간·장소 행을 개별 일정으로 분리했습니다. 행진 경로는 표시하지 않고, 안전하게 흐릴 수 있는 위치만 지도에 표시합니다.</p>
-    </aside>
-  );
-}
-
-function compareOfficialSchedules(left: OccurrenceDigest, right: OccurrenceDigest) {
-  const stateOrder = (state: OccurrenceDigest["lifecycleState"]) => ({
-    LIVE: 0,
-    STARTING_SOON: 1,
-    UPCOMING: 2,
-    ONGOING_SERIES: 3,
-    UNKNOWN: 4,
-    POSTPONED: 5,
-    PAUSED: 6,
-    ENDED: 7,
-    CANCELED: 8,
-    ARCHIVED: 9
-  })[state];
-  const stateDifference = stateOrder(left.lifecycleState) - stateOrder(right.lifecycleState);
-  if (stateDifference) return stateDifference;
-  const leftTime = left.startsAt ? new Date(left.startsAt).getTime() : Number.MAX_SAFE_INTEGER;
-  const rightTime = right.startsAt ? new Date(right.startsAt).getTime() : Number.MAX_SAFE_INTEGER;
-  if (["ENDED", "ARCHIVED", "CANCELED"].includes(left.lifecycleState)) return rightTime - leftTime;
-  return leftTime - rightTime;
 }
 
 function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
@@ -104,11 +56,24 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | undefined>(undefined);
+  const userMarkerRef = useRef<maplibregl.Marker | undefined>(undefined);
   const [mapReady, setMapReady] = useState(false);
   const [baseMapReady, setBaseMapReady] = useState(false);
   const [baseMapFallback, setBaseMapFallback] = useState(false);
-  const pinData = pins || { type: "FeatureCollection" as const, features: [] };
-  const areaData = areas || { type: "FeatureCollection" as const, features: [] };
+  const [locationMessage, setLocationMessage] = useState("");
+  const occurrenceById = useMemo(() => new Map(occurrences.map((item) => [item.id, item])), [occurrences]);
+  const pinData: GeoJsonFeatureCollection = useMemo(() => ({
+    type: "FeatureCollection" as const,
+    features: (pins?.features || []).map((feature) => {
+      const occurrence = occurrenceById.get(String(feature.properties.occurrenceUnitId || ""));
+      return { ...feature, properties: { ...feature.properties, schedulePhase: occurrence ? schedulePhase(occurrence) : "current" } };
+    })
+  }), [pins, occurrenceById]);
+  const areaData = useMemo(() => areas || { type: "FeatureCollection" as const, features: [] }, [areas]);
+  const pinDataRef = useRef(pinData);
+  const areaDataRef = useRef(areaData);
+  pinDataRef.current = pinData;
+  areaDataRef.current = areaData;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -117,6 +82,9 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
       style: window.MUSUNIL_WEB_CONFIG?.mapStyleUrl || "https://tiles.openfreemap.org/styles/positron",
       center: [127.7, 36.35],
       zoom: 6.3,
+      minZoom: 6,
+      maxBounds: [[124.4, 32.8], [132.0, 38.7]],
+      renderWorldCopies: false,
       attributionControl: false
     });
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
@@ -138,10 +106,10 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
     }, 8_000);
     const installLayers = () => {
       if (map.getSource("occurrence-pins")) return;
-      map.addSource("presence-areas", { type: "geojson", data: areaData as never });
+      map.addSource("presence-areas", { type: "geojson", data: areaDataRef.current as never });
       map.addLayer({ id: "presence-fill", type: "fill", source: "presence-areas", paint: { "fill-color": "#0b6c74", "fill-opacity": 0.14 } });
       map.addLayer({ id: "presence-outline", type: "line", source: "presence-areas", paint: { "line-color": "#0b6c74", "line-width": 2, "line-opacity": 0.7 } });
-      map.addSource("occurrence-pins", { type: "geojson", data: pinData as never });
+      map.addSource("occurrence-pins", { type: "geojson", data: pinDataRef.current as never });
       map.addLayer({
         id: "occurrence-pin-shadow",
         type: "circle",
@@ -154,7 +122,7 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
         source: "occurrence-pins",
         paint: {
           "circle-radius": 8,
-          "circle-color": ["case", ["==", ["get", "occurrenceUnitId"], selectedId || ""], "#0b6c74", "#176f77"],
+          "circle-color": ["match", ["get", "schedulePhase"], "past", "#899598", "upcoming", "#2563a7", "#0b7a67"],
           "circle-stroke-width": ["case", ["==", ["get", "occurrenceUnitId"], selectedId || ""], 3, 0],
           "circle-stroke-color": "#9dd8dc"
         }
@@ -166,7 +134,6 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
           if (id) onSelect(id);
         };
         map.on("click", "occurrence-pins", handleClick);
-        map.on("click", "presence-fill", handleClick);
         map.on("mouseenter", "occurrence-pins", () => { map.getCanvas().style.cursor = "pointer"; });
         map.on("mouseleave", "occurrence-pins", () => { map.getCanvas().style.cursor = ""; });
         interactionsBound = true;
@@ -189,7 +156,7 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
       if (contextualErrors >= 3) applyFallback();
     });
     mapRef.current = map;
-    return () => { window.clearTimeout(fallbackTimer); map.remove(); mapRef.current = undefined; };
+    return () => { window.clearTimeout(fallbackTimer); userMarkerRef.current?.remove(); map.remove(); mapRef.current = undefined; };
   }, []);
 
   useEffect(() => {
@@ -197,21 +164,45 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
     if (!map?.isStyleLoaded()) return;
     (map.getSource("occurrence-pins") as maplibregl.GeoJSONSource | undefined)?.setData(pinData as never);
     (map.getSource("presence-areas") as maplibregl.GeoJSONSource | undefined)?.setData(areaData as never);
-  }, [pins, areas]);
+  }, [pinData, areaData]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map?.isStyleLoaded()) return;
+    if (!map.getLayer("occurrence-pins")) return;
     map.setPaintProperty("occurrence-pins", "circle-stroke-width", ["case", ["==", ["get", "occurrenceUnitId"], selectedId || ""], 3, 0]);
     if (!selectedId) return;
-    const feature = pinData.features.find((item) => item.properties.occurrenceUnitId === selectedId);
+    const feature = pinData.features.find((item) => item.properties["occurrenceUnitId"] === selectedId);
     if (feature?.geometry.type === "Point") {
       map.easeTo({ center: feature.geometry.coordinates as [number, number], zoom: Math.max(map.getZoom(), 12), duration: 420, padding: { top: 80, bottom: 180, left: 40, right: 40 } });
     }
   }, [selectedId, pinData.features]);
 
+  const locateUser = () => {
+    if (!navigator.geolocation) {
+      setLocationMessage("이 기기에서는 위치 기능을 사용할 수 없습니다.");
+      return;
+    }
+    setLocationMessage("현재 위치를 확인하고 있습니다.");
+    navigator.geolocation.getCurrentPosition(({ coords }) => {
+      const center: [number, number] = [coords.longitude, coords.latitude];
+      if (center[0] < 124.4 || center[0] > 132.0 || center[1] < 32.8 || center[1] > 38.7) {
+        setLocationMessage("현재 위치가 남한 지도 범위 밖입니다.");
+        return;
+      }
+      const map = mapRef.current;
+      if (!map) return;
+      userMarkerRef.current?.remove();
+      userMarkerRef.current = new maplibregl.Marker({ color: "#ec5f4f", scale: 0.72 }).setLngLat(center).addTo(map);
+      map.easeTo({ center, zoom: Math.max(map.getZoom(), 12), duration: 520 });
+      setLocationMessage("현재 위치를 지도에 표시했습니다. 위치 정보는 기기 밖으로 전송하지 않습니다.");
+    }, () => setLocationMessage("위치 권한을 허용하면 내 주변 지도를 볼 수 있습니다."), { enableHighAccuracy: false, timeout: 10_000, maximumAge: 60_000 });
+  };
+
   return <>
     <div ref={containerRef} className="map-canvas" data-map-ready={mapReady ? "true" : "false"} data-basemap-ready={baseMapReady ? "true" : "false"} aria-label={`${occurrences.length}개 공개 현장 지도`} />
+    <button type="button" className="map-locate" onClick={locateUser} aria-label="내 위치로 지도 이동"><LocateFixed aria-hidden="true" /><span>내 위치</span></button>
+    <p className="map-location-message" aria-live="polite">{locationMessage}</p>
     {baseMapFallback ? <div className="map-basemap-notice">대체 지도 연결됨</div> : null}
   </>;
 }
@@ -235,10 +226,11 @@ function fallbackRasterStyle(): StyleSpecification {
 }
 
 function MapSelection({ occurrence, onClose }: { occurrence: OccurrenceDigest; onClose: () => void }) {
+  const phase = schedulePhase(occurrence);
   return (
     <aside className="map-selection" aria-label="선택한 현장">
       <button type="button" className="map-selection-close" onClick={onClose} aria-label="현장 선택 닫기"><X /></button>
-      <span className="selection-state"><i />{lifecycleLabel(occurrence.lifecycleState)}</span>
+      <span className={`selection-state phase-${phase}`}><i />{schedulePhaseLabel(phase)}</span>
       <h2>{occurrence.title}</h2>
       <p>{occurrence.locationLabel || occurrence.regionLabel}</p>
       <p>{formatDateTime(occurrence.startsAt)} · {scaleLabel(occurrence)}</p>
