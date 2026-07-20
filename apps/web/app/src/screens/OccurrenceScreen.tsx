@@ -1,4 +1,4 @@
-import { FileText, MapPin, PlaySquare } from "lucide-react";
+import { ArrowUpRight, FileText, MapPin, PlaySquare } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useAppState } from "../app-state";
 import { EmptyState, FactRow, LoadingState, ScreenHeader, ServiceUnavailable, StatusDot } from "../components";
@@ -34,6 +34,21 @@ export function OccurrenceScreen({ id }: { id: string }) {
         <FactRow label="규모" value={scaleLabel(occurrence)} supporting={occurrence.scale ? `공개 근거 ${occurrence.evidenceCount}건 기준` : "확인 가능한 근거가 더 필요합니다"} />
         <FactRow label="근거" value={evidenceLabel(occurrence.evidenceStrength)} supporting={`공식 자료 ${occurrence.officialClaimCount}건 · 현장 영상 ${occurrence.publicVideoCount}건`} />
       </dl>
+
+      {occurrence.officialSources?.length ? (
+        <section className="official-source-list" aria-label="경찰 공개자료 원문">
+          {occurrence.officialSources.map((source) => (
+            <a key={source.sourceUrl} href={source.sourceUrl} target="_blank" rel="noreferrer" className="official-source-link">
+              <FileText aria-hidden="true" />
+              <span>
+                <strong>{source.label}</strong>
+                <small>{source.granularity === "bulletin" ? "게시물 단위 예정 정보" : "개별 일정 정보"}{source.checkedAt ? ` · ${formatRelativeTime(source.checkedAt)} 확인` : ""}</small>
+              </span>
+              <ArrowUpRight aria-hidden="true" />
+            </a>
+          ))}
+        </section>
+      ) : null}
 
       <nav className="context-actions" aria-label="현장 관련 정보">
         <Link href={`/reels?occurrence=${encodeURIComponent(id)}`}><PlaySquare /><span>영상{reels.length ? ` ${reels.length}` : ""}</span></Link>

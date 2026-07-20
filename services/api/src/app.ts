@@ -9,6 +9,7 @@ import {
   riskLevels,
   sourceProvenances,
   sourceCoverageReport,
+  publicAssemblySources,
   targetTypes,
   type AreaCluster,
   type AuditLog,
@@ -979,6 +980,9 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
   if (request.method === "POST" && path === "/internal/ingest/public-occurrence") {
     return withInternalAuth(request, options, () => postInternalIngestPublicOccurrence(store, request.body));
   }
+  if (request.method === "POST" && path === "/internal/ingest/public-occurrences/batch") {
+    return withInternalAuth(request, options, () => postInternalIngestPublicOccurrenceBatch(store, request.body));
+  }
   if (request.method === "POST" && path === "/internal/ingest/laws") {
     return withInternalAuth(request, options, () => postInternalIngestLaws(store, request.body));
   }
@@ -1563,8 +1567,24 @@ function toOccurrenceDigest(store: Store, targetType: Extract<TargetType, "occur
     evidenceCount: evidence.length,
     scale: estimate ? { minCount: estimate.minCount, maxCount: estimate.maxCount, confidence: estimate.confidence } : undefined,
     issueTitle: issue?.title,
-    keyPoint: strongestClaim?.normalizedStatement
+    keyPoint: strongestClaim?.normalizedStatement,
+    officialSources: officialSourcesForEvidence(evidence)
   };
+}
+
+function officialSourcesForEvidence(evidence: Evidence[]): NonNullable<OccurrenceDigest["officialSources"]> {
+  const sources = new Map<string, NonNullable<OccurrenceDigest["officialSources"]>[number]>();
+  for (const item of evidence) {
+    if (item.evidenceType !== "official_doc" || item.externalProvider !== "official_public_source" || !item.sourceUrl) continue;
+    sources.set(item.sourceUrl, {
+      label: item.publisherLabel ?? "경찰 공개자료",
+      sourceUrl: item.sourceUrl,
+      publishedAt: item.sourcePublishedAt?.toISOString(),
+      checkedAt: item.sourceCheckedAt?.toISOString(),
+      granularity: item.sourceGranularity ?? "bulletin"
+    });
+  }
+  return [...sources.values()];
 }
 
 function toIssueOverview(store: Store, issue: ReturnType<typeof issueCards>[number], cards = homeCards(store)): IssueOverview {
@@ -3027,6 +3047,9 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
   let occurrence = store.occurrences.find((item) => item.id === id);
   const created = !occurrence;
   const topicIssueId = resolveIssueIdForIngest(store, data);
+  const officialSource = officialAssemblySource(readOptionalString(data, "sourceId"));
+
+  if (officialSource) ensureOfficialIngestReferences(store, officialSource, data, areaClusterId, issueId);
 
   if (!store.areaClusters.some((item) => item.id === areaClusterId)) throw new ApiError(404, "area_cluster_not_found");
   if (issueId && isPublicSourceBundleIssueId(issueId) && topicIssueId) issueId = topicIssueId;
@@ -3065,6 +3088,13 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
   if (existingClaim) {
     const rawText = readOptionalString(data, "rawText");
     if (rawText) existingClaim.statement = rawText;
+    if (officialSource) {
+      const metadata = officialEvidenceMetadata(officialSource, data, id, normalizedStatement);
+      for (const evidenceId of existingClaim.evidenceIds) {
+        const existingEvidence = store.evidence.find((item) => item.id === evidenceId && item.evidenceType === "official_doc");
+        if (existingEvidence) Object.assign(existingEvidence, metadata);
+      }
+    }
     recordPublicSourceRefresh(store, data, 1);
     audit(store, "correction", "occurrence", id, "public occurrence refreshed without duplicate Claim");
     return json(200, {
@@ -3078,7 +3108,8 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
     id: randomUUID(),
     evidenceType: "official_doc",
     uploadedAt: readOptionalDate(data, "evidenceUploadedAt") ?? new Date(),
-    proofOfPresenceStatus: "material_only"
+    proofOfPresenceStatus: "material_only",
+    ...(officialSource ? officialEvidenceMetadata(officialSource, data, id, normalizedStatement) : {})
   };
   store.evidence.push(evidence);
   attachEvidence(store, "occurrence", id, evidence.id);
@@ -3103,19 +3134,175 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
   });
 }
 
+function postInternalIngestPublicOccurrenceBatch(store: Store, body: unknown): ApiResponse {
+  const data = asObject(body);
+  const sourceId = readString(data, "sourceId");
+  const source = officialAssemblySource(sourceId);
+  if (!source) throw new ApiError(400, "official_source_invalid");
+  const checkedAt = readDate(data, "checkedAt");
+  const status = readPublicSourceRunStatus(data.status);
+  const parsedCount = Math.max(0, Math.trunc(readNumber(data, "parsedCount") ?? 0));
+  const records = Array.isArray(data.records) ? data.records : [];
+  if (records.length > 25) throw new ApiError(400, "public_source_batch_too_large");
+
+  let created = 0;
+  let updated = 0;
+  let unchanged = 0;
+  const errors: Array<{ id?: string; error: string }> = [];
+  for (const record of records) {
+    if (!record || typeof record !== "object" || Array.isArray(record)) {
+      errors.push({ error: "record_must_be_object" });
+      continue;
+    }
+    const next: Record<string, unknown> = { ...(record as Record<string, unknown>), sourceId, sourceCheckedAt: checkedAt.toISOString(), sourceBatchSize: records.length };
+    try {
+      const response = postInternalIngestPublicOccurrence(store, next);
+      const responseStatus = (response.body as { status?: string }).status;
+      if (responseStatus === "public_occurrence_created") created += 1;
+      else if (responseStatus === "public_occurrence_refreshed") unchanged += 1;
+      else updated += 1;
+    } catch (error) {
+      errors.push({
+        id: typeof next.id === "string" ? next.id : undefined,
+        error: error instanceof ApiError ? error.code : "record_ingest_failed"
+      });
+    }
+  }
+
+  const runStatus = status === "failed" || (records.length > 0 && errors.length === records.length)
+    ? "failed"
+    : errors.length > 0
+      ? "partial"
+      : records.length > 0
+        ? "success"
+        : "empty";
+  const sourceStatusChanged = recordPublicSourceRun(store, {
+    sourceId,
+    checkedAt,
+    resultCount: records.length - errors.length,
+    parsedCount,
+    status: runStatus,
+    errorCode: errors.length > 0 ? "record_ingest_partial" : readOptionalString(data, "errorCode")
+  });
+  if (sourceStatusChanged) audit(store, "state_change", "issue", ensurePublicScheduleIssue(store).id, `official source ${sourceId} run status changed to ${runStatus}`);
+  return json(errors.length > 0 && errors.length === records.length && records.length > 0 ? 422 : 200, {
+    status: "public_occurrence_batch_recorded",
+    sourceId,
+    runStatus,
+    parsedCount,
+    received: records.length,
+    created,
+    updated,
+    unchanged,
+    errors
+  });
+}
+
+function officialAssemblySource(sourceId: string | undefined) {
+  if (!sourceId) return undefined;
+  return publicAssemblySources.find((source) => source.id === sourceId && source.kind === "schedule" && source.status === "active");
+}
+
+function ensureOfficialIngestReferences(
+  store: Store,
+  source: NonNullable<ReturnType<typeof officialAssemblySource>>,
+  data: Record<string, unknown>,
+  areaClusterId: string,
+  issueId: string | undefined
+): void {
+  if (readString(data, "regionLabel") !== source.regionLabel) throw new ApiError(400, "official_source_region_mismatch");
+  const allowedAreaIds = new Set([`area_${source.regionCode}`, `area_${source.regionCode}_public`]);
+  if (!allowedAreaIds.has(areaClusterId)) throw new ApiError(400, "official_source_area_invalid");
+  if (!store.areaClusters.some((item) => item.id === areaClusterId)) {
+    store.areaClusters.push({
+      id: areaClusterId,
+      label: `${source.regionLabel} 경찰 공개 집회 일정`,
+      regionLabel: source.regionLabel,
+      targetRefs: []
+    });
+    audit(store, "split", "issue", ensurePublicScheduleIssue(store).id, `official source area created for ${source.regionLabel}`);
+  }
+  if (issueId && isPublicSourceBundleIssueId(issueId)) ensurePublicScheduleIssue(store);
+}
+
+function ensurePublicScheduleIssue(store: Store): Issue {
+  const id = "issue_public_regional_schedule";
+  const existing = store.issues.find((item) => item.id === id);
+  if (existing) return existing;
+  const now = new Date();
+  const issue: Issue = {
+    id,
+    title: "지역별 경찰 공개 집회 일정",
+    normalizedTopicKey: "topic:regional-police-public-assembly-schedules",
+    topicTags: ["지역별", "경찰 공개자료", "집회 예정 정보"],
+    status: "active",
+    firstSeenAt: now,
+    lastUpdatedAt: now
+  };
+  store.issues.push(issue);
+  audit(store, "split", "issue", id, "official police schedule issue created for public-source ingest");
+  return issue;
+}
+
+function officialEvidenceMetadata(
+  source: NonNullable<ReturnType<typeof officialAssemblySource>>,
+  data: Record<string, unknown>,
+  occurrenceId: string,
+  normalizedStatement: string
+): Partial<Evidence> {
+  const sourceUrl = safeOfficialAssemblyUrl(source, readOptionalString(data, "sourceUrl"));
+  return {
+    externalProvider: "official_public_source",
+    externalId: `${source.id}:${readOptionalString(data, "sourceItemId") ?? occurrenceId}`,
+    sourceUrl,
+    publisherLabel: readOptionalString(data, "claimantLabel") ?? `${source.regionLabel}경찰청 공개자료`,
+    sourcePublishedAt: readOptionalDate(data, "sourcePublishedAt") ?? readOptionalDate(data, "evidenceUploadedAt"),
+    sourceCheckedAt: readOptionalDate(data, "sourceCheckedAt") ?? new Date(),
+    sourceTitle: readOptionalString(data, "sourceTitle") ?? readString(data, "title"),
+    publicSummary: normalizedStatement,
+    sourceGranularity: data.sourceGranularity === "individual_schedule" ? "individual_schedule" : "bulletin"
+  };
+}
+
+function safeOfficialAssemblyUrl(source: NonNullable<ReturnType<typeof officialAssemblySource>>, candidate: string | undefined): string {
+  const fallback = source.pageUrl ?? source.url;
+  if (!fallback) throw new ApiError(400, "official_source_url_missing");
+  if (!candidate) return fallback;
+  try {
+    const allowedHost = new URL(fallback).hostname.replace(/^www\./, "");
+    const url = new URL(candidate);
+    if (url.protocol === "https:" && url.hostname.replace(/^www\./, "") === allowedHost) return url.toString();
+  } catch {
+    // Fall back to the registry URL.
+  }
+  return fallback;
+}
+
+function readPublicSourceRunStatus(value: unknown): "success" | "empty" | "failed" {
+  if (value === "success" || value === "empty" || value === "failed") return value;
+  throw new ApiError(400, "public_source_status_invalid");
+}
+
 function recordPublicSourceRefresh(store: Store, data: Record<string, unknown>, resultCount: number): void {
   const sourceId = readOptionalString(data, "sourceId");
   if (!sourceId) return;
   const checkedAt = readOptionalDate(data, "sourceCheckedAt") ?? new Date();
   const sourceBatchSize = readNumber(data, "sourceBatchSize");
   const nextResultCount = sourceBatchSize && sourceBatchSize > 0 ? sourceBatchSize : resultCount;
-  const existing = store.publicSourceRefreshes.find((refresh) => refresh.sourceId === sourceId);
+  recordPublicSourceRun(store, { sourceId, checkedAt, resultCount: nextResultCount, parsedCount: nextResultCount, status: nextResultCount > 0 ? "success" : "empty" });
+}
+
+function recordPublicSourceRun(store: Store, refresh: PublicAssemblySourceRefresh): boolean {
+  const existing = store.publicSourceRefreshes.find((item) => item.sourceId === refresh.sourceId);
+  if (refresh.status !== "failed") refresh.lastSuccessfulAt = refresh.checkedAt;
   if (existing) {
-    existing.checkedAt = checkedAt;
-    existing.resultCount = nextResultCount;
-    return;
+    const changed = existing.status !== refresh.status;
+    const lastSuccessfulAt = refresh.lastSuccessfulAt ?? existing.lastSuccessfulAt;
+    Object.assign(existing, refresh, { lastSuccessfulAt });
+    return changed;
   }
-  store.publicSourceRefreshes.push({ sourceId, checkedAt, resultCount: nextResultCount });
+  store.publicSourceRefreshes.push(refresh);
+  return true;
 }
 
 function postInternalIngestLaws(store: Store, body: unknown): ApiResponse {

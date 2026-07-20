@@ -1677,7 +1677,9 @@ const publicSourceRegistry = readFileSync(resolve(cwd, "packages/schemas/src/pub
 if (!/response\.ok/.test(publicIngestWorker) || !/process\.exit\(1\)/.test(publicIngestWorker)) {
   failures.push("public source ingest worker must fail non-zero when API posts fail");
 }
-if (!/public_source_parse_empty/.test(publicIngestWorker)) failures.push("public source ingest worker must fail when parser returns zero rows");
+if (!/status:\s*payloads\.length > 0 \? "success" : "empty"/.test(publicIngestWorker) || !/source_fetch_or_parse_failed/.test(publicIngestWorker) || !/source_parse_empty/.test(publicIngestWorker)) {
+  failures.push("public source ingest worker must record zero recent rows as empty while isolating fetch or parser failures");
+}
 if (!/sourceId:\s*source\.id/.test(publicIngestWorker) || !/sourceCheckedAt/.test(publicIngestWorker) || !/sourceBatchSize/.test(publicIngestWorker)) {
   failures.push("public source ingest worker must attach registry sourceId, sourceCheckedAt, and sourceBatchSize to each posted payload");
 }
@@ -1685,7 +1687,7 @@ if (!/law_source_parse_empty/.test(publicIngestWorker) || publicIngestWorker.ind
   failures.push("law source ingest dry-run must fail when parser returns zero rows");
 }
 if (!/AbortController/.test(publicIngestWorker)) failures.push("public source ingest worker fetch timeout is missing");
-if (!/\/internal\/ingest\/public-occurrence/.test(publicIngestWorker)) failures.push("public source ingest worker must post public occurrences to the occurrence ingest route");
+if (!/\/internal\/ingest\/public-occurrences\/batch/.test(publicIngestWorker)) failures.push("public source ingest worker must post source-isolated public occurrence batches");
 if (!/policeRegions/.test(publicSourceRegistry) || !/sourceCoverageReport/.test(publicSourceRegistry) || !/PublicAssemblySourceRefresh/.test(publicSourceRegistry) || !/sourceRefreshes/.test(publicSourceRegistry) || !/sourceOperationalDiagnostics/.test(publicSourceRegistry)) failures.push("public source nationwide coverage registry is missing live refresh metadata support");
 if (!/absence_of_public_source_is_not_absence_of_assembly/.test(publicSourceRegistry)) {
   failures.push("public source coverage must not treat source absence as no assembly");

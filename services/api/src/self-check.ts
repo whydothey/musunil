@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { canServePublicRedactedMedia, createApp, createSeedStore, decryptLiveMediaBytes } from "./app.ts";
+import { canServePublicRedactedMedia, createApp, createSeedStore, decryptLiveMediaBytes, emptyStore } from "./app.ts";
 import { enforcePublicWriteRateLimit, publicWriteRateLimitKey, readJsonBody } from "./http-boundary.ts";
 import { assertStorageSmokeKey, storageSmokeKey, storageSmokePrefix } from "./live-media-storage.ts";
 import { decryptSnapshot, encryptSnapshot, hydrateStore } from "./postgres-store.ts";
@@ -1747,6 +1747,61 @@ const ingested = await protectedApp.handle({
 });
 assert.equal(ingested.status, 201);
 assert.equal(JSON.stringify(ingested.body).includes("공개하면 안 되는 원문"), false);
+
+const emptyOfficialStore = emptyStore();
+const emptyOfficialApp = createApp(emptyOfficialStore, {
+  internalApiKey: "test_internal_key",
+  readiness: () => ({ ready: false, checks: [{ id: "launch", ok: false, message: "not launched" }] })
+});
+const officialBatchBody = {
+  sourceId: "jeonnam_today_assembly",
+  checkedAt: "2026-07-20T06:00:00.000Z",
+  status: "success",
+  parsedCount: 1,
+  records: [{
+    id: "occ_jeonnam_2026_07_20_public",
+    issueId: "issue_public_regional_schedule",
+    type: "static_assembly",
+    areaClusterId: "area_jeonnam",
+    regionLabel: "전남",
+    title: "전남 2026. 7. 20. 오늘의 주요집회 공개 일정",
+    startsAt: "2026-07-20T00:00:00.000+09:00",
+    lifecycleState: "UPCOMING",
+    sourceProvenance: "government_or_police",
+    claimantLabel: "전남경찰청 오늘의집회/시위",
+    normalizedStatement: "전남경찰청 게시판에 오늘의 주요집회 예정 정보가 등록되었습니다.",
+    rawText: "외부에 그대로 노출하면 안 되는 경찰 원문",
+    evidenceUploadedAt: "2026-07-20T00:00:00.000+09:00",
+    sourceItemId: "445805",
+    sourceUrl: "https://www.jnpolice.go.kr/?pid=AP0306&mode=view&bbsBid=445805",
+    sourcePublishedAt: "2026-07-20T00:00:00.000+09:00",
+    sourceTitle: "2026. 7. 20. 오늘의 주요집회",
+    sourceGranularity: "bulletin"
+  }]
+};
+const officialBatch = await emptyOfficialApp.handle({ method: "POST", path: "/internal/ingest/public-occurrences/batch", headers: internalHeaders, body: officialBatchBody });
+assert.equal(officialBatch.status, 200);
+assert.equal((officialBatch.body as { created: number }).created, 1);
+assert.equal(emptyOfficialStore.issues.some((item) => item.id === "issue_public_regional_schedule"), true);
+assert.equal(emptyOfficialStore.areaClusters.some((item) => item.id === "area_jeonnam"), true);
+assert.equal(emptyOfficialStore.evidence[0]?.externalProvider, "official_public_source");
+assert.equal(emptyOfficialStore.evidence[0]?.sourceGranularity, "bulletin");
+const officialDetail = await emptyOfficialApp.handle({ method: "GET", path: "/occurrences/occ_jeonnam_2026_07_20_public" });
+assert.equal(officialDetail.status, 200);
+assert.equal(JSON.stringify(officialDetail.body).includes("외부에 그대로 노출하면 안 되는 경찰 원문"), false);
+assert.equal((officialDetail.body as { occurrenceDigest: { officialSources: Array<{ sourceUrl: string }> } }).occurrenceDigest.officialSources[0]?.sourceUrl.includes("jnpolice.go.kr"), true);
+const officialBatchAgain = await emptyOfficialApp.handle({ method: "POST", path: "/internal/ingest/public-occurrences/batch", headers: internalHeaders, body: officialBatchBody });
+assert.equal(officialBatchAgain.status, 200);
+assert.equal((officialBatchAgain.body as { unchanged: number }).unchanged, 1);
+assert.equal(emptyOfficialStore.evidence.length, 1);
+const emptyOfficialBatch = await emptyOfficialApp.handle({
+  method: "POST",
+  path: "/internal/ingest/public-occurrences/batch",
+  headers: internalHeaders,
+  body: { sourceId: "ulsan_today_assembly", checkedAt: "2026-07-20T06:05:00.000Z", status: "empty", parsedCount: 10, records: [] }
+});
+assert.equal(emptyOfficialBatch.status, 200);
+assert.equal(emptyOfficialStore.publicSourceRefreshes.find((item) => item.sourceId === "ulsan_today_assembly")?.status, "empty");
 const duplicateIngest = await protectedApp.handle({
   method: "POST",
   path: "/internal/ingest/public-occurrence",

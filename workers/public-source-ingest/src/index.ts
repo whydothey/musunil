@@ -142,39 +142,116 @@ if (process.argv.includes("--news")) {
   process.exit(0);
 }
 
-const sourcePayloads = [];
-for (const source of ingestablePublicAssemblySources()) {
-  const html = await fetchSourceHtml(source);
-  const sourceCheckedAt = new Date().toISOString();
-  const parsedPayloads = parseSource(source, html).slice(0, 10);
-  const payloads = parsedPayloads.map((payload) => ({ ...payload, sourceId: source.id, sourceCheckedAt, sourceBatchSize: parsedPayloads.length }));
-  sourcePayloads.push({ source, payloads });
-}
-const payloads = sourcePayloads.flatMap((item) => item.payloads);
+type AssemblySourceRun = {
+  source: PublicAssemblySource;
+  checkedAt: string;
+  status: "success" | "empty" | "failed";
+  parsedCount: number;
+  payloads: Array<ReturnType<typeof parseSource>[number] & {
+    sourceId: string;
+    sourceCheckedAt: string;
+    sourceBatchSize: number;
+  }>;
+  errorCode?: string;
+};
 
-if (sourcePayloads.length === 0 || sourcePayloads.some((item) => item.payloads.length === 0)) {
-  console.error(JSON.stringify({ error: "public_source_parse_empty", sources: sourcePayloads.map((item) => ({ id: item.source.id, count: item.payloads.length })) }, null, 2));
-  process.exit(1);
+const sourceRuns: AssemblySourceRun[] = [];
+for (const source of ingestablePublicAssemblySources()) {
+  const checkedAt = new Date().toISOString();
+  try {
+    const html = await fetchSourceHtml(source);
+    const parsedPayloads = parseSource(source, html).slice(0, 10);
+    if (parsedPayloads.length === 0) throw new Error("source_parse_empty");
+    const eligiblePayloads = parsedPayloads.filter((payload) => isWithinOperationalWindow(payload));
+    const payloads = eligiblePayloads.map((payload) => ({
+      ...payload,
+      ...officialSourceMetadata(payload),
+      sourceId: source.id,
+      sourceCheckedAt: checkedAt,
+      sourceBatchSize: eligiblePayloads.length
+    }));
+    sourceRuns.push({
+      source,
+      checkedAt,
+      status: payloads.length > 0 ? "success" : "empty",
+      parsedCount: parsedPayloads.length,
+      payloads
+    });
+  } catch (error) {
+    sourceRuns.push({
+      source,
+      checkedAt,
+      status: "failed",
+      parsedCount: 0,
+      payloads: [],
+      errorCode: publicSourceErrorCode(error)
+    });
+  }
 }
+const payloads = sourceRuns.flatMap((item) => item.payloads);
+const failures = sourceRuns.filter((run) => run.status === "failed");
 
 if (!shouldPost) {
-  console.log(JSON.stringify({ mode: "dry_run", coverage, count: payloads.length, payloads }, null, 2));
+  console.log(JSON.stringify({
+    mode: "dry_run",
+    coverage,
+    count: payloads.length,
+    runs: sourceRuns.map((run) => ({ sourceId: run.source.id, status: run.status, parsedCount: run.parsedCount, resultCount: run.payloads.length, errorCode: run.errorCode })),
+    payloads
+  }, null, 2));
+  if (failures.length > 0) process.exitCode = 1;
 } else {
   const runtime = readRuntime();
   const results = [];
-  for (const payload of payloads) {
-    const response = await fetch(`${runtime.apiBaseUrl}/internal/ingest/public-occurrence`, {
+  for (const run of sourceRuns) {
+    const response = await fetch(`${runtime.apiBaseUrl}/internal/ingest/public-occurrences/batch`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
         "x-musunil-internal-key": runtime.internalApiKey
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        sourceId: run.source.id,
+        checkedAt: run.checkedAt,
+        status: run.status,
+        parsedCount: run.parsedCount,
+        errorCode: run.errorCode,
+        records: run.payloads
+      })
     });
-    results.push({ id: payload.id, status: response.status, ok: response.ok, body: await readResponseBody(response) });
+    results.push({ sourceId: run.source.id, status: response.status, ok: response.ok, body: await readResponseBody(response) });
   }
   console.log(JSON.stringify({ mode: "post", coverage, results }, null, 2));
-  if (results.some((result) => !result.ok)) process.exit(1);
+  if (failures.length > 0 || results.some((result) => !result.ok)) process.exit(1);
+}
+
+function isWithinOperationalWindow(payload: ReturnType<typeof parseSource>[number], now = new Date()): boolean {
+  const reference = new Date(payload.endsAt ?? payload.startsAt);
+  if (!Number.isFinite(reference.getTime())) return false;
+  return reference.getTime() >= now.getTime() - 7 * 24 * 60 * 60 * 1_000;
+}
+
+function officialSourceMetadata(payload: ReturnType<typeof parseSource>[number]) {
+  const fields = Object.fromEntries(payload.rawText.split(";").map((part) => {
+    const separator = part.indexOf("=");
+    return separator > 0 ? [part.slice(0, separator).trim(), part.slice(separator + 1).trim()] : [part.trim(), ""];
+  }));
+  return {
+    sourceItemId: fields.sourceId,
+    sourceUrl: fields.url,
+    sourcePublishedAt: payload.evidenceUploadedAt,
+    sourceTitle: payload.title,
+    sourceGranularity: "bulletin" as const,
+    parserVersion: "1"
+  };
+}
+
+function publicSourceErrorCode(error: unknown): string {
+  const message = error instanceof Error ? error.message : "public_source_failed";
+  if (message.includes("source_fetch_failed")) return message.replace(/[^a-z0-9_:.-]/gi, "_").slice(0, 80);
+  if (message.includes("source_parse_empty")) return "source_parse_empty";
+  if (message.includes("abort")) return "source_fetch_timeout";
+  return "source_fetch_or_parse_failed";
 }
 
 async function readResponseBody(response: Response): Promise<unknown> {

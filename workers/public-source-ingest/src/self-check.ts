@@ -528,7 +528,10 @@ assert.equal(diagnostics.sources.filter((source) => source.kind === "schedule").
 const workerSource = readFileSync(resolve(import.meta.dirname, "index.ts"), "utf8");
 assert.equal(workerSource.includes("process.exit(1)"), true);
 assert.equal(workerSource.includes("response.ok"), true);
-assert.equal(workerSource.includes("public_source_parse_empty"), true);
+assert.equal(workerSource.includes("/internal/ingest/public-occurrences/batch"), true);
+assert.equal(workerSource.includes("source_fetch_or_parse_failed"), true);
+assert.equal(workerSource.includes("source_parse_empty"), true);
+assert.equal(workerSource.includes("isWithinOperationalWindow"), true);
 assert.equal(workerSource.includes("AbortController"), true);
 assert.equal(workerSource.includes("MUSUNIL_API_HOSTPORT"), true);
 assert.equal(workerSource.includes("--diagnose"), true);

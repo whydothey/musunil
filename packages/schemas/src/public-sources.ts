@@ -47,7 +47,11 @@ export type PublicAssemblySourceDiagnostic = {
 export type PublicAssemblySourceRefresh = {
   sourceId: string;
   checkedAt: string | Date;
+  lastSuccessfulAt?: string | Date;
   resultCount?: number;
+  parsedCount?: number;
+  status?: "success" | "empty" | "partial" | "failed";
+  errorCode?: string;
 };
 
 const registryLastCheckedAt = "2026-07-10T02:22:00.000+09:00";
@@ -370,7 +374,8 @@ export function sourceCoverageReport(refreshes: PublicAssemblySourceRefresh[] = 
     const primarySource = activeSchedule ?? candidateSchedule ?? activeStatistics;
     const refreshCadenceHours = primarySource?.refreshCadenceHours ?? discoveryRefreshCadenceHours;
     const lastCheckedAt = latestIso(sources.map((source) => sourceLastCheckedAt(source, refreshes))) ?? registryLastCheckedAt;
-    const nextRefreshAt = addHours(lastCheckedAt, refreshCadenceHours);
+    const lastSuccessfulAt = latestIso(sources.map((source) => sourceLastSuccessfulAt(source, refreshes))) ?? registryLastCheckedAt;
+    const nextRefreshAt = addHours(lastSuccessfulAt, refreshCadenceHours);
     return {
       ...region,
       status,
@@ -383,6 +388,7 @@ export function sourceCoverageReport(refreshes: PublicAssemblySourceRefresh[] = 
       statisticsUrls: sources.filter((source) => source.kind === "statistics" && source.status === "active" && source.url).map((source) => source.url as string),
       refreshCadenceHours,
       lastCheckedAt,
+      lastSuccessfulAt,
       nextRefreshAt,
       freshness: new Date(nextRefreshAt).getTime() >= Date.now() ? "current" : "overdue",
       gapReason: primarySource?.failureReason ?? coverageGapReason(status)
@@ -404,12 +410,19 @@ export function sourceCoverageReport(refreshes: PublicAssemblySourceRefresh[] = 
     sources: publicAssemblySources.map((source) => ({
       ...source,
       lastCheckedAt: sourceLastCheckedAt(source, refreshes),
-      freshness: new Date(addHours(sourceLastCheckedAt(source, refreshes), source.refreshCadenceHours)).getTime() >= Date.now() ? "current" : "overdue"
+      lastSuccessfulAt: sourceLastSuccessfulAt(source, refreshes),
+      freshness: new Date(addHours(sourceLastSuccessfulAt(source, refreshes), source.refreshCadenceHours)).getTime() >= Date.now() ? "current" : "overdue",
+      lastRunStatus: latestSourceRefresh(source.id, refreshes)?.status,
+      lastResultCount: latestSourceRefresh(source.id, refreshes)?.resultCount
     })),
     sourceRefreshes: refreshes.map((refresh) => ({
       sourceId: refresh.sourceId,
       checkedAt: isoString(refresh.checkedAt),
-      resultCount: refresh.resultCount
+      lastSuccessfulAt: refresh.lastSuccessfulAt ? isoString(refresh.lastSuccessfulAt) : undefined,
+      resultCount: refresh.resultCount,
+      parsedCount: refresh.parsedCount,
+      status: refresh.status,
+      errorCode: refresh.errorCode
     }))
   };
 }
@@ -464,6 +477,19 @@ export function sourceOperationalDiagnostics() {
 function sourceLastCheckedAt(source: PublicAssemblySource, refreshes: PublicAssemblySourceRefresh[]): string {
   const matchingRefreshes = refreshes.filter((refresh) => refresh.sourceId === source.id).map((refresh) => isoString(refresh.checkedAt));
   return latestIso([source.lastCheckedAt, ...matchingRefreshes]) ?? source.lastCheckedAt;
+}
+
+function sourceLastSuccessfulAt(source: PublicAssemblySource, refreshes: PublicAssemblySourceRefresh[]): string {
+  const matchingRefreshes = refreshes
+    .filter((refresh) => refresh.sourceId === source.id)
+    .flatMap((refresh) => refresh.lastSuccessfulAt ? [isoString(refresh.lastSuccessfulAt)] : refresh.status !== "failed" ? [isoString(refresh.checkedAt)] : []);
+  return latestIso([source.lastCheckedAt, ...matchingRefreshes]) ?? source.lastCheckedAt;
+}
+
+function latestSourceRefresh(sourceId: string, refreshes: PublicAssemblySourceRefresh[]): PublicAssemblySourceRefresh | undefined {
+  return refreshes
+    .filter((refresh) => refresh.sourceId === sourceId)
+    .sort((left, right) => new Date(right.checkedAt).getTime() - new Date(left.checkedAt).getTime())[0];
 }
 
 function isoString(value: string | Date): string {
