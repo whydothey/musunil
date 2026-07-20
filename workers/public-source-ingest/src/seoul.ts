@@ -5,6 +5,15 @@ export type SeoulAssemblyRow = {
   title: string;
   updatedAt: string;
   readCount: number;
+  content: string;
+};
+
+export type SeoulAssemblyEventRow = {
+  rowNumber: number;
+  timeLabel: string;
+  safeLocationLabel: string;
+  rawLocationText: string;
+  publicLocationKey?: string;
 };
 
 type SeoulListResponse = {
@@ -13,6 +22,7 @@ type SeoulListResponse = {
     assemTitle?: string;
     lastMdfyDat?: string;
     readCount?: string | number;
+    assemConts?: string;
   }>;
 };
 
@@ -24,7 +34,8 @@ export function parseSeoulAssemblyControlList(json: string): SeoulAssemblyRow[] 
       sourceId: row.mgrSeq as string,
       title: (row.assemTitle as string).replace(/\s+/g, " ").trim(),
       updatedAt: formatUpdatedAt(row.lastMdfyDat as string),
-      readCount: Number(row.readCount ?? 0)
+      readCount: Number(row.readCount ?? 0),
+      content: typeof row.assemConts === "string" ? row.assemConts : ""
     }));
 }
 
@@ -45,7 +56,68 @@ export function toSeoulPublicOccurrencePayload(row: SeoulAssemblyRow, now = new 
     normalizedStatement: `서울경찰청 교통정보센터에 ${row.title} 공개 자료가 등록되었습니다.`,
     evidenceStrength: "single_source",
     riskLevel: "low",
-    evidenceUploadedAt: row.updatedAt
+    evidenceUploadedAt: row.updatedAt,
+    sourceItemId: row.sourceId,
+    sourceUrl: sourceUrl(row.sourceId),
+    sourcePublishedAt: row.updatedAt,
+    sourceTitle: row.title,
+    sourceGranularity: "bulletin",
+    parserVersion: "2"
+  };
+}
+
+export function parseSeoulAssemblyEvents(row: SeoulAssemblyRow): SeoulAssemblyEventRow[] {
+  if (!/행사\s*및\s*집회/.test(row.title) || !row.content) return [];
+  const events: SeoulAssemblyEventRow[] = [];
+  for (const match of row.content.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const cells = [...match[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map((cell) => htmlText(cell[1]));
+    if (cells.length < 3 || !/^\d+$/.test(cells[0]) || !/\d{1,2}:\d{2}\s*[~～-]\s*\d{1,2}:\d{2}/.test(cells[1])) continue;
+    const safeLocationLabel = safeLocation(cells[2]);
+    if (!safeLocationLabel) continue;
+    events.push({
+      rowNumber: Number(cells[0]),
+      timeLabel: cells[1].replace(/\s+/g, ""),
+      safeLocationLabel: `${safeLocationLabel} 일대`,
+      rawLocationText: cells[2],
+      publicLocationKey: locationKey(safeLocationLabel)
+    });
+  }
+  return events;
+}
+
+export function toSeoulIndividualOccurrencePayload(
+  bulletin: SeoulAssemblyRow,
+  event: SeoulAssemblyEventRow,
+  now = new Date()
+): PublicOccurrencePayload {
+  const date = dateFromTitle(bulletin.title, bulletin.updatedAt);
+  const [startTime, endTime] = event.timeLabel.split(/[~～-]/);
+  const startsAt = `${date}T${startTime}:00.000+09:00`;
+  const endsAt = `${date}T${endTime}:00.000+09:00`;
+  const sourceItemId = `${bulletin.sourceId}:event:${event.rowNumber}`;
+  return {
+    id: `occ_seoul_${date.replaceAll("-", "_")}_${bulletin.sourceId}_${event.rowNumber}`,
+    type: "static_assembly",
+    areaClusterId: "area_seoul_public",
+    regionLabel: "서울",
+    title: `${event.safeLocationLabel} 집회 일정`,
+    startsAt,
+    endsAt,
+    lifecycleState: new Date(endsAt).getTime() >= now.getTime() ? "UPCOMING" : "ENDED",
+    sourceProvenance: "government_or_police",
+    claimantLabel: "서울경찰청 교통정보센터 집회·통제정보",
+    rawText: `source=서울경찰청 교통정보센터 집회·통제정보; sourceId=${sourceItemId}; url=${sourceUrl(bulletin.sourceId)}; eventTime=${event.timeLabel}; originalLocation=${event.rawLocationText}`,
+    normalizedStatement: `서울경찰청 공개 일정에 ${date} ${event.timeLabel} ${event.safeLocationLabel} 집회 일정이 포함되어 있습니다.`,
+    evidenceStrength: "single_source",
+    riskLevel: "low",
+    evidenceUploadedAt: bulletin.updatedAt,
+    sourceItemId,
+    sourceUrl: sourceUrl(bulletin.sourceId),
+    sourcePublishedAt: bulletin.updatedAt,
+    sourceTitle: bulletin.title,
+    sourceGranularity: "individual_schedule",
+    publicLocationKey: event.publicLocationKey,
+    parserVersion: "2"
   };
 }
 
@@ -62,6 +134,37 @@ function formatUpdatedAt(value: string): string {
 
 function sourceUrl(sourceId: string): string {
   return `https://www.spatic.go.kr/spatic/assem/getInfoView.do?mgrSeq=${sourceId}`;
+}
+
+function htmlText(value: string): string {
+  return value
+    .replace(/<br\s*\/?\s*>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replaceAll("&nbsp;", " ")
+    .replaceAll("&#160;", " ")
+    .replaceAll("&sim;", "~")
+    .replaceAll("&rarr;", "→")
+    .replaceAll("&harr;", "↔")
+    .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Number(code)))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function safeLocation(value: string): string | undefined {
+  const firstAnchor = value
+    .replace(/^\|\s*/, "")
+    .split(/\s*(?:⇄|↔|→|←|※|행진\s*:|에서\s+출발)\s*/u, 1)[0]
+    .replace(/\(\s*(?:인도|차도|내|內)\s*\)/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!firstAnchor || firstAnchor.length > 60) return undefined;
+  return firstAnchor.replace(/\s*(?:앞|내|內)$/u, "").trim();
+}
+
+function locationKey(label: string): string | undefined {
+  if (/서울광장|광화문|세종대로/.test(label)) return "seoul_civic_center_area";
+  if (/서울시교육청/.test(label)) return "seoul_education_office_area";
+  return undefined;
 }
 
 function startOfKoreaDay(date: Date): Date {

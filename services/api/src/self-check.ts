@@ -79,7 +79,7 @@ const approvedLawGroupDetail = await linkReviewApp.handle({ method: "GET", path:
 assert.equal((approvedLawGroupDetail.body as { issues: unknown[] }).issues.length > 0, true);
 const approvedGroup = linkReviewApp.store.lawGroups.find((group) => group.id === firstLawGroupCandidate.lawGroupId);
 const approvedGroupLawDetail = await linkReviewApp.handle({ method: "GET", path: `/laws/${approvedGroup?.billIds[0]}` });
-assert.equal((approvedGroupLawDetail.body as { issues: unknown[] }).issues.length, 0);
+assert.equal((approvedGroupLawDetail.body as { issues: unknown[] }).issues.length > 0, true);
 assert.equal((approvedGroupLawDetail.body as { lawGroup?: { id: string } }).lawGroup?.id, firstLawGroupCandidate.lawGroupId);
 const newsReviewStore = createSeedStore();
 const newsReviewApp = createApp(newsReviewStore, { internalApiKey: "test_internal_key" });
@@ -1530,7 +1530,7 @@ assert.equal(issueTimeline.moments.some((moment) => moment.sourceProvenance && m
 assert.equal(JSON.stringify(issue.body).includes("private/live/2026"), false);
 
 const sourceOnlyIssue = await app.handle({ method: "GET", path: "/issues/issue_public_regional_schedule" });
-assert.equal((sourceOnlyIssue.body as { crowdEstimates: unknown[] }).crowdEstimates.length, 0);
+assert.equal(sourceOnlyIssue.status, 404);
 
 const qualityStore = createSeedStore({ includeMockData: false });
 qualityStore.issues.push({
@@ -1787,9 +1787,13 @@ assert.equal(emptyOfficialStore.areaClusters.some((item) => item.id === "area_je
 assert.equal(emptyOfficialStore.evidence[0]?.externalProvider, "official_public_source");
 assert.equal(emptyOfficialStore.evidence[0]?.sourceGranularity, "bulletin");
 const officialDetail = await emptyOfficialApp.handle({ method: "GET", path: "/occurrences/occ_jeonnam_2026_07_20_public" });
-assert.equal(officialDetail.status, 200);
-assert.equal(JSON.stringify(officialDetail.body).includes("외부에 그대로 노출하면 안 되는 경찰 원문"), false);
-assert.equal((officialDetail.body as { occurrenceDigest: { officialSources: Array<{ sourceUrl: string }> } }).occurrenceDigest.officialSources[0]?.sourceUrl.includes("jnpolice.go.kr"), true);
+assert.equal(officialDetail.status, 404);
+const sourceOnlyHome = await emptyOfficialApp.handle({ method: "GET", path: "/home" });
+assert.equal(JSON.stringify(sourceOnlyHome.body).includes("occ_jeonnam_2026_07_20_public"), false);
+const sourceOnlyMap = await emptyOfficialApp.handle({ method: "GET", path: "/map" });
+assert.equal(JSON.stringify(sourceOnlyMap.body).includes("occ_jeonnam_2026_07_20_public"), false);
+const publicIssuesWithoutSourceBundle = await emptyOfficialApp.handle({ method: "GET", path: "/issues" });
+assert.equal(JSON.stringify(publicIssuesWithoutSourceBundle.body).includes("issue_public_regional_schedule"), false);
 const officialBatchAgain = await emptyOfficialApp.handle({ method: "POST", path: "/internal/ingest/public-occurrences/batch", headers: internalHeaders, body: officialBatchBody });
 assert.equal(officialBatchAgain.status, 200);
 assert.equal((officialBatchAgain.body as { unchanged: number }).unchanged, 1);
@@ -1804,6 +1808,47 @@ assert.equal(emptyOfficialStore.claims.length, 1);
 assert.equal(emptyOfficialStore.evidence.length, 1);
 assert.equal(emptyOfficialStore.occurrences[0]?.title, "전남 7월 20일 주요집회 공개 일정");
 assert.equal(emptyOfficialStore.claims[0]?.normalizedStatement, "전남경찰청 게시판에 7월 20일 주요집회 예정 정보가 등록되었습니다.");
+
+const individualEventBatch = await emptyOfficialApp.handle({
+  method: "POST",
+  path: "/internal/ingest/public-occurrences/batch",
+  headers: internalHeaders,
+  body: {
+    sourceId: "seoul_assembly_control",
+    checkedAt: "2026-07-20T07:15:00.000Z",
+    status: "success",
+    parsedCount: 2,
+    records: [{
+      id: "occ_seoul_2026_07_20_2021_1",
+      type: "static_assembly",
+      areaClusterId: "area_seoul_public",
+      regionLabel: "서울",
+      title: "서울광장 일대 집회 일정",
+      startsAt: "2026-07-20T09:00:00.000+09:00",
+      endsAt: "2026-07-20T14:00:00.000+09:00",
+      lifecycleState: "UPCOMING",
+      sourceProvenance: "government_or_police",
+      claimantLabel: "서울경찰청 교통정보센터 집회·통제정보",
+      normalizedStatement: "서울경찰청 공개 일정에 7월 20일 서울광장 일대 집회 일정이 포함되어 있습니다.",
+      rawText: "비공개 원문: 서울광장→광화문교차로 행진 경로",
+      evidenceUploadedAt: "2026-07-20T07:11:23.000+09:00",
+      sourceItemId: "2021:event:1",
+      sourceUrl: "https://www.spatic.go.kr/spatic/assem/getInfoView.do?mgrSeq=2021",
+      sourcePublishedAt: "2026-07-20T07:11:23.000+09:00",
+      sourceTitle: "7월 20일 (월) 행사 및 집회",
+      sourceGranularity: "individual_schedule",
+      publicLocationKey: "seoul_civic_center_area"
+    }]
+  }
+});
+assert.equal(individualEventBatch.status, 200);
+const individualDetail = await emptyOfficialApp.handle({ method: "GET", path: "/occurrences/occ_seoul_2026_07_20_2021_1" });
+assert.equal(individualDetail.status, 200);
+assert.equal(JSON.stringify(individualDetail.body).includes("광화문교차로 행진 경로"), false);
+assert.equal((individualDetail.body as { occurrence: { publicLocation: { label: string; precision: string } } }).occurrence.publicLocation.label, "서울광장·광화문 일대");
+assert.equal((individualDetail.body as { occurrence: { publicLocation: { label: string; precision: string } } }).occurrence.publicLocation.precision, "area");
+const individualMap = await emptyOfficialApp.handle({ method: "GET", path: "/map" });
+assert.equal((individualMap.body as { geojson: { pins: { features: Array<{ properties: { targetId: string } }> } } }).geojson.pins.features.some((pin) => pin.properties.targetId === "occ_seoul_2026_07_20_2021_1"), true);
 const emptyOfficialBatch = await emptyOfficialApp.handle({
   method: "POST",
   path: "/internal/ingest/public-occurrences/batch",

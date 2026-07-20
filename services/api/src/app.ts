@@ -928,7 +928,7 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
     return getTargetLiveClaims(store, path.split("/")[2], path.split("/")[3]);
   }
   if (request.method === "GET" && path.startsWith("/targets/")) return getTargetDetail(store, path.split("/")[2], path.split("/")[3]);
-  if (request.method === "GET" && path === "/issues") return json(200, { issues: store.issues.map(toPublicIssue) });
+  if (request.method === "GET" && path === "/issues") return json(200, { issues: store.issues.filter((issue) => !isPublicSourceBundleIssue(issue)).map(toPublicIssue) });
   if (request.method === "GET" && path.startsWith("/issues/")) return getIssue(store, path.split("/")[2]);
   if (request.method === "GET" && path.startsWith("/occurrences/")) return getOccurrence(store, path.split("/")[2]);
   if (request.method === "GET" && path.startsWith("/continuous-presences/")) {
@@ -1468,7 +1468,7 @@ function readNested(value: unknown, paths: string[]): unknown {
 }
 
 function homeCards(store: Store) {
-  const occurrenceCards = store.occurrences.map((occurrence) => {
+  const occurrenceCards = store.occurrences.filter((occurrence) => !isSourceOnlyOccurrence(store, occurrence)).map((occurrence) => {
     const claims = publicClaimsForTarget(store, "occurrence", occurrence.id);
     const publicEvidenceIds = new Set(claims.flatMap((claim) => claim.evidenceIds));
     const evidence = store.evidence.filter((item) => publicEvidenceIds.has(item.id));
@@ -1661,9 +1661,18 @@ function isPublicSourceBundleIssue(issue: Issue): boolean {
     || /신고[·\s-]*(공개|개최|통계)|공개\s*(일정|자료)|집회\s*신고\s*통계/.test(text);
 }
 
+function isSourceOnlyOccurrence(store: Store, occurrence: Occurrence): boolean {
+  if (occurrence.publicVisibility === "source_only") return true;
+  if (occurrence.publicVisibility === "public") return false;
+  const officialEvidence = occurrence.evidenceIds
+    .map((id) => store.evidence.find((item) => item.id === id))
+    .filter((item): item is Evidence => Boolean(item?.externalProvider === "official_public_source"));
+  return officialEvidence.length > 0 && officialEvidence.every((item) => (item.sourceGranularity ?? "bulletin") === "bulletin");
+}
+
 function issueTargets(store: Store, issueId: string): Array<{ targetType: TargetType; target: TargetRecord }> {
   return [
-    ...store.occurrences.filter((target) => target.issueId === issueId).map((target) => ({ targetType: "occurrence" as const, target })),
+    ...store.occurrences.filter((target) => target.issueId === issueId && !isSourceOnlyOccurrence(store, target)).map((target) => ({ targetType: "occurrence" as const, target })),
     ...store.continuousPresences.filter((target) => target.issueId === issueId).map((target) => ({ targetType: "continuous_presence" as const, target }))
   ];
 }
@@ -1707,7 +1716,7 @@ function findAreaCluster(store: Store, id: string): AreaCluster | undefined {
 
 function getIssue(store: Store, id: string | undefined): ApiResponse {
   const issue = store.issues.find((item) => item.id === id);
-  if (!issue) return json(404, { error: "issue_not_found" });
+  if (!issue || isPublicSourceBundleIssue(issue)) return json(404, { error: "issue_not_found" });
   const targets = issueTargets(store, issue.id);
   const estimates = crowdEstimatesForIssue(store, issue.id);
   const occurrenceDigests = targets.map(({ targetType, target }) => toOccurrenceDigest(store, targetType as Extract<TargetType, "occurrence" | "continuous_presence">, target.id));
@@ -1730,7 +1739,7 @@ function getIssue(store: Store, id: string | undefined): ApiResponse {
       item: toPublicTarget(targetType, target, publicClaimsForTarget(store, targetType, target.id))
     })),
     occurrences: store.occurrences
-      .filter((occurrence) => occurrence.issueId === issue.id)
+      .filter((occurrence) => occurrence.issueId === issue.id && !isSourceOnlyOccurrence(store, occurrence))
       .map((occurrence) => toPublicOccurrence(occurrence, publicClaimsForTarget(store, "occurrence", occurrence.id))),
     occurrenceDigests
   });
@@ -2102,7 +2111,7 @@ function issueUserConcentration(store: Store, claims: Claim[]): { maxCount: numb
 
 function getOccurrence(store: Store, id: string | undefined): ApiResponse {
   const occurrence = store.occurrences.find((item) => item.id === id);
-  if (!occurrence) return json(404, { error: "occurrence_not_found" });
+  if (!occurrence || isSourceOnlyOccurrence(store, occurrence)) return json(404, { error: "occurrence_not_found" });
   const claims = publicClaimsForTarget(store, "occurrence", occurrence.id);
   const evidenceIds = new Set(claims.flatMap((claim) => claim.evidenceIds));
   return json(200, {
@@ -2117,7 +2126,7 @@ function getTargetDetail(store: Store, targetTypeValue: string | undefined, id: 
   if (!targetTypeValue || !(targetTypes as readonly string[]).includes(targetTypeValue) || !id) return json(404, { error: "target_not_found" });
   const targetType = targetTypeValue as TargetType;
   const target = targetRecord(store, targetType, id);
-  if (!target) return json(404, { error: "target_not_found" });
+  if (!target || (targetType === "occurrence" && isSourceOnlyOccurrence(store, target as Occurrence))) return json(404, { error: "target_not_found" });
   const claims = publicClaimsForTarget(store, targetType, id);
   const evidenceIds = new Set(claims.flatMap((claim) => claim.evidenceIds));
   return json(200, {
@@ -2130,7 +2139,8 @@ function getTargetDetail(store: Store, targetTypeValue: string | undefined, id: 
 function getTargetLiveClaims(store: Store, targetTypeValue: string | undefined, id: string | undefined): ApiResponse {
   if (!targetTypeValue || !(targetTypes as readonly string[]).includes(targetTypeValue) || !id) return json(404, { error: "target_not_found" });
   const targetType = targetTypeValue as TargetType;
-  if (!targetRecord(store, targetType, id)) return json(404, { error: "target_not_found" });
+  const target = targetRecord(store, targetType, id);
+  if (!target || (targetType === "occurrence" && isSourceOnlyOccurrence(store, target as Occurrence))) return json(404, { error: "target_not_found" });
   const liveClaims = targetType === "issue" ? liveClaimsForIssue(store, id) : liveClaimsForTarget(store, targetType, id);
   return json(200, {
     targetType,
@@ -2317,7 +2327,7 @@ type MapOccurrenceUnit = {
 
 function mapOccurrenceUnits(store: Store): MapOccurrenceUnit[] {
   return [
-    ...store.occurrences.map((item) => ({
+    ...store.occurrences.filter((item) => !isSourceOnlyOccurrence(store, item)).map((item) => ({
       id: item.id,
       targetType: "occurrence" as const,
       issueId: item.issueId,
@@ -2576,12 +2586,18 @@ function getLaw(store: Store, id: string | undefined): ApiResponse {
   const law = store.lawItems.find((item) => item.id === id);
   if (!law) return json(404, { error: "law_not_found" });
   const group = store.lawGroups.find((item) => item.id === law.lawGroupId);
+  const links = group ? approvedIssueLawGroupLinks(store).filter((link) => link.lawGroupId === group.id) : [];
+  const linkedIssueIds = new Set(links.map((link) => link.issueId));
+  const linkedIssues = store.issues.filter((issue) => linkedIssueIds.has(issue.id) && !isPublicSourceBundleIssue(issue));
   return json(200, {
     law: toPublicLawItem(store, law),
     lawGroup: group ? toLawGroupCard(store, group) : undefined,
-    issueLinks: [],
-    issues: [],
-    relatedTargets: []
+    issueLinks: links.map(toPublicIssueLawGroupLink),
+    issues: linkedIssues.map(toPublicIssue),
+    relatedTargets: linkedIssues.flatMap((issue) => issueTargets(store, issue.id).map(({ targetType, target }) => ({
+      targetType,
+      item: toPublicTarget(targetType, target, publicClaimsForTarget(store, targetType, target.id))
+    })))
   });
 }
 
@@ -2599,6 +2615,9 @@ function lawCards(store: Store, sort: "interest" | "proposed_desc" = "interest")
 }
 
 function toLawInterestItem(store: Store, law: ReturnType<typeof toPublicLawItem>): LawInterestItem {
+  const linkedIssueIds = law.lawGroupId
+    ? uniqueStrings(approvedIssueLawGroupLinks(store).filter((link) => link.lawGroupId === law.lawGroupId).map((link) => link.issueId))
+    : [];
   return {
     id: law.id,
     source: law.source,
@@ -2615,7 +2634,7 @@ function toLawInterestItem(store: Store, law: ReturnType<typeof toPublicLawItem>
     occurrenceCount: law.occurrenceCount,
     regionCount: law.regionCount,
     interestScore: law.interestScore,
-    linkedIssueIds: []
+    linkedIssueIds
   };
 }
 
@@ -3048,6 +3067,12 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
   const created = !occurrence;
   const topicIssueId = resolveIssueIdForIngest(store, data);
   const officialSource = officialAssemblySource(readOptionalString(data, "sourceId"));
+  const publicVisibility: Occurrence["publicVisibility"] = officialSource
+    ? data.sourceGranularity === "individual_schedule" ? "public" : "source_only"
+    : occurrence?.publicVisibility ?? "public";
+  const publicLocation = officialSource
+    ? publicVisibility === "public" ? officialPublicLocation(officialSource, data) : undefined
+    : occurrence?.publicLocation;
 
   if (officialSource) ensureOfficialIngestReferences(store, officialSource, data, areaClusterId, issueId);
 
@@ -3064,6 +3089,8 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
       areaClusterId,
       regionLabel: readString(data, "regionLabel"),
       title: readString(data, "title"),
+      publicVisibility,
+      publicLocation,
       startsAt: readOptionalDate(data, "startsAt"),
       endsAt: readOptionalDate(data, "endsAt"),
       lifecycleState: readLifecycleState(data, "lifecycleState", "UNKNOWN"),
@@ -3076,12 +3103,20 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
       cluster?.targetRefs.push({ targetType: "occurrence", targetId: id });
     }
   } else {
+    const previousVisibility = occurrence.publicVisibility;
     occurrence.issueId ??= issueId;
     occurrence.title = readString(data, "title");
     occurrence.regionLabel = readString(data, "regionLabel");
     occurrence.startsAt = readOptionalDate(data, "startsAt") ?? occurrence.startsAt;
     occurrence.endsAt = readOptionalDate(data, "endsAt") ?? occurrence.endsAt;
     occurrence.lifecycleState = readLifecycleState(data, "lifecycleState", occurrence.lifecycleState);
+    occurrence.publicVisibility = publicVisibility;
+    occurrence.publicLocation = publicLocation;
+    if (previousVisibility !== publicVisibility) {
+      audit(store, "state_change", "occurrence", id, publicVisibility === "source_only"
+        ? "경찰 게시판 문서를 개별 현장이 아닌 출처 근거로 전환해 공개 목록에서 제외했습니다."
+        : "개별 일정 근거가 확인되어 현장 이벤트를 공개 상태로 전환했습니다.");
+    }
   }
 
   const officialMetadata = officialSource ? officialEvidenceMetadata(officialSource, data, id, normalizedStatement) : undefined;
@@ -3214,6 +3249,22 @@ function postInternalIngestPublicOccurrenceBatch(store: Store, body: unknown): A
 function officialAssemblySource(sourceId: string | undefined) {
   if (!sourceId) return undefined;
   return publicAssemblySources.find((source) => source.id === sourceId && source.kind === "schedule" && source.status === "active");
+}
+
+const officialPublicLocationAllowlist: Record<string, { regionCode: string; lng: number; lat: number; label: string }> = {
+  seoul_civic_center_area: { regionCode: "seoul", lng: 126.978, lat: 37.566, label: "서울광장·광화문 일대" },
+  seoul_education_office_area: { regionCode: "seoul", lng: 126.969, lat: 37.57, label: "서울시교육청 일대" }
+};
+
+function officialPublicLocation(
+  source: NonNullable<ReturnType<typeof officialAssemblySource>>,
+  data: Record<string, unknown>
+): Occurrence["publicLocation"] | undefined {
+  const key = readOptionalString(data, "publicLocationKey");
+  if (!key) return undefined;
+  const location = officialPublicLocationAllowlist[key];
+  if (!location || location.regionCode !== source.regionCode) throw new ApiError(400, "official_source_location_invalid");
+  return { lng: location.lng, lat: location.lat, label: location.label, precision: "area", source: "public_source" };
 }
 
 function ensureOfficialIngestReferences(

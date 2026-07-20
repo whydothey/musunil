@@ -30,6 +30,7 @@ export type PublicOccurrencePayload = {
   sourcePublishedAt?: string;
   sourceTitle?: string;
   sourceGranularity?: "bulletin" | "individual_schedule";
+  publicLocationKey?: string;
   parserVersion?: string;
 };
 

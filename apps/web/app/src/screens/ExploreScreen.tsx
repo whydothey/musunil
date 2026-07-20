@@ -69,7 +69,7 @@ function OfficialScheduleList({ occurrences }: { occurrences: OccurrenceDigest[]
           </Link>
         ))}
       </div>
-      <p>경찰 공개자료를 중립적으로 정리한 목록입니다. 위치가 확인되지 않은 일정은 지도 핀으로 표시하지 않습니다.</p>
+      <p>경찰 게시물 안의 시간·장소 행을 개별 일정으로 분리했습니다. 행진 경로는 표시하지 않고, 안전하게 흐릴 수 있는 위치만 지도에 표시합니다.</p>
     </aside>
   );
 }
