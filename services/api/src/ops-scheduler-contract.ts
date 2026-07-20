@@ -22,8 +22,8 @@ export const opsTaskDefinitions: OpsTaskDefinition[] = [
     cadenceSeconds: 5 * 60,
     retrySeconds: 60,
     priority: 10,
-    command: "pnpm",
-    args: ["dispatch:notifications"],
+    command: "node",
+    args: ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", "workers/notification-dispatch/src/index.ts"],
     needsUserInputs: false
   },
   {
@@ -31,8 +31,8 @@ export const opsTaskDefinitions: OpsTaskDefinition[] = [
     cadenceSeconds: 60 * 60,
     retrySeconds: 5 * 60,
     priority: 20,
-    command: "pnpm",
-    args: ["sources:assemblies:post"],
+    command: "node",
+    args: ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", "workers/public-source-ingest/src/index.ts", "--post"],
     needsUserInputs: false
   },
   {
@@ -40,8 +40,8 @@ export const opsTaskDefinitions: OpsTaskDefinition[] = [
     cadenceSeconds: 12 * 60 * 60,
     retrySeconds: 15 * 60,
     priority: 30,
-    command: "pnpm",
-    args: ["sources:laws:post"],
+    command: "node",
+    args: ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", "workers/public-source-ingest/src/index.ts", "--laws", "--post"],
     needsUserInputs: true
   },
   {
@@ -49,8 +49,8 @@ export const opsTaskDefinitions: OpsTaskDefinition[] = [
     cadenceSeconds: 60 * 60,
     retrySeconds: 10 * 60,
     priority: 32,
-    command: "pnpm",
-    args: ["sources:news:post"],
+    command: "node",
+    args: ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", "workers/public-source-ingest/src/index.ts", "--news", "--post"],
     needsUserInputs: true
   },
   {
@@ -58,8 +58,8 @@ export const opsTaskDefinitions: OpsTaskDefinition[] = [
     cadenceSeconds: 5 * 60,
     retrySeconds: 2 * 60,
     priority: 35,
-    command: "pnpm",
-    args: ["redaction:worker"],
+    command: "node",
+    args: ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", "scripts/redaction-worker.mjs"],
     needsUserInputs: true
   },
   {
@@ -67,8 +67,8 @@ export const opsTaskDefinitions: OpsTaskDefinition[] = [
     cadenceSeconds: 24 * 60 * 60,
     retrySeconds: 30 * 60,
     priority: 40,
-    command: "pnpm",
-    args: ["privacy:purge"],
+    command: "node",
+    args: ["--disable-warning=ExperimentalWarning", "--experimental-strip-types", "scripts/privacy-purge.mjs"],
     needsUserInputs: false
   }
 ];

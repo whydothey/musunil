@@ -14,9 +14,9 @@ assert.deepEqual(opsTaskDefinitions.map((task) => task.cadenceSeconds), [300, 36
 assert.equal(new Set(opsTaskDefinitions.map((task) => task.priority)).size, opsTaskDefinitions.length);
 assert.equal(opsTaskDefinitions.every((task) => task.retrySeconds > 0 && task.retrySeconds < task.cadenceSeconds), true);
 assert.equal(opsLeaseSeconds >= Math.max(...opsTaskDefinitions.map((task) => task.retrySeconds)), true);
-assert.equal(taskById("law_source_ingest")?.args.join(" "), "sources:laws:post");
-assert.equal(taskById("news_source_ingest")?.args.join(" "), "sources:news:post");
-assert.equal(taskById("media_redaction")?.args.join(" "), "redaction:worker");
+assert.equal(taskById("law_source_ingest")?.args.join(" ").includes("workers/public-source-ingest/src/index.ts --laws --post"), true);
+assert.equal(taskById("news_source_ingest")?.args.join(" ").includes("workers/public-source-ingest/src/index.ts --news --post"), true);
+assert.equal(taskById("media_redaction")?.args.join(" ").includes("scripts/redaction-worker.mjs"), true);
 assert.equal(taskById("unknown"), undefined);
 
 const sourceEnv = {

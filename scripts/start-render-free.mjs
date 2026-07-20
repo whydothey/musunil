@@ -31,10 +31,11 @@ for (const signal of ["SIGTERM", "SIGINT"]) {
   process.once(signal, () => stop(signal));
 }
 
-const migrationCode = await run("pnpm", ["db:migrate"], runtimeEnv);
+const nodeArgs = ["--disable-warning=ExperimentalWarning", "--experimental-strip-types"];
+const migrationCode = await run(process.execPath, [...nodeArgs, "services/api/src/migrate.ts"], runtimeEnv);
 if (migrationCode !== 0) process.exit(migrationCode);
 
-apiProcess = spawn("pnpm", ["start:api"], { env: runtimeEnv, stdio: "inherit" });
+apiProcess = spawn(process.execPath, [...nodeArgs, "services/api/src/server.ts"], { env: runtimeEnv, stdio: "inherit" });
 apiProcess.once("error", (error) => {
   console.error(JSON.stringify({ status: "api_spawn_failed", message: error.message }));
   process.exitCode = 1;
@@ -51,7 +52,7 @@ void runSchedulerLoop();
 
 async function runSchedulerLoop() {
   if (stopping) return;
-  schedulerProcess = spawn("pnpm", ["ops:scheduler"], { env: runtimeEnv, stdio: "inherit" });
+  schedulerProcess = spawn(process.execPath, [...nodeArgs, "services/api/src/ops-scheduler.ts"], { env: runtimeEnv, stdio: "inherit" });
   const exitCode = await new Promise((resolve) => {
     schedulerProcess.once("error", () => resolve(1));
     schedulerProcess.once("exit", (code) => resolve(code ?? 1));
