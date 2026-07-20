@@ -432,7 +432,7 @@ const gyeonggiNorthRows = parseGyeonggiNorthTodayAssemblyList(`
 <tr>
   <td>2282</td>
   <td class="sub_line">
-    <a href="#LINK" onclick="javascript:fn_inqire_notice('74744','Assembly_main'); return false;" title="일반글">7.10.(금) 예정 집회</a>
+    <a href="#LINK" onclick="javascript:fn_inqire_notice('74744','Assembly_main'); return false;" title="일반글">7.10.(금) 집회표</a>
   </td>
   <td>정보상황계</td>
   <td>2026-07-09</td>
@@ -449,6 +449,7 @@ const gyeonggiNorthRows = parseGyeonggiNorthTodayAssemblyList(`
 </tr>`);
 assert.equal(gyeonggiNorthRows.length, 2);
 assert.equal(gyeonggiNorthRows[0]?.sourceId, "74744");
+assert.equal(gyeonggiNorthRows[0]?.title, "7.10.(금) 집회표");
 const gyeonggiNorthPayload = toGyeonggiNorthPublicOccurrencePayload(gyeonggiNorthRows[0], new Date("2026-07-10T00:00:00.000+09:00"));
 assert.equal(gyeonggiNorthPayload.id, "occ_gyeonggi_north_2026_07_10_public");
 assert.equal(gyeonggiNorthPayload.areaClusterId, "area_gyeonggi_north");

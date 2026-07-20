@@ -1794,6 +1794,16 @@ const officialBatchAgain = await emptyOfficialApp.handle({ method: "POST", path:
 assert.equal(officialBatchAgain.status, 200);
 assert.equal((officialBatchAgain.body as { unchanged: number }).unchanged, 1);
 assert.equal(emptyOfficialStore.evidence.length, 1);
+const correctedOfficialBatchBody = structuredClone(officialBatchBody);
+correctedOfficialBatchBody.records[0].title = "전남 7월 20일 주요집회 공개 일정";
+correctedOfficialBatchBody.records[0].normalizedStatement = "전남경찰청 게시판에 7월 20일 주요집회 예정 정보가 등록되었습니다.";
+correctedOfficialBatchBody.records[0].sourceTitle = "7월 20일 주요집회";
+const correctedOfficialBatch = await emptyOfficialApp.handle({ method: "POST", path: "/internal/ingest/public-occurrences/batch", headers: internalHeaders, body: correctedOfficialBatchBody });
+assert.equal(correctedOfficialBatch.status, 200);
+assert.equal(emptyOfficialStore.claims.length, 1);
+assert.equal(emptyOfficialStore.evidence.length, 1);
+assert.equal(emptyOfficialStore.occurrences[0]?.title, "전남 7월 20일 주요집회 공개 일정");
+assert.equal(emptyOfficialStore.claims[0]?.normalizedStatement, "전남경찰청 게시판에 7월 20일 주요집회 예정 정보가 등록되었습니다.");
 const emptyOfficialBatch = await emptyOfficialApp.handle({
   method: "POST",
   path: "/internal/ingest/public-occurrences/batch",
