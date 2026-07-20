@@ -3084,19 +3084,32 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
     occurrence.lifecycleState = readLifecycleState(data, "lifecycleState", occurrence.lifecycleState);
   }
 
-  const existingClaim = store.claims.find((claim) => claim.targetType === "occurrence" && claim.targetId === id && claim.normalizedStatement === normalizedStatement);
+  const officialMetadata = officialSource ? officialEvidenceMetadata(officialSource, data, id, normalizedStatement) : undefined;
+  const existingOfficialEvidence = officialMetadata?.externalId
+    ? store.evidence.find((item) => item.externalProvider === "official_public_source" && item.externalId === officialMetadata.externalId)
+    : undefined;
+  const existingClaim = store.claims.find((claim) =>
+    claim.targetType === "occurrence" &&
+    claim.targetId === id &&
+    (claim.normalizedStatement === normalizedStatement || Boolean(existingOfficialEvidence && claim.evidenceIds.includes(existingOfficialEvidence.id)))
+  );
   if (existingClaim) {
+    const corrected = existingClaim.normalizedStatement !== normalizedStatement;
     const rawText = readOptionalString(data, "rawText");
     if (rawText) existingClaim.statement = rawText;
+    existingClaim.normalizedStatement = normalizedStatement;
+    existingClaim.claimantLabel = readOptionalString(data, "claimantLabel") ?? existingClaim.claimantLabel;
+    existingClaim.evidenceStrength = readEvidenceStrength(data, "evidenceStrength", existingClaim.evidenceStrength);
+    existingClaim.riskLevel = readRiskLevel(data, "riskLevel", existingClaim.riskLevel);
     if (officialSource) {
-      const metadata = officialEvidenceMetadata(officialSource, data, id, normalizedStatement);
+      const metadata = officialMetadata!;
       for (const evidenceId of existingClaim.evidenceIds) {
         const existingEvidence = store.evidence.find((item) => item.id === evidenceId && item.evidenceType === "official_doc");
         if (existingEvidence) Object.assign(existingEvidence, metadata);
       }
     }
     recordPublicSourceRefresh(store, data, 1);
-    audit(store, "correction", "occurrence", id, "public occurrence refreshed without duplicate Claim");
+    audit(store, "correction", "occurrence", id, corrected ? "official public occurrence statement corrected without duplicate Claim" : "public occurrence refreshed without duplicate Claim");
     return json(200, {
       status: "public_occurrence_refreshed",
       occurrence: toPublicOccurrence(occurrence, publicClaimsForTarget(store, "occurrence", occurrence.id)),

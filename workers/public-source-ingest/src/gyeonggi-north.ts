@@ -10,14 +10,19 @@ export type GyeonggiNorthAssemblyRow = {
 
 export function parseGyeonggiNorthTodayAssemblyList(html: string): GyeonggiNorthAssemblyRow[] {
   const rows: GyeonggiNorthAssemblyRow[] = [];
-  const rowPattern = /<tr>[\s\S]*?<td>\s*\d+\s*[\s\S]*?<\/td>\s*<td class="sub_line">[\s\S]*?fn_inqire_notice\('(\d+)','Assembly_main'\)[\s\S]*?>([\s\S]*?(?:예정|주요) 집회[\s\S]*?)<\/a>[\s\S]*?<\/td>\s*<td>\s*([^<]+?)\s*<\/td>\s*<td>\s*(\d{4}-\d{2}-\d{2})\s*<\/td>\s*<td>\s*([\s\S]*?)<\/td>/g;
-  for (const match of html.matchAll(rowPattern)) {
+  for (const rowMatch of html.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const rowHtml = rowMatch[1];
+    const link = rowHtml.match(/fn_inqire_notice\('(\d+)','Assembly_main'\)[\s\S]*?>([\s\S]*?)<\/a>/i);
+    const metadata = rowHtml.match(/<td>\s*([^<]+?)\s*<\/td>\s*<td>\s*(\d{4}-\d{2}-\d{2})\s*<\/td>/i);
+    if (!link || !metadata) continue;
+    const title = decodeHtml(stripTags(link[2])).replace(/\s+/g, " ").trim();
+    if (!/집회/.test(title)) continue;
     rows.push({
-      sourceId: match[1],
-      title: decodeHtml(stripTags(match[2])).replace(/\s+/g, " ").trim(),
-      author: decodeHtml(match[3]).trim(),
-      postedAt: match[4],
-      hasAttachment: /add_file|첨부파일|<img/i.test(match[5])
+      sourceId: link[1],
+      title,
+      author: decodeHtml(metadata[1]).trim(),
+      postedAt: metadata[2],
+      hasAttachment: /add_file|첨부파일|<img/i.test(rowHtml)
     });
   }
   return rows;
