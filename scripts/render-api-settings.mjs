@@ -20,7 +20,7 @@ const settings = {
   rootDirectory: "",
   buildCommand: readScalar(apiBlock, "buildCommand") || "Dockerfile RUN pnpm install --frozen-lockfile && pnpm check",
   preDeployCommand: readScalar(apiBlock, "preDeployCommand"),
-  startCommand: readScalar(apiBlock, "startCommand") || "Dockerfile CMD pnpm start:api",
+  startCommand: readScalar(apiBlock, "startCommand") || "Dockerfile CMD pnpm db:migrate && pnpm start:api",
   dockerfilePath: readScalar(apiBlock, "dockerfilePath"),
   dockerContext: readScalar(apiBlock, "dockerContext"),
   healthCheckPath: readScalar(apiBlock, "healthCheckPath"),
@@ -66,7 +66,9 @@ for (const key of ["MUSUNIL_RUNTIME_ENV", "MUSUNIL_INTERNAL_API_KEY", "MUSUNIL_U
 }
 if (settings.runtime !== "docker") failures.push("musunil-api runtime must be docker");
 if (!dockerfile.includes("pnpm install --frozen-lockfile && pnpm check")) failures.push("musunil-api Dockerfile must run pnpm check");
-if (!dockerfile.includes('CMD ["pnpm", "start:api"]')) failures.push("musunil-api Dockerfile must start the API");
+if (!dockerfile.includes('CMD ["sh", "-c", "pnpm db:migrate && exec pnpm start:api"]')) {
+  failures.push("musunil-api Dockerfile must migrate PostgreSQL before starting the API on Render Free");
+}
 if (!/apt-get install[^\n]*ffmpeg/.test(dockerfile)) failures.push("musunil-api Dockerfile must install ffmpeg");
 if (settings.healthCheckPath !== "/ready") failures.push("musunil-api healthCheckPath must be /ready");
 if (!settings.envSummary.fixed.includes("MUSUNIL_USER_INPUTS_FILE_PATH=/etc/secrets/musunil.user-inputs.yaml")) {

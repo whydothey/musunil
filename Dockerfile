@@ -11,4 +11,6 @@ COPY . .
 RUN pnpm install --frozen-lockfile && pnpm check
 
 ENV NODE_ENV=production
-CMD ["pnpm", "start:api"]
+# Render Free does not support a pre-deploy command. The SQL migrations are
+# idempotent, so run them on every container start before accepting traffic.
+CMD ["sh", "-c", "pnpm db:migrate && exec pnpm start:api"]
