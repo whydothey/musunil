@@ -1,0 +1,36 @@
+name: law-db-refresh
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */12 * * *"
+
+concurrency:
+  group: law-db-refresh
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    env:
+      DATABASE_URL: ${{ secrets.MUSUNIL_DATABASE_URL }}
+      MUSUNIL_ASSEMBLY_BILL_API_KEY: ${{ secrets.MUSUNIL_ASSEMBLY_BILL_API_KEY }}
+      MUSUNIL_ASSEMBLY_BILL_API_URL: https://open.assembly.go.kr/portal/openapi/ALLBILLV2
+      MUSUNIL_ASSEMBLY_BILL_ERACO: 제22대
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Apply PostgreSQL migrations
+        run: pnpm db:migrate
+      - name: Refresh official law metadata
+        run: pnpm sources:laws:db-sync
