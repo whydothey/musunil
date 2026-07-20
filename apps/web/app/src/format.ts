@@ -22,6 +22,21 @@ export function lifecycleTone(state: LifecycleState) {
   return "neutral";
 }
 
+export type SchedulePhase = "past" | "current" | "upcoming";
+
+export function schedulePhase(occurrence: Pick<OccurrenceDigest, "startsAt" | "endsAt" | "lifecycleState">, now = Date.now()): SchedulePhase {
+  const startsAt = occurrence.startsAt ? new Date(occurrence.startsAt).getTime() : undefined;
+  const endsAt = occurrence.endsAt ? new Date(occurrence.endsAt).getTime() : undefined;
+  if (occurrence.lifecycleState === "CANCELED" || occurrence.lifecycleState === "ENDED" || occurrence.lifecycleState === "ARCHIVED" || (endsAt !== undefined && endsAt < now)) return "past";
+  if (startsAt !== undefined && startsAt > now) return "upcoming";
+  if (occurrence.lifecycleState === "UPCOMING" && startsAt === undefined) return "upcoming";
+  return "current";
+}
+
+export function schedulePhaseLabel(phase: SchedulePhase) {
+  return ({ past: "지난 일정", current: "진행 중", upcoming: "예정" } satisfies Record<SchedulePhase, string>)[phase];
+}
+
 export function formatRelativeTime(value?: string) {
   if (!value) return "최근 확인 시각 없음";
   const diffMinutes = Math.max(1, Math.round((Date.now() - new Date(value).getTime()) / 60_000));

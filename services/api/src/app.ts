@@ -3065,7 +3065,6 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
   const normalizedStatement = readString(data, "normalizedStatement");
   let occurrence = store.occurrences.find((item) => item.id === id);
   const created = !occurrence;
-  const topicIssueId = resolveIssueIdForIngest(store, data);
   const officialSource = officialAssemblySource(readOptionalString(data, "sourceId"));
   const publicVisibility: Occurrence["publicVisibility"] = officialSource
     ? data.sourceGranularity === "individual_schedule" ? "public" : "source_only"
@@ -3073,10 +3072,12 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
   const publicLocation = officialSource
     ? publicVisibility === "public" ? officialPublicLocation(officialSource, data) : undefined
     : occurrence?.publicLocation;
-
   if (officialSource) ensureOfficialIngestReferences(store, officialSource, data, areaClusterId, issueId);
 
   if (!store.areaClusters.some((item) => item.id === areaClusterId)) throw new ApiError(404, "area_cluster_not_found");
+  const topicIssueId = resolveIssueIdForIngest(store, data) ?? (officialSource && publicVisibility === "public" && publicLocation
+    ? ensureOfficialLocationScheduleIssue(store, publicLocation.label)
+    : undefined);
   if (issueId && isPublicSourceBundleIssueId(issueId) && topicIssueId) issueId = topicIssueId;
   if (issueId && !store.issues.some((item) => item.id === issueId)) throw new ApiError(404, "issue_not_found");
   issueId ??= topicIssueId;
@@ -3104,7 +3105,10 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
     }
   } else {
     const previousVisibility = occurrence.publicVisibility;
-    occurrence.issueId ??= issueId;
+    if (!occurrence.issueId && issueId) {
+      occurrence.issueId = issueId;
+      audit(store, "merge", "occurrence", id, `공개 일정이 확인된 장소 일정 주제 '${issueId}'에 연결되었습니다.`);
+    }
     occurrence.title = readString(data, "title");
     occurrence.regionLabel = readString(data, "regionLabel");
     occurrence.startsAt = readOptionalDate(data, "startsAt") ?? occurrence.startsAt;
@@ -3436,7 +3440,15 @@ function ensureIssue(store: Store, input: IssueTopicInput): Issue {
     lastUpdatedAt: now
   };
   store.issues.push(issue);
+  audit(store, "split", "issue", issue.id, `검증 가능한 공개 자료의 주제 '${input.title}'가 생성되었습니다.`);
   return issue;
+}
+
+function ensureOfficialLocationScheduleIssue(store: Store, locationLabel: string): string {
+  return ensureIssue(store, {
+    title: `${locationLabel} 집회 일정`,
+    topicTags: [locationLabel, "장소별 일정", "집회 일정"]
+  }).id;
 }
 
 function topicFromTitle(rawTitle: string): IssueTopicInput | undefined {
