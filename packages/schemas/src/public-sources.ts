@@ -103,7 +103,7 @@ export const publicAssemblySources: PublicAssemblySource[] = [
     body: "limit=10&offset=0",
     refreshCadenceHours: 24,
     lastCheckedAt: registryLastCheckedAt,
-    notes: "서울경찰청 교통정보센터 집회·통제정보. 공식 JSON 목록을 읽어 게시물 단위 Claim으로 ingest한다."
+    notes: "서울경찰청 교통정보센터 집회·통제정보. 게시물은 출처 Claim으로 보관하고, 본문의 시간·장소 표 행은 개별 Occurrence로 분리한다."
   },
   {
     id: "sejong_today_assembly",

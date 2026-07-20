@@ -13,7 +13,7 @@ import { parseJeonbukTodayAssemblyList, toJeonbukPublicOccurrencePayload } from 
 import { parseJeonnamTodayAssemblyList, toJeonnamPublicOccurrencePayload } from "./jeonnam.ts";
 import { parseDaejeonTodayAssemblyList, toDaejeonPublicOccurrencePayload } from "./daejeon.ts";
 import { parseUlsanTodayAssemblyList, toUlsanPublicOccurrencePayload } from "./ulsan.ts";
-import { parseSeoulAssemblyControlList, toSeoulPublicOccurrencePayload } from "./seoul.ts";
+import { parseSeoulAssemblyControlList, parseSeoulAssemblyEvents, toSeoulIndividualOccurrencePayload, toSeoulPublicOccurrencePayload } from "./seoul.ts";
 import { parseSejongTodayAssemblyList, toSejongPublicOccurrencePayload } from "./sejong.ts";
 import { parseGyeonggiNorthTodayAssemblyList, toGyeonggiNorthPublicOccurrencePayload } from "./gyeonggi-north.ts";
 import { fetchLawPayloads, lawOperationalDiagnostics, readLawRuntime } from "./laws.ts";
@@ -160,7 +160,7 @@ for (const source of ingestablePublicAssemblySources()) {
   const checkedAt = new Date().toISOString();
   try {
     const html = await fetchSourceHtml(source);
-    const parsedPayloads = parseSource(source, html).slice(0, 10);
+    const parsedPayloads = parseSource(source, html).slice(0, 25);
     if (parsedPayloads.length === 0) throw new Error("source_parse_empty");
     const eligiblePayloads = parsedPayloads.filter((payload) => isWithinOperationalWindow(payload));
     const payloads = eligiblePayloads.map((payload) => ({
@@ -237,12 +237,12 @@ function officialSourceMetadata(payload: ReturnType<typeof parseSource>[number])
     return separator > 0 ? [part.slice(0, separator).trim(), part.slice(separator + 1).trim()] : [part.trim(), ""];
   }));
   return {
-    sourceItemId: fields.sourceId,
-    sourceUrl: fields.url,
-    sourcePublishedAt: payload.evidenceUploadedAt,
-    sourceTitle: payload.title,
-    sourceGranularity: "bulletin" as const,
-    parserVersion: "1"
+    sourceItemId: payload.sourceItemId ?? fields.sourceId,
+    sourceUrl: payload.sourceUrl ?? fields.url,
+    sourcePublishedAt: payload.sourcePublishedAt ?? payload.evidenceUploadedAt,
+    sourceTitle: payload.sourceTitle ?? payload.title,
+    sourceGranularity: payload.sourceGranularity ?? ("bulletin" as const),
+    parserVersion: payload.parserVersion ?? "1"
   };
 }
 
@@ -265,7 +265,14 @@ async function readResponseBody(response: Response): Promise<unknown> {
 }
 
 function parseSource(source: PublicAssemblySource, html: string) {
-  if (source.parser === "seoul_assembly_control") return parseSeoulAssemblyControlList(html).map((row) => toSeoulPublicOccurrencePayload(row));
+  if (source.parser === "seoul_assembly_control") {
+    return parseSeoulAssemblyControlList(html)
+      .filter((row) => /행사\s*및\s*집회/.test(row.title))
+      .flatMap((row) => [
+        toSeoulPublicOccurrencePayload(row),
+        ...parseSeoulAssemblyEvents(row).map((event) => toSeoulIndividualOccurrencePayload(row, event))
+      ]);
+  }
   if (source.parser === "sejong_today_assembly") return parseSejongTodayAssemblyList(html).map((row) => toSejongPublicOccurrencePayload(row));
   if (source.parser === "daegu_today_assembly") return parseDaeguTodayAssemblyList(html).map((row) => toPublicOccurrencePayload(row));
   if (source.parser === "gangwon_today_assembly") return parseGangwonTodayAssemblyList(html).map((row) => toGangwonPublicOccurrencePayload(row));

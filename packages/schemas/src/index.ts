@@ -250,6 +250,7 @@ export type Occurrence = {
   areaClusterId: string;
   regionLabel: string;
   title: string;
+  publicVisibility?: "public" | "source_only";
   publicLocation?: PublicLocation;
   startsAt?: Date;
   endsAt?: Date;
