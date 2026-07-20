@@ -206,7 +206,7 @@
 - 기본 OpenFreeMap 외 지도 provider를 쓸 경우 해당 `map.*` 키
 - LIVE 미디어 운영을 위한 `security.media_encryption_key`, `storage.provider`, `storage.bucket`, `storage.region`, `storage.access_key_id`, `storage.secret_access_key`
 - 법 관련 탭 운영을 위한 `public_data_sources.national_assembly_bill_api_key` 또는 `public_data_sources.law_go_kr_oc`
-- 법안 주요 이슈 뉴스 자동 갱신을 위한 NAVER API HUB Client ID/Secret. 키가 없을 때 뉴스 작업만 비활성화되는지 `pnpm sources:news-diagnose`로 확인한다.
+- 법안 주요 이슈 뉴스 자동 갱신은 키 없는 국내 언론사 공식 RSS 묶음을 사용한다. `pnpm sources:news-diagnose`에서 피드 수, 매체 수와 호출 간격 설정을 확인한다.
 - 쓰기 기능 운영을 위한 `identity.portone_store_id`, `identity.portone_identity_channel_key`, `identity.portone_api_secret`
 - LIVE 공개본 생성을 위한 `redaction.engine_smoke_command`는 내장 기본값을 유지한다. 외부 엔진으로 교체할 때만 수정한다.
 - LIVE 현장 인증 운영을 위한 Android Play Integrity service account 또는 iOS App Attest team id와 앱 식별자, `mobile.integrity_smoke_command`

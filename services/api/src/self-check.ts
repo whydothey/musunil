@@ -91,17 +91,16 @@ for (const [index, hostname] of ["news-one.example", "news-two.example"].entries
     path: "/internal/ingest/news",
     headers: internalHeaders,
     body: {
-      provider: "naver_api_hub",
+      provider: "publisher_rss",
       lawGroupId: newsReviewGroup.id,
       coreTopicKey: newsReviewTopic.key,
       sourceTitle: `공개 응답에 노출하면 안 되는 원제목 ${index + 1}`,
       sourceUrl: `https://${hostname}/article-${index + 1}`,
-      aggregatorUrl: `https://news.naver.com/article-${index + 1}`,
       publisherLabel: `테스트매체${index + 1}`,
       publishedAt: new Date(Date.now() - index * 60_000).toISOString(),
       providerItemId: `news-provider-item-${index + 1}`,
       directBillMatch: index === 0,
-      sourceId: "news_naver_api_hub",
+      sourceId: "news_rss_test",
       sourceCheckedAt: new Date().toISOString(),
       sourceBatchSize: 2
     }
@@ -133,7 +132,7 @@ assert.equal((newsIssueDetail.body as { newsArticles: unknown[] }).newsArticles.
 assert.equal(JSON.stringify(newsIssueDetail.body).includes("공개 응답에 노출하면 안 되는 원제목"), false);
 const initialNewsBudget = await newsReviewApp.handle({ method: "GET", path: "/internal/news-ingest-budget", headers: internalHeaders });
 assert.equal((initialNewsBudget.body as { remaining: number }).remaining, 20_000);
-const updatedNewsBudget = await newsReviewApp.handle({ method: "POST", path: "/internal/news-ingest-usage", headers: internalHeaders, body: { provider: "naver_api_hub", month: new Date().toISOString().slice(0, 7), callCount: 24 } });
+const updatedNewsBudget = await newsReviewApp.handle({ method: "POST", path: "/internal/news-ingest-usage", headers: internalHeaders, body: { provider: "publisher_rss", month: new Date().toISOString().slice(0, 7), callCount: 24 } });
 assert.equal((updatedNewsBudget.body as { callCount: number; remaining: number }).callCount, 24);
 assert.equal((updatedNewsBudget.body as { remaining: number }).remaining, 19_976);
 const productionHome = await createApp(productionSeed).handle({ method: "GET", path: "/home" });

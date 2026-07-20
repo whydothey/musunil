@@ -3793,24 +3793,25 @@ function patchAdminLawGroupLink(store: Store, issueId: string | undefined, lawGr
 }
 
 const newsMonthlyCallLimit = 20_000;
+const activeNewsProvider = "publisher_rss" as const;
 
 function getInternalNewsIngestBudget(store: Store): ApiResponse {
   const month = new Date().toISOString().slice(0, 7);
-  const usage = store.newsProviderUsage.find((item) => item.provider === "naver_api_hub" && item.month === month);
+  const usage = store.newsProviderUsage.find((item) => item.provider === activeNewsProvider && item.month === month);
   const callCount = usage?.callCount ?? 0;
-  return json(200, { provider: "naver_api_hub", month, callCount, limit: newsMonthlyCallLimit, remaining: Math.max(0, newsMonthlyCallLimit - callCount) });
+  return json(200, { provider: activeNewsProvider, month, callCount, limit: newsMonthlyCallLimit, remaining: Math.max(0, newsMonthlyCallLimit - callCount) });
 }
 
 function postInternalNewsIngestUsage(store: Store, body: unknown): ApiResponse {
   const data = asObject(body);
-  if (readString(data, "provider") !== "naver_api_hub") throw new ApiError(400, "news_provider_invalid");
+  if (readString(data, "provider") !== activeNewsProvider) throw new ApiError(400, "news_provider_invalid");
   const month = readString(data, "month");
   if (!/^\d{4}-\d{2}$/.test(month) || month !== new Date().toISOString().slice(0, 7)) throw new ApiError(422, "news_usage_month_invalid");
   const callCount = readNumber(data, "callCount");
   if (!callCount || !Number.isInteger(callCount) || callCount < 1 || callCount > 100) throw new ApiError(422, "news_usage_call_count_invalid");
-  let usage = store.newsProviderUsage.find((item) => item.provider === "naver_api_hub" && item.month === month);
+  let usage = store.newsProviderUsage.find((item) => item.provider === activeNewsProvider && item.month === month);
   if (!usage) {
-    usage = { provider: "naver_api_hub", month, callCount: 0, updatedAt: new Date() };
+    usage = { provider: activeNewsProvider, month, callCount: 0, updatedAt: new Date() };
     store.newsProviderUsage.push(usage);
   }
   usage.callCount = Math.min(newsMonthlyCallLimit, usage.callCount + callCount);
@@ -3820,7 +3821,7 @@ function postInternalNewsIngestUsage(store: Store, body: unknown): ApiResponse {
 
 function postInternalIngestNews(store: Store, body: unknown): ApiResponse {
   const data = asObject(body);
-  if (readString(data, "provider") !== "naver_api_hub") throw new ApiError(400, "news_provider_invalid");
+  if (readString(data, "provider") !== activeNewsProvider) throw new ApiError(400, "news_provider_invalid");
   const lawGroupId = readString(data, "lawGroupId");
   const group = store.lawGroups.find((item) => item.id === lawGroupId);
   if (!group) throw new ApiError(404, "law_group_not_found");
@@ -3835,16 +3836,16 @@ function postInternalIngestNews(store: Store, body: unknown): ApiResponse {
   const sourceTitle = readString(data, "sourceTitle").replace(/\s+/g, " ").trim().slice(0, 300);
   const publisherLabel = newsPublisherLabel(readOptionalString(data, "publisherLabel"), sourceUrl);
   const externalId = (readOptionalString(data, "providerItemId") ?? createHash("sha256").update(sourceUrl).digest("hex")).slice(0, 160);
-  let evidence = store.evidence.find((item) => item.externalProvider === "naver_api_hub" && item.externalId === externalId);
+  let evidence = store.evidence.find((item) => item.externalProvider === activeNewsProvider && item.externalId === externalId);
   const created = !evidence;
   if (!evidence) {
     evidence = {
-      id: `evidence_news_${createHash("sha1").update(`naver_api_hub:${externalId}`).digest("hex").slice(0, 16)}`,
+      id: `evidence_news_${createHash("sha1").update(`${activeNewsProvider}:${externalId}`).digest("hex").slice(0, 16)}`,
       evidenceType: "media_link",
       uploadedAt: new Date(),
       redactionStatus: "not_required",
       proofOfPresenceStatus: "material_only",
-      externalProvider: "naver_api_hub",
+      externalProvider: activeNewsProvider,
       externalId,
       sourceUrl,
       aggregatorUrl,

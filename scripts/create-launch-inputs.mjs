@@ -95,12 +95,10 @@ public_data_sources:
   national_assembly_bill_eraco: "제22대"
   law_go_kr_oc: ""
   law_go_kr_base_url: "https://www.law.go.kr/DRF/lawSearch.do"
-  naver_api_hub_client_id: ""
-  naver_api_hub_client_secret: ""
-  naver_api_hub_url: "https://naverapihub.apigw.ntruss.com/search/v1/news"
-  news_initial_lookback_days: 90
-  news_max_results_per_query: 20
-  news_max_queries_per_run: 100
+  news_initial_lookback_days: 30
+  news_max_results_per_feed: 100
+  news_max_feeds_per_run: 7
+  news_min_request_interval_ms: 500
   law_interest_keywords:
     - "집회 및 시위에 관한 법률"
     - "정보통신망법"

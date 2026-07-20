@@ -87,7 +87,7 @@ export type Evidence = {
   deviceIntegrityProofHash?: string;
   deviceAttestationBucket?: string;
   proofOfPresenceStatus?: "pass" | "fail" | "material_only" | "unknown";
-  externalProvider?: "naver_api_hub";
+  externalProvider?: "naver_api_hub" | "publisher_rss";
   externalId?: string;
   sourceUrl?: string;
   aggregatorUrl?: string;
@@ -209,7 +209,7 @@ export type PublicNewsArticle = {
 };
 
 export type NewsProviderUsage = {
-  provider: "naver_api_hub";
+  provider: "naver_api_hub" | "publisher_rss";
   month: string;
   callCount: number;
   updatedAt: Date;

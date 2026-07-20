@@ -19,7 +19,7 @@ import { parseSejongTodayAssemblyList, toSejongPublicOccurrencePayload } from ".
 import { parseGyeonggiNorthTodayAssemblyList, toGyeonggiNorthPublicOccurrencePayload } from "./gyeonggi-north.ts";
 import { ingestablePublicAssemblySources, policeRegions, publicAssemblySources, sourceCoverageReport, sourceOperationalDiagnostics } from "./sources.ts";
 import { fetchLawPayloads, lawOperationalDiagnostics, readLawRuntime } from "./laws.ts";
-import { buildNewsQueries, cleanNewsText, fetchNewsPayloads, newsOperationalDiagnostics, parseNaverNewsResponse, readNewsRuntime } from "./news.ts";
+import { cleanNewsText, fetchNewsPayloads, newsOperationalDiagnostics, parsePublisherRss, readNewsRuntime } from "./news.ts";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -653,14 +653,22 @@ try {
 }
 
 assert.equal(cleanNewsText("<b>공직선거법</b> &quot;개정&quot; &amp; 검토"), '공직선거법 "개정" & 검토');
-const parsedNews = parseNaverNewsResponse({ items: [{ title: "<b>공직선거법</b> 투표관리 강화", originallink: "https://news.example/article", link: "https://news.naver.com/article", description: "투표관리와 투표용지 공급 대응", pubDate: new Date().toUTCString() }] });
+const rssPublishedAt = new Date().toUTCString();
+const parsedNews = parsePublisherRss(`<rss><channel><item><title><![CDATA[<b>공직선거법</b> 투표관리 강화]]></title><link>https://news.example/article</link><description>투표용지 공급 대응</description><pubDate>${rssPublishedAt}</pubDate></item></channel></rss>`);
 assert.equal(parsedNews.length, 1);
 assert.equal(parsedNews[0]?.title, "공직선거법 투표관리 강화");
-const newsRuntime = readNewsRuntime({ public_data_sources: { naver_api_hub_client_id: "client-id", naver_api_hub_client_secret: "client-secret" } }, {});
+const newsRuntime = readNewsRuntime({ public_data_sources: {
+  news_min_request_interval_ms: 0,
+  news_rss_feeds: [
+    { id: "yonhap", publisher_label: "연합뉴스", url: "https://www.yna.co.kr/rss/news.xml" },
+    { id: "hani", publisher_label: "한겨레", url: "https://www.hani.co.kr/rss/" },
+    { id: "sbs", publisher_label: "SBS", url: "https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=01" }
+  ]
+} }, {});
 assert.equal(newsOperationalDiagnostics(newsRuntime).readyForOperationalIngest, true);
 const disabledNewsDiagnostics = newsOperationalDiagnostics(readNewsRuntime({ public_data_sources: {} }, {}));
 assert.equal(disabledNewsDiagnostics.readyForMetadataCheck, true);
-assert.equal(disabledNewsDiagnostics.readyForOperationalIngest, false);
+assert.equal(disabledNewsDiagnostics.readyForOperationalIngest, true);
 const newsGroups = [{
   id: "law-group-election",
   lawName: "공직선거법",
@@ -668,24 +676,21 @@ const newsGroups = [{
   coreTopics: [{ key: "ballot", label: "투표관리 강화", representativeKeywords: ["투표용지", "투표관리"], billCount: 2 }],
   bills: [{ assemblyBillNo: "2219998", proposer: "윤재옥의원 등 10인" }]
 }];
-assert.deepEqual(buildNewsQueries(newsGroups, 10).map((query) => query.coreTopicKey), ["_group", "ballot"]);
+let rssFetchIndex = 0;
 globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
-  assert.equal((init?.headers as Record<string, string>)["X-NCP-APIGW-API-KEY-ID"], "client-id");
-  return new Response(JSON.stringify({ items: [{
-    title: "<b>공직선거법</b> 투표관리 강화 개정안 발의",
-    originallink: "https://news.example/article-2219998",
-    link: "https://news.naver.com/article-2219998",
-    description: "윤재옥 의원이 투표용지 공급 대응과 투표관리 개선을 설명했다.",
-    pubDate: new Date().toUTCString()
-  }] }));
+  const requestedUrl = new URL(String(_input));
+  assert.equal(["www.yna.co.kr", "www.hani.co.kr", "news.sbs.co.kr"].includes(requestedUrl.hostname), true);
+  assert.equal((init?.headers as Record<string, string>).accept.includes("application/rss+xml"), true);
+  rssFetchIndex += 1;
+  return new Response(`<rss><channel><item><title><![CDATA[공직선거법 투표관리 강화 개정안 2219998 발의]]></title><link>https://news-${rssFetchIndex}.example/article-2219998</link><description>투표용지 공급 대응</description><pubDate>${rssPublishedAt}</pubDate></item></channel></rss>`);
 }) as typeof fetch;
 try {
   const newsResult = await fetchNewsPayloads(newsRuntime, newsGroups, 20_000);
-  assert.equal(newsResult.callCount, 2);
-  assert.equal(newsResult.payloads.length, 1);
-  assert.equal(newsResult.payloads[0]?.coreTopicKey, "ballot");
-  assert.equal(newsResult.payloads[0]?.directBillMatch, true);
-  assert.equal(newsResult.payloads[0]?.publisherLabel, "news.example");
+  assert.equal(newsResult.callCount, 3);
+  assert.equal(newsResult.payloads.length, 3);
+  assert.equal(newsResult.payloads.every((payload) => payload.coreTopicKey === "ballot"), true);
+  assert.equal(newsResult.payloads.every((payload) => payload.directBillMatch), true);
+  assert.equal(new Set(newsResult.payloads.map((payload) => payload.publisherLabel)).size, 3);
 } finally {
   globalThis.fetch = originalFetch;
 }
