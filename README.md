@@ -47,7 +47,7 @@ Render Static Site는 `pnpm build:web-static:render`를 사용한다. 이 명령
 
 ## 법안 주요 이슈 뉴스
 
-운영 뉴스는 NAVER API HUB 뉴스 검색만 사용한다. Client ID/Secret은 저장소에 커밋하지 않고 Render cron의 `MUSUNIL_NAVER_API_HUB_CLIENT_ID`, `MUSUNIL_NAVER_API_HUB_CLIENT_SECRET` 또는 git-ignored 사용자 입력 YAML에 둔다.
+운영 뉴스 메타데이터는 별도 키가 필요 없는 국내 언론사 공식 RSS에서 가져온다. 기본 수집원은 연합뉴스·한겨레·SBS·경향신문·조선일보·오마이뉴스·매일경제이며, 원문은 각 언론사 HTTPS 링크로 연결한다.
 
 ```bash
 pnpm sources:news-diagnose
@@ -57,7 +57,7 @@ pnpm admin:news                   # 검토 대기 후보
 pnpm admin:news-candidate <id> -- --approve --reason "독립 매체와 법안 연관성 확인"
 ```
 
-수집기는 법안 그룹 공식명과 핵심 논점을 검색해 최근 90일 결과를 중복 제거하고 월 20,000회에서 자동 중단한다. 기사 원제목은 관리자 검토 응답에만 포함되며, 공개 화면에는 매체·발행일·원문 링크와 법안 논점 기반 중립 요약만 표시한다. 승인 전 뉴스는 공개 API에 나오지 않고, 언론 보도량은 법안 관심도나 알림 점수에 사용하지 않는다.
+수집기는 각 공식 피드의 최신 기사에서 법안 그룹 공식명과 핵심 논점을 로컬 매칭하고 최근 30일 결과를 중복 제거한다. 기사 원제목은 관리자 검토 응답에만 포함되며, 공개 화면에는 매체·발행일·원문 링크와 법안 논점 기반 중립 요약만 표시한다. 승인 전 뉴스는 공개 API에 나오지 않고, 언론 보도량은 법안 관심도나 알림 점수에 사용하지 않는다.
 
 Render Static Site 수동 생성값은 아래 명령으로 `render.yaml`에서 추출한다.
 

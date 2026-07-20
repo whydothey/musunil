@@ -89,10 +89,6 @@ if (process.argv.includes("--laws")) {
 if (process.argv.includes("--news")) {
   const runtime = readRuntime({ requireInternalApiKey: shouldPost });
   const newsRuntime = readNewsRuntime(runtime.config);
-  if (!newsRuntime.clientId || !newsRuntime.clientSecret) {
-    console.log(JSON.stringify({ mode: "news_disabled", reason: "news_source_credentials_missing" }, null, 2));
-    process.exit(0);
-  }
   const lawsResponse = await fetch(`${runtime.apiBaseUrl}/laws`, { headers: { accept: "application/json" } });
   const lawsBody = await readResponseBody(lawsResponse) as { lawGroups?: NewsLawGroup[]; lawInterestItems?: Array<{ lawGroupId?: string; assemblyBillNo?: string; proposer?: string }> };
   if (!lawsResponse.ok) throw new Error(`news_law_groups_fetch_failed:${lawsResponse.status}`);
@@ -104,16 +100,22 @@ if (process.argv.includes("--news")) {
     console.log(JSON.stringify({ mode: "news_skipped", reason: "law_groups_empty" }, null, 2));
     process.exit(0);
   }
-  const budgetResponse = await fetch(`${runtime.apiBaseUrl}/internal/news-ingest-budget`, {
-    headers: { "x-musunil-internal-key": runtime.internalApiKey, accept: "application/json" }
-  });
-  const budget = await readResponseBody(budgetResponse) as { month?: string; remaining?: number };
-  if (!budgetResponse.ok || typeof budget.remaining !== "number" || !budget.month) throw new Error(`news_budget_fetch_failed:${budgetResponse.status}`);
-  if (budget.remaining <= 0) {
-    console.log(JSON.stringify({ mode: "news_budget_exhausted", month: budget.month }, null, 2));
+  let budget: { month?: string; remaining?: number } = { month: new Date().toISOString().slice(0, 7), remaining: 20_000 };
+  if (shouldPost) {
+    const budgetResponse = await fetch(`${runtime.apiBaseUrl}/internal/news-ingest-budget`, {
+      headers: { "x-musunil-internal-key": runtime.internalApiKey, accept: "application/json" }
+    });
+    budget = await readResponseBody(budgetResponse) as { month?: string; remaining?: number };
+    if (!budgetResponse.ok || typeof budget.remaining !== "number" || !budget.month) throw new Error(`news_budget_fetch_failed:${budgetResponse.status}`);
+  }
+  if (typeof budget.remaining !== "number" || !budget.month) throw new Error("news_budget_invalid");
+  const budgetMonth = budget.month;
+  const remainingCalls = budget.remaining;
+  if (remainingCalls <= 0) {
+    console.log(JSON.stringify({ mode: "news_budget_exhausted", month: budgetMonth }, null, 2));
     process.exit(0);
   }
-  const result = await fetchNewsPayloads(newsRuntime, groups, budget.remaining);
+  const result = await fetchNewsPayloads(newsRuntime, groups, remainingCalls);
   if (!shouldPost) {
     console.log(JSON.stringify({ mode: "news_dry_run", groupCount: groups.length, queryCount: result.queryCount, callCount: result.callCount, failures: result.failures, count: result.payloads.length, payloads: result.payloads }, null, 2));
     process.exit(0);
@@ -122,7 +124,7 @@ if (process.argv.includes("--news")) {
     const usageResponse = await fetch(`${runtime.apiBaseUrl}/internal/news-ingest-usage`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-musunil-internal-key": runtime.internalApiKey },
-      body: JSON.stringify({ provider: "naver_api_hub", month: budget.month, callCount: result.callCount })
+      body: JSON.stringify({ provider: "publisher_rss", month: budgetMonth, callCount: result.callCount })
     });
     if (!usageResponse.ok) throw new Error(`news_usage_post_failed:${usageResponse.status}`);
   }
