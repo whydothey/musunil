@@ -65,6 +65,7 @@ export const dataSource: DataSource = {
     const issues = home.issueOverviews || [];
     const occurrences = home.occurrenceDigests || map.occurrenceDigests || [];
     const claimsByIssue: Record<string, PublicClaim[]> = {};
+    const newsByIssue: AppDataset["newsByIssue"] = {};
     return {
       issues,
       occurrences,
@@ -72,6 +73,7 @@ export const dataSource: DataSource = {
       laws: laws.lawInterestItems || [],
       lawGroups: laws.lawGroups || [],
       claimsByIssue,
+      newsByIssue,
       claimsByOccurrence: {},
       map
     };

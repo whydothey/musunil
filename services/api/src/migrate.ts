@@ -30,6 +30,8 @@ function assertRequiredTables(sql: string): void {
     "area_clusters",
     "law_items",
     "issue_law_links",
+    "news_issue_candidates",
+    "news_provider_usage",
     "occurrences",
     "continuous_presences",
     "crowd_estimates",
@@ -69,7 +71,7 @@ function assertRequiredTables(sql: string): void {
   if (!/for update skip locked\s+limit 1/i.test(schedulerSource) || !/renewLease\(task\)/.test(schedulerSource)) {
     throw new Error("operations scheduler must claim one due task with FOR UPDATE SKIP LOCKED and renew its lease.");
   }
-  for (const taskId of ["notification_dispatch", "public_source_ingest", "law_source_ingest", "media_redaction", "privacy_purge"]) {
+  for (const taskId of ["notification_dispatch", "public_source_ingest", "law_source_ingest", "news_source_ingest", "media_redaction", "privacy_purge"]) {
     if (!sql.includes(`'${taskId}'`)) throw new Error(`operations scheduler migration seed is missing: ${taskId}`);
   }
 }

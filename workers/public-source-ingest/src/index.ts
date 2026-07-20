@@ -17,6 +17,7 @@ import { parseSeoulAssemblyControlList, toSeoulPublicOccurrencePayload } from ".
 import { parseSejongTodayAssemblyList, toSejongPublicOccurrencePayload } from "./sejong.ts";
 import { parseGyeonggiNorthTodayAssemblyList, toGyeonggiNorthPublicOccurrencePayload } from "./gyeonggi-north.ts";
 import { fetchLawPayloads, lawOperationalDiagnostics, readLawRuntime } from "./laws.ts";
+import { fetchNewsPayloads, newsOperationalDiagnostics, readNewsRuntime, type NewsLawGroup } from "./news.ts";
 import { ingestablePublicAssemblySources, sourceCoverageReport, sourceOperationalDiagnostics, type PublicAssemblySource } from "./sources.ts";
 import { resolve } from "node:path";
 import { loadUserInputs } from "../../../packages/config/src/index.ts";
@@ -43,6 +44,15 @@ if (process.argv.includes("--laws-diagnose")) {
   console.log(JSON.stringify({ mode: "laws_diagnose", diagnostics }, null, 2));
   if (process.argv.includes("--require-law-metadata") && !diagnostics.readyForMetadataCheck) process.exit(1);
   if (process.argv.includes("--require-law-credentials") && !diagnostics.readyForOperationalIngest) process.exit(1);
+  process.exit(0);
+}
+
+if (process.argv.includes("--news-diagnose")) {
+  const runtime = readRuntime({ requireInternalApiKey: false });
+  const diagnostics = newsOperationalDiagnostics(readNewsRuntime(runtime.config));
+  console.log(JSON.stringify({ mode: "news_diagnose", diagnostics }, null, 2));
+  if (process.argv.includes("--require-news-metadata") && !diagnostics.readyForMetadataCheck) process.exit(1);
+  if (process.argv.includes("--require-news-credentials") && !diagnostics.readyForOperationalIngest) process.exit(1);
   process.exit(0);
 }
 
@@ -73,6 +83,60 @@ if (process.argv.includes("--laws")) {
   const body = await readResponseBody(response);
   console.log(JSON.stringify({ mode: "laws_post", status: response.status, ok: response.ok, body }, null, 2));
   if (!response.ok) process.exit(1);
+  process.exit(0);
+}
+
+if (process.argv.includes("--news")) {
+  const runtime = readRuntime({ requireInternalApiKey: shouldPost });
+  const newsRuntime = readNewsRuntime(runtime.config);
+  if (!newsRuntime.clientId || !newsRuntime.clientSecret) {
+    console.log(JSON.stringify({ mode: "news_disabled", reason: "news_source_credentials_missing" }, null, 2));
+    process.exit(0);
+  }
+  const lawsResponse = await fetch(`${runtime.apiBaseUrl}/laws`, { headers: { accept: "application/json" } });
+  const lawsBody = await readResponseBody(lawsResponse) as { lawGroups?: NewsLawGroup[]; lawInterestItems?: Array<{ lawGroupId?: string; assemblyBillNo?: string; proposer?: string }> };
+  if (!lawsResponse.ok) throw new Error(`news_law_groups_fetch_failed:${lawsResponse.status}`);
+  const groups = (lawsBody.lawGroups ?? []).map((group) => ({
+    ...group,
+    bills: (lawsBody.lawInterestItems ?? []).filter((law) => law.lawGroupId === group.id).map((law) => ({ assemblyBillNo: law.assemblyBillNo, proposer: law.proposer }))
+  }));
+  if (groups.length === 0) {
+    console.log(JSON.stringify({ mode: "news_skipped", reason: "law_groups_empty" }, null, 2));
+    process.exit(0);
+  }
+  const budgetResponse = await fetch(`${runtime.apiBaseUrl}/internal/news-ingest-budget`, {
+    headers: { "x-musunil-internal-key": runtime.internalApiKey, accept: "application/json" }
+  });
+  const budget = await readResponseBody(budgetResponse) as { month?: string; remaining?: number };
+  if (!budgetResponse.ok || typeof budget.remaining !== "number" || !budget.month) throw new Error(`news_budget_fetch_failed:${budgetResponse.status}`);
+  if (budget.remaining <= 0) {
+    console.log(JSON.stringify({ mode: "news_budget_exhausted", month: budget.month }, null, 2));
+    process.exit(0);
+  }
+  const result = await fetchNewsPayloads(newsRuntime, groups, budget.remaining);
+  if (!shouldPost) {
+    console.log(JSON.stringify({ mode: "news_dry_run", groupCount: groups.length, queryCount: result.queryCount, callCount: result.callCount, failures: result.failures, count: result.payloads.length, payloads: result.payloads }, null, 2));
+    process.exit(0);
+  }
+  if (result.callCount > 0) {
+    const usageResponse = await fetch(`${runtime.apiBaseUrl}/internal/news-ingest-usage`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-musunil-internal-key": runtime.internalApiKey },
+      body: JSON.stringify({ provider: "naver_api_hub", month: budget.month, callCount: result.callCount })
+    });
+    if (!usageResponse.ok) throw new Error(`news_usage_post_failed:${usageResponse.status}`);
+  }
+  const results = [];
+  for (const payload of result.payloads) {
+    const response = await fetch(`${runtime.apiBaseUrl}/internal/ingest/news`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-musunil-internal-key": runtime.internalApiKey },
+      body: JSON.stringify(payload)
+    });
+    results.push({ providerItemId: payload.providerItemId, status: response.status, ok: response.ok, body: await readResponseBody(response) });
+  }
+  console.log(JSON.stringify({ mode: "news_post", queryCount: result.queryCount, callCount: result.callCount, failures: result.failures, count: results.length, results }, null, 2));
+  if (result.failures.length > 0 || results.some((item) => !item.ok)) process.exit(1);
   process.exit(0);
 }
 

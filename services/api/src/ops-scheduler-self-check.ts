@@ -6,14 +6,16 @@ assert.deepEqual(opsTaskDefinitions.map((task) => task.id), [
   "notification_dispatch",
   "public_source_ingest",
   "law_source_ingest",
+  "news_source_ingest",
   "media_redaction",
   "privacy_purge"
 ]);
-assert.deepEqual(opsTaskDefinitions.map((task) => task.cadenceSeconds), [300, 3600, 43200, 300, 86400]);
+assert.deepEqual(opsTaskDefinitions.map((task) => task.cadenceSeconds), [300, 3600, 43200, 3600, 300, 86400]);
 assert.equal(new Set(opsTaskDefinitions.map((task) => task.priority)).size, opsTaskDefinitions.length);
 assert.equal(opsTaskDefinitions.every((task) => task.retrySeconds > 0 && task.retrySeconds < task.cadenceSeconds), true);
 assert.equal(opsLeaseSeconds >= Math.max(...opsTaskDefinitions.map((task) => task.retrySeconds)), true);
 assert.equal(taskById("law_source_ingest")?.args.join(" "), "sources:laws:post");
+assert.equal(taskById("news_source_ingest")?.args.join(" "), "sources:news:post");
 assert.equal(taskById("media_redaction")?.args.join(" "), "redaction:worker");
 assert.equal(taskById("unknown"), undefined);
 
@@ -29,6 +31,9 @@ assert.equal(publicSourceEnv.MUSUNIL_INTERNAL_API_KEY, "internal-key");
 const lawEnv = childEnvironment(taskById("law_source_ingest")!, sourceEnv);
 assert.equal(lawEnv.MUSUNIL_USER_INPUTS_B64, "secret-yaml");
 assert.equal(lawEnv.MUSUNIL_USER_INPUTS_FILE_PATH, "/secret/file");
+const newsEnv = childEnvironment(taskById("news_source_ingest")!, sourceEnv);
+assert.equal(newsEnv.MUSUNIL_USER_INPUTS_B64, "secret-yaml");
+assert.equal(newsEnv.MUSUNIL_USER_INPUTS_FILE_PATH, "/secret/file");
 const redactionEnv = childEnvironment(taskById("media_redaction")!, sourceEnv);
 assert.equal(redactionEnv.MUSUNIL_USER_INPUTS_B64, "secret-yaml");
 assert.equal(redactionEnv.MUSUNIL_USER_INPUTS_FILE_PATH, "/secret/file");

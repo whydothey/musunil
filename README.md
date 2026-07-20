@@ -45,6 +45,20 @@ pnpm dev:web
 운영 정적 빌드는 `pnpm build:web-config`로 단일 YAML의 `api.public_base_url`, `map.map_style_url`만 [apps/web/config.js](/Users/mk/Documents/Musunil/apps/web/config.js)에 공개 주입한다.
 Render Static Site는 `pnpm build:web-static:render`를 사용한다. 이 명령은 `MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com`, `MUSUNIL_WRITE_BUILD_INFO=1`, production Vite build, fixture 제거 검사, 정적 manifest, `pnpm check:web-render-build-output` 검사를 한 번에 실행한다. Render build command가 이 단일 명령을 쓰면 `apps/web/public/build-info.json`이 실제 커밋 SHA로 덮어써지고 `apps/web/dist`로 복사된다. 로컬 release check의 `pnpm check:web-render-build-command`는 같은 명령을 실행한 뒤 tracked placeholder를 복원한다.
 
+## 법안 주요 이슈 뉴스
+
+운영 뉴스는 NAVER API HUB 뉴스 검색만 사용한다. Client ID/Secret은 저장소에 커밋하지 않고 Render cron의 `MUSUNIL_NAVER_API_HUB_CLIENT_ID`, `MUSUNIL_NAVER_API_HUB_CLIENT_SECRET` 또는 git-ignored 사용자 입력 YAML에 둔다.
+
+```bash
+pnpm sources:news-diagnose
+pnpm sources:news                 # dry-run
+pnpm sources:news:post            # 비공개 후보 적재
+pnpm admin:news                   # 검토 대기 후보
+pnpm admin:news-candidate <id> -- --approve --reason "독립 매체와 법안 연관성 확인"
+```
+
+수집기는 법안 그룹 공식명과 핵심 논점을 검색해 최근 90일 결과를 중복 제거하고 월 20,000회에서 자동 중단한다. 기사 원제목은 관리자 검토 응답에만 포함되며, 공개 화면에는 매체·발행일·원문 링크와 법안 논점 기반 중립 요약만 표시한다. 승인 전 뉴스는 공개 API에 나오지 않고, 언론 보도량은 법안 관심도나 알림 점수에 사용하지 않는다.
+
 Render Static Site 수동 생성값은 아래 명령으로 `render.yaml`에서 추출한다.
 
 ```bash

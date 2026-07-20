@@ -60,7 +60,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         ...current,
         issues,
         occurrences: mergeById(current.occurrences, detail.occurrenceDigests || []),
-        claimsByIssue: { ...current.claimsByIssue, [id]: detail.claims || [] }
+        claimsByIssue: { ...current.claimsByIssue, [id]: detail.claims || [] },
+        newsByIssue: { ...current.newsByIssue, [id]: detail.newsArticles || [] }
       };
     });
   }, []);

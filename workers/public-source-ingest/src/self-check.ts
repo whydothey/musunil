@@ -19,6 +19,7 @@ import { parseSejongTodayAssemblyList, toSejongPublicOccurrencePayload } from ".
 import { parseGyeonggiNorthTodayAssemblyList, toGyeonggiNorthPublicOccurrencePayload } from "./gyeonggi-north.ts";
 import { ingestablePublicAssemblySources, policeRegions, publicAssemblySources, sourceCoverageReport, sourceOperationalDiagnostics } from "./sources.ts";
 import { fetchLawPayloads, lawOperationalDiagnostics, readLawRuntime } from "./laws.ts";
+import { buildNewsQueries, cleanNewsText, fetchNewsPayloads, newsOperationalDiagnostics, parseNaverNewsResponse, readNewsRuntime } from "./news.ts";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -647,6 +648,44 @@ try {
   assert.equal(lawPayloads.some((payload) => payload.officialUrl?.includes("untrusted.example")), false);
   assert.equal(lawPayloads.some((payload) => payload.source === "law_effective" && payload.lawName === "공직선거법"), true);
   assert.equal(lawPayloads.some((payload) => payload.billTitle === "관계없는 법률안"), false);
+} finally {
+  globalThis.fetch = originalFetch;
+}
+
+assert.equal(cleanNewsText("<b>공직선거법</b> &quot;개정&quot; &amp; 검토"), '공직선거법 "개정" & 검토');
+const parsedNews = parseNaverNewsResponse({ items: [{ title: "<b>공직선거법</b> 투표관리 강화", originallink: "https://news.example/article", link: "https://news.naver.com/article", description: "투표관리와 투표용지 공급 대응", pubDate: new Date().toUTCString() }] });
+assert.equal(parsedNews.length, 1);
+assert.equal(parsedNews[0]?.title, "공직선거법 투표관리 강화");
+const newsRuntime = readNewsRuntime({ public_data_sources: { naver_api_hub_client_id: "client-id", naver_api_hub_client_secret: "client-secret" } }, {});
+assert.equal(newsOperationalDiagnostics(newsRuntime).readyForOperationalIngest, true);
+const disabledNewsDiagnostics = newsOperationalDiagnostics(readNewsRuntime({ public_data_sources: {} }, {}));
+assert.equal(disabledNewsDiagnostics.readyForMetadataCheck, true);
+assert.equal(disabledNewsDiagnostics.readyForOperationalIngest, false);
+const newsGroups = [{
+  id: "law-group-election",
+  lawName: "공직선거법",
+  billTitle: "공직선거법 일부개정법률안",
+  coreTopics: [{ key: "ballot", label: "투표관리 강화", representativeKeywords: ["투표용지", "투표관리"], billCount: 2 }],
+  bills: [{ assemblyBillNo: "2219998", proposer: "윤재옥의원 등 10인" }]
+}];
+assert.deepEqual(buildNewsQueries(newsGroups, 10).map((query) => query.coreTopicKey), ["_group", "ballot"]);
+globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+  assert.equal((init?.headers as Record<string, string>)["X-NCP-APIGW-API-KEY-ID"], "client-id");
+  return new Response(JSON.stringify({ items: [{
+    title: "<b>공직선거법</b> 투표관리 강화 개정안 발의",
+    originallink: "https://news.example/article-2219998",
+    link: "https://news.naver.com/article-2219998",
+    description: "윤재옥 의원이 투표용지 공급 대응과 투표관리 개선을 설명했다.",
+    pubDate: new Date().toUTCString()
+  }] }));
+}) as typeof fetch;
+try {
+  const newsResult = await fetchNewsPayloads(newsRuntime, newsGroups, 20_000);
+  assert.equal(newsResult.callCount, 2);
+  assert.equal(newsResult.payloads.length, 1);
+  assert.equal(newsResult.payloads[0]?.coreTopicKey, "ballot");
+  assert.equal(newsResult.payloads[0]?.directBillMatch, true);
+  assert.equal(newsResult.payloads[0]?.publisherLabel, "news.example");
 } finally {
   globalThis.fetch = originalFetch;
 }

@@ -59,9 +59,9 @@ export async function pingOpsSchedulerSchema(databaseUrl: string): Promise<void>
       `select count(*)::integer as task_count
        from ops_task_leases
        where task_id = any($1::text[])`,
-      [["notification_dispatch", "public_source_ingest", "law_source_ingest", "media_redaction", "privacy_purge"]]
+      [["notification_dispatch", "public_source_ingest", "law_source_ingest", "news_source_ingest", "media_redaction", "privacy_purge"]]
     );
-    if (result.rows[0]?.task_count !== 4) throw new Error("ops scheduler task rows are incomplete");
+    if (result.rows[0]?.task_count !== 6) throw new Error("ops scheduler task rows are incomplete");
   } finally {
     await pool.end();
   }
@@ -119,6 +119,8 @@ export function hydrateStore(store: Store): Store {
   store.lawGroups ??= builtGroups.groups;
   store.lawGroupMemberships ??= builtGroups.memberships;
   store.issueLawGroupLinks ??= [];
+  store.newsIssueCandidates ??= [];
+  store.newsProviderUsage ??= [];
   store.legacyLawTopicAliases ??= {};
   for (const law of store.lawItems ?? []) law.lawGroupId = builtGroups.assignments.get(law.id)?.groupId;
   for (const topic of legacy.lawTopics ?? []) {
@@ -152,6 +154,12 @@ export function hydrateStore(store: Store): Store {
   }
   for (const group of store.lawGroups) group.updatedAt = date(group.updatedAt);
   for (const link of store.issueLawGroupLinks) link.reviewedAt = optionalDate(link.reviewedAt);
+  for (const candidate of store.newsIssueCandidates) {
+    candidate.createdAt = date(candidate.createdAt);
+    candidate.updatedAt = date(candidate.updatedAt);
+    candidate.reviewedAt = optionalDate(candidate.reviewedAt);
+  }
+  for (const usage of store.newsProviderUsage) usage.updatedAt = date(usage.updatedAt);
   for (const occurrence of store.occurrences) {
     occurrence.startsAt = optionalDate(occurrence.startsAt);
     occurrence.endsAt = optionalDate(occurrence.endsAt);
@@ -171,6 +179,7 @@ export function hydrateStore(store: Store): Store {
     evidence.capturedAt = optionalDate(evidence.capturedAt);
     evidence.deviceIntegrityCheckedAt = optionalDate(evidence.deviceIntegrityCheckedAt);
     evidence.redactionCheckedAt = optionalDate(evidence.redactionCheckedAt);
+    evidence.sourcePublishedAt = optionalDate(evidence.sourcePublishedAt);
   }
   for (const subscription of store.subscriptions) subscription.mutedUntil = optionalDate(subscription.mutedUntil);
   for (const notification of store.notificationOutbox) {

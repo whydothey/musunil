@@ -29,6 +29,8 @@ import {
   type LawGroupMembership,
   type LifecycleState,
   type NotificationOutbox,
+  type NewsIssueCandidate,
+  type NewsProviderUsage,
   type Occurrence,
   type OccurrenceDigest,
   type PublicAssemblySourceRefresh,
@@ -50,6 +52,8 @@ export type Store = {
   lawGroups: LawGroup[];
   lawGroupMemberships: LawGroupMembership[];
   issueLawGroupLinks: IssueLawGroupLink[];
+  newsIssueCandidates: NewsIssueCandidate[];
+  newsProviderUsage: NewsProviderUsage[];
   legacyLawTopicAliases: Record<string, string>;
   occurrences: Occurrence[];
   continuousPresences: ContinuousPresence[];
@@ -184,6 +188,8 @@ export function emptyStore(): Store {
     lawGroups: [],
     lawGroupMemberships: [],
     issueLawGroupLinks: [],
+    newsIssueCandidates: [],
+    newsProviderUsage: [],
     legacyLawTopicAliases: {},
     occurrences: [],
     continuousPresences: [],
@@ -826,6 +832,14 @@ export function stripPreviewData(store: Store): Store {
   store.issueLawGroupLinks = store.issueLawGroupLinks
     .filter((item) => issueIds.has(item.issueId) && lawGroupIds.has(item.lawGroupId))
     .map((item) => ({ ...item, claimIds: item.claimIds.filter((id) => claimIds.has(id)) }));
+  store.newsIssueCandidates = store.newsIssueCandidates
+    .filter((item) => lawGroupIds.has(item.lawGroupId) && (!item.issueId || issueIds.has(item.issueId)))
+    .map((item) => ({
+      ...item,
+      pendingEvidenceIds: item.pendingEvidenceIds.filter((id) => evidenceIds.has(id)),
+      approvedEvidenceIds: item.approvedEvidenceIds.filter((id) => evidenceIds.has(id)),
+      rejectedEvidenceIds: item.rejectedEvidenceIds.filter((id) => evidenceIds.has(id))
+    }));
   for (const item of store.occurrences) cleanRefs(item, claimIds, evidenceIds);
   for (const item of store.continuousPresences) cleanRefs(item, claimIds, evidenceIds);
 
@@ -949,6 +963,12 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
   if (request.method === "GET" && path === "/admin/law-group-link-candidates") {
     return withInternalAuth(request, options, () => getAdminLawGroupLinkCandidates(store));
   }
+  if (request.method === "GET" && path === "/admin/news-issue-candidates") {
+    return withInternalAuth(request, options, () => getAdminNewsIssueCandidates(store));
+  }
+  if (request.method === "PATCH" && path.startsWith("/admin/news-issue-candidates/")) {
+    return withInternalAuth(request, options, () => patchAdminNewsIssueCandidate(store, path.split("/")[3], request.body));
+  }
   if (request.method === "PATCH" && path.startsWith("/admin/law-group-links/")) {
     return withInternalAuth(request, options, () => patchAdminLawGroupLink(store, path.split("/")[3], path.split("/")[4], request.body));
   }
@@ -961,6 +981,15 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
   }
   if (request.method === "POST" && path === "/internal/ingest/laws") {
     return withInternalAuth(request, options, () => postInternalIngestLaws(store, request.body));
+  }
+  if (request.method === "POST" && path === "/internal/ingest/news") {
+    return withInternalAuth(request, options, () => postInternalIngestNews(store, request.body));
+  }
+  if (request.method === "GET" && path === "/internal/news-ingest-budget") {
+    return withInternalAuth(request, options, () => getInternalNewsIngestBudget(store));
+  }
+  if (request.method === "POST" && path === "/internal/news-ingest-usage") {
+    return withInternalAuth(request, options, () => postInternalNewsIngestUsage(store, request.body));
   }
   if (request.method === "PATCH" && path.startsWith("/internal/evidence/") && path.endsWith("/device-integrity")) {
     return withInternalAuth(request, options, () => patchInternalDeviceIntegrity(store, path.split("/")[3], request.body));
@@ -1675,6 +1704,7 @@ function getIssue(store: Store, id: string | undefined): ApiResponse {
     regionalCrowdEstimates: regionalCrowdEstimatesForIssue(store, issue.id),
     verificationSignals: issueVerificationSignals(store, issue.id),
     claims: publicClaimsForTarget(store, "issue", issue.id).map(toPublicClaim),
+    newsArticles: publicNewsArticlesForIssue(store, issue.id),
     targets: targets.map(({ targetType, target }) => ({
       targetType,
       item: toPublicTarget(targetType, target, publicClaimsForTarget(store, targetType, target.id))
@@ -2456,10 +2486,9 @@ function getLawGroup(store: Store, id: string | undefined, legacyRoute = false):
   const issueIds = new Set(links.map((link) => link.issueId));
   const cards = homeCards(store);
   const overviewCards = new Map(issueCards(store, cards).map((issue) => [issue.id, issue]));
-  const issues = store.issues.filter((issue) => issueIds.has(issue.id)).map((issue): IssueOverview => {
+  const issues = store.issues.filter((issue) => issueIds.has(issue.id)).map((issue) => {
     const overviewCard = overviewCards.get(issue.id);
-    if (overviewCard) return toIssueOverview(store, overviewCard, cards);
-    return {
+    const overview: IssueOverview = overviewCard ? toIssueOverview(store, overviewCard, cards) : {
       id: issue.id,
       title: issue.title,
       status: issue.status,
@@ -2471,6 +2500,8 @@ function getLawGroup(store: Store, id: string | undefined, legacyRoute = false):
       disputeCount: 0,
       latestUpdatedAt: issue.lastUpdatedAt.toISOString()
     };
+    const newsArticles = publicNewsArticlesForIssue(store, issue.id, group.id);
+    return { ...overview, newsCount: newsArticles.length, recentNews: newsArticles.slice(0, 3) };
   });
   const card = toLawGroupCard(store, group);
   return json(200, { group: card, topic: toLegacyLawTopicCard(card), bills, issueLinks: links.map(toPublicIssueLawGroupLink), issues });
@@ -2500,6 +2531,8 @@ function toLawGroupCard(store: Store, group: LawGroup): LawGroupCard {
   }
   const regions = new Set([...relatedTargets.values()].map(({ target }) => publicTargetRegionLabel(target)).filter(Boolean));
   const claims = publicClaimsForIssueIds(store, issueIds);
+  const nonMediaClaims = claims.filter((claim) => claim.sourceProvenance !== "media_report");
+  const nonMediaIssueCount = [...issueIds].filter((issueId) => issueTargets(store, issueId).length > 0 || publicClaimsForTarget(store, "issue", issueId).some((claim) => claim.sourceProvenance !== "media_report")).length;
   const stageCounts: Record<string, number> = {};
   for (const law of laws) stageCounts[law.stage] = (stageCounts[law.stage] ?? 0) + 1;
   const latestProposedDate = latestDate(laws.map((law) => law.proposedDate))?.toISOString();
@@ -2515,7 +2548,7 @@ function toLawGroupCard(store: Store, group: LawGroup): LawGroupCard {
     linkedIssueCount: issueIds.size,
     occurrenceCount: relatedTargets.size,
     regionCount: regions.size,
-    interestScore: relatedTargets.size * 25 + regions.size * 20 + claims.length * 8 + scheduleProximityScore + issueIds.size * 5
+    interestScore: relatedTargets.size * 25 + regions.size * 20 + nonMediaClaims.length * 8 + scheduleProximityScore + nonMediaIssueCount * 5
   };
 }
 
@@ -3757,6 +3790,307 @@ function patchAdminLawGroupLink(store: Store, issueId: string | undefined, lawGr
   link.reviewNote = readOptionalString(data, "reviewNote");
   audit(store, "state_change", "law_group", link.lawGroupId, `이슈 '${link.issueId}' 그룹 연결 후보가 ${status === "approved" ? "승인" : "거절"}되었습니다.`);
   return json(200, { link });
+}
+
+const newsMonthlyCallLimit = 20_000;
+
+function getInternalNewsIngestBudget(store: Store): ApiResponse {
+  const month = new Date().toISOString().slice(0, 7);
+  const usage = store.newsProviderUsage.find((item) => item.provider === "naver_api_hub" && item.month === month);
+  const callCount = usage?.callCount ?? 0;
+  return json(200, { provider: "naver_api_hub", month, callCount, limit: newsMonthlyCallLimit, remaining: Math.max(0, newsMonthlyCallLimit - callCount) });
+}
+
+function postInternalNewsIngestUsage(store: Store, body: unknown): ApiResponse {
+  const data = asObject(body);
+  if (readString(data, "provider") !== "naver_api_hub") throw new ApiError(400, "news_provider_invalid");
+  const month = readString(data, "month");
+  if (!/^\d{4}-\d{2}$/.test(month) || month !== new Date().toISOString().slice(0, 7)) throw new ApiError(422, "news_usage_month_invalid");
+  const callCount = readNumber(data, "callCount");
+  if (!callCount || !Number.isInteger(callCount) || callCount < 1 || callCount > 100) throw new ApiError(422, "news_usage_call_count_invalid");
+  let usage = store.newsProviderUsage.find((item) => item.provider === "naver_api_hub" && item.month === month);
+  if (!usage) {
+    usage = { provider: "naver_api_hub", month, callCount: 0, updatedAt: new Date() };
+    store.newsProviderUsage.push(usage);
+  }
+  usage.callCount = Math.min(newsMonthlyCallLimit, usage.callCount + callCount);
+  usage.updatedAt = new Date();
+  return getInternalNewsIngestBudget(store);
+}
+
+function postInternalIngestNews(store: Store, body: unknown): ApiResponse {
+  const data = asObject(body);
+  if (readString(data, "provider") !== "naver_api_hub") throw new ApiError(400, "news_provider_invalid");
+  const lawGroupId = readString(data, "lawGroupId");
+  const group = store.lawGroups.find((item) => item.id === lawGroupId);
+  if (!group) throw new ApiError(404, "law_group_not_found");
+  const coreTopicKey = readOptionalString(data, "coreTopicKey") ?? "_group";
+  const coreTopic = group.coreTopics.find((item) => item.key === coreTopicKey);
+  if (coreTopicKey !== "_group" && !coreTopic) throw new ApiError(422, "news_core_topic_invalid");
+
+  const sourceUrl = safeExternalNewsUrl(readString(data, "sourceUrl"))!;
+  const aggregatorUrl = safeExternalNewsUrl(readOptionalString(data, "aggregatorUrl"), true);
+  const sourcePublishedAt = readDate(data, "publishedAt");
+  if (sourcePublishedAt.getTime() > Date.now() + dayMs) throw new ApiError(422, "news_published_at_invalid");
+  const sourceTitle = readString(data, "sourceTitle").replace(/\s+/g, " ").trim().slice(0, 300);
+  const publisherLabel = newsPublisherLabel(readOptionalString(data, "publisherLabel"), sourceUrl);
+  const externalId = (readOptionalString(data, "providerItemId") ?? createHash("sha256").update(sourceUrl).digest("hex")).slice(0, 160);
+  let evidence = store.evidence.find((item) => item.externalProvider === "naver_api_hub" && item.externalId === externalId);
+  const created = !evidence;
+  if (!evidence) {
+    evidence = {
+      id: `evidence_news_${createHash("sha1").update(`naver_api_hub:${externalId}`).digest("hex").slice(0, 16)}`,
+      evidenceType: "media_link",
+      uploadedAt: new Date(),
+      redactionStatus: "not_required",
+      proofOfPresenceStatus: "material_only",
+      externalProvider: "naver_api_hub",
+      externalId,
+      sourceUrl,
+      aggregatorUrl,
+      publisherLabel,
+      sourcePublishedAt,
+      sourceTitle,
+      publicSummary: coreTopic
+        ? `${group.lawName}의 '${coreTopic.label}' 쟁점과 관련된 언론 보도입니다.`
+        : `${group.billTitle} 개정 논의와 관련된 언론 보도입니다.`,
+      newsDirectBillMatch: data.directBillMatch === true
+    };
+    store.evidence.push(evidence);
+  } else {
+    evidence.aggregatorUrl = aggregatorUrl ?? evidence.aggregatorUrl;
+    evidence.publisherLabel = publisherLabel;
+    evidence.sourcePublishedAt = sourcePublishedAt;
+    evidence.sourceTitle = sourceTitle;
+    evidence.newsDirectBillMatch ||= data.directBillMatch === true;
+  }
+
+  const candidateId = `news_candidate_${createHash("sha1").update(`${lawGroupId}:${coreTopicKey}`).digest("hex").slice(0, 16)}`;
+  let candidate = store.newsIssueCandidates.find((item) => item.id === candidateId);
+  if (!candidate) {
+    const now = new Date();
+    candidate = {
+      id: candidateId,
+      lawGroupId,
+      coreTopicKey,
+      suggestedTitle: coreTopic ? `${group.lawName} ${coreTopic.label} 논의` : `${group.lawName} 개정 논의`,
+      pendingEvidenceIds: [],
+      approvedEvidenceIds: [],
+      rejectedEvidenceIds: [],
+      status: "candidate",
+      createdAt: now,
+      updatedAt: now
+    };
+    store.newsIssueCandidates.push(candidate);
+    audit(store, "hold", "news_candidate", candidate.id, `법안 그룹 '${group.billTitle}'의 뉴스 이슈 후보가 비공개로 생성되었습니다.`);
+  }
+  const alreadyReviewed = candidate.approvedEvidenceIds.includes(evidence.id) || candidate.rejectedEvidenceIds.includes(evidence.id);
+  if (!alreadyReviewed && !candidate.pendingEvidenceIds.includes(evidence.id)) {
+    candidate.pendingEvidenceIds.push(evidence.id);
+    candidate.status = "candidate";
+    candidate.updatedAt = new Date();
+    audit(store, "hold", "evidence", evidence.id, "언론 보도 링크를 법안 이슈 후보에 추가하고 검토 전 비공개로 보류했습니다.");
+  }
+  recordPublicSourceRefresh(store, data, 1);
+  return json(created ? 201 : 200, {
+    status: created ? "news_evidence_received" : "news_evidence_refreshed",
+    candidate: toAdminNewsCandidate(store, candidate)
+  });
+}
+
+function getAdminNewsIssueCandidates(store: Store): ApiResponse {
+  return json(200, {
+    candidates: store.newsIssueCandidates
+      .filter((candidate) => candidate.pendingEvidenceIds.length > 0)
+      .map((candidate) => toAdminNewsCandidate(store, candidate))
+  });
+}
+
+function patchAdminNewsIssueCandidate(store: Store, id: string | undefined, body: unknown): ApiResponse {
+  const candidate = store.newsIssueCandidates.find((item) => item.id === id);
+  if (!candidate) return json(404, { error: "news_issue_candidate_not_found" });
+  const data = asObject(body);
+  const status = readString(data, "status");
+  if (status !== "approved" && status !== "rejected") throw new ApiError(400, "news_issue_candidate_status_invalid");
+  const requestedIds = readStringArray(data, "evidenceIds");
+  const selectedIds = requestedIds.length > 0
+    ? candidate.pendingEvidenceIds.filter((evidenceId) => requestedIds.includes(evidenceId))
+    : [...candidate.pendingEvidenceIds];
+  if (selectedIds.length === 0) throw new ApiError(422, "news_issue_candidate_evidence_required");
+  const selectedEvidence = selectedIds
+    .map((evidenceId) => store.evidence.find((item) => item.id === evidenceId && item.evidenceType === "media_link"))
+    .filter((item): item is Evidence => Boolean(item));
+  if (selectedEvidence.length !== selectedIds.length) throw new ApiError(422, "news_issue_candidate_evidence_invalid");
+
+  const now = new Date();
+  candidate.pendingEvidenceIds = candidate.pendingEvidenceIds.filter((evidenceId) => !selectedIds.includes(evidenceId));
+  candidate.status = status;
+  candidate.reviewedAt = now;
+  candidate.updatedAt = now;
+  candidate.reviewNote = readOptionalString(data, "reviewNote");
+  if (status === "rejected") {
+    candidate.rejectedEvidenceIds = uniqueStrings([...candidate.rejectedEvidenceIds, ...selectedIds]);
+    audit(store, "hold", "news_candidate", candidate.id, "뉴스 이슈 후보의 선택된 보도 링크가 공개 연결에서 제외되었습니다.");
+    return json(200, { candidate: toAdminNewsCandidate(store, candidate) });
+  }
+
+  const group = store.lawGroups.find((item) => item.id === candidate.lawGroupId);
+  if (!group) throw new ApiError(404, "law_group_not_found");
+  const coreTopic = group.coreTopics.find((item) => item.key === candidate.coreTopicKey);
+  const normalizedTopicKey = normalizedTopicKeyFor(`law-news-${group.id}-${candidate.coreTopicKey}`);
+  let issue = candidate.issueId ? store.issues.find((item) => item.id === candidate.issueId) : undefined;
+  issue ??= store.issues.find((item) => item.normalizedTopicKey === normalizedTopicKey);
+  if (!issue) {
+    issue = {
+      id: `issue_${createHash("sha1").update(normalizedTopicKey).digest("hex").slice(0, 12)}`,
+      title: candidate.suggestedTitle,
+      normalizedTopicKey,
+      topicTags: uniqueStrings([group.lawName, coreTopic?.label ?? group.billTitle, ...(coreTopic?.representativeKeywords ?? [])]).slice(0, 8),
+      status: selectedEvidence.some((item) => item.sourcePublishedAt && now.getTime() - item.sourcePublishedAt.getTime() <= 30 * dayMs) ? "active" : "quiet",
+      firstSeenAt: earliestDate(selectedEvidence.map((item) => item.sourcePublishedAt)) ?? now,
+      lastUpdatedAt: latestDate(selectedEvidence.map((item) => item.sourcePublishedAt)) ?? now
+    };
+    store.issues.push(issue);
+    audit(store, "split", "issue", issue.id, `검토 승인된 언론 보도를 '${group.billTitle}'의 주요 이슈로 분리했습니다.`);
+  }
+  candidate.issueId = issue.id;
+
+  const claimIds: string[] = [];
+  const approvedPublicSummary = coreTopic
+    ? `${group.lawName}의 '${coreTopic.label}' 쟁점과 관련된 언론 보도입니다.`
+    : `${group.billTitle} 개정 논의와 관련된 언론 보도입니다.`;
+  for (const evidence of selectedEvidence) {
+    let claim = store.claims.find((item) => item.targetType === "issue" && item.targetId === issue!.id && item.evidenceIds.includes(evidence.id));
+    if (!claim) {
+      claim = addClaim(store, {
+        visibility: "public",
+        targetType: "issue",
+        targetId: issue.id,
+        sourceProvenance: "media_report",
+        claimantLabel: evidence.publisherLabel ?? "언론 보도",
+        statement: evidence.sourceTitle ?? "",
+        normalizedStatement: approvedPublicSummary,
+        evidenceStrength: "single_source",
+        riskLevel: "misleading_possible",
+        evidenceIds: [evidence.id]
+      });
+      claim.occurredAt = evidence.sourcePublishedAt;
+      audit(store, "correction", "claim", claim.id, "검토 승인된 언론 보도를 출처가 분리된 Claim으로 공개했습니다.");
+    }
+    claimIds.push(claim.id);
+  }
+  candidate.approvedEvidenceIds = uniqueStrings([...candidate.approvedEvidenceIds, ...selectedIds]);
+  issue.lastUpdatedAt = latestDate([issue.lastUpdatedAt, ...selectedEvidence.map((item) => item.sourcePublishedAt)]) ?? now;
+
+  let link = store.issueLawGroupLinks.find((item) => item.issueId === issue!.id && item.lawGroupId === group.id);
+  if (!link) {
+    link = {
+      issueId: issue.id,
+      lawGroupId: group.id,
+      matchBasis: coreTopic ? "core_topic" : "group_title",
+      confidence: "high",
+      status: "approved",
+      claimIds: [],
+      reviewedAt: now,
+      reviewNote: candidate.reviewNote
+    };
+    store.issueLawGroupLinks.push(link);
+  }
+  link.status = "approved";
+  link.reviewedAt = now;
+  link.reviewNote = candidate.reviewNote;
+  link.claimIds = uniqueStrings([...link.claimIds, ...claimIds]);
+  audit(store, "state_change", "law_group", group.id, `검토 승인된 뉴스 이슈 '${issue.id}'가 법안 그룹에 연결되었습니다.`);
+  return json(200, {
+    candidate: toAdminNewsCandidate(store, candidate),
+    issue: toPublicIssue(issue),
+    newsArticles: publicNewsArticlesForIssue(store, issue.id, group.id)
+  });
+}
+
+function toAdminNewsCandidate(store: Store, candidate: NewsIssueCandidate) {
+  const group = store.lawGroups.find((item) => item.id === candidate.lawGroupId);
+  const topic = group?.coreTopics.find((item) => item.key === candidate.coreTopicKey);
+  const pendingArticles = candidate.pendingEvidenceIds
+    .map((evidenceId) => store.evidence.find((item) => item.id === evidenceId))
+    .filter((item): item is Evidence => Boolean(item))
+    .map((evidence) => ({
+      id: evidence.id,
+      sourceTitle: evidence.sourceTitle,
+      publisherLabel: evidence.publisherLabel,
+      sourceUrl: evidence.sourceUrl,
+      aggregatorUrl: evidence.aggregatorUrl,
+      publishedAt: evidence.sourcePublishedAt?.toISOString(),
+      publicSummary: evidence.publicSummary,
+      directBillMatch: evidence.newsDirectBillMatch === true
+    }));
+  const publisherCount = new Set(pendingArticles.map((item) => item.publisherLabel).filter(Boolean)).size;
+  return {
+    ...candidate,
+    createdAt: candidate.createdAt.toISOString(),
+    updatedAt: candidate.updatedAt.toISOString(),
+    reviewedAt: candidate.reviewedAt?.toISOString(),
+    group: group ? { id: group.id, lawName: group.lawName, billTitle: group.billTitle } : undefined,
+    coreTopic: topic,
+    pendingArticles,
+    eligibility: {
+      eligibleForReview: publisherCount >= 2 || pendingArticles.some((item) => item.directBillMatch),
+      publisherCount,
+      directBillMatch: pendingArticles.some((item) => item.directBillMatch)
+    }
+  };
+}
+
+function publicNewsArticlesForIssue(store: Store, issueId: string, lawGroupId?: string) {
+  const candidates = store.newsIssueCandidates.filter((candidate) => candidate.issueId === issueId && (!lawGroupId || candidate.lawGroupId === lawGroupId));
+  return candidates.flatMap((candidate) => candidate.approvedEvidenceIds.map((evidenceId) => {
+    const evidence = store.evidence.find((item) => item.id === evidenceId);
+    const claim = evidence && store.claims.find((item) => isPublicClaim(item) && item.targetType === "issue" && item.targetId === issueId && item.evidenceIds.includes(evidence.id));
+    const sourceUrl = evidence?.sourceUrl ?? evidence?.aggregatorUrl;
+    if (!evidence || !claim || !sourceUrl || !evidence.sourcePublishedAt || !evidence.publisherLabel) return undefined;
+    return {
+      id: evidence.id,
+      issueId,
+      lawGroupId: candidate.lawGroupId,
+      coreTopicKey: candidate.coreTopicKey,
+      publisherLabel: evidence.publisherLabel,
+      publishedAt: evidence.sourcePublishedAt.toISOString(),
+      summary: claim.normalizedStatement,
+      sourceUrl
+    };
+  })).filter(Boolean).sort((left, right) => new Date(right!.publishedAt).getTime() - new Date(left!.publishedAt).getTime());
+}
+
+function safeExternalNewsUrl(value: string | undefined, optional = false): string | undefined {
+  if (!value) {
+    if (optional) return undefined;
+    throw new ApiError(400, "news_source_url_required");
+  }
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || !url.hostname || url.username || url.password || isPrivateHostname(url.hostname)) throw new Error("unsafe");
+    url.hash = "";
+    return url.toString();
+  } catch {
+    throw new ApiError(422, "news_source_url_invalid");
+  }
+}
+
+function isPrivateHostname(hostname: string): boolean {
+  const normalized = hostname.toLowerCase();
+  return normalized === "localhost" || normalized.endsWith(".local") || normalized === "127.0.0.1" || normalized === "::1" || /^10\.|^192\.168\.|^172\.(1[6-9]|2\d|3[01])\./.test(normalized);
+}
+
+function newsPublisherLabel(candidate: string | undefined, sourceUrl: string): string {
+  const normalized = candidate?.replace(/\s+/g, " ").trim().slice(0, 80);
+  if (normalized) return normalized;
+  return new URL(sourceUrl).hostname.replace(/^www\./, "");
+}
+
+function readStringArray(data: Record<string, unknown>, key: string): string[] {
+  const value = data[key];
+  if (!Array.isArray(value)) return [];
+  return uniqueStrings(value.filter((item): item is string => typeof item === "string" && item.length > 0)).slice(0, 100);
 }
 
 function uniqueStrings(values: string[]): string[] {

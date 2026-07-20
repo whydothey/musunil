@@ -58,6 +58,22 @@ try {
       ...(proofToken ? { redactionProofToken: proofToken } : { redactionProofHash: proofHash })
     });
     console.log(JSON.stringify(result, null, 2));
+  } else if (command === "news") {
+    const candidates = await apiRequest("GET", "/admin/news-issue-candidates");
+    if (hasFlag(args, "json")) console.log(JSON.stringify(candidates, null, 2));
+    else printNewsCandidates(candidates);
+  } else if (command === "news-candidate") {
+    const id = args[0];
+    if (!id) throw new Error("news candidate id is required.");
+    const status = hasFlag(args, "approve") ? "approved" : hasFlag(args, "reject") ? "rejected" : undefined;
+    if (!status) throw new Error("--approve or --reject is required.");
+    const evidenceIds = readOption(args, "evidence-ids")?.split(",").map((item) => item.trim()).filter(Boolean);
+    const result = await apiRequest("PATCH", `/admin/news-issue-candidates/${encodeURIComponent(id)}`, {
+      status,
+      ...(evidenceIds?.length ? { evidenceIds } : {}),
+      reviewNote: readOption(args, "reason") ?? "뉴스 이슈 연결 검토"
+    });
+    console.log(JSON.stringify(result, null, 2));
   } else {
     printUsage();
   }
@@ -144,6 +160,16 @@ function printPrivacyDashboard(dashboard) {
   console.log(`purge_preview raw=${purge.rawStatements ?? 0} precise=${purge.preciseLocationFields ?? 0} originals=${purge.originalMedia ?? 0} upload_buffers=${purge.liveUploadBuffers ?? 0}`);
 }
 
+function printNewsCandidates(payload) {
+  const candidates = Array.isArray(payload.candidates) ? payload.candidates : [];
+  console.log(`news_issue_candidates count=${candidates.length}`);
+  for (const candidate of candidates) {
+    console.log(`${candidate.id} | ${candidate.group?.billTitle ?? candidate.lawGroupId} | ${candidate.coreTopic?.label ?? "법안명 전체"}`);
+    console.log(`  pending=${candidate.pendingArticles?.length ?? 0} publishers=${candidate.eligibility?.publisherCount ?? 0} eligible=${candidate.eligibility?.eligibleForReview === true}`);
+    for (const article of candidate.pendingArticles ?? []) console.log(`  - ${article.publisherLabel} | ${article.publishedAt} | ${article.sourceTitle}`);
+  }
+}
+
 function printUsage() {
   console.log(`Usage:
   pnpm admin:privacy
@@ -157,6 +183,10 @@ function printUsage() {
   pnpm admin:claim <claim_id> -- --hold --reason "privacy review needed"
   pnpm admin:claim <claim_id> -- --statement "정정된 공개 문장" --reason "privacy wording"
   pnpm admin:redaction <evidence_id> -- --url "/media/redacted/clip.webm" --poster-url "/media/redacted/clip-poster.webp" --proof-hash "sha256-..."
+  pnpm admin:news
+  pnpm admin:news -- --json
+  pnpm admin:news-candidate <candidate_id> -- --approve --reason "독립 매체와 법안 연관성 확인"
+  pnpm admin:news-candidate <candidate_id> -- --reject --reason "관련성 부족"
 `);
 }
 
