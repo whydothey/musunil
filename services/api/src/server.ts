@@ -43,7 +43,8 @@ const app = createApp(initialStore, {
 });
 const port = Number(process.env.PORT ?? 4000);
 let shuttingDown = false;
-let persistQueue = Promise.resolve();
+let storeIoQueue = Promise.resolve();
+let nextStoreRefreshAt = Date.now() + 30_000;
 
 const server = createServer(async (req, res) => {
   try {
@@ -51,6 +52,7 @@ const server = createServer(async (req, res) => {
       send(req, res, 204, undefined);
       return;
     }
+    await refreshStoreFromPostgresIfDue();
     if (await sendPublicRedactedMedia(req, res)) return;
     await publicWriteRateLimiter.enforce(req);
     const body = await readJsonBody(req);
@@ -85,7 +87,7 @@ async function shutdown(signal: string): Promise<void> {
   try {
     await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
     await publicWriteRateLimiter.close();
-    await persistQueue.catch(() => undefined);
+    await storeIoQueue.catch(() => undefined);
     if (runtime.databaseUrl) await persistStore();
     console.log(`musunil api shutdown after ${signal}`);
     process.exit(0);
@@ -98,8 +100,25 @@ async function shutdown(signal: string): Promise<void> {
 function persistStore(): Promise<void> {
   const databaseUrl = runtime.databaseUrl;
   if (!databaseUrl) return Promise.resolve();
-  persistQueue = persistQueue.catch(() => undefined).then(() => savePostgresStore(databaseUrl, app.store, runtime.encryptionKey));
-  return persistQueue;
+  nextStoreRefreshAt = Date.now() + 30_000;
+  storeIoQueue = storeIoQueue.catch(() => undefined).then(() => savePostgresStore(databaseUrl, app.store, runtime.encryptionKey));
+  return storeIoQueue;
+}
+
+async function refreshStoreFromPostgresIfDue(): Promise<void> {
+  const databaseUrl = runtime.databaseUrl;
+  if (!databaseUrl || Date.now() < nextStoreRefreshAt) return;
+  nextStoreRefreshAt = Date.now() + 30_000;
+  storeIoQueue = storeIoQueue.catch(() => undefined).then(async () => {
+    const refreshed = await loadPostgresStore(databaseUrl, app.store, runtime.encryptionKey);
+    Object.assign(app.store, runtime.includeMockData ? refreshed : stripPreviewData(refreshed));
+  });
+  try {
+    await storeIoQueue;
+  } catch (error) {
+    nextStoreRefreshAt = Date.now() + 5_000;
+    console.error("postgres store refresh failed", error instanceof Error ? error.message : String(error));
+  }
 }
 
 async function sendPublicRedactedMedia(
