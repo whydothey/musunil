@@ -1595,7 +1595,7 @@ if (!/productionRuntime/.test(apiServer) || !/includeMockData:\s*!productionRunt
 if (!/requireReadyForWrites:\s*runtime\.requireReadyForWrites/.test(apiServer) || !/requireReadyForWrites:\s*production/.test(apiServer) || !/runtime_not_ready/.test(apiApp)) {
   failures.push("production writes must fail closed when runtime is not ready");
 }
-if (!/persistQueue/.test(apiServer)) failures.push("Postgres snapshot writes must be serialized");
+if (!/storeIoQueue/.test(apiServer)) failures.push("Postgres snapshot reads and writes must be serialized");
 if (!/encryptionKey/.test(apiServer) || !/savePostgresStore\(databaseUrl, app\.store, runtime\.encryptionKey\)/.test(apiServer)) {
   failures.push("Postgres snapshot encryption key wiring is missing");
 }
