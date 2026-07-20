@@ -30,7 +30,13 @@ export async function getIssueDetail(id: string): Promise<IssueDetailData> {
 }
 
 export async function getOccurrenceDetail(id: string): Promise<OccurrenceDetailData> {
-  return request<OccurrenceDetailData>(`/occurrences/${encodeURIComponent(id)}`);
+  const detail = await request<OccurrenceDetailData>(`/occurrences/${encodeURIComponent(id)}`);
+  if (!detail.occurrenceDigest.officialSources?.length) return detail;
+  return {
+    ...detail,
+    occurrenceDigest: sanitizeOfficialScheduleOccurrence(detail.occurrenceDigest),
+    claims: detail.claims.map((claim) => ({ ...claim, normalizedStatement: trimBoardRowLeak(claim.normalizedStatement) }))
+  };
 }
 
 export async function getContinuousPresenceDetail(id: string): Promise<OccurrenceDetailData> {
@@ -63,7 +69,7 @@ export const dataSource: DataSource = {
     };
     if (results.every((result) => result.status === "rejected")) throw new Error("service_unavailable");
     const issues = home.issueOverviews || [];
-    const occurrences = home.occurrenceDigests || map.occurrenceDigests || [];
+    const occurrences = (home.occurrenceDigests || map.occurrenceDigests || []).map(sanitizeOfficialScheduleOccurrence);
     const claimsByIssue: Record<string, PublicClaim[]> = {};
     const newsByIssue: AppDataset["newsByIssue"] = {};
     return {
@@ -84,5 +90,19 @@ export const dataSource: DataSource = {
   },
   loadLawGroup: getLawGroupDetail
 };
+
+function sanitizeOfficialScheduleOccurrence(occurrence: OccurrenceDigest): OccurrenceDigest {
+  if (!occurrence.officialSources?.length) return occurrence;
+  return { ...occurrence, title: trimBoardRowLeak(occurrence.title) };
+}
+
+function trimBoardRowLeak(value: string): string {
+  const marker = value.search(/\s+정보상황계\s+\d{4}-\d{2}-\d{2}\b/);
+  if (marker < 0) return value;
+  const prefix = value.slice(0, marker).trim();
+  if (value.includes("게시물이 등록되었습니다")) return `${prefix} 공개 일정 게시물이 등록되었습니다.`;
+  if (value.includes("공개 일정")) return `${prefix} 공개 일정`;
+  return prefix;
+}
 
 export default dataSource;
