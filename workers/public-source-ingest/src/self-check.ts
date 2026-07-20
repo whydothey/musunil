@@ -401,15 +401,20 @@ const seoulEventRows = parseSeoulAssemblyControlList(JSON.stringify({
       <tr><td>연번</td><td>시간</td><td>장소 및 행진</td></tr>
       <tr><td>1</td><td>09:00 &sim; 14:00</td><td>서울광장 內 (인도) ⇄ 광화문교차로 ※ 행진 : 서울광장서측 &rarr; 세종대로사거리</td></tr>
       <tr><td>2</td><td>11:00 &sim; 13:00</td><td><br>서울시교육청 앞 (인도)</td></tr>
+      <tr><td>3</td><td>11:30 &sim; 13:30</td><td>종로구 동화면세점 ~ 대한문 (2 개차로)</td></tr>
     </tbody></table>`
   }]
 }));
 const seoulEvents = parseSeoulAssemblyEvents(seoulEventRows[0]);
-assert.equal(seoulEvents.length, 2);
+assert.equal(seoulEvents.length, 3);
 assert.equal(seoulEvents[0]?.safeLocationLabel, "서울광장 일대");
 assert.equal(seoulEvents[0]?.rawLocationText.includes("세종대로사거리"), true);
 assert.equal(seoulEvents[0]?.publicLocationKey, "seoul_civic_center_area");
 assert.equal(seoulEvents[1]?.safeLocationLabel, "서울시교육청 일대");
+assert.equal(seoulEvents[2]?.safeLocationLabel, "종로구 동화면세점 일대");
+assert.equal(seoulEvents[2]?.safeLocationLabel.includes("대한문"), false);
+assert.equal(seoulEvents[2]?.safeLocationLabel.includes("개차로"), false);
+assert.equal(seoulEvents[2]?.publicLocationKey, "seoul_civic_center_area");
 const seoulEventPayload = toSeoulIndividualOccurrencePayload(seoulEventRows[0], seoulEvents[0], new Date("2026-07-20T08:00:00.000+09:00"));
 assert.equal(seoulEventPayload.id, "occ_seoul_2026_07_20_2021_1");
 assert.equal(seoulEventPayload.startsAt, "2026-07-20T09:00:00.000+09:00");
