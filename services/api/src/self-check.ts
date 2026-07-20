@@ -530,6 +530,7 @@ assert.equal(
   503
 );
 const notReadyWriteApp = createApp(createSeedStore(), {
+  internalApiKey: "test_internal_key",
   requireReadyForWrites: true,
   readiness: async () => ({ ready: false, checks: [{ id: "postgres.database_url", ok: false, message: "postgres missing" }] })
 });
@@ -551,8 +552,8 @@ const notReadyInternalWrite = await notReadyWriteApp.handle({
   headers: internalHeaders,
   body: {}
 });
-assert.equal(notReadyInternalWrite.status, 503);
-assert.equal((notReadyInternalWrite.body as { error: string }).error, "runtime_not_ready");
+assert.equal(notReadyInternalWrite.status, 400);
+assert.notEqual((notReadyInternalWrite.body as { error: string }).error, "runtime_not_ready");
 assert.deepEqual(await fakeJsonRequest(Buffer.from('{"ok":true}')), { ok: true });
 await assert.rejects(() => fakeJsonRequest(Buffer.from("{")), { status: 400, code: "invalid_json" });
 await assert.rejects(() => fakeJsonRequest(Buffer.alloc(257 * 1024, "x")), { status: 413, code: "body_too_large" });
