@@ -252,19 +252,34 @@ function lawNameFromBillTitle(title: string): string {
 }
 
 async function fetchJson(url: URL): Promise<unknown> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10_000);
-  try {
-    const response = await fetch(url, {
-      headers: { "user-agent": "MusunilPublicSourceWorker/0.1" },
-      signal: controller.signal
-    });
-    if (!response.ok) throw new Error(`law_source_fetch_failed:${response.status}`);
-    return response.json();
-  } finally {
-    clearTimeout(timeout);
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const response = await fetch(url, {
+        headers: { "user-agent": "MusunilPublicSourceWorker/0.1" },
+        signal: controller.signal
+      });
+      if (!response.ok) {
+        if ((response.status === 429 || response.status >= 500) && attempt < maxAttempts) {
+          await delay(attempt * 1_000);
+          continue;
+        }
+        throw new Error(`law_source_fetch_failed:${response.status}`);
+      }
+      return response.json();
+    } catch (error) {
+      if (attempt === maxAttempts || (error instanceof Error && error.message.startsWith("law_source_fetch_failed:"))) throw error;
+      await delay(attempt * 1_000);
+    } finally {
+      clearTimeout(timeout);
+    }
   }
+  throw new Error("law_source_fetch_failed:retry_exhausted");
 }
+
+const delay = (milliseconds: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 function extractObjectRows(value: unknown): Array<Record<string, unknown>> {
   const arrays: Array<Array<Record<string, unknown>>> = [];
