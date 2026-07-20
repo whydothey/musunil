@@ -93,7 +93,11 @@ export const dataSource: DataSource = {
 
 function sanitizeOfficialScheduleOccurrence(occurrence: OccurrenceDigest): OccurrenceDigest {
   if (!occurrence.officialSources?.length) return occurrence;
-  return { ...occurrence, title: trimBoardRowLeak(occurrence.title) };
+  return {
+    ...occurrence,
+    title: trimBoardRowLeak(occurrence.title),
+    keyPoint: occurrence.keyPoint ? trimBoardRowLeak(occurrence.keyPoint) : occurrence.keyPoint
+  };
 }
 
 function trimBoardRowLeak(value: string): string {
