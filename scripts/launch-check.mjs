@@ -1853,12 +1853,12 @@ const packageScripts = JSON.parse(packageJson).scripts ?? {};
 const renderWebBuildScript = packageScripts["build:web-static:render"] ?? "";
 if (
   !/"build:web-static:render"/.test(packageJson) ||
-  !/MUSUNIL_WEB_API_BASE_URL=https:\/\/api\.musunil\.com/.test(renderWebBuildScript) ||
+  !/MUSUNIL_WEB_API_BASE_URL=(?:https:\/\/api\.musunil\.com|\$\{MUSUNIL_WEB_API_BASE_URL:-https:\/\/api\.musunil\.com\})/.test(renderWebBuildScript) ||
   !/MUSUNIL_WRITE_BUILD_INFO=1/.test(renderWebBuildScript) ||
   !/pnpm build:web-static/.test(renderWebBuildScript) ||
   !/pnpm check:web-smoke/.test(renderWebBuildScript)
 ) {
-  failures.push("package.json must define build:web-static:render with production API base, build-info writing, static build, and web smoke");
+  failures.push("package.json must define build:web-static:render with a configurable production API base, build-info writing, static build, and web smoke");
 }
 if (!/name:\s*musunil-web[\s\S]*?buildCommand:\s*pnpm install --frozen-lockfile && pnpm build:web-static:render/.test(renderYaml)) {
   failures.push("Render Web buildCommand must use pnpm build:web-static:render");

@@ -34,10 +34,11 @@ for (const required of ["index.html", "config.js", "build-info.js", "build-info.
 }
 
 const config = parseWindowJson("config.js", "MUSUNIL_WEB_CONFIG");
+const expectedApiBaseUrl = process.env.MUSUNIL_EXPECTED_API_BASE_URL || process.env.MUSUNIL_WEB_API_BASE_URL || "https://api.musunil.com";
 if (JSON.stringify(Object.keys(config).sort()) !== JSON.stringify(["apiBaseUrl", "mapStyleUrl"])) {
   failures.push(`public config keys changed: ${Object.keys(config).sort().join(", ")}`);
 }
-if (config.apiBaseUrl !== "https://api.musunil.com") failures.push(`production API base changed: ${config.apiBaseUrl || "missing"}`);
+if (config.apiBaseUrl !== expectedApiBaseUrl) failures.push(`production API base changed: ${config.apiBaseUrl || "missing"}`);
 
 if (failures.length) {
   console.error(failures.map((failure) => `- ${failure}`).join("\n"));

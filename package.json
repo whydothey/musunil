@@ -18,7 +18,7 @@
     "check:web-next:production": "pnpm build:web-next:production && node scripts/ci-web-next-production.mjs",
     "build:web-config": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/write-web-config.mjs",
     "build:web-static": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/write-web-config.mjs --static && corepack pnpm build:web-headers && MUSUNIL_UI_DATA_MODE=production corepack pnpm --filter @musunil/web build && corepack pnpm build:web-manifest",
-    "build:web-static:render": "MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com MUSUNIL_WRITE_BUILD_INFO=1 corepack pnpm build:web-static && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com MUSUNIL_WRITE_BUILD_INFO=1 corepack pnpm check:web-render-build-output && MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com corepack pnpm check:web-smoke",
+    "build:web-static:render": "MUSUNIL_WEB_API_BASE_URL=${MUSUNIL_WEB_API_BASE_URL:-https://api.musunil.com} MUSUNIL_WRITE_BUILD_INFO=1 corepack pnpm build:web-static && MUSUNIL_WEB_API_BASE_URL=${MUSUNIL_WEB_API_BASE_URL:-https://api.musunil.com} MUSUNIL_WRITE_BUILD_INFO=1 corepack pnpm check:web-render-build-output && MUSUNIL_WEB_API_BASE_URL=${MUSUNIL_WEB_API_BASE_URL:-https://api.musunil.com} corepack pnpm check:web-smoke",
     "build:web-headers": "node scripts/write-web-headers.mjs",
     "build:web-manifest": "node scripts/write-web-static-manifest.mjs",
     "check:web-manifest": "MUSUNIL_WEB_API_BASE_URL=https://api.musunil.com corepack pnpm build:web-static && node scripts/write-web-static-manifest.mjs --check",
