@@ -311,6 +311,11 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .official-law-link span { display: flex; flex-direction: column; gap: 3px; }
 .official-law-link strong { font-size: 13px; }
 .official-law-link small { color: var(--ink-soft); font-size: 11px; }
+.official-source-list { display: grid; gap: 8px; margin: 0 18px 16px; }
+.official-source-link { min-height: 64px; display: grid; grid-template-columns: 22px minmax(0, 1fr) 18px; align-items: center; gap: 10px; padding: 11px 13px; border: 1px solid var(--line-strong); border-radius: 8px; color: var(--official); background: color-mix(in srgb, var(--official) 5%, var(--surface)); }
+.official-source-link span { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.official-source-link strong { color: var(--ink); font-size: 13px; }
+.official-source-link small { color: var(--ink-soft); font-size: 11px; }
 
 .report-screen { padding-bottom: 34px; }
 .report-progress { display: grid; grid-template-columns: repeat(4, 1fr); margin: 0 18px 14px; border-bottom: 1px solid var(--line); }

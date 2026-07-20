@@ -180,6 +180,7 @@ export function hydrateStore(store: Store): Store {
     evidence.deviceIntegrityCheckedAt = optionalDate(evidence.deviceIntegrityCheckedAt);
     evidence.redactionCheckedAt = optionalDate(evidence.redactionCheckedAt);
     evidence.sourcePublishedAt = optionalDate(evidence.sourcePublishedAt);
+    evidence.sourceCheckedAt = optionalDate(evidence.sourceCheckedAt);
   }
   for (const subscription of store.subscriptions) subscription.mutedUntil = optionalDate(subscription.mutedUntil);
   for (const notification of store.notificationOutbox) {
@@ -210,7 +211,10 @@ export function hydrateStore(store: Store): Store {
     session.revokedAt = optionalDate(session.revokedAt);
   }
   store.publicSourceRefreshes ??= [];
-  for (const refresh of store.publicSourceRefreshes) refresh.checkedAt = date(refresh.checkedAt);
+  for (const refresh of store.publicSourceRefreshes) {
+    refresh.checkedAt = date(refresh.checkedAt);
+    refresh.lastSuccessfulAt = optionalDate(refresh.lastSuccessfulAt);
+  }
   return store;
 }
 

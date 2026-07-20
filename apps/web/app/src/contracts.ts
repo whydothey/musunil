@@ -54,6 +54,13 @@ export interface OccurrenceDigest {
   scale?: { minCount: number; maxCount: number; confidence: "low" | "medium" | "high" };
   issueTitle?: string;
   keyPoint?: string;
+  officialSources?: Array<{
+    label: string;
+    sourceUrl: string;
+    publishedAt?: string;
+    checkedAt?: string;
+    granularity: "bulletin" | "individual_schedule";
+  }>;
 }
 
 export interface PublicClaim {

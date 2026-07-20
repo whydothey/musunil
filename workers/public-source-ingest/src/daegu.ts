@@ -25,6 +25,12 @@ export type PublicOccurrencePayload = {
   evidenceStrength: "single_source";
   riskLevel: "low";
   evidenceUploadedAt: string;
+  sourceItemId?: string;
+  sourceUrl?: string;
+  sourcePublishedAt?: string;
+  sourceTitle?: string;
+  sourceGranularity?: "bulletin" | "individual_schedule";
+  parserVersion?: string;
 };
 
 export function parseDaeguTodayAssemblyList(html: string): DaeguAssemblyRow[] {

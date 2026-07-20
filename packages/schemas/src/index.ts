@@ -87,14 +87,16 @@ export type Evidence = {
   deviceIntegrityProofHash?: string;
   deviceAttestationBucket?: string;
   proofOfPresenceStatus?: "pass" | "fail" | "material_only" | "unknown";
-  externalProvider?: "naver_api_hub" | "publisher_rss";
+  externalProvider?: "naver_api_hub" | "publisher_rss" | "official_public_source";
   externalId?: string;
   sourceUrl?: string;
   aggregatorUrl?: string;
   publisherLabel?: string;
   sourcePublishedAt?: Date;
+  sourceCheckedAt?: Date;
   sourceTitle?: string;
   publicSummary?: string;
+  sourceGranularity?: "bulletin" | "individual_schedule";
   newsDirectBillMatch?: boolean;
 };
 
@@ -316,6 +318,13 @@ export type OccurrenceDigest = {
   scale?: { minCount: number; maxCount: number; confidence: CrowdEstimate["confidence"] };
   issueTitle?: string;
   keyPoint?: string;
+  officialSources?: Array<{
+    label: string;
+    sourceUrl: string;
+    publishedAt?: string;
+    checkedAt?: string;
+    granularity: "bulletin" | "individual_schedule";
+  }>;
 };
 
 export type EvidenceReel = {
