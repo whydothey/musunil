@@ -590,6 +590,7 @@ globalThis.fetch = (async (input: RequestInfo | URL) => {
           {
             BILL_NM: "공직선거법 일부개정법률안",
             BILL_ID: "bill-election-newer",
+            BILL_NO: "2219999",
             PROC_STAGE_CD: "접수",
             PPSL_DT: "20260710",
             LINK_URL: "https://untrusted.example/bill-election-newer"
@@ -598,6 +599,7 @@ globalThis.fetch = (async (input: RequestInfo | URL) => {
           {
             BILL_NM: "정보통신망법 일부개정법률안",
             BILL_ID: "bill-info-network",
+            BILL_NO: "2219998",
             JRCMIT_NM: "과학기술정보방송통신위원회",
             PPSL_DT: "20260709",
             PPSR_NM: "국회의원 10인",
@@ -607,6 +609,13 @@ globalThis.fetch = (async (input: RequestInfo | URL) => {
         ]
       })
     );
+  }
+  if (url.includes("BPMBILLSUMMARY")) {
+    const requestUrl = new URL(url);
+    assert.equal(requestUrl.searchParams.get("KEY"), "assembly-key");
+    assert.equal(requestUrl.searchParams.get("Type"), "json");
+    const billNo = requestUrl.searchParams.get("BILL_NO");
+    return new Response(JSON.stringify({ row: [{ BILL_NAME: "법률안", BILL_NO: billNo, SUMMARY: `${billNo} 공식 제안이유 및 주요내용` }] }));
   }
   return new Response(
     JSON.stringify({
@@ -632,6 +641,8 @@ try {
     keywords: ["정보통신망법", "공직선거법"]
   });
   assert.equal(lawPayloads.some((payload) => payload.source === "assembly_bill" && payload.assemblyBillId === "bill-info-network"), true);
+  assert.equal(lawPayloads.some((payload) => payload.assemblyBillNo === "2219998" && payload.proposer === "국회의원 10인" && payload.proposalSummary?.includes("공식 제안이유")), true);
+  assert.equal(lawPayloads.some((payload) => payload.assemblyBillNo === "2219998" && payload.summary === "국회의원 10인"), false);
   assert.equal(lawPayloads.some((payload) => payload.source === "assembly_bill" && payload.assemblyBillId === "bill-election-newer" && payload.proposedDate === "2026-07-10T00:00:00.000+09:00"), true);
   assert.equal(lawPayloads.some((payload) => payload.officialUrl?.includes("untrusted.example")), false);
   assert.equal(lawPayloads.some((payload) => payload.source === "law_effective" && payload.lawName === "공직선거법"), true);

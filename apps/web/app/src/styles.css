@@ -266,10 +266,18 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .law-row { min-height: 112px; display: block; padding: 18px; border-bottom: 1px solid var(--line); transition: background 180ms var(--ease); }
 .law-source-line { display: flex; justify-content: space-between; color: var(--ink-faint); font-size: 11px; }
 .law-source-line span { color: var(--brand); font-weight: 750; }
+.law-source-line time { color: var(--ink-soft); }
 .law-row-main { display: grid; grid-template-columns: minmax(0, 1fr) 22px; align-items: center; gap: 12px; }
 .law-row-main h2 { margin: 9px 0 7px; font-size: 16px; line-height: 1.48; }
 .law-row-main p { margin: 0; color: var(--ink-soft); font-size: 12px; }
+.law-row-main small { display: block; margin-top: 7px; color: var(--ink-faint); font-size: 11px; line-height: 1.45; }
 .law-row-main > svg { color: var(--ink-faint); }
+.law-topic-row { min-height: 128px; }
+.law-topic-summary { display: flex; align-items: center; gap: 12px; margin: 4px 18px 16px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--brand-soft); color: var(--brand); }
+.law-topic-summary > svg { flex: 0 0 auto; }
+.law-topic-summary div { display: flex; flex-direction: column; gap: 4px; }
+.law-topic-summary strong { font-size: 14px; }
+.law-topic-summary span { color: var(--ink-soft); font-size: 11px; }
 .law-detail-status { display: flex; align-items: center; gap: 12px; margin: 4px 18px 16px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--brand-soft); color: var(--brand); }
 .law-detail .screen-heading h1 { font-size: 22px; line-height: 1.3; }
 .law-detail-status > svg { flex: 0 0 auto; }
@@ -282,6 +290,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .law-related-row strong { font-size: 14px; line-height: 1.4; }
 .law-related-row small { color: var(--ink-faint); font-size: 11px; }
 .law-related-row > svg { flex: 0 0 auto; color: var(--brand); }
+.law-official-summary { margin: 0; padding: 4px 18px 20px; color: var(--ink-soft); font-size: 13px; line-height: 1.75; white-space: pre-line; }
 .official-law-link { min-height: 72px; display: grid; grid-template-columns: 24px minmax(0, 1fr) 20px; align-items: center; gap: 12px; margin: 14px 18px 28px; padding: 12px 14px; border: 1px solid var(--line-strong); border-radius: 8px; color: var(--brand); }
 .official-law-link span { display: flex; flex-direction: column; gap: 3px; }
 .official-law-link strong { font-size: 13px; }

@@ -28,7 +28,7 @@ const ingest = async (laws) => {
   assert.equal(response.status, 200, "Official law ingest must succeed.");
 };
 
-const firstPayloads = await fetchLawPayloads(runtime);
+const firstPayloads = await fetchLawPayloads(runtime, { existingAssemblyBills: initialStore.lawItems });
 assert.ok(firstPayloads.length > 0, "Official law sources returned no matching rows.");
 assert.equal(new Set(firstPayloads.map((item) => item.id)).size, firstPayloads.length, "Official payload ids must be unique.");
 await ingest(firstPayloads);
@@ -38,7 +38,7 @@ const firstPersisted = await loadPostgresStore(databaseUrl, emptyStore(), encryp
 const firstPersistedCount = firstPersisted.lawItems.length;
 assert.equal(firstPersistedCount, new Set(firstPersisted.lawItems.map((item) => item.id)).size, "Persisted law ids must be unique.");
 
-const refreshPayloads = await fetchLawPayloads(runtime);
+const refreshPayloads = await fetchLawPayloads(runtime, { existingAssemblyBills: app.store.lawItems });
 await ingest(refreshPayloads);
 await savePostgresStore(databaseUrl, app.store, encryptionKey);
 

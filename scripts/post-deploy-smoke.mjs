@@ -121,12 +121,20 @@ await check("laws", async () => {
   const response = await raw("GET", "/laws");
   assert(response.status === 200, `/laws returned ${response.status}`);
   assert(Array.isArray(response.body?.laws), "/laws list missing");
+  assert(Array.isArray(response.body?.lawTopics), "/laws topic list missing");
   if (requireLaws) assert(response.body.laws.length > 0, "--require-laws expected at least one law item");
   const lawId = firstId(response.body.laws);
   if (lawId) {
     const detail = await raw("GET", `/laws/${encodeURIComponent(lawId)}`);
     assert(detail.status === 200, `/laws/${lawId} returned ${detail.status}`);
     assertPublicPayloadSafe(`/laws/${lawId}`, detail.body);
+  }
+  const topicId = firstId(response.body.lawTopics);
+  if (topicId) {
+    const topicDetail = await raw("GET", `/law-topics/${encodeURIComponent(topicId)}`);
+    assert(topicDetail.status === 200, `/law-topics/${topicId} returned ${topicDetail.status}`);
+    assert(Array.isArray(topicDetail.body?.bills) && topicDetail.body.bills.length > 0, `/law-topics/${topicId} bills missing`);
+    assertPublicPayloadSafe(`/law-topics/${topicId}`, topicDetail.body);
   }
 });
 

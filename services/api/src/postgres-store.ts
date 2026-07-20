@@ -98,6 +98,8 @@ function snapshotKey(secret: string): Buffer {
 }
 
 function hydrateStore(store: Store): Store {
+  store.lawTopics ??= [];
+  store.lawTopicMemberships ??= [];
   for (const issue of store.issues) {
     issue.firstSeenAt = date(issue.firstSeenAt);
     issue.lastUpdatedAt = date(issue.lastUpdatedAt);
@@ -107,6 +109,7 @@ function hydrateStore(store: Store): Store {
     law.statusDate = optionalDate(law.statusDate);
     law.effectiveDate = optionalDate(law.effectiveDate);
   }
+  for (const topic of store.lawTopics) topic.updatedAt = date(topic.updatedAt);
   for (const occurrence of store.occurrences) {
     occurrence.startsAt = optionalDate(occurrence.startsAt);
     occurrence.endsAt = optionalDate(occurrence.endsAt);
