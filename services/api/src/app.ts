@@ -3253,7 +3253,19 @@ function officialAssemblySource(sourceId: string | undefined) {
 
 const officialPublicLocationAllowlist: Record<string, { regionCode: string; lng: number; lat: number; label: string }> = {
   seoul_civic_center_area: { regionCode: "seoul", lng: 126.978, lat: 37.566, label: "서울광장·광화문 일대" },
-  seoul_education_office_area: { regionCode: "seoul", lng: 126.969, lat: 37.57, label: "서울시교육청 일대" }
+  seoul_education_office_area: { regionCode: "seoul", lng: 126.969, lat: 37.57, label: "서울시교육청 일대" },
+  seoul_oryu_area: { regionCode: "seoul", lng: 126.84, lat: 37.493, label: "오류동 일대" },
+  seoul_marronnier_area: { regionCode: "seoul", lng: 127.002, lat: 37.58, label: "대학로·마로니에공원 일대" },
+  seoul_station_area: { regionCode: "seoul", lng: 126.971, lat: 37.555, label: "서울역 일대" },
+  seoul_national_assembly_area: { regionCode: "seoul", lng: 126.917, lat: 37.528, label: "국회의사당 일대" },
+  seoul_seocho_station_area: { regionCode: "seoul", lng: 127.008, lat: 37.491, label: "서초역 일대" },
+  seoul_mongchontoseong_area: { regionCode: "seoul", lng: 127.112, lat: 37.517, label: "몽촌토성역 일대" },
+  seoul_hongdae_area: { regionCode: "seoul", lng: 126.923, lat: 37.557, label: "홍대입구역 일대" },
+  seoul_seokchon_lake_area: { regionCode: "seoul", lng: 127.105, lat: 37.51, label: "석촌호수 일대" },
+  seoul_government_complex_area: { regionCode: "seoul", lng: 126.977, lat: 37.577, label: "정부서울청사·경복궁역 일대" },
+  seoul_police_hq_area: { regionCode: "seoul", lng: 126.972, lat: 37.564, label: "경찰청 일대" },
+  seoul_cheongwadae_area: { regionCode: "seoul", lng: 126.973, lat: 37.584, label: "청와대 인근 일대" },
+  seoul_war_memorial_area: { regionCode: "seoul", lng: 126.977, lat: 37.536, label: "전쟁기념관 일대" }
 };
 
 function officialPublicLocation(

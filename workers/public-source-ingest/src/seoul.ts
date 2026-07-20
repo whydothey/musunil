@@ -153,8 +153,10 @@ function htmlText(value: string): string {
 function safeLocation(value: string): string | undefined {
   const firstAnchor = value
     .replace(/^\|\s*/, "")
-    .split(/\s*(?:⇄|↔|→|←|※|행진\s*:|에서\s+출발)\s*/u, 1)[0]
+    .split(/(?:\s+[~～]\s+|\s*(?:⇄|↔|→|←|※|행진\s*:|에서\s+출발)\s*)/u, 1)[0]
     .replace(/\(\s*(?:인도|차도|내|內)\s*\)/g, "")
+    .replace(/\([^)]*(?:개차로|보조도로)[^)]*\)/g, "")
+    .replace(/(\d+)\s*出/g, "$1번 출구")
     .replace(/\s+/g, " ")
     .trim();
   if (!firstAnchor || firstAnchor.length > 60) return undefined;
@@ -162,8 +164,20 @@ function safeLocation(value: string): string | undefined {
 }
 
 function locationKey(label: string): string | undefined {
-  if (/서울광장|광화문|세종대로/.test(label)) return "seoul_civic_center_area";
+  if (/서울광장|광화문|세종대로|동화면세점|대한문/.test(label)) return "seoul_civic_center_area";
   if (/서울시교육청/.test(label)) return "seoul_education_office_area";
+  if (/오류동|평강제일교회/.test(label)) return "seoul_oryu_area";
+  if (/마로니에공원/.test(label)) return "seoul_marronnier_area";
+  if (/서울역/.test(label)) return "seoul_station_area";
+  if (/의사당역|국회의사당/.test(label)) return "seoul_national_assembly_area";
+  if (/서초역/.test(label)) return "seoul_seocho_station_area";
+  if (/몽촌토성역/.test(label)) return "seoul_mongchontoseong_area";
+  if (/홍대입구역/.test(label)) return "seoul_hongdae_area";
+  if (/석촌호수/.test(label)) return "seoul_seokchon_lake_area";
+  if (/정부서울청사|경복궁역/.test(label)) return "seoul_government_complex_area";
+  if (/경찰청 본청/.test(label)) return "seoul_police_hq_area";
+  if (/청와대|효자파출소/.test(label)) return "seoul_cheongwadae_area";
+  if (/전쟁기념관/.test(label)) return "seoul_war_memorial_area";
   return undefined;
 }
 
