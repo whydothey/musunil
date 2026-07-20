@@ -103,6 +103,7 @@
     "sources:laws-diagnose": "pnpm --filter @musunil/public-source-ingest dev -- --laws-diagnose",
     "sources:laws": "pnpm --filter @musunil/public-source-ingest dev -- --laws",
     "sources:laws:post": "pnpm --filter @musunil/public-source-ingest dev -- --laws --post",
+    "sources:laws:db-sync": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/law-db-sync.mjs",
     "admin:privacy": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/admin-review.mjs privacy",
     "admin:risk": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/admin-review.mjs risk",
     "admin:queue": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/admin-review.mjs queue",
