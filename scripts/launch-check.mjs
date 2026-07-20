@@ -1840,8 +1840,8 @@ for (const [serviceName, block] of [
   if (!/key:\s*MUSUNIL_RUNTIME_ENV[\s\S]*?value:\s*production/.test(block)) failures.push(`${serviceName} must set MUSUNIL_RUNTIME_ENV=production`);
 }
 if (!/preDeployCommand:\s*pnpm db:migrate/.test(renderYaml)) failures.push("Render API preDeployCommand must run pnpm db:migrate");
-if (!dockerfile.includes('CMD ["sh", "-c", "pnpm db:migrate && exec pnpm start:api"]')) {
-  failures.push("Render Free API must run idempotent PostgreSQL migrations from the Docker CMD before startup");
+if (!dockerfile.includes('CMD ["pnpm", "start:render-free"]')) {
+  failures.push("Render Free API must migrate and run due operations from the Web Service process");
 }
 if (!/runtime:\s*docker/.test(renderApi) || !/dockerfilePath:\s*\.\/Dockerfile/.test(renderApi) || !/dockerContext:\s*\./.test(renderApi)) {
   failures.push("Render API must use the ffmpeg-capable Docker runtime");
