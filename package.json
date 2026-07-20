@@ -5,10 +5,12 @@
   "scripts": {
     "dev:api": "pnpm --filter @musunil/api dev",
     "start:api": "pnpm --filter @musunil/api start",
+    "start:render-free": "node scripts/start-render-free.mjs",
+    "check:render-free-runtime": "node scripts/start-render-free.mjs --check",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "check": "pnpm typecheck && pnpm test",
-    "check:release": "pnpm check && pnpm check:splus && pnpm check:launch-sample && pnpm check:source-diagnostics && pnpm check:law-diagnostics && pnpm check:news-diagnostics && pnpm check:ops-diagnostics && pnpm check:ops-scheduler && pnpm check:redaction-smoke-safety && pnpm check:mobile-integrity-smoke-safety && pnpm check:render-runtime-secret-safety && pnpm check:render-blueprint-contract && pnpm check:cloudflare-dns-template && pnpm check:cloudflare-headers && pnpm check:render-runtime-config && pnpm check:runtime-smoke && pnpm check:web-manifest && pnpm check:web-smoke && pnpm check:web-flow && pnpm check:report-flow && pnpm check:ux-surface && pnpm check:visual-surface && pnpm check:visual-surface:production-fallback && pnpm check:web-render-build-command && pnpm check:build-info-clean",
+    "check:release": "pnpm check && pnpm check:splus && pnpm check:launch-sample && pnpm check:source-diagnostics && pnpm check:law-diagnostics && pnpm check:news-diagnostics && pnpm check:ops-diagnostics && pnpm check:ops-scheduler && pnpm check:render-free-runtime && pnpm check:redaction-smoke-safety && pnpm check:mobile-integrity-smoke-safety && pnpm check:render-runtime-secret-safety && pnpm check:render-blueprint-contract && pnpm check:cloudflare-dns-template && pnpm check:cloudflare-headers && pnpm check:render-runtime-config && pnpm check:runtime-smoke && pnpm check:web-manifest && pnpm check:web-smoke && pnpm check:web-flow && pnpm check:report-flow && pnpm check:ux-surface && pnpm check:visual-surface && pnpm check:visual-surface:production-fallback && pnpm check:web-render-build-command && pnpm check:build-info-clean",
     "check:splus": "node scripts/splus-tracker-check.mjs",
     "dev:web": "node scripts/serve-web.mjs",
     "dev:web-next": "MUSUNIL_UI_DATA_MODE=fixture pnpm --filter @musunil/web dev",

@@ -148,7 +148,7 @@ Render API automation:
 - Plan: `starter`
 - Build Command: `Dockerfile RUN pnpm install --frozen-lockfile && pnpm check`
 - Pre Deploy Command: `pnpm db:migrate`
-- Start Command: `Dockerfile CMD pnpm db:migrate && pnpm start:api`
+- Start Command: `Dockerfile CMD pnpm start:render-free`
 - Health Check Path: `/ready`
 - Custom Domain: `api.musunil.com`
 
