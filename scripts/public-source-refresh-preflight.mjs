@@ -87,7 +87,7 @@ function publicSourceRefreshState(coverage) {
   const missing = activeSourceIds.filter((sourceId) => !refreshBySource.has(sourceId));
   const invalid = activeSourceIds.filter((sourceId) => {
     const refresh = refreshBySource.get(sourceId);
-    return !refresh?.checkedAt || Number.isNaN(new Date(refresh.checkedAt).getTime()) || !(Number(refresh.resultCount) > 0);
+    return !isValidSourceRefresh(refresh);
   });
   const overdueRegions = coverage.regions
     .filter((region) => region?.activeScheduleSourceId && region.freshness === "overdue")
@@ -109,6 +109,15 @@ function publicSourceRefreshState(coverage) {
     return state(false, "public source refresh ledger is not launch-ready", detail);
   }
   return state(true, "", detail);
+}
+
+function isValidSourceRefresh(refresh) {
+  if (!refresh?.checkedAt || Number.isNaN(new Date(refresh.checkedAt).getTime())) return false;
+  if (refresh.status === "failed") return false;
+  if (refresh.status === "empty") {
+    return Number(refresh.parsedCount) > 0 && Number(refresh.resultCount) === 0;
+  }
+  return Number(refresh.resultCount) > 0;
 }
 
 function state(ok, reason, detail) {

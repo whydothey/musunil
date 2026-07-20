@@ -208,11 +208,11 @@ function assertSourceRefreshesCurrent(coverage) {
 
   const invalid = activeSourceIds.filter((sourceId) => {
     const refresh = refreshBySource.get(sourceId);
-    return !refresh?.checkedAt || Number.isNaN(new Date(refresh.checkedAt).getTime()) || !(Number(refresh.resultCount) > 0);
+    return !isValidSourceRefresh(refresh);
   });
   assert(
     invalid.length === 0,
-    `sourceRefreshes invalid for active sources: ${invalid.join(", ")}; each active source needs checkedAt and resultCount > 0`
+    `sourceRefreshes invalid for active sources: ${invalid.join(", ")}; each source needs a valid checkedAt and either resultCount > 0 or status=empty with parsedCount > 0`
   );
 
   const overdueRegions = coverage.regions
@@ -220,6 +220,15 @@ function assertSourceRefreshesCurrent(coverage) {
     .map((region) => region.code)
     .filter(Boolean);
   assert(overdueRegions.length === 0, `coverage active regions still overdue after source ingest: ${overdueRegions.join(", ")}`);
+}
+
+function isValidSourceRefresh(refresh) {
+  if (!refresh?.checkedAt || Number.isNaN(new Date(refresh.checkedAt).getTime())) return false;
+  if (refresh.status === "failed") return false;
+  if (refresh.status === "empty") {
+    return Number(refresh.parsedCount) > 0 && Number(refresh.resultCount) === 0;
+  }
+  return Number(refresh.resultCount) > 0;
 }
 
 function errorMessage(error) {
