@@ -3191,7 +3191,7 @@ function postInternalIngestPublicOccurrenceBatch(store: Store, body: unknown): A
   const status = readPublicSourceRunStatus(data.status);
   const parsedCount = Math.max(0, Math.trunc(readNumber(data, "parsedCount") ?? 0));
   const records = Array.isArray(data.records) ? data.records : [];
-  if (records.length > 25) throw new ApiError(400, "public_source_batch_too_large");
+  if (records.length > 100) throw new ApiError(400, "public_source_batch_too_large");
 
   let created = 0;
   let updated = 0;
