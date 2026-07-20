@@ -10,7 +10,10 @@ export type LawPayload = {
   statusDate?: string;
   effectiveDate?: string;
   assemblyBillId?: string;
+  assemblyBillNo?: string;
   lawId?: string;
+  proposer?: string;
+  proposalSummary?: string;
   summary?: string;
   officialUrl?: string;
   keywords: string[];
@@ -19,6 +22,7 @@ export type LawPayload = {
 export type LawRuntime = {
   assemblyBillApiKey?: string;
   assemblyBillApiUrl: string;
+  assemblyBillSummaryApiUrl?: string;
   assemblyBillEra: string;
   lawApiOc?: string;
   lawApiBaseUrl: string;
@@ -50,6 +54,7 @@ export type LawOperationalDiagnostics = {
 };
 
 const defaultAssemblyBillApiUrl = "https://open.assembly.go.kr/portal/openapi/ALLBILLV2";
+const defaultAssemblyBillSummaryApiUrl = "https://open.assembly.go.kr/portal/openapi/BPMBILLSUMMARY";
 const defaultAssemblyBillEra = "제22대";
 const defaultLawApiBaseUrl = "https://www.law.go.kr/DRF/lawSearch.do";
 const defaultKeywords = [
@@ -68,6 +73,7 @@ export function readLawRuntime(config: Record<string, unknown>, env: NodeJS.Proc
       readConfigCredentialString(config, "public_data_sources.national_assembly_bill_api_key") ??
       readConfigCredentialString(config, "public_data_sources.assembly_notice_api_key"),
     assemblyBillApiUrl: env.MUSUNIL_ASSEMBLY_BILL_API_URL ?? readConfigString(config, "public_data_sources.national_assembly_bill_api_url") ?? defaultAssemblyBillApiUrl,
+    assemblyBillSummaryApiUrl: env.MUSUNIL_ASSEMBLY_BILL_SUMMARY_API_URL ?? defaultAssemblyBillSummaryApiUrl,
     assemblyBillEra: env.MUSUNIL_ASSEMBLY_BILL_ERACO ?? readConfigString(config, "public_data_sources.national_assembly_bill_eraco") ?? defaultAssemblyBillEra,
     lawApiOc: readCredentialString(env.MUSUNIL_LAW_GO_KR_OC) ?? readConfigCredentialString(config, "public_data_sources.law_go_kr_oc"),
     lawApiBaseUrl: env.MUSUNIL_LAW_GO_KR_BASE_URL ?? readConfigString(config, "public_data_sources.law_go_kr_base_url") ?? defaultLawApiBaseUrl,
@@ -123,22 +129,54 @@ export function lawOperationalDiagnostics(runtime: LawRuntime): LawOperationalDi
   };
 }
 
-export async function fetchLawPayloads(runtime: LawRuntime): Promise<LawPayload[]> {
+export async function fetchLawPayloads(
+  runtime: LawRuntime,
+  options: { existingAssemblyBills?: Array<Pick<LawPayload, "assemblyBillNo" | "proposalSummary">> } = {}
+): Promise<LawPayload[]> {
   const payloads = [
-    ...(await fetchAssemblyBills(runtime)),
+    ...(await fetchAssemblyBills(runtime, options.existingAssemblyBills ?? [])),
     ...(await fetchEffectiveLaws(runtime))
   ];
   return dedupeLawPayloads(payloads);
 }
 
-async function fetchAssemblyBills(runtime: LawRuntime): Promise<LawPayload[]> {
+async function fetchAssemblyBills(
+  runtime: LawRuntime,
+  existingAssemblyBills: Array<Pick<LawPayload, "assemblyBillNo" | "proposalSummary">>
+): Promise<LawPayload[]> {
   if (!runtime.assemblyBillApiKey) return [];
   const pageSize = 100;
   const first = await fetchAssemblyBillPage(runtime, 1, pageSize);
   const pageCount = Math.min(10, Math.max(1, Math.ceil(readTotalCount(first.payload) / pageSize)));
   const pages = [first.rows];
   for (let page = 2; page <= pageCount; page += 1) pages.push((await fetchAssemblyBillPage(runtime, page, pageSize)).rows);
-  return pages.flat().map((row) => assemblyBillPayload(row, runtime.keywords)).filter((payload): payload is LawPayload => Boolean(payload));
+  const payloads = pages.flat().map((row) => assemblyBillPayload(row, runtime.keywords)).filter((payload): payload is LawPayload => Boolean(payload));
+  const cachedSummaries = new Map(existingAssemblyBills.filter((item) => item.assemblyBillNo && item.proposalSummary).map((item) => [item.assemblyBillNo!, item.proposalSummary!]));
+  const enriched: LawPayload[] = [];
+  for (let index = 0; index < payloads.length; index += 5) {
+    enriched.push(...await Promise.all(payloads.slice(index, index + 5).map(async (payload) => {
+      if (!payload.assemblyBillNo) return payload;
+      const cached = cachedSummaries.get(payload.assemblyBillNo);
+      if (cached) return { ...payload, proposalSummary: cached };
+      try {
+        return { ...payload, proposalSummary: await fetchAssemblyBillSummary(runtime, payload.assemblyBillNo) };
+      } catch {
+        return payload;
+      }
+    })));
+  }
+  return enriched;
+}
+
+async function fetchAssemblyBillSummary(runtime: LawRuntime, assemblyBillNo: string): Promise<string | undefined> {
+  const url = new URL(runtime.assemblyBillSummaryApiUrl ?? defaultAssemblyBillSummaryApiUrl);
+  url.searchParams.set("KEY", runtime.assemblyBillApiKey!);
+  url.searchParams.set("Type", "json");
+  url.searchParams.set("pIndex", "1");
+  url.searchParams.set("pSize", "5");
+  url.searchParams.set("BILL_NO", assemblyBillNo);
+  const rows = extractObjectRows(await fetchJson(url));
+  return rows.map((row) => pickString(row, ["SUMMARY", "summary", "주요내용", "제안이유 및 주요내용"])).find(Boolean);
 }
 
 async function fetchAssemblyBillPage(runtime: LawRuntime, page: number, pageSize: number): Promise<{ payload: unknown; rows: Array<Record<string, unknown>> }> {
@@ -188,6 +226,7 @@ function assemblyBillPayload(row: Record<string, unknown>, keywords: string[]): 
   if (!billTitle || !keywords.some((keyword) => searchText(billTitle).includes(searchText(keyword)))) return undefined;
   const lawName = lawNameFromBillTitle(billTitle);
   const assemblyBillId = pickString(row, ["BILL_ID", "BILL_NO", "의안ID", "의안번호"]);
+  const assemblyBillNo = pickString(row, ["BILL_NO", "의안번호"]);
   const proposedDate = parseDateText(pickString(row, ["PPSL_DT", "PROPOSE_DT", "제안일자", "제안일"]));
   const statusDate = parseDateText(pickString(row, ["RGS_RSLN_DT", "JRCMIT_PROC_DT", "LAW_PROC_DT", "PROM_DT", "PROC_DT", "PROC_RESULT_DT", "처리일자", "의결일자"]));
   return {
@@ -199,7 +238,8 @@ function assemblyBillPayload(row: Record<string, unknown>, keywords: string[]): 
     proposedDate,
     statusDate,
     assemblyBillId,
-    summary: pickString(row, ["PPSR_NM", "RST_PROPOSER", "제안자", "제안이유"]),
+    assemblyBillNo,
+    proposer: pickString(row, ["PPSR_NM", "RST_PROPOSER", "제안자"]),
     officialUrl: officialAssemblyBillUrl(pickString(row, ["LINK_URL", "DETAIL_LINK", "URL", "의안상세링크"]), assemblyBillId),
     keywords: unique([lawName, ...keywords.filter((keyword) => searchText(billTitle).includes(searchText(keyword)))])
   };

@@ -1758,6 +1758,9 @@ const ingestedLaw = await protectedApp.handle({
     proposedDate: "2026-07-09T00:00:00.000+09:00",
     statusDate: "2026-07-09T00:00:00.000+09:00",
     assemblyBillId: "bill-test-assembly-act",
+    assemblyBillNo: "2219001",
+    proposer: "김태선의원 등 14인",
+    proposalSummary: "평화적으로 진행된 미신고 옥외집회까지 일률적으로 형사처벌하는 범위를 조정하려는 것임.",
     officialUrl: "https://not-an-official-source.example/bill-test-assembly-act",
     keywords: ["집회 및 시위에 관한 법률", "집회시위법", "집회"]
   }
@@ -1778,10 +1781,41 @@ const newerIngestedLaw = await protectedApp.handle({
     proposedDate: "2026-07-12T00:00:00.000+09:00",
     statusDate: "2026-07-08T00:00:00.000+09:00",
     assemblyBillId: "bill-test-assembly-act-newer",
+    assemblyBillNo: "2219002",
+    proposer: "권향엽의원 등 13인",
+    proposalSummary: "타인의 기본권을 침해할 위험이 없는 평화적 미신고 집회에 대한 형사처벌 범위를 조정하려는 것임.",
     keywords: ["집회 및 시위에 관한 법률", "집회시위법", "집회"]
   }
 });
 assert.equal(newerIngestedLaw.status, 200);
+const groupedTopics = await protectedApp.handle({ method: "GET", path: "/laws" });
+const assemblyActTopic = (groupedTopics.body as { lawTopics: Array<{ id: string; label: string; billCount: number }> }).lawTopics.find((topic) => topic.label.includes("미신고 집회"));
+assert.equal(assemblyActTopic?.billCount, 2);
+const groupedTopicDetail = await protectedApp.handle({ method: "GET", path: `/law-topics/${assemblyActTopic?.id}` });
+assert.equal(groupedTopicDetail.status, 200);
+assert.equal((groupedTopicDetail.body as { bills: Array<{ assemblyBillNo?: string; proposer?: string; proposalSummary?: string }> }).bills.length, 2);
+assert.equal(JSON.stringify(groupedTopicDetail.body).includes("2219001"), true);
+assert.equal(JSON.stringify(groupedTopicDetail.body).includes("김태선의원"), true);
+assert.equal(protectedApp.store.lawTopicMemberships.filter((membership) => membership.lawTopicId === assemblyActTopic?.id).length, 2);
+const topicAuditCount = protectedApp.store.auditLogs.filter((log) => log.targetType === "law_topic").length;
+await protectedApp.handle({
+  method: "POST",
+  path: "/internal/ingest/laws",
+  headers: internalHeaders,
+  body: {
+    source: "assembly_bill",
+    lawName: "집회 및 시위에 관한 법률",
+    billTitle: "집회 및 시위에 관한 법률 일부개정법률안 (최근 발의)",
+    stage: "접수",
+    proposedDate: "2026-07-12T00:00:00.000+09:00",
+    assemblyBillId: "bill-test-assembly-act-newer",
+    assemblyBillNo: "2219002",
+    proposer: "권향엽의원 등 13인",
+    proposalSummary: "타인의 기본권을 침해할 위험이 없는 평화적 미신고 집회에 대한 형사처벌 범위를 조정하려는 것임.",
+    keywords: ["집회 및 시위에 관한 법률", "집회시위법", "집회"]
+  }
+});
+assert.equal(protectedApp.store.auditLogs.filter((log) => log.targetType === "law_topic").length, topicAuditCount);
 const recentProposals = await protectedApp.handle({ method: "GET", path: "/laws?sort=proposed_desc" });
 assert.equal(recentProposals.status, 200);
 const recentProposalRows = (recentProposals.body as { laws: Array<{ id: string; source: string; proposedDate?: string }> }).laws;

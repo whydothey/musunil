@@ -3,6 +3,8 @@ import type {
   IssueDetailData,
   IssueOverview,
   LawInterestItem,
+  LawTopicCard,
+  LawTopicDetailData,
   MapData,
   OccurrenceDetailData,
   OccurrenceDigest,
@@ -36,13 +38,17 @@ export async function getContinuousPresenceDetail(id: string): Promise<Occurrenc
   return { occurrenceDigest: body.occurrenceDigest, claims: body.claims, evidenceCount: body.evidenceCount };
 }
 
+export async function getLawTopicDetail(id: string): Promise<LawTopicDetailData> {
+  return request<LawTopicDetailData>(`/law-topics/${encodeURIComponent(id)}`);
+}
+
 export const dataSource: DataSource = {
   mode: "production",
   async loadDataset(): Promise<AppDataset> {
     const results = await Promise.allSettled([
       request<{ issueOverviews?: IssueOverview[]; occurrenceDigests?: OccurrenceDigest[] }>("/home"),
       request<{ reels?: AppDataset["reels"] }>("/reels"),
-      request<{ lawInterestItems?: LawInterestItem[] }>("/laws?sort=interest"),
+      request<{ lawInterestItems?: LawInterestItem[]; lawTopics?: LawTopicCard[] }>("/laws?sort=interest"),
       request<MapData>("/map")
     ]);
     const home = results[0].status === "fulfilled" ? results[0].value : {};
@@ -64,6 +70,7 @@ export const dataSource: DataSource = {
       occurrences,
       reels: reels.reels || [],
       laws: laws.lawInterestItems || [],
+      lawTopics: laws.lawTopics || [],
       claimsByIssue,
       claimsByOccurrence: {},
       map
@@ -72,7 +79,8 @@ export const dataSource: DataSource = {
   loadIssue: getIssueDetail,
   loadOccurrence(id, targetType) {
     return targetType === "continuous_presence" ? getContinuousPresenceDetail(id) : getOccurrenceDetail(id);
-  }
+  },
+  loadLawTopic: getLawTopicDetail
 };
 
 export default dataSource;

@@ -124,10 +124,33 @@ export type LawItem = {
   statusDate?: Date;
   effectiveDate?: Date;
   assemblyBillId?: string;
+  assemblyBillNo?: string;
   lawId?: string;
+  proposer?: string;
+  proposalSummary?: string;
+  topicKeywords?: string[];
+  primaryLawTopicId?: string;
   summary?: string;
   officialUrl?: string;
   keywords: string[];
+};
+
+export type LawTopic = {
+  id: string;
+  lawName: string;
+  label: string;
+  primaryKeyword: string;
+  representativeKeywords: string[];
+  billIds: string[];
+  classificationVersion: string;
+  updatedAt: Date;
+};
+
+export type LawTopicMembership = {
+  lawItemId: string;
+  lawTopicId: string;
+  matchedKeywords: string[];
+  classificationVersion: string;
 };
 
 export type IssueLawLink = {
@@ -271,11 +294,30 @@ export type LawInterestItem = {
   proposedDate?: string;
   statusDate?: string;
   officialUrl?: string;
+  assemblyBillNo?: string;
+  proposer?: string;
+  proposalSummary?: string;
+  topicKeywords?: string[];
+  primaryLawTopicId?: string;
   linkedIssueCount: number;
   occurrenceCount: number;
   regionCount: number;
   interestScore: number;
   linkedIssueIds?: string[];
+};
+
+export type LawTopicCard = {
+  id: string;
+  lawName: string;
+  label: string;
+  representativeKeywords: string[];
+  billCount: number;
+  latestProposedDate?: string;
+  stageCounts: Record<string, number>;
+  linkedIssueCount: number;
+  occurrenceCount: number;
+  regionCount: number;
+  interestScore: number;
 };
 
 export type ReportCandidate = {
@@ -386,7 +428,7 @@ export type NotificationOutbox = {
 export type AuditLog = {
   id: string;
   action: "mask" | "hold" | "delete" | "correction" | "rebuttal" | "merge" | "split" | "state_change" | "notification";
-  targetType: TargetType | "claim" | "evidence";
+  targetType: TargetType | "claim" | "evidence" | "law_topic";
   targetId: string;
   createdAt: Date;
   reason: string;
@@ -395,7 +437,7 @@ export type AuditLog = {
 export type TransparencyLog = {
   id: string;
   action: AuditLog["action"] | "agency_request" | "rights_report" | "restore";
-  targetType: TargetType | "claim" | "evidence";
+  targetType: TargetType | "claim" | "evidence" | "law_topic";
   targetId: string;
   createdAt: Date;
   publicReason: string;

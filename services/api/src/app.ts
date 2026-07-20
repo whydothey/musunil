@@ -24,6 +24,9 @@ import {
   type IssueLawLink,
   type LawInterestItem,
   type LawItem,
+  type LawTopic,
+  type LawTopicCard,
+  type LawTopicMembership,
   type LifecycleState,
   type NotificationOutbox,
   type Occurrence,
@@ -38,11 +41,14 @@ import {
   type UserSession,
   type VerifiedUser
 } from "../../../packages/schemas/src/index.ts";
+import { buildLawTopics } from "./law-topics.ts";
 
 export type Store = {
   areaClusters: AreaCluster[];
   issues: Issue[];
   lawItems: LawItem[];
+  lawTopics: LawTopic[];
+  lawTopicMemberships: LawTopicMembership[];
   issueLawLinks: IssueLawLink[];
   occurrences: Occurrence[];
   continuousPresences: ContinuousPresence[];
@@ -154,6 +160,7 @@ export type IdentityRuntime = {
 };
 
 export function createApp(store: Store = emptyStore(), options: AppOptions = {}) {
+  synchronizeLawTopics(store, false);
   return {
     store,
     handle: async (request: ApiRequest) => {
@@ -172,6 +179,8 @@ export function emptyStore(): Store {
     areaClusters: [],
     issues: [],
     lawItems: [],
+    lawTopics: [],
+    lawTopicMemberships: [],
     issueLawLinks: [],
     occurrences: [],
     continuousPresences: [],
@@ -894,6 +903,7 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
     const sort = url.searchParams.get("sort");
     return getLaws(store, sort === "proposed_desc" ? "proposed_desc" : "interest");
   }
+  if (request.method === "GET" && path.startsWith("/law-topics/")) return getLawTopic(store, path.split("/")[2]);
   if (request.method === "GET" && path.startsWith("/laws/")) return getLaw(store, path.split("/")[2]);
   if (request.method === "GET" && path === "/reels") {
     return getReels(store, url.searchParams.get("seed"), url.searchParams.get("cursor"));
@@ -2415,7 +2425,59 @@ function roundCoord(value: number): number {
 
 function getLaws(store: Store, sort: "interest" | "proposed_desc" = "interest"): ApiResponse {
   const laws = lawCards(store, sort);
-  return json(200, { laws, lawInterestItems: laws.map((law) => toLawInterestItem(store, law)), sort });
+  return json(200, {
+    laws,
+    lawInterestItems: laws.map((law) => toLawInterestItem(store, law)),
+    lawTopics: lawTopicCards(store, sort),
+    sort
+  });
+}
+
+function getLawTopic(store: Store, id: string | undefined): ApiResponse {
+  const topic = store.lawTopics.find((item) => item.id === id);
+  if (!topic) return json(404, { error: "law_topic_not_found" });
+  const bills = topic.billIds
+    .map((lawId) => store.lawItems.find((law) => law.id === lawId))
+    .filter((law): law is LawItem => Boolean(law))
+    .map((law) => toLawInterestItem(store, toPublicLawItem(store, law)))
+    .sort((left, right) => new Date(right.proposedDate || right.statusDate || 0).getTime() - new Date(left.proposedDate || left.statusDate || 0).getTime());
+  return json(200, { topic: toLawTopicCard(store, topic), bills });
+}
+
+function lawTopicCards(store: Store, sort: "interest" | "proposed_desc"): LawTopicCard[] {
+  return store.lawTopics.map((topic) => toLawTopicCard(store, topic)).sort((left, right) => sort === "proposed_desc"
+    ? new Date(right.latestProposedDate || 0).getTime() - new Date(left.latestProposedDate || 0).getTime() || left.label.localeCompare(right.label, "ko")
+    : right.interestScore - left.interestScore || new Date(right.latestProposedDate || 0).getTime() - new Date(left.latestProposedDate || 0).getTime());
+}
+
+function toLawTopicCard(store: Store, topic: LawTopic): LawTopicCard {
+  const laws = topic.billIds.map((id) => store.lawItems.find((law) => law.id === id)).filter((law): law is LawItem => Boolean(law));
+  const lawIds = new Set(laws.map((law) => law.id));
+  const links = store.issueLawLinks.filter((link) => lawIds.has(link.lawItemId) && store.issues.some((issue) => issue.id === link.issueId));
+  const issueIds = new Set(links.map((link) => link.issueId));
+  const relatedTargets = new Map<string, ReturnType<typeof issueTargets>[number]>();
+  for (const issueId of issueIds) {
+    for (const related of issueTargets(store, issueId)) relatedTargets.set(`${related.targetType}:${related.target.id}`, related);
+  }
+  const regions = new Set([...relatedTargets.values()].map(({ target }) => publicTargetRegionLabel(target)).filter(Boolean));
+  const claims = publicClaimsForIssueIds(store, issueIds);
+  const stageCounts: Record<string, number> = {};
+  for (const law of laws) stageCounts[law.stage] = (stageCounts[law.stage] ?? 0) + 1;
+  const latestProposedDate = latestDate(laws.map((law) => law.proposedDate))?.toISOString();
+  const scheduleProximityScore = Math.max(0, ...laws.map(lawScheduleProximityScore));
+  return {
+    id: topic.id,
+    lawName: topic.lawName,
+    label: topic.label,
+    representativeKeywords: topic.representativeKeywords,
+    billCount: laws.length,
+    latestProposedDate,
+    stageCounts,
+    linkedIssueCount: issueIds.size,
+    occurrenceCount: relatedTargets.size,
+    regionCount: regions.size,
+    interestScore: relatedTargets.size * 25 + regions.size * 20 + claims.length * 8 + scheduleProximityScore + issueIds.size * 5
+  };
 }
 
 function getLaw(store: Store, id: string | undefined): ApiResponse {
@@ -2462,6 +2524,11 @@ function toLawInterestItem(store: Store, law: ReturnType<typeof toPublicLawItem>
     proposedDate: law.proposedDate,
     statusDate: law.statusDate,
     officialUrl: law.officialUrl,
+    assemblyBillNo: law.assemblyBillNo,
+    proposer: law.proposer,
+    proposalSummary: law.proposalSummary,
+    topicKeywords: law.topicKeywords,
+    primaryLawTopicId: law.primaryLawTopicId,
     linkedIssueCount: law.linkedIssueCount,
     occurrenceCount: law.occurrenceCount,
     regionCount: law.regionCount,
@@ -3002,6 +3069,7 @@ function postInternalIngestLaws(store: Store, body: unknown): ApiResponse {
     upserted.push(law);
   }
   refreshIssueLawLinks(store);
+  synchronizeLawTopics(store, true);
   return json(200, {
     status: "laws_ingested",
     laws: upserted.map((law) => toPublicLawItem(store, law))
@@ -3503,7 +3571,12 @@ function toPublicLawItem(store: Store, law: LawItem) {
     statusDate: law.statusDate?.toISOString(),
     effectiveDate: law.effectiveDate?.toISOString(),
     assemblyBillId: law.assemblyBillId,
+    assemblyBillNo: law.assemblyBillNo,
     lawId: law.lawId,
+    proposer: law.proposer,
+    proposalSummary: law.proposalSummary,
+    topicKeywords: law.topicKeywords ?? [],
+    primaryLawTopicId: law.primaryLawTopicId,
     summary: law.summary,
     officialUrl: law.officialUrl,
     keywords: law.keywords,
@@ -3565,6 +3638,42 @@ function refreshIssueLawLinks(store: Store): void {
   store.issueLawLinks = [...next.values()];
 }
 
+function synchronizeLawTopics(store: Store, recordChanges: boolean): void {
+  store.lawTopics ??= [];
+  store.lawTopicMemberships ??= [];
+  const previousTopics = new Map(store.lawTopics.map((topic) => [topic.id, topic]));
+  const previousMemberships = new Map(store.lawTopicMemberships.map((membership) => [membership.lawItemId, membership]));
+  const next = buildLawTopics(store.lawItems);
+
+  for (const law of store.lawItems) {
+    const assignment = next.assignments.get(law.id);
+    law.primaryLawTopicId = assignment?.topicId;
+    law.topicKeywords = assignment?.keywords ?? [];
+  }
+  store.lawTopics = next.topics;
+  store.lawTopicMemberships = next.memberships;
+  if (!recordChanges) return;
+
+  for (const topic of next.topics) {
+    const previous = previousTopics.get(topic.id);
+    if (!previous) audit(store, "state_change", "law_topic", topic.id, `공식 법안 대표 키워드로 '${topic.label}' 주제가 자동 생성되었습니다.`);
+    else if (previous.label !== topic.label || previous.representativeKeywords.join("|") !== topic.representativeKeywords.join("|")) {
+      audit(store, "correction", "law_topic", topic.id, `공식 제안이유·주요내용 재분석으로 '${topic.label}' 대표 키워드가 갱신되었습니다.`);
+    }
+  }
+  for (const membership of next.memberships) {
+    const previous = previousMemberships.get(membership.lawItemId);
+    if (!previous || previous.lawTopicId === membership.lawTopicId) continue;
+    audit(store, "split", "law_topic", previous.lawTopicId, "공식 개정 목적 키워드 변경으로 법안이 기존 주제에서 분리되었습니다.");
+    audit(store, "merge", "law_topic", membership.lawTopicId, "공식 개정 목적 키워드가 일치하여 법안이 이 주제로 자동 편입되었습니다.");
+  }
+  for (const previous of previousTopics.values()) {
+    if (!next.topics.some((topic) => topic.id === previous.id)) {
+      audit(store, "merge", "law_topic", previous.id, "소속 법안의 대표 키워드 변경으로 기존 주제가 다른 주제로 병합되었습니다.");
+    }
+  }
+}
+
 function matchLawToIssue(
   store: Store,
   law: LawItem,
@@ -3618,7 +3727,12 @@ function readLawItem(data: Record<string, unknown>): LawItem {
     statusDate: readOptionalDate(data, "statusDate"),
     effectiveDate: readOptionalDate(data, "effectiveDate"),
     assemblyBillId: readOptionalString(data, "assemblyBillId"),
+    assemblyBillNo: readOptionalString(data, "assemblyBillNo"),
     lawId: readOptionalString(data, "lawId"),
+    proposer: readOptionalString(data, "proposer"),
+    proposalSummary: readOptionalString(data, "proposalSummary"),
+    topicKeywords: readOptionalStringArray(data, "topicKeywords"),
+    primaryLawTopicId: readOptionalString(data, "primaryLawTopicId"),
     summary: readOptionalString(data, "summary"),
     officialUrl: readOfficialLawUrl(source, data),
     keywords: readLawKeywords(data, lawName, billTitle)

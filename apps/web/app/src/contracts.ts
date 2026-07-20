@@ -96,11 +96,35 @@ export interface LawInterestItem {
   proposedDate?: string;
   statusDate?: string;
   officialUrl?: string;
+  assemblyBillNo?: string;
+  proposer?: string;
+  proposalSummary?: string;
+  topicKeywords?: string[];
+  primaryLawTopicId?: string;
   linkedIssueCount: number;
   occurrenceCount: number;
   regionCount: number;
   interestScore: number;
   linkedIssueIds?: string[];
+}
+
+export interface LawTopicCard {
+  id: string;
+  lawName: string;
+  label: string;
+  representativeKeywords: string[];
+  billCount: number;
+  latestProposedDate?: string;
+  stageCounts: Record<string, number>;
+  linkedIssueCount: number;
+  occurrenceCount: number;
+  regionCount: number;
+  interestScore: number;
+}
+
+export interface LawTopicDetailData {
+  topic: LawTopicCard;
+  bills: LawInterestItem[];
 }
 
 export interface ReportCandidate {
@@ -152,6 +176,7 @@ export interface AppDataset {
   occurrences: OccurrenceDigest[];
   reels: EvidenceReel[];
   laws: LawInterestItem[];
+  lawTopics: LawTopicCard[];
   claimsByIssue: Record<string, PublicClaim[]>;
   claimsByOccurrence: Record<string, PublicClaim[]>;
   map: MapData;

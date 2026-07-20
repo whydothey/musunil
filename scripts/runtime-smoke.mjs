@@ -21,6 +21,7 @@ await check("home", async () => {
 await check("laws", async () => {
   const body = await request("GET", "/laws");
   assert(Array.isArray(body.laws), "laws list is missing");
+  assert(Array.isArray(body.lawTopics), "law topic list is missing");
   assert(body.laws.length > 0, "laws list is empty");
   const law = body.laws[0];
   assert(law.id && law.lawName && law.source, "law card identity fields missing");
@@ -30,6 +31,13 @@ await check("laws", async () => {
   assert(detail.law?.id === law.id, "law detail identity mismatch");
   assert(Array.isArray(detail.issues), "law detail issues missing");
   assert(Array.isArray(detail.relatedTargets), "law detail relatedTargets missing");
+  const topic = body.lawTopics[0];
+  if (topic) {
+    assert(topic.id && topic.label && topic.billCount > 0, "law topic card fields missing");
+    const topicDetail = await request("GET", `/law-topics/${encodeURIComponent(topic.id)}`);
+    assert(topicDetail.topic?.id === topic.id, "law topic detail identity mismatch");
+    assert(Array.isArray(topicDetail.bills) && topicDetail.bills.length === topic.billCount, "law topic bill membership mismatch");
+  }
 });
 
 await check("ready", async () => {
