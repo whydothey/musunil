@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { backfillOfficialLocationScheduleIssues, canServePublicRedactedMedia, createApp, createSeedStore, decryptLiveMediaBytes, emptyStore } from "./app.ts";
+import { canServePublicRedactedMedia, createApp, createSeedStore, decryptLiveMediaBytes, emptyStore, isOccurrenceWithinPublicDiscoveryWindow, koreaRecentCalendarCutoff, reconcileLegacyLocationScheduleIssues } from "./app.ts";
 import { enforcePublicWriteRateLimit, publicWriteRateLimitKey, readJsonBody } from "./http-boundary.ts";
 import { assertStorageSmokeKey, storageSmokeKey, storageSmokePrefix } from "./live-media-storage.ts";
 import { decryptSnapshot, encryptSnapshot, hydrateStore } from "./postgres-store.ts";
@@ -21,6 +21,7 @@ const app = createApp(store, {
   internalApiKey: "test_internal_key",
   userTokenSecret: testUserTokenSecret,
   identity: testIdentity,
+  publicDiscoveryNow: () => now,
   readiness: () => ({ ready: true, checks: [{ id: "test", ok: true, message: "ok" }] })
 });
 const productionSeed = createSeedStore({ includeMockData: false });
@@ -55,6 +56,7 @@ const linkReviewGroup = linkReviewStore.lawGroups[0];
 linkReviewStore.issues.push({
   id: "issue_law_group_review",
   title: linkReviewGroup.coreTopics[0]?.label || linkReviewGroup.lawName,
+  kind: "topic",
   normalizedTopicKey: "law-group-review",
   topicTags: linkReviewGroup.coreTopics[0]?.representativeKeywords || [linkReviewGroup.lawName],
   status: "active",
@@ -136,7 +138,7 @@ const updatedNewsBudget = await newsReviewApp.handle({ method: "POST", path: "/i
 assert.equal((updatedNewsBudget.body as { callCount: number; remaining: number }).callCount, 24);
 assert.equal((updatedNewsBudget.body as { remaining: number }).remaining, 19_976);
 const productionHome = await createApp(productionSeed).handle({ method: "GET", path: "/home" });
-assert.equal(JSON.stringify(productionHome.body).includes("대구 0709(목) 오늘의 집회 공개 일정"), true);
+assert.equal(JSON.stringify(productionHome.body).includes("대구 0709(목) 오늘의 집회 공개 일정"), false);
 assert.equal(JSON.stringify(productionHome.body).includes("부산 도심 행진 가능성"), false);
 assert.equal(JSON.stringify(productionHome.body).includes("issueCards"), true);
 assert.equal((productionHome.body as { issueCards: unknown[] }).issueCards.length, 0);
@@ -162,11 +164,14 @@ delete legacySnapshot.lawGroups;
 delete legacySnapshot.lawGroupMemberships;
 delete legacySnapshot.issueLawGroupLinks;
 delete legacySnapshot.legacyLawTopicAliases;
+delete (legacySnapshot.issues as Array<Record<string, unknown>>)[0]?.kind;
 const hydratedLegacyStore = hydrateStore(legacySnapshot as unknown as typeof legacySourceStore);
 assert.equal(hydratedLegacyStore.lawGroups.length > 0, true);
 assert.equal(hydratedLegacyStore.legacyLawTopicAliases.law_topic_legacy, hydratedLegacyStore.lawItems.find((law) => law.id === legacySourceGroup.billIds[0])?.lawGroupId);
 assert.equal(hydratedLegacyStore.issueLawGroupLinks.some((link) => link.status === "approved" && link.matchBasis === "manual"), true);
 assert.equal("lawTopics" in hydratedLegacyStore, false);
+assert.equal(hydratedLegacyStore.issues[0]?.kind, "schedule_cluster");
+assert.equal(hydratedLegacyStore.auditLogs.some((log) => log.targetId === hydratedLegacyStore.issues[0]?.id && log.action === "state_change"), true);
 const generatedStorageSmokeKey = storageSmokeKey();
 assert.equal(generatedStorageSmokeKey.startsWith(storageSmokePrefix()), true);
 assert.doesNotThrow(() => assertStorageSmokeKey(generatedStorageSmokeKey));
@@ -1447,15 +1452,15 @@ assert.equal(JSON.stringify(home.body).includes("issue_sample_impeachment_march"
 assert.equal(JSON.stringify(home.body).includes("위치 인증 제보 있음"), true);
 assert.equal(JSON.stringify(home.body).includes("부산 도심 행진 가능성"), true);
 assert.equal(JSON.stringify(home.body).includes("인파 밀집 신호"), false);
-assert.equal(JSON.stringify(home.body).includes("경찰청 2011~2023 집회 신고·개최 통계"), true);
-assert.equal(JSON.stringify(home.body).includes("대구 2020~2025 집회 신고·개최 현황"), true);
-assert.equal(JSON.stringify(home.body).includes("대구 0709(목) 오늘의 집회 공개 일정"), true);
-assert.equal(JSON.stringify(home.body).includes("대구 0707(화) 오늘의 집회 공개 일정"), true);
-assert.equal(JSON.stringify(home.body).includes("대구 0706(월) 오늘의 집회 공개 일정"), true);
-assert.equal(JSON.stringify(home.body).includes("대구 0704(토)~0705(일) 오늘의 집회 공개 일정"), true);
+assert.equal(JSON.stringify(home.body).includes("경찰청 2011~2023 집회 신고·개최 통계"), false);
+assert.equal(JSON.stringify(home.body).includes("대구 2020~2025 집회 신고·개최 현황"), false);
+assert.equal(JSON.stringify(home.body).includes("대구 0709(목) 오늘의 집회 공개 일정"), false);
+assert.equal(JSON.stringify(home.body).includes("대구 0707(화) 오늘의 집회 공개 일정"), false);
+assert.equal(JSON.stringify(home.body).includes("대구 0706(월) 오늘의 집회 공개 일정"), false);
+assert.equal(JSON.stringify(home.body).includes("대구 0704(토)~0705(일) 오늘의 집회 공개 일정"), false);
 assert.equal(JSON.stringify(home.body).includes("UPCOMING"), true);
-assert.equal(JSON.stringify(home.body).includes("ENDED"), true);
-assert.equal(JSON.stringify(home.body).includes("ARCHIVED"), true);
+assert.equal(JSON.stringify(home.body).includes("ENDED"), false);
+assert.equal(JSON.stringify(home.body).includes("ARCHIVED"), false);
 assert.equal(JSON.stringify(home.body).includes("WEAKLY_OBSERVED"), false);
 assert.equal(JSON.stringify(home.body).includes("traffic_control"), false);
 const homeContract = home.body as {
@@ -1536,6 +1541,7 @@ const qualityStore = createSeedStore({ includeMockData: false });
 qualityStore.issues.push({
   id: "issue_quality_confidence",
   title: "규모 추정 품질 검증 집회",
+  kind: "topic",
   normalizedTopicKey: "topic:quality-confidence",
   topicTags: ["품질 검증", "집회"],
   status: "active",
@@ -1700,6 +1706,7 @@ assert.equal(monthly.status, 200);
 
 const protectedApp = createApp(createSeedStore(), {
   internalApiKey: "test_internal_key",
+  publicDiscoveryNow: () => new Date("2026-07-12T01:00:00.000Z"),
   readiness: () => ({ ready: true, checks: [{ id: "test", ok: true, message: "ok" }] })
 });
 assert.equal((await protectedApp.handle({ method: "GET", path: "/ready" })).status, 200);
@@ -1848,20 +1855,56 @@ assert.equal(JSON.stringify(individualDetail.body).includes("광화문교차로 
 assert.equal((individualDetail.body as { occurrence: { publicLocation: { label: string; precision: string } } }).occurrence.publicLocation.label, "서울광장·광화문 일대");
 assert.equal((individualDetail.body as { occurrence: { publicLocation: { label: string; precision: string } } }).occurrence.publicLocation.precision, "area");
 const individualIssueId = (individualDetail.body as { occurrence: { issueId?: string } }).occurrence.issueId;
-assert.equal(typeof individualIssueId, "string");
-assert.equal(emptyOfficialStore.issues.find((issue) => issue.id === individualIssueId)?.title, "서울광장·광화문 일대 집회 일정");
-assert.equal(emptyOfficialStore.auditLogs.some((log) => log.targetId === individualIssueId && log.action === "split"), true);
+assert.equal(individualIssueId, undefined);
+assert.equal(emptyOfficialStore.issues.some((issue) => issue.title === "서울광장·광화문 일대 집회 일정"), false);
 const individualHome = await emptyOfficialApp.handle({ method: "GET", path: "/home" });
-assert.equal(JSON.stringify((individualHome.body as { issueCards: unknown }).issueCards).includes("서울광장·광화문 일대 집회 일정"), true);
+assert.equal(JSON.stringify((individualHome.body as { issueCards: unknown }).issueCards).includes("서울광장·광화문 일대 집회 일정"), false);
 const legacyIndividualStore = structuredClone(emptyOfficialStore);
 const legacyIndividualOccurrence = legacyIndividualStore.occurrences.find((item) => item.id === "occ_seoul_2026_07_20_2021_1");
-if (!legacyIndividualOccurrence || !individualIssueId) throw new Error("individual schedule backfill fixture missing");
-legacyIndividualOccurrence.issueId = undefined;
-legacyIndividualStore.issues = legacyIndividualStore.issues.filter((issue) => issue.id !== individualIssueId);
-assert.equal(backfillOfficialLocationScheduleIssues(legacyIndividualStore), 1);
-assert.equal(legacyIndividualOccurrence.issueId, individualIssueId);
-assert.equal(legacyIndividualStore.auditLogs.some((log) => log.targetId === legacyIndividualOccurrence.id && log.action === "merge"), true);
-assert.equal(backfillOfficialLocationScheduleIssues(legacyIndividualStore), 0);
+if (!legacyIndividualOccurrence) throw new Error("individual schedule reconcile fixture missing");
+const legacyIssueId = "issue_legacy_location_schedule";
+legacyIndividualStore.issues.push({
+  id: legacyIssueId,
+  title: "서울광장·광화문 일대 집회 일정",
+  kind: "topic",
+  normalizedTopicKey: "topic:legacy-location-schedule",
+  topicTags: ["서울광장·광화문 일대", "장소별 일정", "집회 일정"],
+  status: "active",
+  firstSeenAt: now,
+  lastUpdatedAt: now
+});
+legacyIndividualOccurrence.issueId = legacyIssueId;
+assert.equal(reconcileLegacyLocationScheduleIssues(legacyIndividualStore) >= 3, true);
+assert.equal(legacyIndividualOccurrence.issueId, undefined);
+assert.equal(legacyIndividualStore.issues.find((issue) => issue.id === legacyIssueId)?.status, "archived");
+assert.equal(legacyIndividualStore.auditLogs.some((log) => log.targetId === legacyIndividualOccurrence.id && log.action === "split"), true);
+assert.equal(reconcileLegacyLocationScheduleIssues(legacyIndividualStore), 0);
+const discoveryNow = new Date("2026-07-21T01:00:00.000Z");
+assert.equal(koreaRecentCalendarCutoff(discoveryNow).toISOString(), "2026-07-14T15:00:00.000Z");
+assert.equal(isOccurrenceWithinPublicDiscoveryWindow({
+  ...legacyIndividualOccurrence,
+  lifecycleState: "ENDED",
+  startsAt: new Date("2026-07-14T15:00:00.000Z"),
+  endsAt: new Date("2026-07-14T15:00:00.000Z")
+}, discoveryNow), true);
+assert.equal(isOccurrenceWithinPublicDiscoveryWindow({
+  ...legacyIndividualOccurrence,
+  lifecycleState: "ENDED",
+  startsAt: new Date("2026-07-14T14:59:59.999Z"),
+  endsAt: new Date("2026-07-14T14:59:59.999Z")
+}, discoveryNow), false);
+assert.equal(isOccurrenceWithinPublicDiscoveryWindow({
+  ...legacyIndividualOccurrence,
+  lifecycleState: "UPCOMING",
+  startsAt: new Date("2026-07-01T00:00:00.000Z"),
+  endsAt: new Date("2026-07-01T01:00:00.000Z")
+}, discoveryNow), false);
+assert.equal(isOccurrenceWithinPublicDiscoveryWindow({
+  ...legacyIndividualOccurrence,
+  lifecycleState: "UPCOMING",
+  startsAt: new Date("2026-07-22T00:00:00.000Z"),
+  endsAt: new Date("2026-07-22T01:00:00.000Z")
+}, discoveryNow), true);
 const individualMap = await emptyOfficialApp.handle({ method: "GET", path: "/map" });
 assert.equal((individualMap.body as { geojson: { pins: { features: Array<{ properties: { targetId: string } }> } } }).geojson.pins.features.some((pin) => pin.properties.targetId === "occ_seoul_2026_07_20_2021_1"), true);
 const emptyOfficialBatch = await emptyOfficialApp.handle({
