@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from "node:crypto";
 import pg from "pg";
 import type { Store } from "./app.ts";
 import { buildLawGroups } from "./law-topics.ts";
@@ -149,6 +149,13 @@ export function hydrateStore(store: Store): Store {
   delete legacy.lawTopicMemberships;
   delete legacy.issueLawLinks;
   for (const issue of store.issues) {
+    if (!issue.kind) {
+      issue.kind = issue.id.startsWith("issue_public_") || issue.topicTags.includes("장소별 일정") ? "schedule_cluster" : "topic";
+      const createdAt = new Date();
+      const reason = issue.kind === "schedule_cluster" ? "기존 장소 일정 묶음을 주제와 구분하도록 분류했습니다." : "기존 이슈를 주제 유형으로 분류했습니다.";
+      store.auditLogs.push({ id: randomUUID(), action: "state_change", targetType: "issue", targetId: issue.id, createdAt, reason });
+      store.transparencyLogs.push({ id: randomUUID(), action: "state_change", targetType: "issue", targetId: issue.id, createdAt, publicReason: reason });
+    }
     issue.firstSeenAt = date(issue.firstSeenAt);
     issue.lastUpdatedAt = date(issue.lastUpdatedAt);
   }

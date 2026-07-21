@@ -14,15 +14,22 @@ import type { DataSource } from "./source-contract";
 
 const apiBaseUrl = String(window.MUSUNIL_WEB_CONFIG?.apiBaseUrl || "").replace(/\/$/, "");
 
-async function request<T>(path: string): Promise<T> {
+async function request<T>(path: string, timeoutMs = 65_000): Promise<T> {
   if (!apiBaseUrl) throw new Error("service_unavailable");
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    credentials: "include",
-    headers: { accept: "application/json" }
-  });
-  const body = (await response.json().catch(() => ({}))) as T & { error?: string };
-  if (!response.ok) throw new Error(body.error || "service_unavailable");
-  return body;
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(`${apiBaseUrl}${path}`, {
+      credentials: "include",
+      headers: { accept: "application/json" },
+      signal: controller.signal
+    });
+    const body = (await response.json().catch(() => ({}))) as T & { error?: string };
+    if (!response.ok) throw new Error(body.error || "service_unavailable");
+    return body;
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
 export async function getIssueDetail(id: string): Promise<IssueDetailData> {
@@ -53,14 +60,10 @@ export const dataSource: DataSource = {
   async loadDataset(): Promise<AppDataset> {
     const results = await Promise.allSettled([
       request<{ issueOverviews?: IssueOverview[]; occurrenceDigests?: OccurrenceDigest[] }>("/home"),
-      request<{ reels?: AppDataset["reels"] }>("/reels"),
-      request<{ lawInterestItems?: LawInterestItem[]; lawGroups?: LawGroupCard[] }>("/laws?sort=interest"),
       request<MapData>("/map")
     ]);
     const home = results[0].status === "fulfilled" ? results[0].value : {};
-    const reels = results[1].status === "fulfilled" ? results[1].value : {};
-    const laws = results[2].status === "fulfilled" ? results[2].value : {};
-    const map = results[3].status === "fulfilled" ? results[3].value : {
+    const map = results[1].status === "fulfilled" ? results[1].value : {
       occurrenceDigests: [],
       geojson: {
         pins: { type: "FeatureCollection" as const, features: [] },
@@ -69,19 +72,32 @@ export const dataSource: DataSource = {
     };
     if (results.every((result) => result.status === "rejected")) throw new Error("service_unavailable");
     const issues = home.issueOverviews || [];
-    const occurrences = (home.occurrenceDigests || map.occurrenceDigests || []).map(sanitizeOfficialScheduleOccurrence);
+    const occurrences = (home.occurrenceDigests?.length ? home.occurrenceDigests : map.occurrenceDigests || []).map(sanitizeOfficialScheduleOccurrence);
     const claimsByIssue: Record<string, PublicClaim[]> = {};
     const newsByIssue: AppDataset["newsByIssue"] = {};
     return {
       issues,
       occurrences,
-      reels: reels.reels || [],
-      laws: laws.lawInterestItems || [],
-      lawGroups: laws.lawGroups || [],
+      reels: [],
+      laws: [],
+      lawGroups: [],
       claimsByIssue,
       newsByIssue,
       claimsByOccurrence: {},
       map
+    };
+  },
+  async loadSupplementalDataset() {
+    const results = await Promise.allSettled([
+      request<{ reels?: AppDataset["reels"] }>("/reels"),
+      request<{ lawInterestItems?: LawInterestItem[]; lawGroups?: LawGroupCard[] }>("/laws?sort=interest")
+    ]);
+    const reels = results[0].status === "fulfilled" ? results[0].value : {};
+    const laws = results[1].status === "fulfilled" ? results[1].value : {};
+    return {
+      reels: reels.reels || [],
+      laws: laws.lawInterestItems || [],
+      lawGroups: laws.lawGroups || []
     };
   },
   loadIssue: getIssueDetail,

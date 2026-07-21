@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { dirname, extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ApiError, backfillOfficialLocationScheduleIssues, canServePublicRedactedMedia, createApp, createSeedStore, stripPreviewData } from "./app.ts";
+import { ApiError, canServePublicRedactedMedia, createApp, createSeedStore, reconcileLegacyLocationScheduleIssues, stripPreviewData } from "./app.ts";
 import { createPublicWriteRateLimiter, readJsonBody } from "./http-boundary.ts";
 import { createLiveMediaStorage } from "./live-media-storage.ts";
 import { loadPostgresStore, pingOpsSchedulerSchema, pingPostgres, savePostgresStore } from "./postgres-store.ts";
@@ -28,7 +28,7 @@ const runtimeReadiness = async () => {
 const seedStore = createSeedStore({ includeMockData: runtime.includeMockData });
 const loadedStore = runtime.databaseUrl ? await loadPostgresStore(runtime.databaseUrl, seedStore, runtime.encryptionKey) : seedStore;
 const initialStore = runtime.includeMockData ? loadedStore : stripPreviewData(loadedStore);
-const initialLocationIssueBackfillCount = backfillOfficialLocationScheduleIssues(initialStore);
+const initialScheduleIssueReconcileCount = reconcileLegacyLocationScheduleIssues(initialStore);
 const app = createApp(initialStore, {
   readiness: runtimeReadiness,
   internalApiKey: runtime.internalApiKey,
@@ -46,11 +46,11 @@ const port = Number(process.env.PORT ?? 4000);
 let shuttingDown = false;
 let storeIoQueue = Promise.resolve();
 let nextStoreRefreshAt = Date.now() + 30_000;
-let initialBackfillTimer: ReturnType<typeof setTimeout> | undefined;
+let initialReconcileTimer: ReturnType<typeof setTimeout> | undefined;
 
-if (runtime.databaseUrl && initialLocationIssueBackfillCount > 0) {
-  initialBackfillTimer = setTimeout(() => void persistStore(), 10_000);
-  initialBackfillTimer.unref();
+if (runtime.databaseUrl && initialScheduleIssueReconcileCount > 0) {
+  initialReconcileTimer = setTimeout(() => void persistStore(), 10_000);
+  initialReconcileTimer.unref();
 }
 
 const server = createServer(async (req, res) => {
@@ -88,7 +88,7 @@ process.once("SIGINT", () => void shutdown("SIGINT"));
 async function shutdown(signal: string): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
-  clearTimeout(initialBackfillTimer);
+  clearTimeout(initialReconcileTimer);
   const timeout = setTimeout(() => process.exit(1), 8_000);
   timeout.unref();
 
@@ -120,9 +120,9 @@ async function refreshStoreFromPostgresIfDue(): Promise<void> {
   storeIoQueue = storeIoQueue.catch(() => undefined).then(async () => {
     const refreshed = await loadPostgresStore(databaseUrl, app.store, runtime.encryptionKey);
     const visibleStore = runtime.includeMockData ? refreshed : stripPreviewData(refreshed);
-    const backfilled = backfillOfficialLocationScheduleIssues(visibleStore);
+    const reconciled = reconcileLegacyLocationScheduleIssues(visibleStore);
     Object.assign(app.store, visibleStore);
-    if (backfilled > 0) await savePostgresStore(databaseUrl, app.store, runtime.encryptionKey);
+    if (reconciled > 0) await savePostgresStore(databaseUrl, app.store, runtime.encryptionKey);
   });
   try {
     await storeIoQueue;

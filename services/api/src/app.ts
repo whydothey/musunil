@@ -146,6 +146,7 @@ export type AppOptions = {
   requireExternalLiveStorage?: boolean;
   requireReadyForWrites?: boolean;
   allowAnonymousSession?: boolean;
+  publicDiscoveryNow?: () => Date;
   retention?: {
     rawClaimStatementDays?: number;
     unverifiedOriginalMediaDays?: number;
@@ -240,6 +241,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     {
       id: "issue_public_regional_schedule",
       title: "지역별 집회 공개 일정",
+      kind: "schedule_cluster",
       normalizedTopicKey: "topic:regional-public-assembly-schedules",
       topicTags: ["지역별", "오늘의 집회시위", "공개 일정"],
       status: "active",
@@ -249,6 +251,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     {
       id: "issue_public_daegu_stats",
       title: "대구 집회 신고·개최 현황",
+      kind: "schedule_cluster",
       normalizedTopicKey: "topic:daegu-public-assembly-statistics",
       topicTags: ["대구", "신고 통계", "개최 현황"],
       status: "active",
@@ -258,6 +261,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     {
       id: "issue_public_national_stats",
       title: "전국 집회 신고·개최 통계",
+      kind: "schedule_cluster",
       normalizedTopicKey: "topic:national-public-assembly-statistics",
       topicTags: ["전국", "신고 통계", "경찰청 자료"],
       status: "active",
@@ -267,6 +271,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     {
       id: "issue_1",
       title: "정보통신망법 개정 반대 집회",
+      kind: "topic",
       normalizedTopicKey: "ict-network-law-amendment-opposition",
       topicTags: ["정보통신망법 개정", "반대", "집회"],
       status: "active",
@@ -276,6 +281,7 @@ export function createSeedStore(options: SeedStoreOptions = {}): Store {
     {
       id: "issue_sample_impeachment_march",
       title: "대통령 탄핵 요구 행진",
+      kind: "topic",
       normalizedTopicKey: "presidential-impeachment-demand",
       topicTags: ["대통령 탄핵", "행진", "집회"],
       status: "active",
@@ -905,7 +911,7 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
   if (request.method === "GET" && path === "/me") return getMe(store, request, options);
   if (request.method === "POST" && path === "/auth/logout") return postLogout(store, request, options);
   if (request.method === "GET" && path === "/home") {
-    const cards = homeCards(store);
+    const cards = homeCards(store, options.publicDiscoveryNow?.() ?? new Date());
     const issues = issueCards(store, cards);
     return json(200, {
       issueCards: issues,
@@ -928,15 +934,22 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
     return getTargetLiveClaims(store, path.split("/")[2], path.split("/")[3]);
   }
   if (request.method === "GET" && path.startsWith("/targets/")) return getTargetDetail(store, path.split("/")[2], path.split("/")[3]);
-  if (request.method === "GET" && path === "/issues") return json(200, { issues: store.issues.filter((issue) => !isPublicSourceBundleIssue(issue)).map(toPublicIssue) });
-  if (request.method === "GET" && path.startsWith("/issues/")) return getIssue(store, path.split("/")[2]);
+  if (request.method === "GET" && path === "/issues") {
+    return json(200, {
+      issues: store.issues
+        .filter(isPublicTopicIssue)
+        .filter((issue) => publicIssueTargetsWithinDiscoveryWindow(store, issue.id, options.publicDiscoveryNow?.() ?? new Date()).length > 0)
+        .map(toPublicIssue)
+    });
+  }
+  if (request.method === "GET" && path.startsWith("/issues/")) return getIssue(store, path.split("/")[2], options.publicDiscoveryNow?.() ?? new Date());
   if (request.method === "GET" && path.startsWith("/occurrences/")) return getOccurrence(store, path.split("/")[2]);
   if (request.method === "GET" && path.startsWith("/continuous-presences/")) {
     return getTargetById(store, "continuous_presence", path.split("/")[2], "continuous_presence_not_found");
   }
   if (request.method === "GET" && path === "/area-clusters") return json(200, { areaClusters: store.areaClusters.map(toPublicAreaCluster) });
   if (request.method === "GET" && path === "/public-sources/coverage") return json(200, { coverage: sourceCoverageReport(store.publicSourceRefreshes) });
-  if (request.method === "GET" && path === "/map") return getMap(store);
+  if (request.method === "GET" && path === "/map") return getMap(store, options.publicDiscoveryNow?.() ?? new Date());
   if (request.method === "GET" && path === "/me/reports") {
     return withVerifiedUserScope(store, request, options, url.searchParams.get("userId"), (userId) => getMyReports(store, userId));
   }
@@ -1467,8 +1480,13 @@ function readNested(value: unknown, paths: string[]): unknown {
   return undefined;
 }
 
-function homeCards(store: Store) {
-  const occurrenceCards = store.occurrences.filter((occurrence) => !isSourceOnlyOccurrence(store, occurrence)).map((occurrence) => {
+function homeCards(store: Store, now = new Date()) {
+  const occurrenceCards = store.occurrences
+    .filter((occurrence) => {
+      const issue = occurrence.issueId ? store.issues.find((item) => item.id === occurrence.issueId) : undefined;
+      return Boolean(issue && isPublicTopicIssue(issue) && !isSourceOnlyOccurrence(store, occurrence) && isOccurrenceWithinPublicDiscoveryWindow(occurrence, now));
+    })
+    .map((occurrence) => {
     const claims = publicClaimsForTarget(store, "occurrence", occurrence.id);
     const publicEvidenceIds = new Set(claims.flatMap((claim) => claim.evidenceIds));
     const evidence = store.evidence.filter((item) => publicEvidenceIds.has(item.id));
@@ -1506,7 +1524,12 @@ function homeCards(store: Store) {
     };
   });
 
-  const specialCards = store.continuousPresences.map((item) => ({
+  const specialCards = store.continuousPresences
+    .filter((item) => {
+      const issue = item.issueId ? store.issues.find((candidate) => candidate.id === item.issueId) : undefined;
+      return Boolean(issue && isPublicTopicIssue(issue) && isContinuousPresenceWithinPublicDiscoveryWindow(item, now));
+    })
+    .map((item) => ({
       id: item.id,
       issueId: item.issueId,
       targetType: "continuous_presence",
@@ -1607,10 +1630,11 @@ function toIssueOverview(store: Store, issue: ReturnType<typeof issueCards>[numb
 
 function issueCards(store: Store, cards = homeCards(store)) {
   return store.issues
-    .filter((issue) => !isPublicSourceBundleIssue(issue))
+    .filter(isPublicTopicIssue)
     .map((issue) => {
       const relatedCards = cards.filter((card) => card.issueId === issue.id);
-      const relatedTargets = issueTargets(store, issue.id);
+      const relatedTargetKeys = new Set(relatedCards.map((card) => `${card.targetType}:${card.id}`));
+      const relatedTargets = issueTargets(store, issue.id).filter(({ targetType, target }) => relatedTargetKeys.has(`${targetType}:${target.id}`));
       const relatedClaims = [
         ...publicClaimsForTarget(store, "issue", issue.id),
         ...relatedTargets.flatMap(({ targetType, target }) => publicClaimsForTarget(store, targetType, target.id))
@@ -1661,6 +1685,10 @@ function isPublicSourceBundleIssue(issue: Issue): boolean {
     || /신고[·\s-]*(공개|개최|통계)|공개\s*(일정|자료)|집회\s*신고\s*통계/.test(text);
 }
 
+function isPublicTopicIssue(issue: Issue): boolean {
+  return issue.kind === "topic" && issue.status !== "archived" && !isPublicSourceBundleIssue(issue);
+}
+
 function isSourceOnlyOccurrence(store: Store, occurrence: Occurrence): boolean {
   if (occurrence.publicVisibility === "source_only") return true;
   if (occurrence.publicVisibility === "public") return false;
@@ -1675,6 +1703,32 @@ function issueTargets(store: Store, issueId: string): Array<{ targetType: Target
     ...store.occurrences.filter((target) => target.issueId === issueId && !isSourceOnlyOccurrence(store, target)).map((target) => ({ targetType: "occurrence" as const, target })),
     ...store.continuousPresences.filter((target) => target.issueId === issueId).map((target) => ({ targetType: "continuous_presence" as const, target }))
   ];
+}
+
+const koreaUtcOffsetMs = 9 * 60 * 60 * 1000;
+
+export function koreaRecentCalendarCutoff(now = new Date()): Date {
+  const koreaNow = new Date(now.getTime() + koreaUtcOffsetMs);
+  return new Date(Date.UTC(koreaNow.getUTCFullYear(), koreaNow.getUTCMonth(), koreaNow.getUTCDate() - 6) - koreaUtcOffsetMs);
+}
+
+export function isOccurrenceWithinPublicDiscoveryWindow(occurrence: Occurrence, now = new Date()): boolean {
+  const lastScheduledAt = occurrence.endsAt ?? occurrence.startsAt;
+  if (!lastScheduledAt) return !["ENDED", "ARCHIVED", "CANCELED"].includes(occurrence.lifecycleState);
+  if (lastScheduledAt.getTime() >= now.getTime()) return true;
+  return lastScheduledAt.getTime() >= koreaRecentCalendarCutoff(now).getTime();
+}
+
+function publicIssueTargetsWithinDiscoveryWindow(store: Store, issueId: string, now = new Date()): Array<{ targetType: TargetType; target: TargetRecord }> {
+  return issueTargets(store, issueId).filter(({ targetType, target }) => targetType === "occurrence"
+    ? isOccurrenceWithinPublicDiscoveryWindow(target as Occurrence, now)
+    : isContinuousPresenceWithinPublicDiscoveryWindow(target as ContinuousPresence, now));
+}
+
+function isContinuousPresenceWithinPublicDiscoveryWindow(presence: ContinuousPresence, now = new Date()): boolean {
+  if (presence.state !== "ENDED" && presence.state !== "ARCHIVED") return true;
+  const lastObservedAt = presence.lastProofOfPresenceAt ?? presence.firstProofOfPresenceAt;
+  return Boolean(lastObservedAt && lastObservedAt.getTime() >= koreaRecentCalendarCutoff(now).getTime());
 }
 
 function homeCardOrderScore(card: { lifecycleState: string; targetType: string; priorityScore: number }) {
@@ -1714,13 +1768,13 @@ function findAreaCluster(store: Store, id: string): AreaCluster | undefined {
   return store.areaClusters.find((item) => item.id === id);
 }
 
-function getIssue(store: Store, id: string | undefined): ApiResponse {
+function getIssue(store: Store, id: string | undefined, now = new Date()): ApiResponse {
   const issue = store.issues.find((item) => item.id === id);
-  if (!issue || isPublicSourceBundleIssue(issue)) return json(404, { error: "issue_not_found" });
-  const targets = issueTargets(store, issue.id);
+  if (!issue || !isPublicTopicIssue(issue)) return json(404, { error: "issue_not_found" });
+  const targets = publicIssueTargetsWithinDiscoveryWindow(store, issue.id, now);
   const estimates = crowdEstimatesForIssue(store, issue.id);
   const occurrenceDigests = targets.map(({ targetType, target }) => toOccurrenceDigest(store, targetType as Extract<TargetType, "occurrence" | "continuous_presence">, target.id));
-  const cards = homeCards(store);
+  const cards = homeCards(store, now);
   const summaryCard = issueCards(store, cards).find((item) => item.id === issue.id);
   return json(200, {
     issue: toPublicIssue(issue),
@@ -1739,7 +1793,7 @@ function getIssue(store: Store, id: string | undefined): ApiResponse {
       item: toPublicTarget(targetType, target, publicClaimsForTarget(store, targetType, target.id))
     })),
     occurrences: store.occurrences
-      .filter((occurrence) => occurrence.issueId === issue.id && !isSourceOnlyOccurrence(store, occurrence))
+      .filter((occurrence) => occurrence.issueId === issue.id && !isSourceOnlyOccurrence(store, occurrence) && isOccurrenceWithinPublicDiscoveryWindow(occurrence, now))
       .map((occurrence) => toPublicOccurrence(occurrence, publicClaimsForTarget(store, "occurrence", occurrence.id))),
     occurrenceDigests
   });
@@ -2260,8 +2314,8 @@ function getTargetById(store: Store, targetType: TargetType, id: string | undefi
   });
 }
 
-function getMap(store: Store): ApiResponse {
-  const units = mapOccurrenceUnits(store);
+function getMap(store: Store, now = new Date()): ApiResponse {
+  const units = mapOccurrenceUnits(store, now);
   const pins = units
     .filter((unit) => unit.publicLocation)
     .map((unit, index) => ({
@@ -2325,9 +2379,9 @@ type MapOccurrenceUnit = {
   updatedAt?: Date;
 };
 
-function mapOccurrenceUnits(store: Store): MapOccurrenceUnit[] {
+function mapOccurrenceUnits(store: Store, now = new Date()): MapOccurrenceUnit[] {
   return [
-    ...store.occurrences.filter((item) => !isSourceOnlyOccurrence(store, item)).map((item) => ({
+    ...store.occurrences.filter((item) => !isSourceOnlyOccurrence(store, item) && isOccurrenceWithinPublicDiscoveryWindow(item, now)).map((item) => ({
       id: item.id,
       targetType: "occurrence" as const,
       issueId: item.issueId,
@@ -2337,7 +2391,7 @@ function mapOccurrenceUnits(store: Store): MapOccurrenceUnit[] {
       publicLocation: item.publicLocation,
       updatedAt: item.startsAt
     })),
-    ...store.continuousPresences.map((item) => ({
+    ...store.continuousPresences.filter((item) => isContinuousPresenceWithinPublicDiscoveryWindow(item, now)).map((item) => ({
       id: item.id,
       targetType: "continuous_presence" as const,
       issueId: item.issueId,
@@ -2588,7 +2642,7 @@ function getLaw(store: Store, id: string | undefined): ApiResponse {
   const group = store.lawGroups.find((item) => item.id === law.lawGroupId);
   const links = group ? approvedIssueLawGroupLinks(store).filter((link) => link.lawGroupId === group.id) : [];
   const linkedIssueIds = new Set(links.map((link) => link.issueId));
-  const linkedIssues = store.issues.filter((issue) => linkedIssueIds.has(issue.id) && !isPublicSourceBundleIssue(issue));
+  const linkedIssues = store.issues.filter((issue) => linkedIssueIds.has(issue.id) && isPublicTopicIssue(issue));
   return json(200, {
     law: toPublicLawItem(store, law),
     lawGroup: group ? toLawGroupCard(store, group) : undefined,
@@ -3075,10 +3129,9 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
   if (officialSource) ensureOfficialIngestReferences(store, officialSource, data, areaClusterId, issueId);
 
   if (!store.areaClusters.some((item) => item.id === areaClusterId)) throw new ApiError(404, "area_cluster_not_found");
-  const topicIssueId = resolveIssueIdForIngest(store, data) ?? (officialSource && publicVisibility === "public" && publicLocation
-    ? ensureOfficialLocationScheduleIssue(store, publicLocation.label)
-    : undefined);
-  if (issueId && isPublicSourceBundleIssueId(issueId) && topicIssueId) issueId = topicIssueId;
+  const topicIssueId = resolveIssueIdForIngest(store, data);
+  const requestedIssue = issueId ? store.issues.find((item) => item.id === issueId) : undefined;
+  if (requestedIssue?.kind === "schedule_cluster" || (issueId && isPublicSourceBundleIssueId(issueId))) issueId = topicIssueId;
   if (issueId && !store.issues.some((item) => item.id === issueId)) throw new ApiError(404, "issue_not_found");
   issueId ??= topicIssueId;
 
@@ -3105,6 +3158,14 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
     }
   } else {
     const previousVisibility = occurrence.publicVisibility;
+    if (occurrence.issueId) {
+      const previousIssue = store.issues.find((item) => item.id === occurrence!.issueId);
+      if (previousIssue?.kind === "schedule_cluster") {
+        const previousIssueId = occurrence.issueId;
+        occurrence.issueId = undefined;
+        audit(store, "split", "occurrence", id, `장소 일정 묶음 '${previousIssueId}'에서 분리되어 개별 일정으로 유지됩니다.`);
+      }
+    }
     if (!occurrence.issueId && issueId) {
       occurrence.issueId = issueId;
       audit(store, "merge", "occurrence", id, `공개 일정이 확인된 장소 일정 주제 '${issueId}'에 연결되었습니다.`);
@@ -3313,6 +3374,7 @@ function ensurePublicScheduleIssue(store: Store): Issue {
   const issue: Issue = {
     id,
     title: "지역별 경찰 공개 집회 일정",
+    kind: "schedule_cluster",
     normalizedTopicKey: "topic:regional-police-public-assembly-schedules",
     topicTags: ["지역별", "경찰 공개자료", "집회 예정 정보"],
     status: "active",
@@ -3433,6 +3495,7 @@ function ensureIssue(store: Store, input: IssueTopicInput): Issue {
   const issue: Issue = {
     id: `issue_${createHash("sha1").update(normalizedTopicKey).digest("hex").slice(0, 12)}`,
     title: input.title,
+    kind: "topic",
     normalizedTopicKey,
     topicTags: input.topicTags,
     status: "active",
@@ -3444,28 +3507,36 @@ function ensureIssue(store: Store, input: IssueTopicInput): Issue {
   return issue;
 }
 
-function ensureOfficialLocationScheduleIssue(store: Store, locationLabel: string): string {
-  return ensureIssue(store, {
-    title: `${locationLabel} 집회 일정`,
-    topicTags: [locationLabel, "장소별 일정", "집회 일정"]
-  }).id;
+function isLegacyLocationScheduleIssue(issue: Issue): boolean {
+  return issue.kind === "schedule_cluster" || issue.topicTags.includes("장소별 일정");
 }
 
-export function backfillOfficialLocationScheduleIssues(store: Store): number {
-  let linkedCount = 0;
-  for (const occurrence of store.occurrences) {
-    if (occurrence.issueId || occurrence.publicVisibility !== "public" || !occurrence.publicLocation) continue;
-    const hasIndividualOfficialSource = occurrence.evidenceIds.some((evidenceId) => {
-      const evidence = store.evidence.find((item) => item.id === evidenceId);
-      return evidence?.externalProvider === "official_public_source" && evidence.sourceGranularity === "individual_schedule";
-    });
-    if (!hasIndividualOfficialSource) continue;
-    const issueId = ensureOfficialLocationScheduleIssue(store, occurrence.publicLocation.label);
-    occurrence.issueId = issueId;
-    audit(store, "merge", "occurrence", occurrence.id, `기존 공식 개별 일정이 확인된 장소 일정 주제 '${issueId}'에 연결되었습니다.`);
-    linkedCount += 1;
+export function reconcileLegacyLocationScheduleIssues(store: Store): number {
+  let changeCount = 0;
+  const scheduleIssueIds = new Set<string>();
+  for (const issue of store.issues) {
+    if (!isLegacyLocationScheduleIssue(issue)) continue;
+    scheduleIssueIds.add(issue.id);
+    if (issue.kind !== "schedule_cluster") {
+      issue.kind = "schedule_cluster";
+      audit(store, "state_change", "issue", issue.id, "장소 기반 일정 묶음을 주제와 분리했습니다.");
+      changeCount += 1;
+    }
+    if (issue.status !== "archived") {
+      issue.status = "archived";
+      issue.lastUpdatedAt = new Date();
+      audit(store, "state_change", "issue", issue.id, "장소 기반 일정 묶음을 홈 주제에서 제외하고 기록 상태로 전환했습니다.");
+      changeCount += 1;
+    }
   }
-  return linkedCount;
+  for (const occurrence of store.occurrences) {
+    if (!occurrence.issueId || !scheduleIssueIds.has(occurrence.issueId)) continue;
+    const previousIssueId = occurrence.issueId;
+    occurrence.issueId = undefined;
+    audit(store, "split", "occurrence", occurrence.id, `장소 일정 묶음 '${previousIssueId}'에서 분리되어 개별 일정으로 유지됩니다.`);
+    changeCount += 1;
+  }
+  return changeCount;
 }
 
 function topicFromTitle(rawTitle: string): IssueTopicInput | undefined {
@@ -4237,6 +4308,7 @@ function patchAdminNewsIssueCandidate(store: Store, id: string | undefined, body
     issue = {
       id: `issue_${createHash("sha1").update(normalizedTopicKey).digest("hex").slice(0, 12)}`,
       title: candidate.suggestedTitle,
+      kind: "topic",
       normalizedTopicKey,
       topicTags: uniqueStrings([group.lawName, coreTopic?.label ?? group.billTitle, ...(coreTopic?.representativeKeywords ?? [])]).slice(0, 8),
       status: selectedEvidence.some((item) => item.sourcePublishedAt && now.getTime() - item.sourcePublishedAt.getTime() <= 30 * dayMs) ? "active" : "quiet",

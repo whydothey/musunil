@@ -37,6 +37,16 @@ export function schedulePhaseLabel(phase: SchedulePhase) {
   return ({ past: "지난 일정", current: "진행 중", upcoming: "예정" } satisfies Record<SchedulePhase, string>)[phase];
 }
 
+export function pastMarkerOpacity(occurrence: Pick<OccurrenceDigest, "startsAt" | "endsAt" | "updatedAt" | "lifecycleState">, now = Date.now()): number {
+  if (schedulePhase(occurrence, now) !== "past") return 1;
+  const referenceTime = occurrence.endsAt ? new Date(occurrence.endsAt).getTime() : occurrence.startsAt ? new Date(occurrence.startsAt).getTime() : occurrence.updatedAt ? new Date(occurrence.updatedAt).getTime() : undefined;
+  if (referenceTime === undefined || !Number.isFinite(referenceTime)) return 0.3;
+  const koreaNow = new Date(now + 9 * 60 * 60 * 1000);
+  const cutoff = Date.UTC(koreaNow.getUTCFullYear(), koreaNow.getUTCMonth(), koreaNow.getUTCDate() - 6) - 9 * 60 * 60 * 1000;
+  const ageRatio = Math.max(0, Math.min(1, (now - referenceTime) / Math.max(1, now - cutoff)));
+  return Number((0.9 - ageRatio * 0.6).toFixed(3));
+}
+
 export function formatRelativeTime(value?: string) {
   if (!value) return "최근 확인 시각 없음";
   const diffMinutes = Math.max(1, Math.round((Date.now() - new Date(value).getTime()) / 60_000));

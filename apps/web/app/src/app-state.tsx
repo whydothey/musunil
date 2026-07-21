@@ -35,6 +35,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (!active) return;
       setDataset(next);
       setServiceSyncState(dataSource.mode === "fixture" ? "fixture" : "live");
+      if (dataSource.loadSupplementalDataset) {
+        void dataSource.loadSupplementalDataset().then((supplemental) => {
+          if (!active) return;
+          setDataset((current) => current ? { ...current, ...supplemental } : current);
+        }).catch(() => undefined);
+      }
     }).catch(() => {
       if (!active) return;
       setDataset(undefined);
