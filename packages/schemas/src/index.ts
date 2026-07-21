@@ -118,6 +118,7 @@ export type Issue = {
   id: string;
   title: string;
   kind: "topic" | "schedule_cluster";
+  synthesisBasis?: "explicit" | "evidence_aggregate";
   normalizedTopicKey: string;
   topicTags: string[];
   status: "active" | "quiet" | "archived";

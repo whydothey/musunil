@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { canServePublicRedactedMedia, createApp, createSeedStore, decryptLiveMediaBytes, emptyStore, isOccurrenceWithinPublicDiscoveryWindow, koreaRecentCalendarCutoff, reconcileLegacyLocationScheduleIssues } from "./app.ts";
+import { canServePublicRedactedMedia, createApp, createSeedStore, decryptLiveMediaBytes, emptyStore, isOccurrenceWithinPublicDiscoveryWindow, koreaRecentCalendarCutoff, reconcileEvidenceSynthesizedTopics, reconcileLegacyLocationScheduleIssues } from "./app.ts";
 import { enforcePublicWriteRateLimit, publicWriteRateLimitKey, readJsonBody } from "./http-boundary.ts";
 import { assertStorageSmokeKey, storageSmokeKey, storageSmokePrefix } from "./live-media-storage.ts";
 import { decryptSnapshot, encryptSnapshot, hydrateStore } from "./postgres-store.ts";
@@ -111,27 +111,42 @@ for (const [index, hostname] of ["news-one.example", "news-two.example"].entries
 }
 const newsCandidatesResponse = await newsReviewApp.handle({ method: "GET", path: "/admin/news-issue-candidates", headers: internalHeaders });
 assert.equal(newsCandidatesResponse.status, 200);
-const newsCandidate = (newsCandidatesResponse.body as { candidates: Array<{ id: string; eligibility: { eligibleForReview: boolean; publisherCount: number } }> }).candidates.find((candidate) => candidate.id.includes("news_candidate_"))!;
-assert.equal(newsCandidate.eligibility.eligibleForReview, true);
-assert.equal(newsCandidate.eligibility.publisherCount, 2);
-const newsBeforeApproval = await newsReviewApp.handle({ method: "GET", path: `/law-groups/${newsReviewGroup.id}` });
-assert.equal(JSON.stringify(newsBeforeApproval.body).includes("공개 응답에 노출하면 안 되는 원제목"), false);
-const approvedNewsCandidate = await newsReviewApp.handle({
-  method: "PATCH",
-  path: `/admin/news-issue-candidates/${newsCandidate.id}`,
-  headers: internalHeaders,
-  body: { status: "approved", reviewNote: "독립 매체 2곳과 법안 직접 언급 확인" }
-});
-assert.equal(approvedNewsCandidate.status, 200);
-const approvedNewsBody = approvedNewsCandidate.body as { issue: { id: string }; newsArticles: Array<{ publisherLabel: string; summary: string }> };
-assert.equal(approvedNewsBody.newsArticles.length, 2);
-assert.equal(approvedNewsBody.newsArticles.every((article) => article.summary.includes(newsReviewTopic.label)), true);
+assert.equal((newsCandidatesResponse.body as { candidates: unknown[] }).candidates.length, 0);
+const synthesizedNewsCandidate = newsReviewStore.newsIssueCandidates.find((candidate) => candidate.lawGroupId === newsReviewGroup.id)!;
+assert.equal(synthesizedNewsCandidate.status, "approved");
+assert.equal(synthesizedNewsCandidate.approvedEvidenceIds.length, 2);
+assert.equal(typeof synthesizedNewsCandidate.issueId, "string");
+const synthesizedHome = await newsReviewApp.handle({ method: "GET", path: "/home" });
+assert.equal((synthesizedHome.body as { issueOverviews: Array<{ id: string; occurrenceCount: number; latestChange?: string }> }).issueOverviews.some((issue) => issue.id === synthesizedNewsCandidate.issueId && issue.occurrenceCount === 0 && issue.latestChange?.includes("공개 근거 2건")), true);
 const newsGroupDetail = await newsReviewApp.handle({ method: "GET", path: `/law-groups/${newsReviewGroup.id}` });
 assert.equal((newsGroupDetail.body as { issues: Array<{ newsCount: number; recentNews: unknown[] }> }).issues.some((issue) => issue.newsCount === 2 && issue.recentNews.length === 2), true);
 assert.equal(JSON.stringify(newsGroupDetail.body).includes("공개 응답에 노출하면 안 되는 원제목"), false);
-const newsIssueDetail = await newsReviewApp.handle({ method: "GET", path: `/issues/${approvedNewsBody.issue.id}` });
+const newsIssueDetail = await newsReviewApp.handle({ method: "GET", path: `/issues/${synthesizedNewsCandidate.issueId}` });
 assert.equal((newsIssueDetail.body as { newsArticles: unknown[] }).newsArticles.length, 2);
 assert.equal(JSON.stringify(newsIssueDetail.body).includes("공개 응답에 노출하면 안 되는 원제목"), false);
+assert.equal((newsIssueDetail.body as { topicGrouping: { synthesisBasis: string; basis: string[] } }).topicGrouping.synthesisBasis, "evidence_aggregate");
+assert.equal((newsIssueDetail.body as { topicGrouping: { basis: string[] } }).topicGrouping.basis.some((item) => item.includes("공통 쟁점")), true);
+const evidenceLinkedOccurrence = await newsReviewApp.handle({
+  method: "POST",
+  path: "/internal/ingest/public-occurrence",
+  headers: internalHeaders,
+  body: {
+    id: "occ_evidence_synthesis_link",
+    type: "static_assembly",
+    areaClusterId: "area_seoul",
+    regionLabel: "서울",
+    title: "공개 공지 기반 집회",
+    startsAt: new Date(Date.now() + 60 * 60_000).toISOString(),
+    lifecycleState: "UPCOMING",
+    sourceProvenance: "organizer_or_group",
+    claimantLabel: "공개 공지",
+    normalizedStatement: `${newsReviewGroup.lawName} ${newsReviewTopic.label} 개선 요구 집회가 공지되었습니다.`
+  }
+});
+assert.equal(evidenceLinkedOccurrence.status, 201);
+assert.equal((evidenceLinkedOccurrence.body as { occurrence: { issueId?: string } }).occurrence.issueId, synthesizedNewsCandidate.issueId);
+assert.equal(newsReviewStore.auditLogs.some((log) => log.targetId === "occ_evidence_synthesis_link" && log.action === "merge"), true);
+assert.equal(reconcileEvidenceSynthesizedTopics(newsReviewStore), 0);
 const initialNewsBudget = await newsReviewApp.handle({ method: "GET", path: "/internal/news-ingest-budget", headers: internalHeaders });
 assert.equal((initialNewsBudget.body as { remaining: number }).remaining, 20_000);
 const updatedNewsBudget = await newsReviewApp.handle({ method: "POST", path: "/internal/news-ingest-usage", headers: internalHeaders, body: { provider: "publisher_rss", month: new Date().toISOString().slice(0, 7), callCount: 24 } });
