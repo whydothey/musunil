@@ -1,5 +1,6 @@
 import { useAppState } from "../app-state";
 import { EmptyState, IssueListItem, LoadingState, ScreenHeader, ServiceUnavailable } from "../components";
+import { Link } from "../router";
 
 export function HomeScreen() {
   const { dataset, serviceSyncState } = useAppState();
@@ -13,6 +14,7 @@ export function HomeScreen() {
       <div className="issue-feed" aria-label="주요 이슈 목록">
         {dataset?.issues.map((issue) => <IssueListItem key={issue.id} issue={issue} />)}
       </div>
+      <nav className="home-trust-links" aria-label="서비스 원칙과 권리 안내"><Link href="/methodology">방법론</Link><Link href="/transparency">투명성</Link><Link href="/privacy">개인정보</Link><Link href="/rights">정정·권리</Link></nav>
     </section>
   );
 }

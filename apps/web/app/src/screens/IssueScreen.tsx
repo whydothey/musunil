@@ -17,9 +17,10 @@ export function IssueScreen({ id }: { id: string }) {
   const { dataset, serviceSyncState, selectIssue, ensureIssue } = useAppState();
   const [tab, setTab] = useState<IssueTab>("occurrences");
   const issue = dataset?.issues.find((item) => item.id === id);
-  const occurrences = useMemo(() => dataset?.occurrences.filter((item) => item.issueId === id) || [], [dataset, id]);
+  const occurrences = useMemo(() => dataset?.occurrences.filter((item) => item.issueId === id || item.issueIds?.includes(id)) || [], [dataset, id]);
   const reels = useMemo(() => dataset?.reels.filter((item) => item.issueId === id) || [], [dataset, id]);
-  const laws = useMemo(() => dataset?.laws.filter((item) => item.linkedIssueIds?.includes(id)) || [], [dataset, id]);
+  const lawGroups = dataset?.lawGroupsByIssue[id] || [];
+  const synthesis = dataset?.synthesisByIssue[id];
   const claims = dataset?.claimsByIssue[id] || [];
   const news = dataset?.newsByIssue[id] || [];
   useEffect(() => {
@@ -37,6 +38,7 @@ export function IssueScreen({ id }: { id: string }) {
       <div className="issue-hero">
         <div className="hero-status"><StatusDot state={issue.lifecycleState} /><span>{formatRelativeTime(issue.latestUpdatedAt)}</span></div>
         <p>{issue.latestChange || `${issue.regionCount}개 지역의 공개 현장을 확인하고 있습니다.`}</p>
+        {synthesis?.facets.length ? <div className="issue-facet-panel"><strong>근거에서 확인된 핵심 논점</strong><div>{synthesis.facets.map((facet) => <span key={facet.coreTopicKey}>{facet.label}<small>근거 {facet.evidenceCount}건 · 발행사 {facet.publisherCount}곳</small></span>)}</div><p>논점은 공개 근거를 종합한 탐색 단위이며 사실 확정이나 찬반 판단이 아닙니다.</p></div> : null}
         <div className="hero-summary" aria-label="이슈 현황">
           <span><strong>{issue.occurrenceCount}</strong> 현장</span>
           <span><strong>{issue.regionCount}</strong> 지역</span>
@@ -94,16 +96,17 @@ export function IssueScreen({ id }: { id: string }) {
         {tab === "laws" ? (
           <div className="section-list">
             <div className="section-heading"><div><h2>관련 법안</h2><p>국회·국가법령정보의 공식 자료입니다</p></div><Scale aria-hidden="true" /></div>
-            {laws.length ? laws.map((law) => (
-              <Link key={law.id} href={`/laws/${encodeURIComponent(law.id)}`} className="law-inline-row">
-                <span>{law.source === "assembly_bill" ? "국회 의안" : "현행 법령"}</span>
-                <h3>{law.title}</h3>
-                <p>{law.stage} · {law.statusDate || law.proposedDate || "공식 날짜 확인 중"}</p>
+            {lawGroups.length ? lawGroups.map((group) => (
+              <Link key={group.id} href={`/laws/groups/${encodeURIComponent(group.id)}`} className="law-inline-row">
+                <span>국회 공식 법안 그룹</span>
+                <h3>{group.billTitle}</h3>
+                <p>동일 이름 의안 {group.billCount}건 · 관련 논점 {group.coreTopics.length}개</p>
               </Link>
             )) : <EmptyState title="연결된 법안이 없습니다" description="공식 법안 정보와 이슈의 연결 근거가 확인되면 표시합니다." actionHref="/laws" actionLabel="법안 전체 보기" />}
           </div>
         ) : null}
       </div>
+      <Link href={`/rights?targetType=issue&targetId=${encodeURIComponent(id)}`} className="rights-link"><span>이 주제에 대한 정정·반론·권리침해 안내</span></Link>
     </section>
   );
 }

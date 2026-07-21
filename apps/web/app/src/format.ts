@@ -61,6 +61,13 @@ export function formatDateTime(value?: string) {
   return new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "short", hour: "numeric", minute: "2-digit" }).format(new Date(value));
 }
 
+export function formatOfficialDate(value?: string) {
+  if (!value) return "날짜 확인 중";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "날짜 확인 중";
+  return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "long", day: "numeric" }).format(date);
+}
+
 export function scaleLabel(occurrence: OccurrenceDigest) {
   if (!occurrence.scale) return "규모 확인 중";
   return `약 ${number(occurrence.scale.minCount)}~${number(occurrence.scale.maxCount)}명`;

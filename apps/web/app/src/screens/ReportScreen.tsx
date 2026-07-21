@@ -3,12 +3,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppState } from "../app-state";
 import type { OccurrenceDigest, ReportCandidate } from "../contracts";
 import { lifecycleLabel } from "../format";
-import { ScreenHeader } from "../components";
+import { LoadingState, ScreenHeader } from "../components";
 
 type Phase = "idle" | "locating" | "candidates" | "selected" | "identity" | "camera" | "preview" | "submitted";
 
 export function ReportScreen() {
-  const { dataset } = useAppState();
+  const { dataset, readiness } = useAppState();
   const [phase, setPhase] = useState<Phase>("idle");
   const [location, setLocation] = useState<GeolocationCoordinates>();
   const [locationError, setLocationError] = useState(false);
@@ -17,6 +17,7 @@ export function ReportScreen() {
   const [verified, setVerified] = useState(false);
   const selected = dataset?.occurrences.find((item) => item.id === selectedId);
   const candidates = useMemo(() => createCandidates(dataset?.occurrences || [], dataset?.map.geojson.pins.features || [], location), [dataset, location]);
+  const contributionReady = __MUSUNIL_UI_DATA_MODE__ === "fixture";
 
   const findNearby = () => {
     setPhase("locating");
@@ -44,6 +45,19 @@ export function ReportScreen() {
     window.dispatchEvent(new CustomEvent("musunil:identity-required", { detail: { intent: "live-report" } }));
   };
   const reset = () => { if (videoUrl) URL.revokeObjectURL(videoUrl); setVideoUrl(undefined); setSelectedId(undefined); setPhase("idle"); };
+
+  if (__MUSUNIL_UI_DATA_MODE__ !== "fixture" && !readiness) return <section className="screen report-screen" data-screen="report"><ScreenHeader title="현장 제보" eyebrow="실시간 GPS 영상" /><LoadingState label="안전한 제보 기능의 준비 상태를 확인하고 있습니다" /></section>;
+  if (!contributionReady) return (
+    <section className="screen report-screen" data-screen="report">
+      <ScreenHeader title="현장 제보" eyebrow="Android 앱 우선 제공" />
+      <div className="report-start contribution-unavailable" role="status">
+        <span className="report-start-icon"><ShieldCheck /></span>
+        <h2>검증된 현장 제보를 준비하고 있습니다</h2>
+        <p>앱 내 촬영, 실시간 GPS, Play Integrity, 본인확인과 비식별 처리가 모두 준비된 뒤에만 제보를 받습니다. 현재 웹에서는 영상을 접수하지 않습니다.</p>
+        <dl><div><dt>공개 읽기</dt><dd>로그인 없이 계속 이용 가능</dd></div><div><dt>현장 제보</dt><dd>안전 게이트 통과 후 Android 앱에서 제공</dd></div></dl>
+      </div>
+    </section>
+  );
 
   return (
     <section className="screen report-screen" data-screen="report">

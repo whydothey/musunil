@@ -68,6 +68,7 @@ export function OccurrenceScreen({ id }: { id: string }) {
       </section>
 
       {issue ? <Link href={`/issues/${encodeURIComponent(issue.id)}`} className="related-issue-link"><span>관련 이슈</span><strong>{issue.title}</strong></Link> : null}
+      <Link href={`/rights?targetType=occurrence&targetId=${encodeURIComponent(id)}`} className="rights-link"><span>이 정보에 대한 정정·반론·권리침해 안내</span></Link>
     </section>
   );
 }

@@ -413,7 +413,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   .nav-link:hover { background: var(--surface-muted); }
   .nav-link.is-active { background: var(--brand-soft); color: var(--brand); font-weight: 750; }
   .nav-link svg { width: 22px; height: 22px; }
-  .sidebar-foot { display: flex; align-items: center; gap: 8px; margin-top: auto; padding: 10px 13px; color: var(--ink-faint); font-size: 11px; }
+  .sidebar-foot { display: flex; flex-direction: column; align-items: stretch; gap: 8px; margin-top: auto; padding: 10px 13px; color: var(--ink-faint); font-size: 11px; }
   .mobile-header, .mobile-tabbar { display: none; }
   .app-main { min-height: 100dvh; padding: 0 0 0 var(--sidebar); }
   .screen { min-height: 100dvh; }
@@ -446,6 +446,38 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+.issue-facet-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0 28px; }
+.issue-facet-chips > span { display: inline-flex; align-items: center; gap: 5px; padding: 6px 9px; border-radius: 999px; background: #edf6f5; color: #255f5b; font-size: 12px; font-weight: 700; }
+.issue-facet-chips small { color: #48615f; font-size: 10px; font-weight: 600; }
+.issue-provenance { margin: 8px 0 0 28px; color: var(--ink-soft); font-size: 11px; }
+.issue-facet-panel { margin-top: 14px; padding: 14px; border: 1px solid #dbe8e6; border-radius: 14px; background: #f6fbfa; }
+.issue-facet-panel > strong { display: block; font-size: 12px; color: #315f5b; }
+.issue-facet-panel > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
+.issue-facet-panel span { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 10px; background: #fff; font-size: 12px; font-weight: 700; }
+.issue-facet-panel small { color: var(--ink-soft); font-size: 10px; font-weight: 500; }
+.issue-facet-panel p { margin: 10px 0 0; color: var(--ink-soft); font-size: 11px; }
+.law-core-topic-filter { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 9px; }
+.law-core-topic-filter button { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 74px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); text-align: left; cursor: pointer; }
+.law-core-topic-filter button[aria-pressed="true"] { border-color: #2f817a; background: #edf7f5; box-shadow: inset 0 0 0 1px #2f817a; }
+.law-core-topic-filter button:first-child { min-height: auto; justify-content: center; }
+.law-core-topic-filter span, .law-core-topic-filter small { color: var(--ink-soft); font-size: 11px; }
+.law-pagination { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 16px; }
+.law-pagination button { padding: 8px 13px; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
+.law-pagination button:disabled { opacity: .4; }
+.map-results button small { grid-column: 2; color: var(--ink-soft); font-size: 11px; font-weight: 500; }
+.trust-links { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-bottom: 12px; }
+.trust-links a { color: var(--ink-soft); font-size: 11px; text-decoration: none; }
+.sync-status { display: flex; align-items: center; gap: 8px; }
+.home-trust-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 16px; padding: 24px 16px 30px; border-top: 1px solid var(--line); }
+.home-trust-links a { color: var(--ink-soft); font-size: 11px; text-decoration: none; }
+.trust-lead { display: flex; gap: 12px; align-items: center; margin-bottom: 18px; padding: 15px; border-radius: 14px; background: #edf7f5; }
+.trust-lead svg { flex: 0 0 auto; color: #2f817a; }
+.trust-lead p, .trust-section p { margin: 0; color: var(--ink-soft); font-size: 13px; line-height: 1.65; }
+.trust-section h2 { margin: 0 0 8px; font-size: 16px; }
+.rights-link { display: block; margin: 18px 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 11px; color: var(--ink-soft); font-size: 12px; text-decoration: none; }
+.contribution-unavailable dl { width: min(100%, 440px); margin-top: 18px; text-align: left; }
+.contribution-unavailable dl div { display: flex; justify-content: space-between; gap: 20px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 12px; }
 
 @keyframes screen-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 @keyframes sheet-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }

@@ -342,6 +342,9 @@ await check("public_source_coverage", async () => {
   const body = await request("GET", "/public-sources/coverage");
   assert(body.coverage?.totalPoliceRegions === 18, "public source coverage must include all police regions");
   assert(body.coverage?.fullScheduleCoverage === true, "public source coverage must have full schedule coverage");
+  assert(typeof body.coverage?.eventCoverage?.eventLevelRegions === "number", "public source coverage must separate event-level regions");
+  assert(typeof body.coverage?.eventCoverage?.geocodedEventRegions === "number", "public source coverage must separate geocoded event regions");
+  assert(Array.isArray(body.coverage?.eventCoverage?.boardPostOnlyRegions), "public source coverage must report board-post-only regions");
   assert(body.coverage?.activeScheduleRegions === 18, "public source coverage must have all active schedule sources");
   assert(typeof body.coverage?.candidateScheduleRegions === "number", "public source coverage candidate count missing");
   assert(body.coverage?.needsDiscoveryRegions === 0, "public source coverage must not have discovery gaps");

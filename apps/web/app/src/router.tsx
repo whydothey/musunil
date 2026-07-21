@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
 
-export type RouteName = "home" | "issue" | "occurrence" | "reels" | "explore" | "laws" | "law" | "law-group" | "report";
+export type RouteName = "home" | "issue" | "occurrence" | "reels" | "explore" | "laws" | "law" | "law-group" | "report" | "trust";
 export interface Route {
   name: RouteName;
   id?: string;
@@ -25,6 +25,8 @@ function readRoute(): Route {
   if (path === "/explore") return { name: "explore", search, hash, path };
   if (path === "/laws") return { name: "laws", search, hash, path };
   if (path === "/report") return { name: "report", search, hash, path };
+  const trust = path.match(/^\/(methodology|transparency|privacy|rights)$/);
+  if (trust) return { name: "trust", id: trust[1], search, hash, path };
   return { name: "home", search, hash, path: "/" };
 }
 

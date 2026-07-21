@@ -8,7 +8,8 @@ import type {
   MapData,
   OccurrenceDetailData,
   OccurrenceDigest,
-  PublicClaim
+  PublicClaim,
+  ServiceReadiness
 } from "../contracts";
 import type { DataSource } from "./source-contract";
 
@@ -51,12 +52,20 @@ export async function getContinuousPresenceDetail(id: string): Promise<Occurrenc
   return { occurrenceDigest: body.occurrenceDigest, claims: body.claims, evidenceCount: body.evidenceCount };
 }
 
-export async function getLawGroupDetail(id: string): Promise<LawGroupDetailData> {
-  return request<LawGroupDetailData>(`/law-groups/${encodeURIComponent(id)}`);
+export async function getLawGroupDetail(id: string, options?: { coreTopicKey?: string; page?: number }): Promise<LawGroupDetailData> {
+  const search = new URLSearchParams({ pageSize: "15" });
+  if (options?.coreTopicKey) search.set("coreTopic", options.coreTopicKey);
+  if (options?.page) search.set("page", String(options.page));
+  return request<LawGroupDetailData>(`/law-groups/${encodeURIComponent(id)}?${search}`);
+}
+
+export async function getServiceReadiness(): Promise<ServiceReadiness> {
+  return request<ServiceReadiness>("/readiness", 10_000);
 }
 
 export const dataSource: DataSource = {
   mode: "production",
+  loadReadiness: getServiceReadiness,
   async loadDataset(): Promise<AppDataset> {
     const results = await Promise.allSettled([
       request<{ issueOverviews?: IssueOverview[]; occurrenceDigests?: OccurrenceDigest[] }>("/home"),
@@ -83,22 +92,19 @@ export const dataSource: DataSource = {
       lawGroups: [],
       claimsByIssue,
       newsByIssue,
+      synthesisByIssue: {},
+      lawGroupsByIssue: {},
       claimsByOccurrence: {},
       map
     };
   },
-  async loadSupplementalDataset() {
-    const results = await Promise.allSettled([
-      request<{ reels?: AppDataset["reels"] }>("/reels"),
-      request<{ lawInterestItems?: LawInterestItem[]; lawGroups?: LawGroupCard[] }>("/laws?sort=interest")
-    ]);
-    const reels = results[0].status === "fulfilled" ? results[0].value : {};
-    const laws = results[1].status === "fulfilled" ? results[1].value : {};
-    return {
-      reels: reels.reels || [],
-      laws: laws.lawInterestItems || [],
-      lawGroups: laws.lawGroups || []
-    };
+  async loadSupplementalDataset(scope) {
+    if (scope === "reels") {
+      const reels = await request<{ reels?: AppDataset["reels"] }>("/reels");
+      return { reels: reels.reels || [] };
+    }
+    const laws = await request<{ lawInterestItems?: LawInterestItem[]; lawGroups?: LawGroupCard[] }>("/laws?sort=interest");
+    return { laws: laws.lawInterestItems || [], lawGroups: laws.lawGroups || [] };
   },
   loadIssue: getIssueDetail,
   loadOccurrence(id, targetType) {

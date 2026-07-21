@@ -404,10 +404,52 @@ const newsByIssue: AppDataset["newsByIssue"] = {
   ]
 };
 
-const dataset: AppDataset = { issues, occurrences, reels, laws, lawGroups, claimsByIssue, newsByIssue, claimsByOccurrence, map };
+const synthesisByIssue: AppDataset["synthesisByIssue"] = {
+  "issue-network-act": {
+    version: "fixture-law-group-evidence-v1",
+    method: "law_group_evidence_aggregate",
+    neutralSummary: "정보통신망법 관련 보도에서 온라인 정보·이용자 보호 논점이 함께 확인됩니다.",
+    generatedAt: "2026-07-19T05:00:00.000Z",
+    windowStartedAt: "2026-07-16T02:10:00.000Z",
+    windowEndedAt: "2026-07-16T03:30:00.000Z",
+    evidenceCount: 2,
+    publisherCount: 2,
+    claimIds: ["claim-network-media-1", "claim-network-media-2"],
+    evidenceIds: ["news-network-1", "news-network-2"],
+    facets: [{ coreTopicKey: "network-protection", label: "온라인 정보·이용자 보호", evidenceCount: 2, publisherCount: 2, claimIds: ["claim-network-media-1", "claim-network-media-2"], evidenceIds: ["news-network-1", "news-network-2"] }]
+  },
+  "issue-election-process": {
+    version: "fixture-law-group-evidence-v1",
+    method: "law_group_evidence_aggregate",
+    neutralSummary: "공직선거법 관련 보도에서 투표용지·공급 대응 논점이 함께 확인됩니다.",
+    generatedAt: "2026-07-19T05:00:00.000Z",
+    windowStartedAt: "2026-07-15T04:25:10.000Z",
+    windowEndedAt: "2026-07-15T04:46:42.000Z",
+    evidenceCount: 2,
+    publisherCount: 2,
+    claimIds: ["claim-election-media-1", "claim-election-media-2"],
+    evidenceIds: ["news-election-1", "news-election-2"],
+    facets: [{ coreTopicKey: "ballot-supply", label: "투표용지·공급 대응", evidenceCount: 2, publisherCount: 2, claimIds: ["claim-election-media-1", "claim-election-media-2"], evidenceIds: ["news-election-1", "news-election-2"] }]
+  }
+};
+for (const issue of issues) {
+  const synthesis = synthesisByIssue[issue.id];
+  if (!synthesis) continue;
+  issue.synthesisSummary = synthesis.neutralSummary;
+  issue.synthesisEvidenceCount = synthesis.evidenceCount;
+  issue.synthesisPublisherCount = synthesis.publisherCount;
+  issue.facets = synthesis.facets;
+  issue.latestChange = synthesis.neutralSummary;
+}
+const lawGroupsByIssue: AppDataset["lawGroupsByIssue"] = Object.fromEntries(Object.entries(lawGroupIssueIds).flatMap(([groupId, issueIds]) => {
+  const group = lawGroups.find((item) => item.id === groupId);
+  return group ? issueIds.map((issueId) => [issueId, [group]]) : [];
+}));
+const dataset: AppDataset = { issues, occurrences, reels, laws, lawGroups, claimsByIssue, newsByIssue, synthesisByIssue, lawGroupsByIssue, claimsByOccurrence, map };
 
 export const dataSource: DataSource = {
   mode: "fixture",
+  async loadReadiness() { return { gates: { publicRead: { ready: true, failedIds: [] }, contribution: { ready: true, failedIds: [] }, operator: { ready: true, failedIds: [] } } }; },
   async loadDataset() {
     await new Promise((resolve) => window.setTimeout(resolve, 120));
     return dataset;
@@ -418,7 +460,9 @@ export const dataSource: DataSource = {
       issueOverview,
       occurrenceDigests: dataset.occurrences.filter((item) => item.issueId === id),
       claims: dataset.claimsByIssue[id] || [],
-      newsArticles: dataset.newsByIssue[id] || []
+      newsArticles: dataset.newsByIssue[id] || [],
+      topicGrouping: dataset.synthesisByIssue[id] ? { synthesisBasis: "evidence_aggregate", policy: "사실 확정이 아닌 탐색 단위", basis: ["공개 근거 종합"], synthesis: dataset.synthesisByIssue[id] } : undefined,
+      relatedLawGroups: dataset.lawGroupsByIssue[id] || []
     };
   },
   async loadOccurrence(id) {

@@ -13,6 +13,7 @@ const LawsScreen = lazy(() => import("./screens/LawsScreen").then((module) => ({
 const OccurrenceScreen = lazy(() => import("./screens/OccurrenceScreen").then((module) => ({ default: module.OccurrenceScreen })));
 const ReelsScreen = lazy(() => import("./screens/ReelsScreen").then((module) => ({ default: module.ReelsScreen })));
 const ReportScreen = lazy(() => import("./screens/ReportScreen").then((module) => ({ default: module.ReportScreen })));
+const TrustScreen = lazy(() => import("./screens/TrustScreen").then((module) => ({ default: module.TrustScreen })));
 
 const navigation = [
   { route: "home" as const, href: "/", label: "홈", icon: Home },
@@ -34,8 +35,8 @@ export function App() {
 
 function AppShell() {
   const { route } = useRouter();
-  const { serviceSyncState } = useAppState();
-  const activeRoute: RouteName = route.name === "issue" || route.name === "occurrence" ? "home" : route.name === "law" || route.name === "law-group" ? "laws" : route.name;
+  const { serviceSyncState, readiness } = useAppState();
+  const activeRoute: RouteName = route.name === "issue" || route.name === "occurrence" || route.name === "trust" ? "home" : route.name === "law" || route.name === "law-group" ? "laws" : route.name;
   const isImmersive = route.name === "reels" || route.name === "explore";
   const isDetail = route.name === "issue" || route.name === "occurrence" || route.name === "law" || route.name === "law-group";
 
@@ -55,8 +56,8 @@ function AppShell() {
           ))}
         </nav>
         <div className="sidebar-foot">
-          <span className={`sync-dot ${serviceSyncState}`} aria-hidden="true" />
-          <span>{serviceSyncState === "live" ? "최신 자료 연결됨" : serviceSyncState === "fixture" ? "검수 화면" : serviceSyncState === "loading" ? "자료 확인 중" : "연결 확인 중"}</span>
+          <div className="trust-links"><Link href="/methodology">방법론</Link><Link href="/transparency">투명성</Link><Link href="/privacy">개인정보</Link><Link href="/rights">정정·권리</Link></div>
+          <div className="sync-status"><span className={`sync-dot ${serviceSyncState}`} aria-hidden="true" /><span>{serviceSyncState === "live" && readiness?.gates?.publicRead.ready ? "공개 자료 정상" : serviceSyncState === "live" ? "일부 자료 확인 중" : serviceSyncState === "fixture" ? "검수 화면" : serviceSyncState === "loading" ? "자료 확인 중" : "연결 확인 중"}</span></div>
         </div>
       </aside>
 
@@ -93,6 +94,7 @@ function Screen() {
   if (route.name === "explore") return <ExploreScreen />;
   if (route.name === "laws") return <LawsScreen />;
   if (route.name === "report") return <ReportScreen />;
+  if (route.name === "trust") return <TrustScreen id={route.id || "methodology"} />;
   return <HomeScreen />;
 }
 

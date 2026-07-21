@@ -121,6 +121,8 @@ export function hydrateStore(store: Store): Store {
   store.issueLawGroupLinks ??= [];
   store.newsIssueCandidates ??= [];
   store.newsProviderUsage ??= [];
+  store.issueSynthesisSnapshots ??= [];
+  store.occurrenceIssueLinks ??= [];
   store.legacyLawTopicAliases ??= {};
   for (const law of store.lawItems ?? []) law.lawGroupId = builtGroups.assignments.get(law.id)?.groupId;
   for (const topic of legacy.lawTopics ?? []) {
@@ -158,6 +160,33 @@ export function hydrateStore(store: Store): Store {
     }
     issue.firstSeenAt = date(issue.firstSeenAt);
     issue.lastUpdatedAt = date(issue.lastUpdatedAt);
+  }
+  for (const snapshot of store.issueSynthesisSnapshots) {
+    snapshot.windowStartedAt = date(snapshot.windowStartedAt);
+    snapshot.windowEndedAt = date(snapshot.windowEndedAt);
+    snapshot.generatedAt = date(snapshot.generatedAt);
+  }
+  for (const link of store.occurrenceIssueLinks) {
+    link.createdAt = date(link.createdAt);
+    link.reviewedAt = optionalDate(link.reviewedAt);
+  }
+  const existingOccurrenceLinkKeys = new Set(store.occurrenceIssueLinks.map((link) => `${link.occurrenceId}:${link.issueId}`));
+  for (const occurrence of store.occurrences ?? []) {
+    if (!occurrence.issueId) continue;
+    const key = `${occurrence.id}:${occurrence.issueId}`;
+    if (existingOccurrenceLinkKeys.has(key)) continue;
+    store.occurrenceIssueLinks.push({
+      occurrenceId: occurrence.id,
+      issueId: occurrence.issueId,
+      status: "approved",
+      matchBasis: "manual",
+      confidence: "high",
+      supportingClaimIds: [...occurrence.claimIds],
+      supportingEvidenceIds: [...occurrence.evidenceIds],
+      createdAt: occurrence.startsAt ?? new Date(),
+      reviewedAt: occurrence.startsAt ?? new Date(),
+      reviewNote: "기존 단일 이슈 연결을 다대다 승인 링크로 이전"
+    });
   }
   for (const group of store.lawGroups) group.updatedAt = date(group.updatedAt);
   for (const link of store.issueLawGroupLinks) link.reviewedAt = optionalDate(link.reviewedAt);

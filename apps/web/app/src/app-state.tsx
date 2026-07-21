@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import dataSource from "@musunil/data-source";
-import type { AppDataset } from "./contracts";
+import type { AppDataset, ServiceReadiness } from "./contracts";
+import { useRouter } from "./router";
 
 export type ServiceSyncState = "loading" | "live" | "fixture" | "unavailable";
 export type IdentityState = "unknown" | "anonymous" | "verified" | "expired";
@@ -9,6 +10,7 @@ interface AppStateValue {
   dataset?: AppDataset;
   serviceSyncState: ServiceSyncState;
   identityState: IdentityState;
+  readiness?: ServiceReadiness;
   selectedIssueId?: string;
   selectedOccurrenceId?: string;
   selectIssue: (id?: string) => void;
@@ -21,9 +23,11 @@ interface AppStateValue {
 const AppStateContext = createContext<AppStateValue | undefined>(undefined);
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
+  const { route } = useRouter();
   const [dataset, setDataset] = useState<AppDataset>();
   const [serviceSyncState, setServiceSyncState] = useState<ServiceSyncState>("loading");
   const [identityState] = useState<IdentityState>("anonymous");
+  const [readiness, setReadiness] = useState<ServiceReadiness>();
   const [selectedIssueId, selectIssue] = useState<string>();
   const [selectedOccurrenceId, setSelectedOccurrenceId] = useState<string>();
   const [attempt, setAttempt] = useState(0);
@@ -35,12 +39,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (!active) return;
       setDataset(next);
       setServiceSyncState(dataSource.mode === "fixture" ? "fixture" : "live");
-      if (dataSource.loadSupplementalDataset) {
-        void dataSource.loadSupplementalDataset().then((supplemental) => {
-          if (!active) return;
-          setDataset((current) => current ? { ...current, ...supplemental } : current);
-        }).catch(() => undefined);
-      }
+      if (dataSource.loadReadiness) void dataSource.loadReadiness().then((status) => { if (active) setReadiness(status); }).catch(() => {
+        if (active) setReadiness({ gates: { publicRead: { ready: true, failedIds: [] }, contribution: { ready: false, failedIds: ["readiness_unavailable"] }, operator: { ready: false, failedIds: ["readiness_unavailable"] } } });
+      });
     }).catch(() => {
       if (!active) return;
       setDataset(undefined);
@@ -48,6 +49,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     });
     return () => { active = false; };
   }, [attempt]);
+
+  useEffect(() => {
+    if (!dataSource.loadSupplementalDataset || !dataset) return;
+    const scope = route.name === "reels" ? "reels" : ["laws", "law", "law-group"].includes(route.name) ? "laws" : undefined;
+    if (!scope) return;
+    let active = true;
+    void dataSource.loadSupplementalDataset(scope).then((supplemental) => {
+      if (active) setDataset((current) => current ? { ...current, ...supplemental } : current);
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [route.name, dataset === undefined]);
 
   const selectOccurrence = useCallback((id?: string) => {
     setSelectedOccurrenceId(id);
@@ -67,7 +79,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         issues,
         occurrences: mergeById(current.occurrences, detail.occurrenceDigests || []),
         claimsByIssue: { ...current.claimsByIssue, [id]: detail.claims || [] },
-        newsByIssue: { ...current.newsByIssue, [id]: detail.newsArticles || [] }
+        newsByIssue: { ...current.newsByIssue, [id]: detail.newsArticles || [] },
+        synthesisByIssue: { ...current.synthesisByIssue, [id]: detail.topicGrouping?.synthesis },
+        lawGroupsByIssue: { ...current.lawGroupsByIssue, [id]: detail.relatedLawGroups || [] }
       };
     });
   }, []);
@@ -87,6 +101,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     dataset,
     serviceSyncState,
     identityState,
+    readiness,
     selectedIssueId,
     selectedOccurrenceId,
     selectIssue,
@@ -94,7 +109,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     ensureIssue,
     ensureOccurrence,
     retry: () => setAttempt((current) => current + 1)
-  }), [dataset, serviceSyncState, identityState, selectedIssueId, selectedOccurrenceId, selectOccurrence, ensureIssue, ensureOccurrence]);
+  }), [dataset, serviceSyncState, identityState, readiness, selectedIssueId, selectedOccurrenceId, selectOccurrence, ensureIssue, ensureOccurrence]);
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 }

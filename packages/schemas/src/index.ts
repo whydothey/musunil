@@ -126,6 +126,31 @@ export type Issue = {
   lastUpdatedAt: Date;
 };
 
+export type IssueSynthesisFacet = {
+  coreTopicKey: string;
+  label: string;
+  evidenceCount: number;
+  publisherCount: number;
+  claimIds: string[];
+  evidenceIds: string[];
+};
+
+/** Versioned public explanation of how an evidence-aggregate Issue was formed. */
+export type IssueSynthesisSnapshot = {
+  issueId: string;
+  version: string;
+  method: "law_group_evidence_aggregate";
+  neutralSummary: string;
+  windowStartedAt: Date;
+  windowEndedAt: Date;
+  generatedAt: Date;
+  evidenceCount: number;
+  publisherCount: number;
+  claimIds: string[];
+  evidenceIds: string[];
+  facets: IssueSynthesisFacet[];
+};
+
 export type LawItem = {
   id: string;
   source: "assembly_bill" | "law_effective";
@@ -172,6 +197,9 @@ export type LawGroupMembership = {
   lawItemId: string;
   lawGroupId: string;
   classificationVersion: string;
+  coreTopicKey: string;
+  coreTopicLabel: string;
+  classificationBasis: "official_summary_rule" | "effective_law" | "summary_pending" | "keyword_fallback";
 };
 
 export type IssueLawGroupLink = {
@@ -261,6 +289,19 @@ export type Occurrence = {
   evidenceIds: string[];
 };
 
+export type OccurrenceIssueLink = {
+  occurrenceId: string;
+  issueId: string;
+  status: "candidate" | "approved" | "rejected";
+  matchBasis: "occurrence_claim" | "occurrence_evidence" | "manual";
+  confidence: "low" | "medium" | "high";
+  supportingClaimIds: string[];
+  supportingEvidenceIds: string[];
+  createdAt: Date;
+  reviewedAt?: Date;
+  reviewNote?: string;
+};
+
 export type ContinuousPresence = {
   id: string;
   issueId?: string;
@@ -299,12 +340,18 @@ export type IssueOverview = {
   latestUpdatedAt?: string;
   representativeOccurrenceId?: string;
   latestChange?: string;
+  synthesisSummary?: string;
+  synthesisEvidenceCount?: number;
+  synthesisPublisherCount?: number;
+  facets?: IssueSynthesisFacet[];
 };
 
 export type OccurrenceDigest = {
   id: string;
   targetType: "occurrence" | "continuous_presence";
   issueId?: string;
+  issueIds?: string[];
+  primaryIssueId?: string;
   title: string;
   regionLabel: string;
   locationLabel?: string;
@@ -369,6 +416,8 @@ export type LawInterestItem = {
   regionCount: number;
   interestScore: number;
   linkedIssueIds?: string[];
+  coreTopicKey?: string;
+  coreTopicLabel?: string;
 };
 
 export type LawGroupCard = {
@@ -383,6 +432,7 @@ export type LawGroupCard = {
   occurrenceCount: number;
   regionCount: number;
   interestScore: number;
+  relatedIssueActivityScore?: number;
 };
 
 export type ReportCandidate = {

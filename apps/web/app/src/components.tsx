@@ -35,6 +35,9 @@ export function IssueListItem({ issue }: { issue: IssueOverview }) {
         <ChevronRight aria-hidden="true" />
       </div>
       <p className="issue-change">{issue.latestChange || `${formatRelativeTime(issue.latestUpdatedAt)} · 공개 근거를 확인했습니다`}</p>
+      {issue.facets?.length ? <div className="issue-facet-chips" aria-label="근거에서 확인된 핵심 논점">
+        {issue.facets.slice(0, 3).map((facet) => <span key={facet.coreTopicKey}>{facet.label}<small>{facet.evidenceCount}건</small></span>)}
+      </div> : null}
       <p className="issue-meta">
         {issue.regionCount ? `${issue.regionCount}개 지역` : "지역 확인 중"}
         <span aria-hidden="true">·</span>
@@ -43,6 +46,7 @@ export function IssueListItem({ issue }: { issue: IssueOverview }) {
         {issue.publicVideoCount ? `영상 ${issue.publicVideoCount}건` : "공개 영상 없음"}
         {issue.disputeCount ? <><span aria-hidden="true">·</span><strong>다른 주장 있음</strong></> : null}
       </p>
+      {issue.synthesisEvidenceCount ? <p className="issue-provenance">근거 {issue.synthesisEvidenceCount}건 · 서로 다른 발행사 {issue.synthesisPublisherCount || 0}곳</p> : null}
     </Link>
   );
 }

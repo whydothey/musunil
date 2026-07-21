@@ -21,6 +21,7 @@ import {
   type EvidenceStrength,
   type IdentityVerificationSession,
   type Issue,
+  type IssueSynthesisSnapshot,
   type IssueOverview,
   type IssueLawGroupLink,
   type LawInterestItem,
@@ -33,6 +34,7 @@ import {
   type NewsIssueCandidate,
   type NewsProviderUsage,
   type Occurrence,
+  type OccurrenceIssueLink,
   type OccurrenceDigest,
   type PublicAssemblySourceRefresh,
   type ReportReceipt,
@@ -49,6 +51,7 @@ import { buildLawGroups } from "./law-topics.ts";
 export type Store = {
   areaClusters: AreaCluster[];
   issues: Issue[];
+  issueSynthesisSnapshots: IssueSynthesisSnapshot[];
   lawItems: LawItem[];
   lawGroups: LawGroup[];
   lawGroupMemberships: LawGroupMembership[];
@@ -57,6 +60,7 @@ export type Store = {
   newsProviderUsage: NewsProviderUsage[];
   legacyLawTopicAliases: Record<string, string>;
   occurrences: Occurrence[];
+  occurrenceIssueLinks: OccurrenceIssueLink[];
   continuousPresences: ContinuousPresence[];
   crowdEstimates: CrowdEstimate[];
   claims: Claim[];
@@ -133,6 +137,11 @@ export type ReadinessReport = {
     blockingGroups: string[];
   };
   requiredActions?: Array<{ id: string; action: string; verify: string }>;
+  gates?: {
+    publicRead: { ready: boolean; failedIds: string[] };
+    contribution: { ready: boolean; failedIds: string[] };
+    operator: { ready: boolean; failedIds: string[] };
+  };
 };
 
 export type AppOptions = {
@@ -169,6 +178,8 @@ export type IdentityRuntime = {
 export function createApp(store: Store = emptyStore(), options: AppOptions = {}) {
   synchronizeLawGroups(store, false);
   refreshIssueLawGroupLinks(store);
+  synchronizeOccurrenceIssueLinks(store);
+  reconcileIssueLifecycle(store);
   return {
     store,
     handle: async (request: ApiRequest) => {
@@ -186,6 +197,7 @@ export function emptyStore(): Store {
   return {
     areaClusters: [],
     issues: [],
+    issueSynthesisSnapshots: [],
     lawItems: [],
     lawGroups: [],
     lawGroupMemberships: [],
@@ -194,6 +206,7 @@ export function emptyStore(): Store {
     newsProviderUsage: [],
     legacyLawTopicAliases: {},
     occurrences: [],
+    occurrenceIssueLinks: [],
     continuousPresences: [],
     crowdEstimates: [],
     claims: [],
@@ -834,6 +847,7 @@ export function stripPreviewData(store: Store): Store {
   const claimIds = new Set(store.claims.map((item) => item.id));
   const evidenceIds = new Set(store.evidence.map((item) => item.id));
   const issueIds = new Set(store.issues.map((item) => item.id));
+  const occurrenceIds = new Set(store.occurrences.map((item) => item.id));
   synchronizeLawGroups(store, false);
   const lawGroupIds = new Set(store.lawGroups.map((item) => item.id));
   store.issueLawGroupLinks = store.issueLawGroupLinks
@@ -847,6 +861,8 @@ export function stripPreviewData(store: Store): Store {
       approvedEvidenceIds: item.approvedEvidenceIds.filter((id) => evidenceIds.has(id)),
       rejectedEvidenceIds: item.rejectedEvidenceIds.filter((id) => evidenceIds.has(id))
     }));
+  store.issueSynthesisSnapshots = store.issueSynthesisSnapshots.filter((item) => issueIds.has(item.issueId));
+  store.occurrenceIssueLinks = store.occurrenceIssueLinks.filter((item) => occurrenceIds.has(item.occurrenceId) && issueIds.has(item.issueId));
   for (const item of store.occurrences) cleanRefs(item, claimIds, evidenceIds);
   for (const item of store.continuousPresences) cleanRefs(item, claimIds, evidenceIds);
 
@@ -901,6 +917,9 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
     const readiness = describeReadiness(await (options.readiness?.() ?? defaultReadiness()));
     return json(readiness.ready ? 200 : 503, readiness);
   }
+  if (request.method === "GET" && path === "/readiness") {
+    return json(200, describeReadiness(await (options.readiness?.() ?? defaultReadiness())));
+  }
   if (options.requireReadyForWrites && request.method !== "GET" && !path.startsWith("/internal/")) {
     const readiness = describeReadiness(await (options.readiness?.() ?? defaultReadiness()));
     if (!readiness.ready) return json(503, { error: "runtime_not_ready", checks: readiness.checks, summary: readiness.summary, requiredActions: readiness.requiredActions });
@@ -924,8 +943,8 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
     const sort = url.searchParams.get("sort");
     return getLaws(store, sort === "proposed_desc" ? "proposed_desc" : "interest");
   }
-  if (request.method === "GET" && path.startsWith("/law-groups/")) return getLawGroup(store, path.split("/")[2]);
-  if (request.method === "GET" && path.startsWith("/law-topics/")) return getLawGroup(store, path.split("/")[2], true);
+  if (request.method === "GET" && path.startsWith("/law-groups/")) return getLawGroup(store, path.split("/")[2], false, url.searchParams);
+  if (request.method === "GET" && path.startsWith("/law-topics/")) return getLawGroup(store, path.split("/")[2], true, url.searchParams);
   if (request.method === "GET" && path.startsWith("/laws/")) return getLaw(store, path.split("/")[2]);
   if (request.method === "GET" && path === "/reels") {
     return getReels(store, url.searchParams.get("seed"), url.searchParams.get("cursor"));
@@ -948,7 +967,7 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
     return getTargetById(store, "continuous_presence", path.split("/")[2], "continuous_presence_not_found");
   }
   if (request.method === "GET" && path === "/area-clusters") return json(200, { areaClusters: store.areaClusters.map(toPublicAreaCluster) });
-  if (request.method === "GET" && path === "/public-sources/coverage") return json(200, { coverage: sourceCoverageReport(store.publicSourceRefreshes) });
+  if (request.method === "GET" && path === "/public-sources/coverage") return json(200, { coverage: publicSourceCoverage(store) });
   if (request.method === "GET" && path === "/map") return getMap(store, options.publicDiscoveryNow?.() ?? new Date());
   if (request.method === "GET" && path === "/me/reports") {
     return withVerifiedUserScope(store, request, options, url.searchParams.get("userId"), (userId) => getMyReports(store, userId));
@@ -977,6 +996,9 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
   if (request.method === "GET" && path === "/admin/law-group-link-candidates") {
     return withInternalAuth(request, options, () => getAdminLawGroupLinkCandidates(store));
   }
+  if (request.method === "GET" && path === "/admin/occurrence-issue-link-candidates") {
+    return withInternalAuth(request, options, () => getAdminOccurrenceIssueLinkCandidates(store));
+  }
   if (request.method === "GET" && path === "/admin/news-issue-candidates") {
     return withInternalAuth(request, options, () => getAdminNewsIssueCandidates(store));
   }
@@ -985,6 +1007,9 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
   }
   if (request.method === "PATCH" && path.startsWith("/admin/law-group-links/")) {
     return withInternalAuth(request, options, () => patchAdminLawGroupLink(store, path.split("/")[3], path.split("/")[4], request.body));
+  }
+  if (request.method === "PATCH" && path.startsWith("/admin/occurrence-issue-links/")) {
+    return withInternalAuth(request, options, () => patchAdminOccurrenceIssueLink(store, path.split("/")[3], path.split("/")[4], request.body));
   }
   if (request.method === "PATCH" && path.startsWith("/admin/claims/")) {
     return withInternalAuth(request, options, () => patchAdminClaim(store, path.split("/")[3], request.body));
@@ -1034,6 +1059,9 @@ function defaultReadiness(): ReadinessReport {
 function describeReadiness(report: ReadinessReport): ReadinessReport {
   const failed = report.checks.filter((check) => !check.ok);
   const blockingGroups = unique(failed.map((check) => readinessGroup(check.id)));
+  const failedFor = (groups: string[]) => failed.filter((check) => groups.includes(readinessGroup(check.id))).map((check) => check.id);
+  const publicReadFailed = failedFor(["database", "public_sources", "runtime_config"]);
+  const contributionFailed = failedFor(["database", "redis", "security", "storage", "redaction", "mobile_integrity", "identity", "runtime_config", "operator_profile"]);
   return {
     ...report,
     summary: {
@@ -1042,6 +1070,11 @@ function describeReadiness(report: ReadinessReport): ReadinessReport {
       failedCount: failed.length,
       failedIds: failed.map((check) => check.id),
       blockingGroups
+    },
+    gates: {
+      publicRead: { ready: publicReadFailed.length === 0, failedIds: publicReadFailed },
+      contribution: { ready: contributionFailed.length === 0, failedIds: contributionFailed },
+      operator: { ready: failed.length === 0, failedIds: failed.map((check) => check.id) }
     },
     requiredActions: blockingGroups.map(readinessAction)
   };
@@ -1483,7 +1516,8 @@ function readNested(value: unknown, paths: string[]): unknown {
 function homeCards(store: Store, now = new Date()) {
   const occurrenceCards = store.occurrences
     .filter((occurrence) => {
-      const issue = occurrence.issueId ? store.issues.find((item) => item.id === occurrence.issueId) : undefined;
+      const primaryIssueId = primaryApprovedIssueId(store, occurrence);
+      const issue = primaryIssueId ? store.issues.find((item) => item.id === primaryIssueId) : undefined;
       return Boolean(issue && isPublicTopicIssue(issue) && !isSourceOnlyOccurrence(store, occurrence) && isOccurrenceWithinPublicDiscoveryWindow(occurrence, now));
     })
     .map((occurrence) => {
@@ -1491,7 +1525,9 @@ function homeCards(store: Store, now = new Date()) {
     const publicEvidenceIds = new Set(claims.flatMap((claim) => claim.evidenceIds));
     const evidence = store.evidence.filter((item) => publicEvidenceIds.has(item.id));
     const sourceDiversity = new Set(claims.map((claim) => claim.sourceProvenance)).size;
-    const officialSourcePreviewBoost = occurrence.issueId?.startsWith("issue_public_") ? 12 : 0;
+    const primaryIssueId = primaryApprovedIssueId(store, occurrence);
+    const approvedIssueIds = approvedIssueIdsForOccurrence(store, occurrence);
+    const officialSourcePreviewBoost = primaryIssueId?.startsWith("issue_public_") ? 12 : 0;
     const score = calculatePriorityScore({
       recency: 1,
       updateVelocity: claims.length,
@@ -1508,7 +1544,8 @@ function homeCards(store: Store, now = new Date()) {
 
     return {
       id: occurrence.id,
-      issueId: occurrence.issueId,
+      issueId: primaryIssueId,
+      issueIds: approvedIssueIds,
       targetType: "occurrence",
       title: occurrence.title,
       regionLabel: occurrence.regionLabel,
@@ -1532,6 +1569,7 @@ function homeCards(store: Store, now = new Date()) {
     .map((item) => ({
       id: item.id,
       issueId: item.issueId,
+      issueIds: item.issueId ? [item.issueId] : [],
       targetType: "continuous_presence",
       title: `${item.regionLabel} 장기 현장`,
       regionLabel: item.regionLabel,
@@ -1561,7 +1599,10 @@ function toOccurrenceDigest(store: Store, targetType: Extract<TargetType, "occur
     .sort((left, right) => right.observedAt.getTime() - left.observedAt.getTime())[0];
   const occurrence = targetType === "occurrence" ? target as Occurrence : undefined;
   const continuous = targetType === "continuous_presence" ? target as ContinuousPresence : undefined;
-  const issueId = "issueId" in target ? target.issueId : undefined;
+  const issueIds = targetType === "occurrence"
+    ? approvedIssueIdsForOccurrence(store, target as Occurrence)
+    : "issueId" in target && target.issueId ? [target.issueId] : [];
+  const issueId = issueIds[0];
   const issue = issueId ? store.issues.find((item) => item.id === issueId) : undefined;
   const updatedAt = latestDate([
     occurrence?.startsAt,
@@ -1575,6 +1616,8 @@ function toOccurrenceDigest(store: Store, targetType: Extract<TargetType, "occur
     id,
     targetType,
     issueId,
+    issueIds,
+    primaryIssueId: issueId,
     title: targetTitle(targetType, target),
     regionLabel: targetRegionLabel(store, targetType, target) ?? "지역 확인 중",
     locationLabel: "publicLocation" in target ? target.publicLocation?.label : undefined,
@@ -1611,9 +1654,10 @@ function officialSourcesForEvidence(evidence: Evidence[]): NonNullable<Occurrenc
 }
 
 function toIssueOverview(store: Store, issue: ReturnType<typeof issueCards>[number], cards = homeCards(store)): IssueOverview {
-  const relatedCards = cards.filter((card) => card.issueId === issue.id);
+  const relatedCards = cards.filter((card) => card.issueId === issue.id || card.issueIds.includes(issue.id));
   const digests = relatedCards.map((card) => toOccurrenceDigest(store, card.targetType as Extract<TargetType, "occurrence" | "continuous_presence">, card.id));
   const mediaPublisherCount = issue.synthesisBasis === "evidence_aggregate" ? mediaPublishersForIssue(store, issue.id).length : 0;
+  const synthesis = store.issueSynthesisSnapshots.find((item) => item.issueId === issue.id);
   return {
     id: issue.id,
     title: issue.title,
@@ -1627,8 +1671,14 @@ function toIssueOverview(store: Store, issue: ReturnType<typeof issueCards>[numb
     latestUpdatedAt: issue.updatedAt,
     representativeOccurrenceId: digests[0]?.id,
     latestChange: issue.synthesisBasis === "evidence_aggregate"
-      ? `언론 보도 근거 ${issue.sourceSummary.media}건(발행사 ${mediaPublisherCount}곳)을 종합했습니다`
-      : undefined
+      ? synthesis
+        ? `${synthesis.neutralSummary} 근거 ${synthesis.evidenceCount}건(발행사 ${synthesis.publisherCount}곳)을 종합했습니다`
+        : `언론 보도 근거 ${issue.sourceSummary.media}건(발행사 ${mediaPublisherCount}곳)을 종합했습니다`
+      : undefined,
+    synthesisSummary: synthesis?.neutralSummary,
+    synthesisEvidenceCount: synthesis?.evidenceCount,
+    synthesisPublisherCount: synthesis?.publisherCount,
+    facets: synthesis?.facets
   };
 }
 
@@ -1636,7 +1686,7 @@ function issueCards(store: Store, cards = homeCards(store)) {
   return store.issues
     .filter(isPublicTopicIssue)
     .map((issue) => {
-      const relatedCards = cards.filter((card) => card.issueId === issue.id);
+      const relatedCards = cards.filter((card) => card.issueId === issue.id || card.issueIds.includes(issue.id));
       const relatedTargetKeys = new Set(relatedCards.map((card) => `${card.targetType}:${card.id}`));
       const relatedTargets = issueTargets(store, issue.id).filter(({ targetType, target }) => relatedTargetKeys.has(`${targetType}:${target.id}`));
       const relatedClaims = [
@@ -1703,9 +1753,107 @@ function isSourceOnlyOccurrence(store: Store, occurrence: Occurrence): boolean {
   return officialEvidence.length > 0 && officialEvidence.every((item) => (item.sourceGranularity ?? "bulletin") === "bulletin");
 }
 
+function publicSourceCoverage(store: Store) {
+  const registry = sourceCoverageReport(store.publicSourceRefreshes);
+  const officialEventOccurrences = store.occurrences.filter((occurrence) => {
+    if (isSourceOnlyOccurrence(store, occurrence)) return false;
+    return occurrence.evidenceIds.some((id) => {
+      const evidence = store.evidence.find((item) => item.id === id);
+      return evidence?.externalProvider === "official_public_source" && evidence.sourceGranularity === "individual_schedule";
+    });
+  });
+  const eventRegions = uniqueSorted(officialEventOccurrences.map((occurrence) => occurrence.regionLabel));
+  const geocodedEventRegions = uniqueSorted(officialEventOccurrences.filter((occurrence) => Boolean(occurrence.publicLocation)).map((occurrence) => occurrence.regionLabel));
+  const upcoming = officialEventOccurrences.filter((occurrence) => !["ENDED", "ARCHIVED", "CANCELED"].includes(occurrence.lifecycleState));
+  const boardPostOnlyRegions = registry.regions
+    .filter((region) => region.status === "schedule_active" && !eventRegions.includes(region.label))
+    .map((region) => region.label);
+  const parserEmptySourceIds = store.publicSourceRefreshes
+    .filter((refresh) => refresh.status === "empty" && (refresh.resultCount ?? 0) > 0 && (refresh.parsedCount ?? 0) === 0)
+    .map((refresh) => refresh.sourceId);
+  const confirmedNoEventSourceIds = store.publicSourceRefreshes
+    .filter((refresh) => refresh.status === "empty" && (refresh.resultCount ?? 0) === 0)
+    .map((refresh) => refresh.sourceId);
+  return {
+    ...registry,
+    /** @deprecated Source-registry reach only. Use eventCoverage for usable event/map coverage. */
+    fullScheduleCoverage: registry.fullScheduleCoverage,
+    fullScheduleSourceCoverage: registry.fullScheduleCoverage,
+    fullEventLevelCoverage: eventRegions.length === registry.totalPoliceRegions,
+    coveragePolicy: "source reach, event extraction, and map coverage are reported separately",
+    eventCoverage: {
+      sourceReachRegions: registry.activeScheduleRegions,
+      sourceReachRegionLabels: registry.regions.filter((region) => region.status === "schedule_active").map((region) => region.label),
+      eventLevelRegions: eventRegions.length,
+      eventLevelRegionLabels: eventRegions,
+      geocodedEventRegions: geocodedEventRegions.length,
+      geocodedEventRegionLabels: geocodedEventRegions,
+      mappedUpcomingCount: upcoming.filter((occurrence) => Boolean(occurrence.publicLocation)).length,
+      locationPendingUpcomingCount: upcoming.filter((occurrence) => !occurrence.publicLocation).length,
+      boardPostOnlyRegions,
+      parserEmptySourceIds: uniqueStrings(parserEmptySourceIds),
+      confirmedNoEventSourceIds: uniqueStrings(confirmedNoEventSourceIds)
+    }
+  };
+}
+
+function synchronizeOccurrenceIssueLinks(store: Store): void {
+  const issueIds = new Set(store.issues.map((issue) => issue.id));
+  const occurrenceIds = new Set(store.occurrences.map((occurrence) => occurrence.id));
+  const links = new Map<string, OccurrenceIssueLink>();
+  for (const link of store.occurrenceIssueLinks) {
+    if (!issueIds.has(link.issueId) || !occurrenceIds.has(link.occurrenceId)) continue;
+    links.set(`${link.occurrenceId}:${link.issueId}`, {
+      ...link,
+      supportingClaimIds: uniqueStrings(link.supportingClaimIds),
+      supportingEvidenceIds: uniqueStrings(link.supportingEvidenceIds)
+    });
+  }
+  for (const occurrence of store.occurrences) {
+    if (!occurrence.issueId || !issueIds.has(occurrence.issueId)) continue;
+    const key = `${occurrence.id}:${occurrence.issueId}`;
+    if (!links.has(key)) {
+      links.set(key, {
+        occurrenceId: occurrence.id,
+        issueId: occurrence.issueId,
+        status: "approved",
+        matchBasis: "manual",
+        confidence: "high",
+        supportingClaimIds: [...occurrence.claimIds],
+        supportingEvidenceIds: [...occurrence.evidenceIds],
+        createdAt: occurrence.startsAt ?? new Date(),
+        reviewedAt: occurrence.startsAt ?? new Date(),
+        reviewNote: "기존 단일 이슈 연결을 승인 링크로 유지"
+      });
+    }
+  }
+  store.occurrenceIssueLinks = [...links.values()];
+  for (const occurrence of store.occurrences) occurrence.issueId = primaryApprovedIssueId(store, occurrence);
+}
+
+function approvedIssueIdsForOccurrence(store: Store, occurrence: Occurrence): string[] {
+  const linked = store.occurrenceIssueLinks
+    .filter((link) => link.occurrenceId === occurrence.id && link.status === "approved")
+    .sort((left, right) => confidenceRank(right.confidence) - confidenceRank(left.confidence) || (right.reviewedAt?.getTime() ?? 0) - (left.reviewedAt?.getTime() ?? 0))
+    .map((link) => link.issueId);
+  return uniqueStrings([...linked, ...(occurrence.issueId ? [occurrence.issueId] : [])]);
+}
+
+function primaryApprovedIssueId(store: Store, occurrence: Occurrence): string | undefined {
+  return approvedIssueIdsForOccurrence(store, occurrence)[0];
+}
+
+function occurrenceHasApprovedIssue(store: Store, occurrence: Occurrence, issueId: string): boolean {
+  return approvedIssueIdsForOccurrence(store, occurrence).includes(issueId);
+}
+
+function confidenceRank(value: OccurrenceIssueLink["confidence"]): number {
+  return value === "high" ? 3 : value === "medium" ? 2 : 1;
+}
+
 function issueTargets(store: Store, issueId: string): Array<{ targetType: TargetType; target: TargetRecord }> {
   return [
-    ...store.occurrences.filter((target) => target.issueId === issueId && !isSourceOnlyOccurrence(store, target)).map((target) => ({ targetType: "occurrence" as const, target })),
+    ...store.occurrences.filter((target) => occurrenceHasApprovedIssue(store, target, issueId) && !isSourceOnlyOccurrence(store, target)).map((target) => ({ targetType: "occurrence" as const, target })),
     ...store.continuousPresences.filter((target) => target.issueId === issueId).map((target) => ({ targetType: "continuous_presence" as const, target }))
   ];
 }
@@ -1781,6 +1929,11 @@ function getIssue(store: Store, id: string | undefined, now = new Date()): ApiRe
   const occurrenceDigests = targets.map(({ targetType, target }) => toOccurrenceDigest(store, targetType as Extract<TargetType, "occurrence" | "continuous_presence">, target.id));
   const cards = homeCards(store, now);
   const summaryCard = issueCards(store, cards).find((item) => item.id === issue.id);
+  const relatedLawGroups = approvedIssueLawGroupLinks(store)
+    .filter((link) => link.issueId === issue.id)
+    .map((link) => store.lawGroups.find((group) => group.id === link.lawGroupId))
+    .filter((group): group is LawGroup => Boolean(group))
+    .map((group) => toLawGroupCard(store, group));
   return json(200, {
     issue: toPublicIssue(issue),
     issueOverview: summaryCard ? toIssueOverview(store, summaryCard, cards) : undefined,
@@ -1793,12 +1946,13 @@ function getIssue(store: Store, id: string | undefined, now = new Date()): ApiRe
     verificationSignals: issueVerificationSignals(store, issue.id),
     claims: publicClaimsForTarget(store, "issue", issue.id).map(toPublicClaim),
     newsArticles: publicNewsArticlesForIssue(store, issue.id),
+    relatedLawGroups,
     targets: targets.map(({ targetType, target }) => ({
       targetType,
       item: toPublicTarget(targetType, target, publicClaimsForTarget(store, targetType, target.id))
     })),
     occurrences: store.occurrences
-      .filter((occurrence) => occurrence.issueId === issue.id && !isSourceOnlyOccurrence(store, occurrence) && isOccurrenceWithinPublicDiscoveryWindow(occurrence, now))
+      .filter((occurrence) => occurrenceHasApprovedIssue(store, occurrence, issue.id) && !isSourceOnlyOccurrence(store, occurrence) && isOccurrenceWithinPublicDiscoveryWindow(occurrence, now))
       .map((occurrence) => toPublicOccurrence(occurrence, publicClaimsForTarget(store, "occurrence", occurrence.id))),
     occurrenceDigests
   });
@@ -1811,6 +1965,7 @@ function issueTopicGrouping(store: Store, issue: Issue) {
   const days = uniqueSorted(targets.map(({ target }) => targetFirstSeenAt(target) ?? targetUpdatedAt(target)).filter((value): value is Date => value instanceof Date).map((date) => date.toISOString().slice(0, 10)));
   const targetTypes = countLabels(targets.map(({ targetType }) => issueTargetTypeLabel(targetType)));
   const sourceSummary = sourceSummaryForClaims(claims);
+  const synthesis = store.issueSynthesisSnapshots.find((item) => item.issueId === issue.id);
   return {
     topicTitle: issue.title,
     synthesisBasis: issue.synthesisBasis ?? "explicit",
@@ -1820,6 +1975,19 @@ function issueTopicGrouping(store: Store, issue: Issue) {
     days,
     targetTypes,
     sourceSummary,
+    synthesis: synthesis ? {
+      version: synthesis.version,
+      method: synthesis.method,
+      neutralSummary: synthesis.neutralSummary,
+      generatedAt: synthesis.generatedAt.toISOString(),
+      windowStartedAt: synthesis.windowStartedAt.toISOString(),
+      windowEndedAt: synthesis.windowEndedAt.toISOString(),
+      evidenceCount: synthesis.evidenceCount,
+      publisherCount: synthesis.publisherCount,
+      claimIds: synthesis.claimIds,
+      evidenceIds: synthesis.evidenceIds,
+      facets: synthesis.facets
+    } : undefined,
     basis: [
       ...(issue.synthesisBasis === "evidence_aggregate" ? ["공개 Claim·Evidence 여러 건에서 공통 쟁점을 추출해 만든 주제"] : []),
       issue.topicTags.length ? `공통 주제어: ${issue.topicTags.slice(0, 4).join(" · ")}` : "공통 주제어 확인 중",
@@ -2564,15 +2732,22 @@ function getLaws(store: Store, sort: "interest" | "proposed_desc" = "interest"):
   });
 }
 
-function getLawGroup(store: Store, id: string | undefined, legacyRoute = false): ApiResponse {
+function getLawGroup(store: Store, id: string | undefined, legacyRoute = false, search = new URLSearchParams()): ApiResponse {
   const resolvedId = id ? store.legacyLawTopicAliases[id] ?? id : undefined;
   const group = store.lawGroups.find((item) => item.id === resolvedId);
   if (!group) return json(404, { error: legacyRoute ? "law_topic_not_found" : "law_group_not_found" });
-  const bills = group.billIds
+  const requestedTopic = search.get("coreTopic") ?? undefined;
+  const pageSize = Math.max(1, Math.min(30, Number(search.get("pageSize") || 15)));
+  const page = Math.max(1, Number(search.get("page") || 1));
+  const matchingBillIds = requestedTopic
+    ? group.billIds.filter((lawId) => store.lawGroupMemberships.some((membership) => membership.lawItemId === lawId && membership.coreTopicKey === requestedTopic))
+    : group.billIds;
+  const allBills = matchingBillIds
     .map((lawId) => store.lawItems.find((law) => law.id === lawId))
     .filter((law): law is LawItem => Boolean(law))
     .map((law) => toLawInterestItem(store, toPublicLawItem(store, law)))
     .sort((left, right) => new Date(right.proposedDate || right.statusDate || 0).getTime() - new Date(left.proposedDate || left.statusDate || 0).getTime());
+  const bills = allBills.slice((page - 1) * pageSize, page * pageSize);
   const links = approvedIssueLawGroupLinks(store).filter((link) => link.lawGroupId === group.id);
   const issueIds = new Set(links.map((link) => link.issueId));
   const cards = homeCards(store);
@@ -2595,7 +2770,15 @@ function getLawGroup(store: Store, id: string | undefined, legacyRoute = false):
     return { ...overview, newsCount: newsArticles.length, recentNews: newsArticles.slice(0, 3) };
   });
   const card = toLawGroupCard(store, group);
-  return json(200, { group: card, topic: toLegacyLawTopicCard(card), bills, issueLinks: links.map(toPublicIssueLawGroupLink), issues });
+  return json(200, {
+    group: card,
+    topic: toLegacyLawTopicCard(card),
+    bills,
+    pagination: { page, pageSize, total: allBills.length, pageCount: Math.max(1, Math.ceil(allBills.length / pageSize)) },
+    selectedCoreTopicKey: requestedTopic,
+    issueLinks: links.map(toPublicIssueLawGroupLink),
+    issues
+  });
 }
 
 function toLegacyLawTopicCard(group: LawGroupCard) {
@@ -2627,7 +2810,7 @@ function toLawGroupCard(store: Store, group: LawGroup): LawGroupCard {
   const stageCounts: Record<string, number> = {};
   for (const law of laws) stageCounts[law.stage] = (stageCounts[law.stage] ?? 0) + 1;
   const latestProposedDate = latestDate(laws.map((law) => law.proposedDate))?.toISOString();
-  const scheduleProximityScore = Math.max(0, ...laws.map(lawScheduleProximityScore));
+  const relatedIssueActivityScore = relatedTargets.size * 25 + regions.size * 20 + nonMediaClaims.length * 8 + nonMediaIssueCount * 5;
   return {
     id: group.id,
     lawName: group.lawName,
@@ -2639,7 +2822,8 @@ function toLawGroupCard(store: Store, group: LawGroup): LawGroupCard {
     linkedIssueCount: issueIds.size,
     occurrenceCount: relatedTargets.size,
     regionCount: regions.size,
-    interestScore: relatedTargets.size * 25 + regions.size * 20 + nonMediaClaims.length * 8 + scheduleProximityScore + nonMediaIssueCount * 5
+    interestScore: relatedIssueActivityScore,
+    relatedIssueActivityScore
   };
 }
 
@@ -2695,7 +2879,9 @@ function toLawInterestItem(store: Store, law: ReturnType<typeof toPublicLawItem>
     occurrenceCount: law.occurrenceCount,
     regionCount: law.regionCount,
     interestScore: law.interestScore,
-    linkedIssueIds
+    linkedIssueIds,
+    coreTopicKey: law.coreTopicKey,
+    coreTopicLabel: law.coreTopicLabel
   };
 }
 
@@ -3985,7 +4171,13 @@ function toPublicLawItem(store: Store, law: LawItem) {
     law.statusDate,
     law.effectiveDate
   ]);
-  const scheduleProximityScore = lawScheduleProximityScore(law);
+  const membership = store.lawGroupMemberships.find((item) => item.lawItemId === law.id);
+  const approvedLinks = law.lawGroupId ? approvedIssueLawGroupLinks(store).filter((link) => link.lawGroupId === law.lawGroupId) : [];
+  const linkedIssueIds = uniqueStrings(approvedLinks.map((link) => link.issueId));
+  const linkedTargets = new Map<string, ReturnType<typeof issueTargets>[number]>();
+  for (const issueId of linkedIssueIds) for (const target of issueTargets(store, issueId)) linkedTargets.set(`${target.targetType}:${target.target.id}`, target);
+  const linkedRegions = new Set([...linkedTargets.values()].map(({ target }) => publicTargetRegionLabel(target)).filter(Boolean));
+  const relatedIssueActivityScore = linkedIssueIds.length * 10 + linkedTargets.size * 25 + linkedRegions.size * 20;
   return {
     id: law.id,
     source: law.source,
@@ -3999,20 +4191,31 @@ function toPublicLawItem(store: Store, law: LawItem) {
     assemblyBillNo: law.assemblyBillNo,
     lawId: law.lawId,
     proposer: law.proposer,
-    proposalSummary: law.proposalSummary,
+    proposalSummary: cleanOfficialProposalSummary(law.proposalSummary),
     lawGroupId: law.lawGroupId,
     summary: law.summary,
     officialUrl: law.officialUrl,
     keywords: law.keywords,
-    linkedIssueCount: 0,
-    relatedTargetCount: 0,
-    occurrenceCount: 0,
-    regionCount: 0,
+    linkedIssueCount: linkedIssueIds.length,
+    relatedTargetCount: linkedTargets.size,
+    occurrenceCount: linkedTargets.size,
+    regionCount: linkedRegions.size,
     recentClaimCount: 0,
-    scheduleProximityScore,
-    interestScore: scheduleProximityScore,
+    scheduleProximityScore: lawScheduleProximityScore(law),
+    interestScore: relatedIssueActivityScore,
+    relatedIssueActivityScore,
+    coreTopicKey: membership?.coreTopicKey,
+    coreTopicLabel: membership?.coreTopicLabel,
     lastUpdatedAt: lastUpdatedAt?.toISOString()
   };
+}
+
+function cleanOfficialProposalSummary(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  return value
+    .replace(/^\s*(제안이유\s*및\s*주요내용|제안이유|주요내용)\s*[:：-]?\s*/u, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function lawScheduleProximityScore(law: LawItem): number {
@@ -4165,6 +4368,35 @@ function patchAdminLawGroupLink(store: Store, issueId: string | undefined, lawGr
   return json(200, { link });
 }
 
+function getAdminOccurrenceIssueLinkCandidates(store: Store): ApiResponse {
+  return json(200, {
+    candidates: store.occurrenceIssueLinks
+      .filter((link) => link.status === "candidate")
+      .map((link) => ({
+        link,
+        occurrence: store.occurrences.find((occurrence) => occurrence.id === link.occurrenceId),
+        issue: store.issues.find((issue) => issue.id === link.issueId),
+        claims: link.supportingClaimIds.map((id) => store.claims.find((claim) => claim.id === id)).filter((claim): claim is Claim => Boolean(claim)).map(toPublicClaim)
+      }))
+      .filter((item) => item.occurrence && item.issue)
+  });
+}
+
+function patchAdminOccurrenceIssueLink(store: Store, occurrenceId: string | undefined, issueId: string | undefined, body: unknown): ApiResponse {
+  const link = store.occurrenceIssueLinks.find((item) => item.occurrenceId === occurrenceId && item.issueId === issueId);
+  if (!link) return json(404, { error: "occurrence_issue_link_candidate_not_found" });
+  const data = asObject(body);
+  const status = readString(data, "status");
+  if (status !== "approved" && status !== "rejected") throw new ApiError(400, "occurrence_issue_link_status_invalid");
+  link.status = status;
+  link.reviewedAt = new Date();
+  link.reviewNote = readOptionalString(data, "reviewNote");
+  const occurrence = store.occurrences.find((item) => item.id === link.occurrenceId);
+  if (occurrence) occurrence.issueId = primaryApprovedIssueId(store, occurrence);
+  audit(store, status === "approved" ? "merge" : "hold", "occurrence", link.occurrenceId, `주제 '${link.issueId}' 이벤트 연결 후보가 ${status === "approved" ? "승인" : "거절"}되었습니다.`);
+  return json(200, { link });
+}
+
 const newsMonthlyCallLimit = 20_000;
 const activeNewsProvider = "publisher_rss" as const;
 
@@ -4279,7 +4511,7 @@ export function reconcileEvidenceSynthesizedTopics(store: Store, now = new Date(
   let changeCount = 0;
   for (const group of store.lawGroups) {
     const candidates = store.newsIssueCandidates.filter((candidate) => candidate.lawGroupId === group.id);
-    if (!candidates.some((candidate) => candidate.pendingEvidenceIds.length > 0)) continue;
+    if (candidates.length === 0) continue;
     const rejectedIds = new Set(candidates.flatMap((candidate) => candidate.rejectedEvidenceIds));
     const evidenceById = new Map<string, { evidence: Evidence; candidate: NewsIssueCandidate }>();
     for (const candidate of candidates) {
@@ -4356,6 +4588,8 @@ export function reconcileEvidenceSynthesizedTopics(store: Store, now = new Date(
       claimIds.push(claim.id);
     }
 
+    changeCount += upsertIssueSynthesisSnapshot(store, issue, group, entries, claimIds, now);
+
     for (const candidate of candidates) {
       const approvedNow = candidate.pendingEvidenceIds.filter((id) => evidenceById.has(id));
       if (approvedNow.length === 0) continue;
@@ -4397,14 +4631,105 @@ export function reconcileEvidenceSynthesizedTopics(store: Store, now = new Date(
     }
   }
   changeCount += reconcileOccurrenceLinksFromEvidence(store);
+  changeCount += reconcileIssueLifecycle(store, now);
   return changeCount;
+}
+
+function upsertIssueSynthesisSnapshot(
+  store: Store,
+  issue: Issue,
+  group: LawGroup,
+  entries: Array<{ evidence: Evidence; candidate: NewsIssueCandidate }>,
+  claimIds: string[],
+  now: Date
+): number {
+  const facets = [...new Set(entries.map((entry) => entry.candidate.coreTopicKey))]
+    .filter((key) => key !== "_group")
+    .map((coreTopicKey) => {
+      const topic = group.coreTopics.find((item) => item.key === coreTopicKey);
+      const matching = entries.filter((entry) => entry.candidate.coreTopicKey === coreTopicKey);
+      const evidenceIds = matching.map((entry) => entry.evidence.id);
+      const matchingClaimIds = store.claims
+        .filter((claim) => claim.targetType === "issue" && claim.targetId === issue.id && claim.evidenceIds.some((id) => evidenceIds.includes(id)))
+        .map((claim) => claim.id);
+      return {
+        coreTopicKey,
+        label: topic?.label ?? "세부 논점 확인 중",
+        evidenceCount: evidenceIds.length,
+        publisherCount: new Set(matching.map((entry) => entry.evidence.publisherLabel)).size,
+        claimIds: uniqueStrings(matchingClaimIds),
+        evidenceIds: uniqueStrings(evidenceIds)
+      };
+    })
+    .sort((left, right) => right.evidenceCount - left.evidenceCount || right.publisherCount - left.publisherCount || left.label.localeCompare(right.label, "ko"));
+  const evidenceIds = uniqueStrings(entries.map((entry) => entry.evidence.id));
+  const publishers = uniqueStrings(entries.map((entry) => entry.evidence.publisherLabel).filter((value): value is string => Boolean(value)));
+  const windowStartedAt = earliestDate(entries.map((entry) => entry.evidence.sourcePublishedAt)) ?? now;
+  const windowEndedAt = latestDate(entries.map((entry) => entry.evidence.sourcePublishedAt)) ?? now;
+  const neutralSummary = facets.length
+    ? `${group.lawName} 관련 보도에서 ${facets.slice(0, 3).map((facet) => facet.label).join("·")} 논점이 함께 확인됩니다.`
+    : `${group.lawName} 관련 공개 보도들을 종합해 확인 중인 주제입니다.`;
+  const snapshot: IssueSynthesisSnapshot = {
+    issueId: issue.id,
+    version: "law-group-evidence-v1",
+    method: "law_group_evidence_aggregate",
+    neutralSummary,
+    windowStartedAt,
+    windowEndedAt,
+    generatedAt: now,
+    evidenceCount: evidenceIds.length,
+    publisherCount: publishers.length,
+    claimIds: uniqueStrings(claimIds),
+    evidenceIds,
+    facets
+  };
+  const previousIndex = store.issueSynthesisSnapshots.findIndex((item) => item.issueId === issue.id);
+  const previous = previousIndex >= 0 ? store.issueSynthesisSnapshots[previousIndex] : undefined;
+  const comparable = (item: IssueSynthesisSnapshot | undefined) => item ? JSON.stringify({
+    version: item.version,
+    neutralSummary: item.neutralSummary,
+    evidenceCount: item.evidenceCount,
+    publisherCount: item.publisherCount,
+    claimIds: item.claimIds,
+    evidenceIds: item.evidenceIds,
+    facets: item.facets
+  }) : "";
+  if (comparable(previous) === comparable(snapshot)) return 0;
+  if (previousIndex >= 0) store.issueSynthesisSnapshots[previousIndex] = snapshot;
+  else store.issueSynthesisSnapshots.push(snapshot);
+  audit(store, previous ? "correction" : "state_change", "issue", issue.id, previous
+    ? "새 공개 근거를 반영해 주제 합성 요약과 세부 논점을 갱신했습니다."
+    : "공개 근거와 출처를 추적할 수 있는 주제 합성 스냅샷을 생성했습니다.");
+  return 1;
+}
+
+function reconcileIssueLifecycle(store: Store, now = new Date()): number {
+  let changed = 0;
+  for (const issue of store.issues.filter((item) => item.kind === "topic" && item.synthesisBasis === "evidence_aggregate")) {
+    const snapshot = store.issueSynthesisSnapshots.find((item) => item.issueId === issue.id);
+    const lastEvidenceAt = snapshot?.windowEndedAt ?? issue.lastUpdatedAt;
+    const ageDays = Math.max(0, (now.getTime() - lastEvidenceAt.getTime()) / dayMs);
+    const hasCurrentTarget = issueTargets(store, issue.id).some(({ targetType, target }) => targetType === "occurrence"
+      ? isOccurrenceWithinPublicDiscoveryWindow(target as Occurrence, now) && !["ENDED", "ARCHIVED", "CANCELED"].includes((target as Occurrence).lifecycleState)
+      : !["ENDED", "ARCHIVED"].includes((target as ContinuousPresence).state));
+    const nextStatus: Issue["status"] = ageDays >= 90 && !hasCurrentTarget ? "archived" : ageDays >= 30 ? "quiet" : "active";
+    if (nextStatus === issue.status) continue;
+    issue.status = nextStatus;
+    audit(store, "state_change", "issue", issue.id, nextStatus === "quiet"
+      ? "30일간 새 공개 근거가 없어 정체 상태로 전환했습니다."
+      : nextStatus === "archived"
+        ? "90일간 새 공개 근거와 진행 현장이 없어 보관 상태로 전환했습니다."
+        : "새 공개 근거 또는 진행 현장이 확인되어 활성 상태로 전환했습니다.");
+    changed += 1;
+  }
+  return changed;
 }
 
 function reconcileOccurrenceLinksFromEvidence(store: Store): number {
   let linkedCount = 0;
   const synthesizedIssues = store.issues.filter((issue) => issue.kind === "topic" && issue.synthesisBasis === "evidence_aggregate" && issue.status !== "archived");
   for (const occurrence of store.occurrences) {
-    if (occurrence.issueId || isSourceOnlyOccurrence(store, occurrence)) continue;
+    if (isSourceOnlyOccurrence(store, occurrence)) continue;
     const claims = publicClaimsForTarget(store, "occurrence", occurrence.id);
     const evidence = publicEvidenceForClaims(store, claims);
     const corpus = normalizeSearchText([
@@ -4422,10 +4747,35 @@ function reconcileOccurrenceLinksFromEvidence(store: Store): number {
       const purposeMatched = /반대|찬성|지지|요구|촉구|규탄|폐지|개정|의혹|검증|보장/.test(corpus);
       return topicMatched || (lawMatched && purposeMatched);
     });
-    if (matches.length !== 1) continue;
-    occurrence.issueId = matches[0]!.id;
-    audit(store, "merge", "occurrence", occurrence.id, `이벤트의 공개 Claim·Evidence 주제어가 근거 종합 주제 '${matches[0]!.id}'와 일치해 연결했습니다.`);
-    linkedCount += 1;
+    if (matches.length === 0) continue;
+    const supportingClaimIds = claims.map((claim) => claim.id);
+    const supportingEvidenceIds = evidence.map((item) => item.id);
+    for (const matchedIssue of matches) {
+      const existing = store.occurrenceIssueLinks.find((link) => link.occurrenceId === occurrence.id && link.issueId === matchedIssue.id);
+      const uniqueMatch = matches.length === 1;
+      if (existing) {
+        existing.supportingClaimIds = uniqueStrings([...existing.supportingClaimIds, ...supportingClaimIds]);
+        existing.supportingEvidenceIds = uniqueStrings([...existing.supportingEvidenceIds, ...supportingEvidenceIds]);
+        continue;
+      }
+      store.occurrenceIssueLinks.push({
+        occurrenceId: occurrence.id,
+        issueId: matchedIssue.id,
+        status: uniqueMatch ? "approved" : "candidate",
+        matchBasis: evidence.length ? "occurrence_evidence" : "occurrence_claim",
+        confidence: uniqueMatch ? "high" : "medium",
+        supportingClaimIds,
+        supportingEvidenceIds,
+        createdAt: new Date(),
+        reviewedAt: uniqueMatch ? new Date() : undefined,
+        reviewNote: uniqueMatch ? "이벤트 자체 공개 근거가 하나의 근거 종합 주제와 일치" : "복수 주제 후보로 운영 검토 필요"
+      });
+      audit(store, uniqueMatch ? "merge" : "hold", "occurrence", occurrence.id, uniqueMatch
+        ? `이벤트 자체의 공개 Claim·Evidence가 근거 종합 주제 '${matchedIssue.id}'와 일치해 승인 연결했습니다.`
+        : `이벤트가 복수 주제 후보와 일치해 '${matchedIssue.id}' 연결을 비공개 후보로 보류했습니다.`);
+      linkedCount += 1;
+    }
+    occurrence.issueId = primaryApprovedIssueId(store, occurrence);
   }
   return linkedCount;
 }

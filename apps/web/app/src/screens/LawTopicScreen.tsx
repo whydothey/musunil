@@ -4,15 +4,18 @@ import dataSource from "@musunil/data-source";
 import type { LawGroupDetailData } from "../contracts";
 import { EmptyState, LoadingState, ScreenHeader, ServiceUnavailable } from "../components";
 import { Link } from "../router";
+import { formatOfficialDate } from "../format";
 
 export function LawGroupScreen({ id }: { id: string }) {
   const [detail, setDetail] = useState<LawGroupDetailData>();
   const [state, setState] = useState<"loading" | "ready" | "missing" | "unavailable">("loading");
+  const [coreTopicKey, setCoreTopicKey] = useState<string>();
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     let active = true;
     setState("loading");
-    dataSource.loadLawGroup(id).then((next) => {
+    dataSource.loadLawGroup(id, { coreTopicKey, page }).then((next) => {
       if (!active) return;
       setDetail(next);
       setState("ready");
@@ -21,7 +24,7 @@ export function LawGroupScreen({ id }: { id: string }) {
       setState(error instanceof Error && error.message === "law_group_not_found" ? "missing" : "unavailable");
     });
     return () => { active = false; };
-  }, [id]);
+  }, [id, coreTopicKey, page]);
 
   if (state === "loading") return <section className="screen screen-detail"><LoadingState label="동일 이름 법안 그룹을 확인하고 있습니다" /></section>;
   if (state === "unavailable") return <section className="screen screen-detail"><ServiceUnavailable /></section>;
@@ -34,8 +37,9 @@ export function LawGroupScreen({ id }: { id: string }) {
       <div className="law-topic-summary"><Layers3 aria-hidden="true" /><div><strong>동일 이름 법안 {group.billCount}건</strong><span>그룹 핵심 논점 {group.coreTopics.length}개</span></div></div>
       <section className="content-section">
         <div className="section-heading"><div><h2>핵심 논점</h2><p>소속 의안들의 국회 공식 제안요약에서 집계했습니다</p></div></div>
-        <div className="law-core-topic-list">
-          {group.coreTopics.map((topic) => <div className="law-core-topic-item" key={topic.key}><h3>{topic.label}</h3><p>관련 의안 {topic.billCount}건</p><small>{topic.representativeKeywords.join(" · ")}</small></div>)}
+        <div className="law-core-topic-filter" role="group" aria-label="핵심 논점으로 법안 필터">
+          <button type="button" aria-pressed={!coreTopicKey} onClick={() => { setCoreTopicKey(undefined); setPage(1); }}>전체 {group.billCount}건</button>
+          {group.coreTopics.map((topic) => <button type="button" aria-pressed={coreTopicKey === topic.key} onClick={() => { setCoreTopicKey(topic.key); setPage(1); }} key={topic.key}><strong>{topic.label}</strong><span>{topic.billCount}건</span><small>{topic.representativeKeywords.join(" · ")}</small></button>)}
         </div>
       </section>
       <section className="content-section">
@@ -58,11 +62,12 @@ export function LawGroupScreen({ id }: { id: string }) {
         <div className="law-list">
           {bills.map((law) => (
             <Link href={`/laws/${encodeURIComponent(law.id)}`} className="law-row" key={law.id} ariaLabel={`${law.title} ${law.proposer || ""} 상세 보기`}>
-              <div className="law-source-line"><span>{law.assemblyBillNo ? `의안 ${law.assemblyBillNo}` : law.source === "assembly_bill" ? "국회 의안" : "현행 법령"}</span><time>{law.proposedDate || law.statusDate || "날짜 확인 중"}</time></div>
-              <div className="law-row-main"><div><h2>{law.title}</h2><p>{law.proposer ? `${law.proposer} · ` : ""}{law.stage}</p></div><ChevronRight aria-hidden="true" /></div>
+              <div className="law-source-line"><span>{law.assemblyBillNo ? `의안 ${law.assemblyBillNo}` : law.source === "assembly_bill" ? "국회 의안" : "현행 법령"}</span><time>{formatOfficialDate(law.proposedDate || law.statusDate)}</time></div>
+              <div className="law-row-main"><div><h2>{law.title}</h2><p>{law.proposer ? `${law.proposer} · ` : ""}{law.stage}</p>{law.coreTopicLabel ? <small>{law.coreTopicLabel}</small> : null}</div><ChevronRight aria-hidden="true" /></div>
             </Link>
           ))}
         </div>
+        {detail.pagination && detail.pagination.pageCount > 1 ? <nav className="law-pagination" aria-label="개별 법안 페이지"><button type="button" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>이전</button><span>{page} / {detail.pagination.pageCount}</span><button type="button" disabled={page >= detail.pagination.pageCount} onClick={() => setPage((current) => current + 1)}>다음</button></nav> : null}
       </section>
     </section>
   );

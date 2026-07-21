@@ -22,11 +22,16 @@ for (const name of requiredHeaders) {
   }
 }
 
+const groupedHeaders = new Map();
+for (const header of headers) {
+  const group = groupedHeaders.get(header.path) || [];
+  group.push(header);
+  groupedHeaders.set(header.path, group);
+}
 const output = [
   "# Generated from render.yaml by scripts/write-web-headers.mjs.",
   "# Render manual Static Sites still require Dashboard Headers; this file keeps portable static hosts aligned.",
-  "/*",
-  ...headers.map((header) => `  ${header.name}: ${header.value}`),
+  ...[...groupedHeaders.entries()].flatMap(([path, rules]) => [path, ...rules.map((header) => `  ${header.name}: ${header.value}`)]),
   ""
 ].join("\n");
 

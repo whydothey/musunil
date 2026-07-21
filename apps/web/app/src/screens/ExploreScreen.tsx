@@ -32,7 +32,7 @@ export function ExploreScreen() {
           {query ? <button type="button" onClick={() => setQuery("")} aria-label="검색어 지우기"><X /></button> : null}
         </label>
         {query ? <div className="map-results" aria-label="검색 결과">
-          {filtered.slice(0, 5).map((item) => <button key={item.id} type="button" onClick={() => { selectOccurrence(item.id); setQuery(""); }}><span>{item.regionLabel} · {schedulePhaseLabel(schedulePhase(item))}</span><strong>{item.title}</strong><ChevronRight /></button>)}
+          {filtered.slice(0, 5).map((item) => <button key={item.id} type="button" onClick={() => { selectOccurrence(item.id); setQuery(""); }}><span>{item.regionLabel} · {schedulePhaseLabel(schedulePhase(item))}</span><strong>{item.title}</strong><small>{formatDateTime(item.startsAt)} · {item.locationLabel || "위치 확인 중"}</small><ChevronRight /></button>)}
           {!filtered.length ? <p>일치하는 공개 현장이 없습니다</p> : null}
         </div> : null}
       </div>
@@ -216,7 +216,7 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
   };
 
   return <>
-    <div ref={containerRef} className="map-canvas" data-map-ready={mapReady ? "true" : "false"} data-basemap-ready={baseMapReady ? "true" : "false"} aria-label={`${occurrences.length}개 공개 현장 지도`} />
+    <div ref={containerRef} className="map-canvas" data-map-ready={mapReady ? "true" : "false"} data-basemap-ready={baseMapReady ? "true" : "false"} aria-label={`지도 핀 ${pinData.features.length}개, 위치 확인 중 ${Math.max(0, occurrences.length - pinData.features.length)}개`} />
     <button type="button" className="map-locate" onClick={locateUser} aria-label="내 위치로 지도 이동"><LocateFixed aria-hidden="true" /><span>내 위치</span></button>
     <p className="map-location-message" aria-live="polite">{locationMessage}</p>
     {baseMapFallback ? <div className="map-basemap-notice">대체 지도 연결됨</div> : null}

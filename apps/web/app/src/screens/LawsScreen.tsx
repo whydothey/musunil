@@ -17,7 +17,7 @@ export function LawsScreen() {
     <section className="screen screen-feed laws-screen" data-screen="laws">
       <ScreenHeader title="법안" eyebrow="집회 이슈와 연결된 공식 정보" />
       <div className="segmented-control" role="tablist" aria-label="법안 정렬">
-        <button type="button" role="tab" aria-selected={sort === "interest"} onClick={() => setSort("interest")}>현장 관심</button>
+        <button type="button" role="tab" aria-selected={sort === "interest"} onClick={() => setSort("interest")}>관련 주제 활성도</button>
         <button type="button" role="tab" aria-selected={sort === "recent"} onClick={() => setSort("recent")}>최근 발의</button>
       </div>
       {serviceSyncState === "loading" ? <LoadingState label="공식 법안 정보를 확인하고 있습니다" /> : null}

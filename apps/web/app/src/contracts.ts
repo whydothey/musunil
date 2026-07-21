@@ -32,12 +32,41 @@ export interface IssueOverview {
   latestUpdatedAt?: string;
   representativeOccurrenceId?: string;
   latestChange?: string;
+  synthesisSummary?: string;
+  synthesisEvidenceCount?: number;
+  synthesisPublisherCount?: number;
+  facets?: IssueSynthesisFacet[];
+}
+
+export interface IssueSynthesisFacet {
+  coreTopicKey: string;
+  label: string;
+  evidenceCount: number;
+  publisherCount: number;
+  claimIds: string[];
+  evidenceIds: string[];
+}
+
+export interface IssueSynthesis {
+  version: string;
+  method: "law_group_evidence_aggregate";
+  neutralSummary: string;
+  generatedAt: string;
+  windowStartedAt: string;
+  windowEndedAt: string;
+  evidenceCount: number;
+  publisherCount: number;
+  claimIds: string[];
+  evidenceIds: string[];
+  facets: IssueSynthesisFacet[];
 }
 
 export interface OccurrenceDigest {
   id: string;
   targetType: "occurrence" | "continuous_presence";
   issueId?: string;
+  issueIds?: string[];
+  primaryIssueId?: string;
   title: string;
   regionLabel: string;
   locationLabel?: string;
@@ -112,6 +141,8 @@ export interface LawInterestItem {
   regionCount: number;
   interestScore: number;
   linkedIssueIds?: string[];
+  coreTopicKey?: string;
+  coreTopicLabel?: string;
 }
 
 export interface LawCoreTopic {
@@ -133,6 +164,7 @@ export interface LawGroupCard {
   occurrenceCount: number;
   regionCount: number;
   interestScore: number;
+  relatedIssueActivityScore?: number;
 }
 
 export interface NewsArticle {
@@ -155,6 +187,8 @@ export interface LawGroupDetailData {
   group: LawGroupCard;
   bills: LawInterestItem[];
   issues?: LawGroupIssueOverview[];
+  pagination?: { page: number; pageSize: number; total: number; pageCount: number };
+  selectedCoreTopicKey?: string;
 }
 
 export interface ReportCandidate {
@@ -177,6 +211,13 @@ export interface IssueDetailData {
   occurrenceDigests: OccurrenceDigest[];
   claims: PublicClaim[];
   newsArticles?: NewsArticle[];
+  topicGrouping?: {
+    synthesisBasis: "explicit" | "evidence_aggregate";
+    policy: string;
+    basis: string[];
+    synthesis?: IssueSynthesis;
+  };
+  relatedLawGroups?: LawGroupCard[];
 }
 
 export interface OccurrenceDetailData {
@@ -210,8 +251,18 @@ export interface AppDataset {
   lawGroups: LawGroupCard[];
   claimsByIssue: Record<string, PublicClaim[]>;
   newsByIssue: Record<string, NewsArticle[]>;
+  synthesisByIssue: Record<string, IssueSynthesis | undefined>;
+  lawGroupsByIssue: Record<string, LawGroupCard[]>;
   claimsByOccurrence: Record<string, PublicClaim[]>;
   map: MapData;
+}
+
+export interface ServiceReadiness {
+  gates?: {
+    publicRead: { ready: boolean; failedIds: string[] };
+    contribution: { ready: boolean; failedIds: string[] };
+    operator: { ready: boolean; failedIds: string[] };
+  };
 }
 
 export interface IssuePresentation {

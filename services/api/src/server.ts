@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { dirname, extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -359,22 +360,27 @@ async function postgresReadyChecks(databaseUrl: string): Promise<Array<{ id: str
 }
 
 function send(
-  req: { headers?: Record<string, string | string[] | undefined> },
+  req: { method?: string; url?: string; headers?: Record<string, string | string[] | undefined> },
   res: { writeHead: Function; end: Function },
   status: number,
   body: unknown,
   extraHeaders: Record<string, string> = {}
 ): void {
   const origin = typeof req.headers?.origin === "string" ? req.headers.origin : undefined;
+  const serializedBody = body === undefined ? "" : JSON.stringify(body);
+  const path = new URL(req.url ?? "/", "http://localhost").pathname;
+  const cacheablePublicRead = req.method === "GET" && status >= 200 && status < 300 && ["/home", "/map", "/laws", "/issues", "/occurrences", "/law-groups", "/public-sources/coverage", "/transparency"].some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+  const etag = cacheablePublicRead ? `W/\"${createHash("sha256").update(serializedBody).digest("base64url").slice(0, 24)}\"` : undefined;
   const headers: Record<string, string> = {
     "access-control-allow-headers": "content-type, x-musunil-user-id, x-musunil-user-token, x-musunil-internal-key",
     "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
-    "cache-control": "no-store",
+    "cache-control": cacheablePublicRead ? "public, max-age=30, stale-while-revalidate=60" : "no-store",
     "content-type": "application/json; charset=utf-8",
     "referrer-policy": "no-referrer",
     "vary": "Origin",
     "x-content-type-options": "nosniff"
   };
+  if (etag) headers.etag = etag;
   if (!origin) {
     headers["access-control-allow-origin"] = runtime.allowedOrigins[0] ?? "*";
   } else if (runtime.allowedOrigins.includes(origin) || (runtime.allowLocalDevOrigins && isLocalhostOrigin(origin))) {
@@ -382,8 +388,13 @@ function send(
     headers["access-control-allow-credentials"] = "true";
   }
   Object.assign(headers, extraHeaders);
+  if (etag && req.headers?.["if-none-match"] === etag) {
+    res.writeHead(304, headers);
+    res.end("");
+    return;
+  }
   res.writeHead(status, headers);
-  res.end(body === undefined ? "" : JSON.stringify(body));
+  res.end(serializedBody);
 }
 
 function isLocalhostOrigin(origin: string): boolean {

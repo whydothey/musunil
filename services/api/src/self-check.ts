@@ -116,16 +116,26 @@ const synthesizedNewsCandidate = newsReviewStore.newsIssueCandidates.find((candi
 assert.equal(synthesizedNewsCandidate.status, "approved");
 assert.equal(synthesizedNewsCandidate.approvedEvidenceIds.length, 2);
 assert.equal(typeof synthesizedNewsCandidate.issueId, "string");
+const synthesisSnapshot = newsReviewStore.issueSynthesisSnapshots.find((snapshot) => snapshot.issueId === synthesizedNewsCandidate.issueId);
+assert.equal(synthesisSnapshot?.evidenceCount, 2);
+assert.equal(synthesisSnapshot?.facets.some((facet) => facet.coreTopicKey === newsReviewTopic.key && facet.claimIds.length === 2), true);
+assert.equal(newsReviewStore.lawGroupMemberships.every((membership) => Boolean(membership.coreTopicKey && membership.classificationBasis)), true);
 const synthesizedHome = await newsReviewApp.handle({ method: "GET", path: "/home" });
 assert.equal((synthesizedHome.body as { issueOverviews: Array<{ id: string; occurrenceCount: number; latestChange?: string }> }).issueOverviews.some((issue) => issue.id === synthesizedNewsCandidate.issueId && issue.occurrenceCount === 0 && issue.latestChange?.includes("근거 2건(발행사 1곳)")), true);
 const newsGroupDetail = await newsReviewApp.handle({ method: "GET", path: `/law-groups/${newsReviewGroup.id}` });
 assert.equal((newsGroupDetail.body as { issues: Array<{ newsCount: number; recentNews: unknown[] }> }).issues.some((issue) => issue.newsCount === 2 && issue.recentNews.length === 2), true);
+const filteredGroupDetail = await newsReviewApp.handle({ method: "GET", path: `/law-groups/${newsReviewGroup.id}?coreTopic=${encodeURIComponent(newsReviewTopic.key)}&pageSize=1&page=1` });
+assert.equal((filteredGroupDetail.body as { selectedCoreTopicKey: string }).selectedCoreTopicKey, newsReviewTopic.key);
+assert.equal((filteredGroupDetail.body as { bills: unknown[] }).bills.length <= 1, true);
+assert.equal((filteredGroupDetail.body as { pagination: { total: number } }).pagination.total >= 1, true);
 assert.equal(JSON.stringify(newsGroupDetail.body).includes("공개 응답에 노출하면 안 되는 원제목"), false);
 const newsIssueDetail = await newsReviewApp.handle({ method: "GET", path: `/issues/${synthesizedNewsCandidate.issueId}` });
 assert.equal((newsIssueDetail.body as { newsArticles: unknown[] }).newsArticles.length, 2);
 assert.equal(JSON.stringify(newsIssueDetail.body).includes("공개 응답에 노출하면 안 되는 원제목"), false);
 assert.equal((newsIssueDetail.body as { topicGrouping: { synthesisBasis: string; basis: string[] } }).topicGrouping.synthesisBasis, "evidence_aggregate");
 assert.equal((newsIssueDetail.body as { topicGrouping: { basis: string[] } }).topicGrouping.basis.some((item) => item.includes("공통 쟁점")), true);
+assert.equal((newsIssueDetail.body as { topicGrouping: { synthesis: { evidenceCount: number; facets: unknown[] } } }).topicGrouping.synthesis.evidenceCount, 2);
+assert.equal((newsIssueDetail.body as { relatedLawGroups: Array<{ id: string }> }).relatedLawGroups.some((group) => group.id === newsReviewGroup.id), true);
 const evidenceLinkedOccurrence = await newsReviewApp.handle({
   method: "POST",
   path: "/internal/ingest/public-occurrence",
@@ -145,6 +155,13 @@ const evidenceLinkedOccurrence = await newsReviewApp.handle({
 });
 assert.equal(evidenceLinkedOccurrence.status, 201);
 assert.equal((evidenceLinkedOccurrence.body as { occurrence: { issueId?: string } }).occurrence.issueId, synthesizedNewsCandidate.issueId);
+assert.equal(newsReviewStore.occurrenceIssueLinks.some((link) => link.occurrenceId === "occ_evidence_synthesis_link" && link.issueId === synthesizedNewsCandidate.issueId && link.status === "approved"), true);
+const alternateIssue = newsReviewStore.issues.find((issue) => issue.id !== synthesizedNewsCandidate.issueId)!;
+newsReviewStore.occurrenceIssueLinks.push({ occurrenceId: "occ_evidence_synthesis_link", issueId: alternateIssue.id, status: "candidate", matchBasis: "occurrence_claim", confidence: "medium", supportingClaimIds: [], supportingEvidenceIds: [], createdAt: new Date() });
+const occurrenceLinkCandidates = await newsReviewApp.handle({ method: "GET", path: "/admin/occurrence-issue-link-candidates", headers: internalHeaders });
+assert.equal((occurrenceLinkCandidates.body as { candidates: unknown[] }).candidates.length >= 1, true);
+const rejectedOccurrenceLink = await newsReviewApp.handle({ method: "PATCH", path: `/admin/occurrence-issue-links/occ_evidence_synthesis_link/${alternateIssue.id}`, headers: internalHeaders, body: { status: "rejected", reviewNote: "self-check ambiguity rejection" } });
+assert.equal((rejectedOccurrenceLink.body as { link: { status: string } }).link.status, "rejected");
 assert.equal(newsReviewStore.auditLogs.some((log) => log.targetId === "occ_evidence_synthesis_link" && log.action === "merge"), true);
 assert.equal(reconcileEvidenceSynthesizedTopics(newsReviewStore), 0);
 const initialNewsBudget = await newsReviewApp.handle({ method: "GET", path: "/internal/news-ingest-budget", headers: internalHeaders });
@@ -215,6 +232,8 @@ assert.equal(
   (sourceCoverage.body as { coverage: { totalPoliceRegions: number; activeScheduleRegions: number; policy: string } }).coverage.policy,
   "absence_of_public_source_is_not_absence_of_assembly"
 );
+assert.equal(typeof (sourceCoverage.body as { coverage: { eventCoverage: { sourceReachRegions: number; eventLevelRegions: number; geocodedEventRegions: number; boardPostOnlyRegions: string[] } } }).coverage.eventCoverage.sourceReachRegions, "number");
+assert.equal(Array.isArray((sourceCoverage.body as { coverage: { eventCoverage: { boardPostOnlyRegions: string[] } } }).coverage.eventCoverage.boardPostOnlyRegions), true);
 const coverageBody = sourceCoverage.body as {
   coverage: {
     candidateScheduleRegions: number;
@@ -531,6 +550,9 @@ assert.equal(defaultReady.status, 503);
 assert.equal((defaultReady.body as { summary: { failedIds: string[]; blockingGroups: string[] }; requiredActions: Array<{ id: string }> }).summary.failedIds.includes("runtime"), true);
 assert.equal((defaultReady.body as { summary: { blockingGroups: string[] } }).summary.blockingGroups.includes("runtime"), true);
 assert.equal((defaultReady.body as { requiredActions: Array<{ id: string }> }).requiredActions.some((item) => item.id === "runtime"), true);
+const publicReadiness = await createApp().handle({ method: "GET", path: "/readiness" });
+assert.equal(publicReadiness.status, 200);
+assert.equal((publicReadiness.body as { gates: { operator: { ready: boolean } } }).gates.operator.ready, false);
 const readyResponse = await app.handle({ method: "GET", path: "/ready" });
 assert.equal(readyResponse.status, 200);
 assert.equal((readyResponse.body as { summary: { failedCount: number } }).summary.failedCount, 0);

@@ -41,14 +41,14 @@ const stopwords = new Set([
 export type LawGroupBuild = {
   groups: LawGroup[];
   memberships: LawGroupMembership[];
-  assignments: Map<string, { groupId: string }>;
+  assignments: Map<string, { groupId: string; coreTopicKey: string; coreTopicLabel: string }>;
 };
 
 export function buildLawGroups(laws: LawItem[]): LawGroupBuild {
   const groupsById = new Map<string, LawGroup>();
   const coreTopicsByGroup = new Map<string, Map<string, LawCoreTopic>>();
   const memberships: LawGroupMembership[] = [];
-  const assignments = new Map<string, { groupId: string }>();
+  const assignments = new Map<string, { groupId: string; coreTopicKey: string; coreTopicLabel: string }>();
 
   for (const law of laws) {
     const classification = classifyLaw(law);
@@ -80,9 +80,12 @@ export function buildLawGroups(laws: LawItem[]): LawGroupBuild {
     memberships.push({
       lawItemId: law.id,
       lawGroupId: groupId,
-      classificationVersion: lawGroupClassificationVersion
+      classificationVersion: lawGroupClassificationVersion,
+      coreTopicKey: classification.key,
+      coreTopicLabel: classification.label,
+      classificationBasis: classification.basis
     });
-    assignments.set(law.id, { groupId });
+    assignments.set(law.id, { groupId, coreTopicKey: classification.key, coreTopicLabel: classification.label });
   }
 
   const groups = [...groupsById.values()]
@@ -96,10 +99,10 @@ export function buildLawGroups(laws: LawItem[]): LawGroupBuild {
   return { groups, memberships, assignments };
 }
 
-function classifyLaw(law: LawItem): { key: string; label: string; keywords: string[] } {
-  if (law.source === "law_effective") return { key: "effective-law", label: "현행 법령", keywords: ["현행 법령"] };
+function classifyLaw(law: LawItem): { key: string; label: string; keywords: string[]; basis: LawGroupMembership["classificationBasis"] } {
+  if (law.source === "law_effective") return { key: "effective-law", label: "현행 법령", keywords: ["현행 법령"], basis: "effective_law" };
   const summary = normalize(`${law.proposalSummary ?? ""} ${law.billTitle ?? ""}`);
-  if (!law.proposalSummary?.trim()) return { key: "summary-pending", label: "세부 내용 확인 중", keywords: ["공식 요약 확인 중"] };
+  if (!law.proposalSummary?.trim()) return { key: "summary-pending", label: "세부 내용 확인 중", keywords: ["공식 요약 확인 중"], basis: "summary_pending" };
   const actionText = summary.split(/[.!?。\n]/u).filter((sentence) => /(이에|하도록|신설|마련|개정|하려는|하고자|규정함)/u.test(sentence)).join(" ");
   const scored = topicRules.map((candidate) => {
     const baseHits = candidate.patterns.reduce((sum, pattern) => sum + matchCount(summary, pattern), 0);
@@ -107,12 +110,12 @@ function classifyLaw(law: LawItem): { key: string; label: string; keywords: stri
     const domainBoost = law.lawName === "국회법" && candidate.key.startsWith("assembly-") && baseHits > 0 ? 4 : 0;
     return { candidate, score: baseHits + actionHits * 2 + domainBoost };
   }).filter((item) => item.score > 0).sort((left, right) => right.score - left.score || right.candidate.label.length - left.candidate.label.length || left.candidate.key.localeCompare(right.candidate.key));
-  if (scored[0]) return { key: scored[0].candidate.key, label: scored[0].candidate.label, keywords: scored[0].candidate.keywords };
+  if (scored[0]) return { key: scored[0].candidate.key, label: scored[0].candidate.label, keywords: scored[0].candidate.keywords, basis: "official_summary_rule" };
 
   const keywords = extractFallbackKeywords(actionText || summary, law.lawName);
-  if (keywords.length === 0) return { key: "summary-pending", label: "세부 내용 확인 중", keywords: ["공식 요약 확인 중"] };
+  if (keywords.length === 0) return { key: "summary-pending", label: "세부 내용 확인 중", keywords: ["공식 요약 확인 중"], basis: "summary_pending" };
   const label = keywords.slice(0, 2).join("·");
-  return { key: `keyword-${keywords.slice(0, 2).join("-")}`, label, keywords: keywords.slice(0, 3) };
+  return { key: `keyword-${keywords.slice(0, 2).join("-")}`, label, keywords: keywords.slice(0, 3), basis: "keyword_fallback" };
 }
 
 function extractFallbackKeywords(value: string, lawName: string): string[] {
