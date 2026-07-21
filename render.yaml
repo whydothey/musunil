@@ -77,6 +77,8 @@ services:
         value: 24
       - key: MUSUNIL_RUNTIME_ENV
         value: production
+      - key: MUSUNIL_WEB_API_BASE_URL
+        value: https://api.musunil.com
 
   - type: cron
     name: musunil-ops-scheduler
