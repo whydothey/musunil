@@ -98,7 +98,7 @@ for (const [index, hostname] of ["news-one.example", "news-two.example"].entries
       coreTopicKey: newsReviewTopic.key,
       sourceTitle: `공개 응답에 노출하면 안 되는 원제목 ${index + 1}`,
       sourceUrl: `https://${hostname}/article-${index + 1}`,
-      publisherLabel: `테스트매체${index + 1}`,
+      publisherLabel: "테스트매체",
       publishedAt: new Date(Date.now() - index * 60_000).toISOString(),
       providerItemId: `news-provider-item-${index + 1}`,
       directBillMatch: index === 0,
@@ -117,7 +117,7 @@ assert.equal(synthesizedNewsCandidate.status, "approved");
 assert.equal(synthesizedNewsCandidate.approvedEvidenceIds.length, 2);
 assert.equal(typeof synthesizedNewsCandidate.issueId, "string");
 const synthesizedHome = await newsReviewApp.handle({ method: "GET", path: "/home" });
-assert.equal((synthesizedHome.body as { issueOverviews: Array<{ id: string; occurrenceCount: number; latestChange?: string }> }).issueOverviews.some((issue) => issue.id === synthesizedNewsCandidate.issueId && issue.occurrenceCount === 0 && issue.latestChange?.includes("공개 근거 2건")), true);
+assert.equal((synthesizedHome.body as { issueOverviews: Array<{ id: string; occurrenceCount: number; latestChange?: string }> }).issueOverviews.some((issue) => issue.id === synthesizedNewsCandidate.issueId && issue.occurrenceCount === 0 && issue.latestChange?.includes("근거 2건(발행사 1곳)")), true);
 const newsGroupDetail = await newsReviewApp.handle({ method: "GET", path: `/law-groups/${newsReviewGroup.id}` });
 assert.equal((newsGroupDetail.body as { issues: Array<{ newsCount: number; recentNews: unknown[] }> }).issues.some((issue) => issue.newsCount === 2 && issue.recentNews.length === 2), true);
 assert.equal(JSON.stringify(newsGroupDetail.body).includes("공개 응답에 노출하면 안 되는 원제목"), false);
