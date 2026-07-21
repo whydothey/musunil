@@ -1613,6 +1613,7 @@ function officialSourcesForEvidence(evidence: Evidence[]): NonNullable<Occurrenc
 function toIssueOverview(store: Store, issue: ReturnType<typeof issueCards>[number], cards = homeCards(store)): IssueOverview {
   const relatedCards = cards.filter((card) => card.issueId === issue.id);
   const digests = relatedCards.map((card) => toOccurrenceDigest(store, card.targetType as Extract<TargetType, "occurrence" | "continuous_presence">, card.id));
+  const mediaPublisherCount = issue.synthesisBasis === "evidence_aggregate" ? mediaPublishersForIssue(store, issue.id).length : 0;
   return {
     id: issue.id,
     title: issue.title,
@@ -1625,7 +1626,9 @@ function toIssueOverview(store: Store, issue: ReturnType<typeof issueCards>[numb
     disputeCount: issue.disputeCount,
     latestUpdatedAt: issue.updatedAt,
     representativeOccurrenceId: digests[0]?.id,
-    latestChange: issue.synthesisBasis === "evidence_aggregate" ? `서로 다른 출처의 공개 근거 ${issue.sourceSummary.media}건을 종합했습니다` : undefined
+    latestChange: issue.synthesisBasis === "evidence_aggregate"
+      ? `언론 보도 근거 ${issue.sourceSummary.media}건(발행사 ${mediaPublisherCount}곳)을 종합했습니다`
+      : undefined
   };
 }
 
@@ -1667,7 +1670,7 @@ function issueCards(store: Store, cards = homeCards(store)) {
         chips: [
           currentCount ? `${currentCount}건 진행·예정` : issue.synthesisBasis === "evidence_aggregate" ? "근거 종합 주제" : "기록 중심",
           regions.size ? `${regions.size}개 지역` : "지역 확인 중",
-          sourceSummary.official ? "공식 자료 있음" : sourceSummary.media >= 2 ? "복수 언론 근거" : "출처 확인 중"
+          sourceSummary.official ? "공식 자료 있음" : sourceSummary.media > 0 ? `언론 보도 근거 ${sourceSummary.media}건` : "출처 확인 중"
         ],
         lifecycleState: currentCount ? "ONGOING_SERIES" : issue.status === "archived" ? "ARCHIVED" : "UNKNOWN"
       };
@@ -1818,7 +1821,7 @@ function issueTopicGrouping(store: Store, issue: Issue) {
     targetTypes,
     sourceSummary,
     basis: [
-      ...(issue.synthesisBasis === "evidence_aggregate" ? ["서로 다른 출처의 공개 Claim·Evidence에서 공통 쟁점을 추출해 만든 주제"] : []),
+      ...(issue.synthesisBasis === "evidence_aggregate" ? ["공개 Claim·Evidence 여러 건에서 공통 쟁점을 추출해 만든 주제"] : []),
       issue.topicTags.length ? `공통 주제어: ${issue.topicTags.slice(0, 4).join(" · ")}` : "공통 주제어 확인 중",
       targets.length ? `${regions.length || 0}개 권역의 ${targets.length}개 현장을 같은 주제로 탐색` : "개별 현장은 해당 이벤트의 근거가 같은 주제를 가리킬 때만 연결",
       `${claims.length}건의 공개 주장과 ${sourceSummary.official}건의 공식 자료를 함께 확인`,
@@ -4290,7 +4293,7 @@ export function reconcileEvidenceSynthesizedTopics(store: Store, now = new Date(
     }
     const entries = [...evidenceById.values()];
     const publisherCount = new Set(entries.map(({ evidence }) => evidence.publisherLabel)).size;
-    if (entries.length < 2 || publisherCount < 2) continue;
+    if (entries.length < 2) continue;
 
     const candidateEvidenceCounts = candidates.map((candidate) => ({
       candidate,
@@ -4314,7 +4317,7 @@ export function reconcileEvidenceSynthesizedTopics(store: Store, now = new Date(
     });
     if (issue.synthesisBasis !== "evidence_aggregate") {
       issue.synthesisBasis = "evidence_aggregate";
-      audit(store, "state_change", "issue", issue.id, `서로 다른 ${publisherCount}개 언론 출처의 근거를 종합하는 주제로 전환했습니다.`);
+      audit(store, "state_change", "issue", issue.id, `언론 보도 근거 ${entries.length}건(발행사 ${publisherCount}곳)을 종합하는 주제로 전환했습니다.`);
       changeCount += 1;
     }
     const mergedTopicTags = uniqueStrings([...issue.topicTags, ...topicTags]).slice(0, 10);
@@ -4362,8 +4365,8 @@ export function reconcileEvidenceSynthesizedTopics(store: Store, now = new Date(
       candidate.status = "approved";
       candidate.reviewedAt = now;
       candidate.updatedAt = now;
-      candidate.reviewNote = `서로 다른 ${publisherCount}개 언론 출처의 공통 법안 쟁점으로 자동 종합`;
-      audit(store, "state_change", "news_candidate", candidate.id, "독립 언론 출처 2곳 이상이 확인되어 주제 근거에 포함했습니다.");
+      candidate.reviewNote = `언론 보도 근거 ${entries.length}건(발행사 ${publisherCount}곳)의 공통 법안 쟁점으로 자동 종합`;
+      audit(store, "state_change", "news_candidate", candidate.id, `같은 법안 그룹의 언론 보도 근거 ${entries.length}건을 주제 근거에 포함했습니다.`);
       changeCount += 1;
     }
 
@@ -4377,7 +4380,7 @@ export function reconcileEvidenceSynthesizedTopics(store: Store, now = new Date(
         status: "approved",
         claimIds: [],
         reviewedAt: now,
-        reviewNote: "서로 다른 언론 출처 2곳 이상의 공통 법안 쟁점"
+        reviewNote: `언론 보도 근거 ${entries.length}건(발행사 ${publisherCount}곳)의 공통 법안 쟁점`
       };
       store.issueLawGroupLinks.push(link);
       changeCount += 1;
@@ -4387,7 +4390,7 @@ export function reconcileEvidenceSynthesizedTopics(store: Store, now = new Date(
       link.status = "approved";
       link.confidence = "high";
       link.reviewedAt = now;
-      link.reviewNote = "서로 다른 언론 출처 2곳 이상의 공통 법안 쟁점";
+      link.reviewNote = `언론 보도 근거 ${entries.length}건(발행사 ${publisherCount}곳)의 공통 법안 쟁점`;
       link.claimIds = nextClaimIds;
       audit(store, "state_change", "law_group", group.id, `근거 종합 주제 '${issue.id}'를 법안 그룹에 연결했습니다.`);
       changeCount += 1;
@@ -4596,6 +4599,15 @@ function publicNewsArticlesForIssue(store: Store, issueId: string, lawGroupId?: 
       sourceUrl
     };
   })).filter(Boolean).sort((left, right) => new Date(right!.publishedAt).getTime() - new Date(left!.publishedAt).getTime());
+}
+
+function mediaPublishersForIssue(store: Store, issueId: string): string[] {
+  const evidenceIds = new Set(publicClaimsForTarget(store, "issue", issueId)
+    .filter((claim) => claim.sourceProvenance === "media_report")
+    .flatMap((claim) => claim.evidenceIds));
+  return uniqueStrings(store.evidence
+    .filter((evidence) => evidenceIds.has(evidence.id) && evidence.publisherLabel)
+    .map((evidence) => evidence.publisherLabel!));
 }
 
 function safeExternalNewsUrl(value: string | undefined, optional = false): string | undefined {
