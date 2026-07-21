@@ -20,6 +20,9 @@ import { parseGyeonggiNorthTodayAssemblyList, toGyeonggiNorthPublicOccurrencePay
 import { ingestablePublicAssemblySources, policeRegions, publicAssemblySources, sourceCoverageReport, sourceOperationalDiagnostics } from "./sources.ts";
 import { fetchLawPayloads, lawOperationalDiagnostics, readLawRuntime } from "./laws.ts";
 import { cleanNewsText, fetchNewsPayloads, newsOperationalDiagnostics, parsePublisherRss, readNewsRuntime } from "./news.ts";
+import { discoverOfficialAttachmentLinks, extractAttachmentText, parseAssemblyAttachmentEvents } from "./attachments.ts";
+import AdmZip from "adm-zip";
+import * as XLSX from "@e965/xlsx";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -59,6 +62,72 @@ assert.equal(weekendPayload.id, "occ_daegu_0704_0705_public");
 assert.equal(weekendPayload.startsAt, "2026-07-04T00:00:00.000+09:00");
 assert.equal(weekendPayload.endsAt, "2026-07-05T23:59:59.000+09:00");
 assert.equal(weekendPayload.lifecycleState, "ENDED");
+
+const daeguAttachmentLinks = discoverOfficialAttachmentLinks(
+  `<a href="/bbs/FileDown.do?bbsId=d495f174&amp;num=4273&amp;fn=1&amp;fnum=76355">오늘 주요 집회.pdf</a>`,
+  "https://www.dgpolice.go.kr/dgpo/bbs/view.do?bbsId=d495f174&menuNo=104050000&num=4273",
+  { url: "https://www.dgpolice.go.kr/dgpo/bbs/List.do?bbsId=d495f174" }
+);
+assert.equal(daeguAttachmentLinks.length, 1);
+assert.equal(daeguAttachmentLinks[0]?.format, "pdf");
+assert.equal(daeguAttachmentLinks[0]?.url.startsWith("https://www.dgpolice.go.kr/bbs/FileDown.do"), true);
+assert.equal(discoverOfficialAttachmentLinks(
+  `<a href="https://files.example.com/assembly.pdf">첨부</a>`,
+  "https://www.dgpolice.go.kr/detail",
+  { url: "https://www.dgpolice.go.kr/list" }
+).length, 0);
+
+const daeguAttachmentEvents = parseAssemblyAttachmentEvents(`
+오늘 주요 집회(0721)
+2026. 7. 21.(화) 07:30 현재
+집회 일시 집회 장소 (예정인원)
+7.21.(화) 07:00 본동, 더샵 달서센트엘로 건
+설현장 앞 1,000명 달서
+7.21.(화) 07:00 본동, 보광병원 증축공사현
+장 앞 인도 200명 달서
+7.21.(화) 19:30
+남산동, 중구 선거관리위원회 앞
+(3.1km, 1개차로) → 중앙R → 봉산6R → 동아백화점 앞
+1,500명 중부
+`, { defaultDate: "2026-07-21", regionLabel: "대구" });
+assert.equal(daeguAttachmentEvents.length, 3);
+assert.equal(daeguAttachmentEvents[0]?.safeLocationLabel.includes("1,000명"), false);
+assert.equal(daeguAttachmentEvents[2]?.safeLocationLabel.includes("→"), false);
+assert.equal(daeguAttachmentEvents[2]?.safeLocationLabel, "남산동, 중구 선거관리위원회 앞");
+
+const gyeongbukAttachmentEvents = parseAssemblyAttachmentEvents(`
+1 99명, 07:00∼07:40
+성주군 소성리 진밭교 위 하행 1개 차로 성 주
+2 40명, 07:00∼11:00
+김천시 율곡동 부영아파트 2단지 신축현장
+김 천
+3
+40명, 07:00∼11:00
+김천시 율곡동 동일하이빌 아파트
+신축현장
+`, { defaultDate: "2026-07-21", regionLabel: "경북" });
+assert.equal(gyeongbukAttachmentEvents.length, 3);
+assert.equal(gyeongbukAttachmentEvents[0]?.safeLocationLabel.includes("차로"), false);
+assert.equal(gyeongbukAttachmentEvents[2]?.rowNumber, 3);
+
+const hwpMarkdownEvents = parseAssemblyAttachmentEvents(`
+**2026. 4. 1.(水)**
+| 집회 시간 | 집회장소 | 관할서 |
+|---|---|---|
+| 08:00~10:00 | 천안시청 앞 | 천안서북 |
+`, { defaultDate: "2026-04-01", regionLabel: "충남" });
+assert.equal(hwpMarkdownEvents.length, 1);
+assert.equal(hwpMarkdownEvents[0]?.date, "2026-04-01");
+assert.equal(hwpMarkdownEvents[0]?.safeLocationLabel, "천안시청 앞");
+
+const hwpxFixture = new AdmZip();
+hwpxFixture.addFile("Contents/section0.xml", Buffer.from(`<hp:p><hp:t>7.21.(화) 09:00 대구시청 앞</hp:t></hp:p>`));
+assert.equal((await extractAttachmentText(hwpxFixture.toBuffer(), "hwpx")).includes("대구시청 앞"), true);
+
+const workbook = XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["일시", "장소"], ["7.21. 09:00", "대구시청 앞"]]), "일정");
+const workbookText = await extractAttachmentText(XLSX.write(workbook, { bookType: "xlsx", type: "buffer" }), "xlsx");
+assert.equal(workbookText.includes("대구시청 앞"), true);
 
 const gangwonRows = parseGangwonTodayAssemblyList(`
 <tr>

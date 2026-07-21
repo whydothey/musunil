@@ -120,6 +120,7 @@ export function validateLaunchConfig(config: Record<string, unknown>, env: NodeJ
   }
   if (
     production &&
+    !hasRealString(env.MUSUNIL_ASSEMBLY_BILL_API_KEY) &&
     !hasRealString(read(config, "public_data_sources.national_assembly_bill_api_key")) &&
     !hasRealString(read(config, "public_data_sources.law_go_kr_oc"))
   ) {

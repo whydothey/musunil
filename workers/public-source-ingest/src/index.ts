@@ -19,6 +19,7 @@ import { parseGyeonggiNorthTodayAssemblyList, toGyeonggiNorthPublicOccurrencePay
 import { fetchLawPayloads, lawOperationalDiagnostics, readLawRuntime } from "./laws.ts";
 import { fetchNewsPayloads, newsOperationalDiagnostics, readNewsRuntime, type NewsLawGroup } from "./news.ts";
 import { ingestablePublicAssemblySources, sourceCoverageReport, sourceOperationalDiagnostics, type PublicAssemblySource } from "./sources.ts";
+import { fetchAttachmentEventPayloads } from "./attachments.ts";
 import { resolve } from "node:path";
 import { loadUserInputs } from "../../../packages/config/src/index.ts";
 
@@ -163,19 +164,43 @@ for (const source of ingestablePublicAssemblySources()) {
     const parsedPayloads = parseSource(source, html).slice(0, 100);
     if (parsedPayloads.length === 0) throw new Error("source_parse_empty");
     const eligiblePayloads = parsedPayloads.filter((payload) => isWithinOperationalWindow(payload));
-    const payloads = eligiblePayloads.map((payload) => ({
+    const enrichedPayloads = [];
+    let attachmentFailures = 0;
+    for (const payload of eligiblePayloads) {
+      const bulletin = { ...payload, ...officialSourceMetadata(payload) };
+      enrichedPayloads.push(bulletin);
+      if (bulletin.sourceGranularity !== "bulletin" || !/(?:^|;\s*)attachment=yes(?:;|$)/i.test(bulletin.rawText)) continue;
+      if (!bulletin.sourceItemId || !bulletin.sourceUrl) {
+        attachmentFailures += 1;
+        continue;
+      }
+      try {
+        const events = await fetchAttachmentEventPayloads(source, {
+          ...bulletin,
+          sourceItemId: bulletin.sourceItemId,
+          sourceUrl: bulletin.sourceUrl
+        });
+        if (events.length === 0) attachmentFailures += 1;
+        enrichedPayloads.push(...events);
+      } catch {
+        // The official bulletin Claim remains ingestible when one attachment is temporarily unavailable or changes format.
+        attachmentFailures += 1;
+      }
+    }
+    const limitedPayloads = enrichedPayloads.slice(0, 100);
+    const payloads = limitedPayloads.map((payload) => ({
       ...payload,
-      ...officialSourceMetadata(payload),
       sourceId: source.id,
       sourceCheckedAt: checkedAt,
-      sourceBatchSize: eligiblePayloads.length
+      sourceBatchSize: limitedPayloads.length
     }));
     sourceRuns.push({
       source,
       checkedAt,
       status: payloads.length > 0 ? "success" : "empty",
-      parsedCount: parsedPayloads.length,
-      payloads
+      parsedCount: enrichedPayloads.length,
+      payloads,
+      ...(attachmentFailures > 0 ? { errorCode: `attachment_parse_partial:${attachmentFailures}` } : {})
     });
   } catch (error) {
     sourceRuns.push({

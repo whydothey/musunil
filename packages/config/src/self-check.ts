@@ -166,6 +166,9 @@ const lawSourceConfig = JSON.parse(JSON.stringify(loaded.config));
 lawSourceConfig.public_data_sources.national_assembly_bill_api_key = "assembly_api_key";
 assert.equal(validateLaunchConfig(lawSourceConfig, {}).some((issue) => issue.path === "public_data_sources.national_assembly_bill_api_key"), false);
 
+const envLawSourceConfig = JSON.parse(JSON.stringify(loaded.config));
+assert.equal(validateLaunchConfig(envLawSourceConfig, { MUSUNIL_ASSEMBLY_BILL_API_KEY: "assembly_api_key_from_render" }).some((issue) => issue.path === "public_data_sources.national_assembly_bill_api_key"), false);
+
 const mobileIntegrityConfig = JSON.parse(JSON.stringify(loaded.config));
 mobileIntegrityConfig.mobile.android_play_integrity_enabled = true;
 mobileIntegrityConfig.mobile.android_package_name = "app.musunil.android";

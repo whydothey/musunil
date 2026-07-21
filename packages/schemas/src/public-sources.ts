@@ -127,7 +127,7 @@ export const publicAssemblySources: PublicAssemblySource[] = [
     url: "https://www.dgpolice.go.kr/dgpo/bbs/List.do?bbsId=d495f174&menuNo=104050000",
     refreshCadenceHours: 24,
     lastCheckedAt: registryLastCheckedAt,
-    notes: "오늘의 집회시위 게시판. 첨부 PDF 파싱 전까지 게시물 단위 Claim으로 ingest한다."
+    notes: "오늘의 집회시위 게시판. 게시물 Claim을 보존하고 공식 첨부 PDF의 시간·장소 행을 개별 Occurrence로 분리한다."
   },
   {
     id: "daegu_assembly_statistics",
@@ -207,7 +207,7 @@ export const publicAssemblySources: PublicAssemblySource[] = [
     url: "https://www.gwpolice.go.kr/gw/sub02/sub02_05.jsp",
     refreshCadenceHours: 24,
     lastCheckedAt: registryLastCheckedAt,
-    notes: "오늘의 주요집회 게시판. 첨부 파일 구조화 전까지 게시물 단위 Claim으로 ingest한다."
+    notes: "오늘의 주요집회 게시판. 게시물 Claim을 보존하고 공식 첨부 문서의 시간·장소 행을 개별 Occurrence로 분리한다."
   },
   {
     id: "busan_today_assembly",
@@ -219,7 +219,7 @@ export const publicAssemblySources: PublicAssemblySource[] = [
     url: "https://www.bspolice.go.kr/view.do?no=72",
     refreshCadenceHours: 24,
     lastCheckedAt: registryLastCheckedAt,
-    notes: "오늘의 집회/시위 게시판. 첨부 파일 구조화 전까지 게시물 단위 Claim으로 ingest한다."
+    notes: "오늘의 집회/시위 게시판. 게시물 Claim을 보존하고 공식 첨부 문서의 시간·장소 행을 개별 Occurrence로 분리한다."
   },
   {
     id: "gyeonggi_south_today_assembly",
@@ -231,7 +231,7 @@ export const publicAssemblySources: PublicAssemblySource[] = [
     url: "https://www.ggpolice.go.kr/main/bbslist.do?bbsId=FD2",
     refreshCadenceHours: 24,
     lastCheckedAt: registryLastCheckedAt,
-    notes: "오늘의 주요집회 게시판. 첨부 파일 구조화 전까지 게시물 단위 Claim으로 ingest한다."
+    notes: "오늘의 주요집회 게시판. 게시물 Claim을 보존하고 공식 첨부 문서의 시간·장소 행을 개별 Occurrence로 분리한다."
   },
   {
     id: "gwangju_today_assembly",
@@ -268,7 +268,7 @@ export const publicAssemblySources: PublicAssemblySource[] = [
     url: "https://www.gbpolice.go.kr/bbs/List.do?bbsId=8&sid=gbpolice",
     refreshCadenceHours: 24,
     lastCheckedAt: registryLastCheckedAt,
-    notes: "오늘의 집회시위 게시판. 첨부 파일 구조화 전까지 게시물 단위 Claim으로 ingest한다."
+    notes: "오늘의 집회시위 게시판. 게시물 Claim을 보존하고 공식 첨부 문서의 시간·장소 행을 개별 Occurrence로 분리한다."
   },
   {
     id: "gyeongnam_today_assembly",
