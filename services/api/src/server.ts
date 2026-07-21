@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { dirname, extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ApiError, canServePublicRedactedMedia, createApp, createSeedStore, reconcileLegacyLocationScheduleIssues, stripPreviewData } from "./app.ts";
+import { ApiError, canServePublicRedactedMedia, createApp, createSeedStore, reconcileEvidenceSynthesizedTopics, reconcileLegacyLocationScheduleIssues, stripPreviewData } from "./app.ts";
 import { createPublicWriteRateLimiter, readJsonBody } from "./http-boundary.ts";
 import { createLiveMediaStorage } from "./live-media-storage.ts";
 import { loadPostgresStore, pingOpsSchedulerSchema, pingPostgres, savePostgresStore } from "./postgres-store.ts";
@@ -28,7 +28,7 @@ const runtimeReadiness = async () => {
 const seedStore = createSeedStore({ includeMockData: runtime.includeMockData });
 const loadedStore = runtime.databaseUrl ? await loadPostgresStore(runtime.databaseUrl, seedStore, runtime.encryptionKey) : seedStore;
 const initialStore = runtime.includeMockData ? loadedStore : stripPreviewData(loadedStore);
-const initialScheduleIssueReconcileCount = reconcileLegacyLocationScheduleIssues(initialStore);
+const initialTopicReconcileCount = reconcileLegacyLocationScheduleIssues(initialStore) + reconcileEvidenceSynthesizedTopics(initialStore);
 const app = createApp(initialStore, {
   readiness: runtimeReadiness,
   internalApiKey: runtime.internalApiKey,
@@ -48,7 +48,7 @@ let storeIoQueue = Promise.resolve();
 let nextStoreRefreshAt = Date.now() + 30_000;
 let initialReconcileTimer: ReturnType<typeof setTimeout> | undefined;
 
-if (runtime.databaseUrl && initialScheduleIssueReconcileCount > 0) {
+if (runtime.databaseUrl && initialTopicReconcileCount > 0) {
   initialReconcileTimer = setTimeout(() => void persistStore(), 10_000);
   initialReconcileTimer.unref();
 }
@@ -120,7 +120,7 @@ async function refreshStoreFromPostgresIfDue(): Promise<void> {
   storeIoQueue = storeIoQueue.catch(() => undefined).then(async () => {
     const refreshed = await loadPostgresStore(databaseUrl, app.store, runtime.encryptionKey);
     const visibleStore = runtime.includeMockData ? refreshed : stripPreviewData(refreshed);
-    const reconciled = reconcileLegacyLocationScheduleIssues(visibleStore);
+    const reconciled = reconcileLegacyLocationScheduleIssues(visibleStore) + reconcileEvidenceSynthesizedTopics(visibleStore);
     Object.assign(app.store, visibleStore);
     if (reconciled > 0) await savePostgresStore(databaseUrl, app.store, runtime.encryptionKey);
   });
