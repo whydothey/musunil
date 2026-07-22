@@ -321,7 +321,8 @@ function parseSource(source: PublicAssemblySource, html: string) {
 async function fetchSourceHtml(source: PublicAssemblySource): Promise<string> {
   if (!source.url) throw new Error(`source_url_missing:${source.id}`);
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10_000);
+  const timeoutMs = Math.max(1_000, Math.min(30_000, source.timeoutMs ?? 10_000));
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(source.url, {
       method: source.method ?? "GET",

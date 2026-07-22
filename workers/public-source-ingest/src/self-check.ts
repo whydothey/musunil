@@ -665,6 +665,7 @@ assert.equal(workerSource.includes("source_fetch_or_parse_failed"), true);
 assert.equal(workerSource.includes("source_parse_empty"), true);
 assert.equal(workerSource.includes("isWithinOperationalWindow"), true);
 assert.equal(workerSource.includes("AbortController"), true);
+assert.equal(workerSource.includes("Math.min(30_000, source.timeoutMs ?? 10_000)"), true);
 assert.equal(workerSource.includes("MUSUNIL_API_HOSTPORT"), true);
 assert.equal(workerSource.includes("--diagnose"), true);
 assert.equal(workerSource.includes("sourceOperationalDiagnostics"), true);

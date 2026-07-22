@@ -15,6 +15,7 @@ export type PublicAssemblySource = {
   pageUrl?: string;
   method?: "GET" | "POST";
   body?: string;
+  timeoutMs?: number;
   parser?: "daegu_today_assembly" | "gangwon_today_assembly" | "busan_today_assembly" | "gyeonggi_south_today_assembly" | "gyeonggi_north_today_assembly" | "gwangju_today_assembly" | "incheon_today_assembly" | "gyeongbuk_today_assembly" | "gyeongnam_today_assembly" | "jeju_today_assembly" | "chungbuk_today_assembly" | "chungnam_today_assembly" | "jeonbuk_today_assembly" | "jeonnam_today_assembly" | "daejeon_today_assembly" | "ulsan_today_assembly" | "seoul_assembly_control" | "sejong_today_assembly";
   encoding?: "euc-kr";
   refreshCadenceHours: number;
@@ -101,6 +102,7 @@ export const publicAssemblySources: PublicAssemblySource[] = [
     pageUrl: "https://www.spatic.go.kr/spatic/main/assem.do",
     method: "POST",
     body: "limit=10&offset=0",
+    timeoutMs: 30_000,
     refreshCadenceHours: 24,
     lastCheckedAt: registryLastCheckedAt,
     notes: "서울경찰청 교통정보센터 집회·통제정보. 게시물은 출처 Claim으로 보관하고, 본문의 시간·장소 표 행은 개별 Occurrence로 분리한다."
