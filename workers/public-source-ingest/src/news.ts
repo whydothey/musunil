@@ -82,17 +82,18 @@ const officialFeedHosts = new Set([
   "www.khan.co.kr",
   "www.chosun.com",
   "rss.ohmynews.com",
-  "www.mk.co.kr"
+  "www.mk.co.kr",
+  "www.newsis.com"
 ]);
 
 const defaultFeeds: NewsFeed[] = [
+  { id: "newsis_society", publisherLabel: "뉴시스", url: "https://www.newsis.com/RSS/society.xml" },
   { id: "yonhap_latest", publisherLabel: "연합뉴스", url: "https://www.yna.co.kr/rss/news.xml" },
   { id: "hani_all", publisherLabel: "한겨레", url: "https://www.hani.co.kr/rss/" },
   { id: "sbs_politics", publisherLabel: "SBS", url: "https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=01" },
   { id: "khan_all", publisherLabel: "경향신문", url: "https://www.khan.co.kr/rss/rssdata/total_news.xml" },
   { id: "chosun_all", publisherLabel: "조선일보", url: "https://www.chosun.com/arc/outboundfeeds/rss/?outputType=xml" },
-  { id: "ohmynews_all", publisherLabel: "오마이뉴스", url: "https://rss.ohmynews.com/rss/ohmynews.xml" },
-  { id: "mk_politics", publisherLabel: "매일경제", url: "https://www.mk.co.kr/rss/30000001/" }
+  { id: "ohmynews_all", publisherLabel: "오마이뉴스", url: "https://rss.ohmynews.com/rss/ohmynews.xml" }
 ];
 
 const edailyArchiveFeed: NewsFeed = {
@@ -233,7 +234,7 @@ export function parsePublisherRss(xml: string): ParsedNewsArticle[] {
   return entries.map((match) => {
     const entry = match[1] ?? "";
     const title = cleanNewsText(readXmlTag(entry, "title"));
-    const description = cleanNewsText(readXmlTag(entry, "description") || readXmlTag(entry, "summary") || readXmlTag(entry, "content"));
+    const description = cleanLongNewsText(readXmlTag(entry, "description") || readXmlTag(entry, "summary") || readXmlTag(entry, "content"));
     const rawLink = readXmlTag(entry, "link") || entry.match(/<link\b[^>]*href=["']([^"']+)["'][^>]*\/?\s*>/i)?.[1] || "";
     const url = safeHttpsUrl(decodeXmlText(rawLink))?.toString() ?? "";
     const rawDate = readXmlTag(entry, "pubDate") || readXmlTag(entry, "date") || readXmlTag(entry, "published") || readXmlTag(entry, "updated");

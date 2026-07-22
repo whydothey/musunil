@@ -76,6 +76,18 @@ assert.equal(discoverOfficialAttachmentLinks(
   "https://www.dgpolice.go.kr/detail",
   { url: "https://www.dgpolice.go.kr/list" }
 ).length, 0);
+const northAttachmentLinks = discoverOfficialAttachmentLinks(
+  `<a href="#LINK" onclick="javascript:fn_downFile('FILE_000000000104631','0')">오늘의 주요집회(7.23.).pdf</a>`,
+  "https://www.ggbpolice.go.kr/main/cop/bbs/selectBoardArticle.do?bbsId=Assembly_main&nttId=74881",
+  { url: "https://www.ggbpolice.go.kr/main/cop/bbs/selectBoardList.do?bbsId=Assembly_main" }
+);
+assert.equal(northAttachmentLinks[0]?.url, "https://www.ggbpolice.go.kr/cmm/fms/FileDown.do?atchFileId=FILE_000000000104631&fileSn=0");
+const chungbukAttachmentLinks = discoverOfficialAttachmentLinks(
+  `<a href="javascript:file_download('/jboard/download.php?tb=assembly&id=2782&no=0', '260723.pdf');">260723.pdf (32.5K)</a>`,
+  "https://www.cbpolice.go.kr/main_sub/sub.php?id=2782&folder_idx=2&folder_page_idx=18",
+  { url: "https://www.cbpolice.go.kr/main_sub/sub.php?folder_idx=2&folder_page_idx=18" }
+);
+assert.equal(chungbukAttachmentLinks[0]?.url, "https://www.cbpolice.go.kr/jboard/download.php?tb=assembly&id=2782&no=0");
 
 const daeguAttachmentEvents = parseAssemblyAttachmentEvents(`
 오늘 주요 집회(0721)
@@ -127,6 +139,31 @@ const hwpMarkdownEvents = parseAssemblyAttachmentEvents(`
 assert.equal(hwpMarkdownEvents.length, 1);
 assert.equal(hwpMarkdownEvents[0]?.date, "2026-04-01");
 assert.equal(hwpMarkdownEvents[0]?.safeLocationLabel, "천안시청 앞");
+
+const plainTableEvents = parseAssemblyAttachmentEvents(`
+오늘의 주요 집회
+’26. 7. 23.(목)
+지역 일 시 장 소 참가인원 비고
+춘천 08:00~09:00 장학리 춘천시민버스 차고지 앞 10
+09:00∼10:00 경기도청 북부청사 앞 15 의정부
+17:00~20:00
+충북도청 서문 우측 인도
+※ 행진(1.3km, 인도)
+도청→상당R→성안길→도청
+20 상당
+`, { defaultDate: "2026-07-23", regionLabel: "강원" });
+assert.equal(plainTableEvents.length, 3);
+assert.equal(plainTableEvents[0]?.safeLocationLabel, "장학리 춘천시민버스 차고지 앞");
+assert.equal(plainTableEvents[1]?.safeLocationLabel, "경기도청 북부청사 앞");
+assert.equal(plainTableEvents[2]?.safeLocationLabel, "충북도청 서문 우측 인도 일대");
+
+const sejongInlineEvents = parseAssemblyAttachmentEvents(`
+7.23.(목) 주요 예정 집회
+1. (시간) 08:30 ~11:00 (장소) 농식품부 (행진) 없음 (인원) 30 (관할서) 남부
+2. (시간) 12:00 ~13:00 (장소) 국토부 (행진) 없음 (인원) 150 (관할서) 남부
+`, { defaultDate: "2026-07-23", regionLabel: "세종" });
+assert.equal(sejongInlineEvents.length, 2);
+assert.equal(sejongInlineEvents[0]?.safeLocationLabel, "농식품부 일대");
 
 const hwpxFixture = new AdmZip();
 hwpxFixture.addFile("Contents/section0.xml", Buffer.from(`<hp:p><hp:t>7.21.(화) 09:00 대구시청 앞</hp:t></hp:p>`));
@@ -793,6 +830,9 @@ const rssPublishedAt = new Date().toUTCString();
 const parsedNews = parsePublisherRss(`<rss><channel><item><title><![CDATA[<b>공직선거법</b> 투표관리 강화]]></title><link>https://news.example/article</link><description>투표용지 공급 대응</description><pubDate>${rssPublishedAt}</pubDate></item></channel></rss>`);
 assert.equal(parsedNews.length, 1);
 assert.equal(parsedNews[0]?.title, "공직선거법 투표관리 강화");
+const longRssDescription = `${"일정 안내 ".repeat(80)}오후 7시 민주당사 앞 재선거 요구 집회`;
+const longParsedNews = parsePublisherRss(`<rss><channel><item><title>오늘의 주요일정</title><link>https://www.newsis.com/view/NISX1</link><description><![CDATA[${longRssDescription}]]></description><pubDate>${rssPublishedAt}</pubDate></item></channel></rss>`);
+assert.equal(longParsedNews[0]?.contentText.includes("민주당사 앞 재선거 요구 집회"), true);
 const eventArticle = parsePublisherRss(`<rss><channel><item><title>주말 도심 집회 안내</title><link>https://news.example/event-article</link><description>토요일인 18일 오후 6시부터 홍대입구역 일대에서 재선거를 요구하는 피켓 집회를 하겠다고 공지했다.</description><pubDate>Fri, 17 Jul 2026 06:00:00 GMT</pubDate></item></channel></rss>`)[0]!;
 const eventTopicPayloads = eventTopicPayloadsForArticle(eventArticle, { id: "event-feed", publisherLabel: "검증일보", url: "https://news.example/rss" }, [{
   id: "occ-hongdae",
@@ -806,6 +846,18 @@ assert.equal(eventTopicPayloads.length, 1);
 assert.equal(eventTopicPayloads[0]?.topicTitle, "재선거 요구 관련 집회");
 assert.deepEqual(eventTopicPayloads[0]?.matchedLocationTerms, ["홍대입구역"]);
 assert.equal(eventTopicPayloads[0]?.timeMatched, true);
+const newsisScheduleArticle = parsePublisherRss(`<rss><channel><item><title>[오늘의주요일정]사회(7월22일 수요일)</title><link>https://www.newsis.com/view/NISX20260722_1</link><description><![CDATA[[서울=뉴시스]<br>▲오후 7시 시민단체, 민주당사 앞 이면도로, 재선거 요구 집회<br>▲오후 8시 노동단체, 서울광장, 처우 개선 촉구 집회]]></description><pubDate>Wed, 22 Jul 2026 06:00:00 +0900</pubDate></item></channel></rss>`)[0]!;
+const newsisSchedulePayloads = eventTopicPayloadsForArticle(newsisScheduleArticle, { id: "newsis_society", publisherLabel: "뉴시스", url: "https://www.newsis.com/RSS/society.xml" }, [{
+  id: "occ-party-office",
+  title: "민주당사 앞 이면도로 집회",
+  regionLabel: "서울",
+  locationLabel: "민주당사 앞 이면도로 일대",
+  startsAt: "2026-07-22T10:00:00.000Z",
+  endsAt: "2026-07-22T11:00:00.000Z",
+  topicStatus: "source_not_disclosed"
+}], new Date("2026-07-22T08:00:00.000Z"));
+assert.equal(newsisSchedulePayloads.length, 1);
+assert.equal(newsisSchedulePayloads[0]?.topicTitle, "재선거 요구 관련 집회");
 const edailySearchFixture = `<div class="newsbox_04"><a href="/News/Read?newsId=1&amp;mediaCodeNo=257"><ul class="newsbox_texts"><li>도심 집회 안내</li><li>18일 오후 6시 홍대입구역에서 재선거를 요구하는 집회가 열린다.</li></ul></a><div class="author_category">2026.07.17`;
 const parsedEdailySearch = parseEdailySearchResults(edailySearchFixture);
 assert.equal(parsedEdailySearch.length, 1);

@@ -10,15 +10,18 @@ export type GyeonggiSouthAssemblyRow = {
 
 export function parseGyeonggiSouthTodayAssemblyList(html: string): GyeonggiSouthAssemblyRow[] {
   const rows: GyeonggiSouthAssemblyRow[] = [];
-  const rowPattern =
-    /<tr class="notice_line">\s*<td>[^<]*<\/td>\s*<td class="sub_line">\s*<a href="javascript:bbsView\('(\d+)'\);">\s*([\s\S]*?)\s*<\/a>\s*<\/td>\s*<td>([^<]+)<\/td>\s*<td>(\d{4}-\d{2}-\d{2})<\/td>\s*<td>[^<]*<\/td>\s*<td>([\s\S]*?)<\/td>\s*<\/tr>/g;
-  for (const match of html.matchAll(rowPattern)) {
+  for (const rowMatch of html.matchAll(/<tr\b[^>]*class=["'][^"']*notice_line[^"']*["'][^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const row = rowMatch[1];
+    const anchor = row.match(/<a\b[^>]*href=["']javascript:bbsView\(['"]?(\d+)['"]?\);?["'][^>]*>([\s\S]*?)<\/a>/i);
+    const cells = [...row.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map((match) => decodeHtml(stripTags(match[1])).replace(/\s+/g, " ").trim());
+    const postedAt = cells.find((cell) => /^\d{4}-\d{2}-\d{2}$/.test(cell));
+    if (!anchor || !postedAt) continue;
     rows.push({
-      sourceId: match[1],
-      title: decodeHtml(stripTags(match[2])).replace(/\s+/g, " ").trim(),
-      author: decodeHtml(match[3]).trim(),
-      postedAt: match[4],
-      hasAttachment: /첨부|add_file|img/i.test(match[5])
+      sourceId: anchor[1],
+      title: decodeHtml(stripTags(anchor[2])).replace(/\s+/g, " ").trim(),
+      author: cells[Math.max(0, cells.indexOf(postedAt) - 1)] ?? "",
+      postedAt,
+      hasAttachment: /첨부|add_file/i.test(row)
     });
   }
   return rows;

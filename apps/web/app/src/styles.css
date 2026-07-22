@@ -231,6 +231,12 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .map-search input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 14px; }
 .map-search button, .map-results button { border: 0; background: transparent; cursor: pointer; }
 .map-search button { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; }
+.map-phase-filters { display: flex; gap: 6px; margin-top: 7px; overflow-x: auto; scrollbar-width: none; }
+.map-phase-filters::-webkit-scrollbar { display: none; }
+.map-phase-filters button { min-height: 34px; display: inline-flex; flex: 0 0 auto; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid rgba(90,105,110,.18); border-radius: 999px; background: rgba(255,255,255,.95); color: var(--ink-soft); box-shadow: 0 2px 8px rgba(25,40,44,.08); font-size: 11px; font-weight: 720; cursor: pointer; }
+.map-phase-filters button[aria-pressed="true"] { border-color: var(--brand); background: var(--brand); color: white; }
+.map-phase-filters i { width: 7px; height: 7px; border-radius: 50%; box-shadow: none; }
+.map-phase-filters button[aria-pressed="true"] i { background: currentColor; }
 .map-results { margin-top: 6px; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: white; box-shadow: 0 8px 22px rgba(25,40,44,.14); }
 .map-results button { width: 100%; min-height: 58px; display: grid; grid-template-columns: 44px 1fr 20px; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); text-align: left; }
 .map-results button:last-child { border-bottom: 0; }
@@ -249,9 +255,9 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .key-area { width: 13px; height: 9px; border: 1px solid var(--brand); background: var(--brand-soft); }
 .map-notice { position: absolute; z-index: 9; top: 70px; left: 50%; transform: translateX(-50%); padding: 8px 12px; border-radius: 6px; background: rgba(255,255,255,.94); color: var(--ink-soft); font-size: 11px; white-space: nowrap; }
 .map-basemap-notice { position: absolute; z-index: 9; top: 70px; left: 50%; transform: translateX(-50%); padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255,255,255,.94); color: var(--ink-soft); font-size: 10px; white-space: nowrap; }
-.map-locate { position: absolute; z-index: 10; top: 70px; right: 12px; min-height: 40px; display: flex; align-items: center; gap: 6px; padding: 0 11px; border: 1px solid var(--line-strong); border-radius: 7px; background: rgba(255,255,255,.96); color: var(--ink); box-shadow: 0 3px 12px rgba(25,40,44,.12); font-size: 11px; font-weight: 750; cursor: pointer; }
+.map-locate { position: absolute; z-index: 10; top: 108px; right: 12px; min-height: 40px; display: flex; align-items: center; gap: 6px; padding: 0 11px; border: 1px solid var(--line-strong); border-radius: 7px; background: rgba(255,255,255,.96); color: var(--ink); box-shadow: 0 3px 12px rgba(25,40,44,.12); font-size: 11px; font-weight: 750; cursor: pointer; }
 .map-locate svg { width: 16px; height: 16px; color: var(--brand); }
-.map-location-message { position: absolute; z-index: 9; top: 116px; right: 12px; max-width: 240px; margin: 0; padding: 6px 9px; border-radius: 5px; background: rgba(255,255,255,.94); color: var(--ink-soft); font-size: 10px; line-height: 1.4; }
+.map-location-message { position: absolute; z-index: 9; top: 154px; right: 12px; max-width: 240px; margin: 0; padding: 6px 9px; border-radius: 5px; background: rgba(255,255,255,.94); color: var(--ink-soft); font-size: 10px; line-height: 1.4; }
 .map-location-message:empty { display: none; }
 .map-selection { position: absolute; z-index: 14; left: 10px; right: 10px; bottom: 10px; min-height: 172px; padding: 17px 54px 15px 17px; border: 1px solid var(--line-strong); border-radius: 8px; background: white; box-shadow: 0 8px 26px rgba(25,40,44,.18); animation: sheet-in 200ms var(--ease); }
 .map-selection-close { position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 50%; background: transparent; cursor: pointer; }

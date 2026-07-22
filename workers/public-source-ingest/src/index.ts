@@ -19,7 +19,7 @@ import { parseGyeonggiNorthTodayAssemblyList, toGyeonggiNorthPublicOccurrencePay
 import { fetchLawPayloads, lawOperationalDiagnostics, readLawRuntime } from "./laws.ts";
 import { fetchNewsPayloads, newsOperationalDiagnostics, readNewsRuntime, type NewsLawGroup, type NewsOccurrence } from "./news.ts";
 import { ingestablePublicAssemblySources, sourceCoverageReport, sourceOperationalDiagnostics, type PublicAssemblySource } from "./sources.ts";
-import { fetchAttachmentEventPayloads } from "./attachments.ts";
+import { canExpandBulletinEvents, fetchAttachmentEventPayloads } from "./attachments.ts";
 import { resolve } from "node:path";
 import { loadUserInputs } from "../../../packages/config/src/index.ts";
 
@@ -178,7 +178,7 @@ for (const source of ingestablePublicAssemblySources()) {
     for (const payload of eligiblePayloads) {
       const bulletin = { ...payload, ...officialSourceMetadata(payload) };
       enrichedPayloads.push(bulletin);
-      if (bulletin.sourceGranularity !== "bulletin" || !/(?:^|;\s*)attachment=yes(?:;|$)/i.test(bulletin.rawText)) continue;
+      if (bulletin.sourceGranularity !== "bulletin" || !canExpandBulletinEvents(source, bulletin.rawText)) continue;
       if (!bulletin.sourceItemId || !bulletin.sourceUrl) {
         attachmentFailures += 1;
         continue;

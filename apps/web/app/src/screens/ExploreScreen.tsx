@@ -7,21 +7,47 @@ import type { GeoJsonFeatureCollection, OccurrenceDigest } from "../contracts";
 import { formatDateTime, occurrenceTopicContext, occurrenceTopicTitle, pastMarkerOpacity, schedulePhase, schedulePhaseLabel, scaleLabel } from "../format";
 import { Link, useRouter } from "../router";
 
+type PhaseFilter = "active" | "past" | "all";
+
 export function ExploreScreen() {
   const { dataset, serviceSyncState, selectedOccurrenceId, selectOccurrence } = useAppState();
   const { route } = useRouter();
   const [query, setQuery] = useState("");
+  const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>("active");
   const requestedOccurrenceId = route.search.get("occurrence") || undefined;
   const selectedId = selectedOccurrenceId || requestedOccurrenceId;
   const selected = dataset?.occurrences.find((item) => item.id === selectedId);
+  const phaseCounts = useMemo(() => (dataset?.occurrences || []).reduce((counts, item) => {
+    counts[schedulePhase(item)] += 1;
+    return counts;
+  }, { current: 0, upcoming: 0, past: 0 }), [dataset]);
+  const visibleOccurrences = useMemo(() => (dataset?.occurrences || []).filter((item) => {
+    const phase = schedulePhase(item);
+    if (phaseFilter === "active") return phase !== "past";
+    return phaseFilter === "all" || phase === "past";
+  }), [dataset, phaseFilter]);
+  const visibleIds = useMemo(() => new Set(visibleOccurrences.map((item) => item.id)), [visibleOccurrences]);
+  const visiblePins = useMemo<GeoJsonFeatureCollection | undefined>(() => dataset?.map.geojson.pins ? ({
+    ...dataset.map.geojson.pins,
+    features: dataset.map.geojson.pins.features.filter((feature) => visibleIds.has(String(feature.properties.occurrenceUnitId || "")))
+  }) : undefined, [dataset, visibleIds]);
+  const visibleAreas = useMemo<GeoJsonFeatureCollection | undefined>(() => dataset?.map.geojson.presenceAreas ? ({
+    ...dataset.map.geojson.presenceAreas,
+    features: dataset.map.geojson.presenceAreas.features.filter((feature) => visibleIds.has(String(feature.properties.occurrenceUnitId || "")))
+  }) : undefined, [dataset, visibleIds]);
   const filtered = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("ko");
-    if (!normalized) return dataset?.occurrences || [];
-    return dataset?.occurrences.filter((item) => `${item.title} ${item.regionLabel} ${item.issueTitle || ""} ${item.topicCandidate?.title || ""} ${item.topicStatusLabel || ""}`.toLocaleLowerCase("ko").includes(normalized)) || [];
+    const matches = normalized
+      ? dataset?.occurrences.filter((item) => `${item.title} ${item.regionLabel} ${item.issueTitle || ""} ${item.topicCandidate?.title || ""} ${item.topicStatusLabel || ""}`.toLocaleLowerCase("ko").includes(normalized)) || []
+      : dataset?.occurrences || [];
+    return [...matches].sort((left, right) => phaseOrder(schedulePhase(left)) - phaseOrder(schedulePhase(right)) || String(left.startsAt || "").localeCompare(String(right.startsAt || "")));
   }, [dataset, query]);
   useEffect(() => {
-    if (requestedOccurrenceId) selectOccurrence(requestedOccurrenceId);
-  }, [requestedOccurrenceId, selectOccurrence]);
+    if (!requestedOccurrenceId) return;
+    selectOccurrence(requestedOccurrenceId);
+    const requested = dataset?.occurrences.find((item) => item.id === requestedOccurrenceId);
+    if (requested) setPhaseFilter(schedulePhase(requested) === "past" ? "past" : "active");
+  }, [dataset, requestedOccurrenceId, selectOccurrence]);
 
   return (
     <section className="explore-screen" data-screen="explore">
@@ -32,12 +58,17 @@ export function ExploreScreen() {
           {query ? <button type="button" onClick={() => setQuery("")} aria-label="검색어 지우기"><X /></button> : null}
         </label>
         {query ? <div className="map-results" aria-label="검색 결과">
-          {filtered.slice(0, 5).map((item) => <button key={item.id} type="button" onClick={() => { selectOccurrence(item.id); setQuery(""); }}><span>{item.regionLabel} · {schedulePhaseLabel(schedulePhase(item))}</span><strong>{occurrenceTopicTitle(item)}</strong><small>{occurrenceTopicContext(item)} · {item.title} · {formatDateTime(item.startsAt)}</small><ChevronRight /></button>)}
+          {filtered.slice(0, 5).map((item) => <button key={item.id} type="button" onClick={() => { selectOccurrence(item.id); setPhaseFilter(schedulePhase(item) === "past" ? "past" : "active"); setQuery(""); }}><span>{item.regionLabel} · {schedulePhaseLabel(schedulePhase(item))}</span><strong>{occurrenceTopicTitle(item)}</strong><small>{occurrenceTopicContext(item)} · {item.title} · {formatDateTime(item.startsAt)}</small><ChevronRight /></button>)}
           {!filtered.length ? <p>일치하는 공개 현장이 없습니다</p> : null}
+        </div> : null}
+        {!query ? <div className="map-phase-filters" aria-label="일정 시점 필터">
+          <button type="button" aria-pressed={phaseFilter === "active"} onClick={() => { setPhaseFilter("active"); selectOccurrence(undefined); }}><i className="key-current" />진행 {phaseCounts.current} · 예정 {phaseCounts.upcoming}</button>
+          <button type="button" aria-pressed={phaseFilter === "past"} onClick={() => { setPhaseFilter("past"); selectOccurrence(undefined); }}><i className="key-past" />지난 {phaseCounts.past}</button>
+          <button type="button" aria-pressed={phaseFilter === "all"} onClick={() => { setPhaseFilter("all"); selectOccurrence(undefined); }}>전체 {dataset?.occurrences.length || 0}</button>
         </div> : null}
       </div>
 
-      <OccurrenceMap pins={dataset?.map.geojson.pins} areas={dataset?.map.geojson.presenceAreas} occurrences={dataset?.occurrences || []} selectedId={selectedId} onSelect={selectOccurrence} />
+      <OccurrenceMap pins={visiblePins} areas={visibleAreas} occurrences={visibleOccurrences} selectedId={selectedId} onSelect={selectOccurrence} />
 
       <div className="map-key" aria-label="일정 및 위치 상태 표시 설명"><span><i className="key-current" />진행 중</span><span><i className="key-upcoming" />예정</span><span><i className="key-past" />지난 일정 · 오래될수록 흐림</span><span><i className="key-source" />공개자료 예상</span><span><i className="key-disputed" />위치 확인 중</span><span><i className="key-area" />현장 근거 범위</span></div>
 
@@ -45,6 +76,10 @@ export function ExploreScreen() {
       {selected ? <MapSelection occurrence={selected} onClose={() => selectOccurrence(undefined)} /> : null}
     </section>
   );
+}
+
+function phaseOrder(phase: ReturnType<typeof schedulePhase>): number {
+  return phase === "current" ? 0 : phase === "upcoming" ? 1 : 2;
 }
 
 function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
