@@ -117,6 +117,7 @@ export function toSeoulIndividualOccurrencePayload(
     sourceTitle: bulletin.title,
     sourceGranularity: "individual_schedule",
     publicLocationKey: event.publicLocationKey,
+    publicLocationText: event.safeLocationLabel,
     parserVersion: "2"
   };
 }

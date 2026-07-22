@@ -512,6 +512,15 @@ assert.equal(seoulEventPayload.endsAt, "2026-07-20T14:00:00.000+09:00");
 assert.equal(seoulEventPayload.sourceGranularity, "individual_schedule");
 assert.equal(seoulEventPayload.normalizedStatement.includes("세종대로사거리"), false);
 assert.equal(seoulEventPayload.publicLocationKey, "seoul_civic_center_area");
+assert.equal(seoulEventPayload.publicLocationText, "서울광장 일대");
+const seoulTextOnlyLocationPayload = toSeoulIndividualOccurrencePayload(seoulEventRows[0], {
+  rowNumber: 4,
+  timeLabel: "15:00~17:00",
+  safeLocationLabel: "종로 고궁박물관 일대",
+  rawLocationText: "종로 고궁박물관 앞"
+}, new Date("2026-07-20T08:00:00.000+09:00"));
+assert.equal(seoulTextOnlyLocationPayload.publicLocationKey, undefined);
+assert.equal(seoulTextOnlyLocationPayload.publicLocationText, "종로 고궁박물관 일대");
 
 const sejongRows = parseSejongTodayAssemblyList(`
 <tr css=tr_out>
