@@ -30,6 +30,7 @@ import {
   type LawGroupCard,
   type LawGroupMembership,
   type LifecycleState,
+  type LocationResolutionStatus,
   type NotificationOutbox,
   type NewsIssueCandidate,
   type NewsProviderUsage,
@@ -47,6 +48,7 @@ import {
   type VerifiedUser
 } from "../../../packages/schemas/src/index.ts";
 import { buildLawGroups } from "./law-topics.ts";
+import { blurPublicCoordinate, locationStatusLabel, metersBetween, reconcileLocationFromFieldEvidence, resolveOfficialLocationEstimate, type LocationEvidencePoint } from "./location-resolution.ts";
 
 export type Store = {
   areaClusters: AreaCluster[];
@@ -1599,6 +1601,8 @@ function toOccurrenceDigest(store: Store, targetType: Extract<TargetType, "occur
     .sort((left, right) => right.observedAt.getTime() - left.observedAt.getTime())[0];
   const occurrence = targetType === "occurrence" ? target as Occurrence : undefined;
   const continuous = targetType === "continuous_presence" ? target as ContinuousPresence : undefined;
+  const targetPublicLocation = "publicLocation" in target ? target.publicLocation : undefined;
+  const targetLocationStatus = occurrence?.locationStatus ?? targetPublicLocation?.status ?? (targetPublicLocation ? "SOURCE_GEOCODED" : undefined);
   const issueIds = targetType === "occurrence"
     ? approvedIssueIdsForOccurrence(store, target as Occurrence)
     : "issueId" in target && target.issueId ? [target.issueId] : [];
@@ -1621,6 +1625,10 @@ function toOccurrenceDigest(store: Store, targetType: Extract<TargetType, "occur
     title: targetTitle(targetType, target),
     regionLabel: targetRegionLabel(store, targetType, target) ?? "지역 확인 중",
     locationLabel: "publicLocation" in target ? target.publicLocation?.label : undefined,
+    locationStatus: targetLocationStatus,
+    locationStatusLabel: targetLocationStatus ? locationStatusLabel(targetLocationStatus) : undefined,
+    locationUncertaintyRadiusM: targetPublicLocation?.uncertaintyRadiusM,
+    fieldLocationEvidenceCount: targetPublicLocation?.fieldEvidenceCount ?? 0,
     lifecycleState: targetLifecycle(target) as LifecycleState,
     startsAt: occurrence?.startsAt?.toISOString(),
     endsAt: occurrence?.endsAt?.toISOString(),
@@ -2508,7 +2516,16 @@ function getMap(store: Store, now = new Date()): ApiResponse {
         sequence: index + 1,
         locationLabel: unit.publicLocation!.label,
         locationPrecision: unit.publicLocation!.precision,
-        source: "public_source_location"
+        locationStatus: unit.locationStatus,
+        locationStatusLabel: locationStatusLabel(unit.locationStatus),
+        publicRadiusM: unit.publicLocation!.publicRadiusM ?? 300,
+        uncertaintyRadiusM: unit.publicLocation!.uncertaintyRadiusM,
+        fieldEvidenceCount: unit.publicLocation!.fieldEvidenceCount ?? 0,
+        source: unit.locationStatus === "CORRECTED" || unit.locationStatus === "FIELD_CORROBORATED"
+          ? "proof_of_presence_location"
+          : unit.locationStatus === "LOCATION_DISPUTED"
+            ? "location_disputed"
+            : "public_source_location"
       }
     }));
   const presenceAreas = units
@@ -2530,6 +2547,8 @@ function getMap(store: Store, now = new Date()): ApiResponse {
       title: unit.title,
       regionLabel: unit.regionLabel,
       lifecycleState: unit.lifecycleState,
+      locationStatus: unit.locationStatus,
+      locationStatusLabel: locationStatusLabel(unit.locationStatus),
       hasSourcePin: Boolean(unit.publicLocation),
       hasPresenceArea: presenceAreas.some((feature) => feature.properties.occurrenceUnitId === unit.id),
       liveEvidenceCount: publicLiveEvidenceForUnit(store, unit).length,
@@ -2551,6 +2570,7 @@ type MapOccurrenceUnit = {
   regionLabel: string;
   lifecycleState: string;
   publicLocation?: NonNullable<Occurrence["publicLocation"]>;
+  locationStatus?: LocationResolutionStatus;
   updatedAt?: Date;
 };
 
@@ -2564,6 +2584,7 @@ function mapOccurrenceUnits(store: Store, now = new Date()): MapOccurrenceUnit[]
       regionLabel: item.regionLabel,
       lifecycleState: item.lifecycleState,
       publicLocation: item.publicLocation,
+      locationStatus: item.locationStatus ?? item.publicLocation?.status,
       updatedAt: item.startsAt
     })),
     ...store.continuousPresences.filter((item) => isContinuousPresenceWithinPublicDiscoveryWindow(item, now)).map((item) => ({
@@ -2574,6 +2595,7 @@ function mapOccurrenceUnits(store: Store, now = new Date()): MapOccurrenceUnit[]
       regionLabel: item.regionLabel,
       lifecycleState: item.state,
       publicLocation: item.publicLocation,
+      locationStatus: item.publicLocation?.status ?? (item.publicLocation ? "SOURCE_GEOCODED" : undefined),
       updatedAt: item.lastProofOfPresenceAt ?? item.firstProofOfPresenceAt
     }))
   ];
@@ -2582,6 +2604,84 @@ function mapOccurrenceUnits(store: Store, now = new Date()): MapOccurrenceUnit[]
 function publicLiveEvidenceForUnit(store: Store, unit: MapOccurrenceUnit): Evidence[] {
   const claims = publicClaimsForTarget(store, unit.targetType, unit.id);
   return publicEvidenceForClaims(store, claims).filter((item) => hasPublishableLiveEvidence(item) && typeof item.privateLng === "number" && typeof item.privateLat === "number");
+}
+
+function trustedIndependentLocationEvidence(
+  store: Store,
+  targetType: Extract<TargetType, "occurrence" | "continuous_presence">,
+  targetId: string
+): LocationEvidencePoint[] {
+  const candidates = publicClaimsForTarget(store, targetType, targetId).flatMap((claim) => {
+    const report = store.reports.find((item) => item.claimId === claim.id && item.userId);
+    const reportUserId = report?.userId;
+    if (!reportUserId) return [];
+    return claim.evidenceIds.flatMap((evidenceId) => {
+      const evidence = store.evidence.find((item) => item.id === evidenceId);
+      const trusted = hasPublishableLiveEvidence(evidence) || (
+        evidence?.evidenceType === "sensor" &&
+        evidence.proofOfPresenceStatus === "pass" &&
+        hasTrustedDeviceIntegrity(evidence)
+      );
+      const deviceBucket = evidence?.deviceAttestationBucket;
+      if (!trusted || evidence.foregroundGps !== true || !deviceBucket) return [];
+      if (typeof evidence.privateLng !== "number" || typeof evidence.privateLat !== "number") return [];
+      const gpsAccuracyM = evidence.gpsAccuracyM ?? 999;
+      if (gpsAccuracyM <= 0 || gpsAccuracyM > 100) return [];
+      return [{
+        userId: reportUserId,
+        deviceBucket,
+        point: {
+          evidenceId: evidence.id,
+          lng: evidence.privateLng,
+          lat: evidence.privateLat,
+          gpsAccuracyM,
+          capturedAt: evidence.capturedAt ?? evidence.uploadedAt
+        }
+      }];
+    });
+  }).sort((left, right) => right.point.capturedAt.getTime() - left.point.capturedAt.getTime());
+
+  const userIds = new Set<string>();
+  const deviceBuckets = new Set<string>();
+  const independent: LocationEvidencePoint[] = [];
+  for (const candidate of candidates) {
+    if (userIds.has(candidate.userId) || deviceBuckets.has(candidate.deviceBucket)) continue;
+    userIds.add(candidate.userId);
+    deviceBuckets.add(candidate.deviceBucket);
+    independent.push(candidate.point);
+  }
+  return independent;
+}
+
+function reconcileOccurrencePublicLocation(store: Store, targetType: TargetType, targetId: string): void {
+  if (targetType !== "occurrence") return;
+  const occurrence = store.occurrences.find((item) => item.id === targetId);
+  if (!occurrence) return;
+  if (!occurrence.sourcePublicLocation && occurrence.publicLocation && occurrence.publicLocation.source !== "field_evidence") {
+    occurrence.sourcePublicLocation = {
+      ...occurrence.publicLocation,
+      status: "SOURCE_GEOCODED",
+      fieldEvidenceCount: 0
+    };
+  }
+  const points = trustedIndependentLocationEvidence(store, "occurrence", targetId);
+  const previousStatus = occurrence.locationStatus ?? occurrence.publicLocation?.status ?? (occurrence.publicLocation ? "SOURCE_GEOCODED" : "TEXT_ONLY");
+  const previousLocation = occurrence.publicLocation;
+  const decision = reconcileLocationFromFieldEvidence(
+    previousLocation,
+    occurrence.sourcePublicLocation,
+    points,
+    occurrence.locationText ?? occurrence.publicLocation?.label ?? occurrence.regionLabel
+  );
+  occurrence.locationStatus = decision.status;
+  occurrence.publicLocation = decision.location;
+  if (previousStatus === decision.status && samePublicCoordinate(previousLocation, decision.location)) return;
+  const action: AuditLog["action"] = decision.status === "CORRECTED" ? "correction" : "state_change";
+  audit(store, action, "occurrence", occurrence.id, decision.reason);
+}
+
+function samePublicCoordinate(left: Occurrence["publicLocation"], right: Occurrence["publicLocation"]): boolean {
+  return left?.lng === right?.lng && left?.lat === right?.lat && left?.label === right?.label && left?.fieldEvidenceCount === right?.fieldEvidenceCount;
 }
 
 function presenceAreaFeatureForUnit(store: Store, unit: MapOccurrenceUnit) {
@@ -2933,7 +3033,8 @@ async function postLiveUpload(store: Store, request: ApiRequest, options: AppOpt
   const userId = requireVerifiedBodyUserId(store, request, options, data);
   const targetType = readTargetType(data, "targetType", "occurrence");
   const targetId = readString(data, "targetId");
-  if (!targetExists(store, targetType, targetId)) return json(404, { error: "target_not_found" });
+  const target = targetRecord(store, targetType, targetId);
+  if (!target) return json(404, { error: "target_not_found" });
   const mediaMimeType = readOptionalString(data, "mediaMimeType") ?? "video/webm";
   if (!mediaMimeType.startsWith("video/")) return json(422, { error: "live_upload_invalid" });
   const bytes = liveUploadBytes(readString(data, "mediaBase64"));
@@ -2971,6 +3072,8 @@ function postLiveReport(store: Store, request: ApiRequest, options: AppOptions):
   const userId = requireVerifiedBodyUserId(store, request, options, data);
   const targetType = readTargetType(data, "targetType", "occurrence");
   const targetId = readString(data, "targetId");
+  const target = targetRecord(store, targetType, targetId);
+  if (!target) return json(404, { error: "target_not_found" });
   const capturedAt = readDate(data, "capturedAt");
   const storageKey = readString(data, "storageKey");
   const hash = readString(data, "hash");
@@ -2980,6 +3083,13 @@ function postLiveReport(store: Store, request: ApiRequest, options: AppOptions):
   }
   const durationMs = readNumber(data, "durationMs");
   if (data.captureMode !== "in_app_camera" || !durationMs || durationMs <= 0) return json(422, { error: "proof_of_presence_failed" });
+  const gpsLng = readNumber(data, "gpsLng");
+  const gpsLat = readNumber(data, "gpsLat");
+  if (!isValidSouthKoreaGps(gpsLng, gpsLat)) return json(422, { error: "proof_of_presence_failed" });
+  const targetPublicLocation = "publicLocation" in target ? target.publicLocation : undefined;
+  const serverDistanceToTargetM = targetPublicLocation
+    ? Math.round(metersBetween({ lng: gpsLng, lat: gpsLat as number }, targetPublicLocation))
+    : 0;
   const evidence: Evidence = {
     id: randomUUID(),
     evidenceType: "live_media",
@@ -2995,16 +3105,17 @@ function postLiveReport(store: Store, request: ApiRequest, options: AppOptions):
     captureMode: "in_app_camera",
     redactionStatus: "pending",
     publicRadiusM: 200,
-    privateLng: readNumber(data, "gpsLng"),
-    privateLat: readNumber(data, "gpsLat"),
+    privateLng: gpsLng,
+    privateLat: gpsLat,
     foregroundGps: data.foregroundGps === true,
     gpsAccuracyM: readNumber(data, "gpsAccuracyM"),
-    distanceToTargetM: readNumber(data, "distanceToTargetM"),
+    distanceToTargetM: serverDistanceToTargetM,
     deviceIntegrityStatus: deviceIntegrityStatusFromPublicInput(data),
     deviceAttestationBucket: deviceAttestationBucket(data)
   };
 
-  if (!hasProofOfPresence(evidence, { maxUploadMinutes: 5, minDurationMs: 5000, minGpsAccuracyM: 100, maxDistanceToTargetM: 200 })) {
+  const maxDistanceToTargetM = Math.max(200, Math.min(50_000, targetPublicLocation?.uncertaintyRadiusM ?? 200));
+  if (!hasProofOfPresence(evidence, { maxUploadMinutes: 5, minDurationMs: 5000, minGpsAccuracyM: 100, maxDistanceToTargetM })) {
     return json(422, { error: "proof_of_presence_failed" });
   }
 
@@ -3089,6 +3200,10 @@ function deviceIntegrityStatusFromPublicInput(data: Record<string, unknown>): "f
   return data.deviceIntegrityStatus === "fail" ? "fail" : "unknown";
 }
 
+function isValidSouthKoreaGps(lng: number | undefined, lat: number | undefined): lng is number {
+  return typeof lng === "number" && typeof lat === "number" && lng >= 124.4 && lng <= 132 && lat >= 32.8 && lat <= 38.7;
+}
+
 function postFieldVerification(store: Store, claimId: string | undefined, request: ApiRequest, options: AppOptions): ApiResponse {
   const reviewedClaim = store.claims.find((claim) => claim.id === claimId && isPublicClaim(claim));
   if (!reviewedClaim || !hasPublicLiveEvidence(store, reviewedClaim)) return json(404, { error: "live_claim_not_found" });
@@ -3096,16 +3211,23 @@ function postFieldVerification(store: Store, claimId: string | undefined, reques
   const userId = requireVerifiedBodyUserId(store, request, options, data);
   const capturedAt = readDate(data, "capturedAt");
   const verdict = readFieldVerification(data);
+  const reviewedEvidence = reviewedClaim.evidenceIds
+    .map((evidenceId) => store.evidence.find((item) => item.id === evidenceId))
+    .find((item) => hasPublishableLiveEvidence(item) && typeof item.privateLng === "number" && typeof item.privateLat === "number");
+  const gpsLng = readNumber(data, "gpsLng");
+  const gpsLat = readNumber(data, "gpsLat");
+  if (!reviewedEvidence || !isValidSouthKoreaGps(gpsLng, gpsLat)) return json(422, { error: "proof_of_presence_failed" });
+  const serverDistanceToTargetM = Math.round(metersBetween({ lng: gpsLng, lat: gpsLat as number }, { lng: reviewedEvidence.privateLng as number, lat: reviewedEvidence.privateLat as number }));
   const evidence: Evidence = {
     id: randomUUID(),
     evidenceType: "sensor",
     capturedAt,
     uploadedAt: new Date(),
-    privateLng: readNumber(data, "gpsLng"),
-    privateLat: readNumber(data, "gpsLat"),
+    privateLng: gpsLng,
+    privateLat: gpsLat,
     foregroundGps: data.foregroundGps === true,
     gpsAccuracyM: readNumber(data, "gpsAccuracyM"),
-    distanceToTargetM: readNumber(data, "distanceToTargetM"),
+    distanceToTargetM: serverDistanceToTargetM,
     deviceIntegrityStatus: deviceIntegrityStatusFromPublicInput(data),
     deviceAttestationBucket: deviceAttestationBucket(data),
     proofOfPresenceStatus: "unknown"
@@ -3316,9 +3438,16 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
   const publicVisibility: Occurrence["publicVisibility"] = officialSource
     ? data.sourceGranularity === "individual_schedule" ? "public" : "source_only"
     : occurrence?.publicVisibility ?? "public";
-  const publicLocation = officialSource
+  const incomingLocationText = readOptionalString(data, "publicLocationText");
+  const sourceLocation = officialSource
     ? publicVisibility === "public" ? officialPublicLocation(officialSource, data) : undefined
+    : undefined;
+  const previousLocation = occurrence?.publicLocation;
+  const previousLocationStatus = occurrence?.locationStatus;
+  const publicLocation = officialSource
+    ? initialOfficialLocation(occurrence, sourceLocation)
     : occurrence?.publicLocation;
+  const locationStatus: LocationResolutionStatus = publicLocation?.status ?? occurrence?.locationStatus ?? "TEXT_ONLY";
   if (officialSource) ensureOfficialIngestReferences(store, officialSource, data, areaClusterId, issueId);
 
   if (!store.areaClusters.some((item) => item.id === areaClusterId)) throw new ApiError(404, "area_cluster_not_found");
@@ -3337,6 +3466,9 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
       regionLabel: readString(data, "regionLabel"),
       title: readString(data, "title"),
       publicVisibility,
+      locationText: incomingLocationText ?? publicLocation?.label,
+      locationStatus,
+      sourcePublicLocation: sourceLocation,
       publicLocation,
       startsAt: readOptionalDate(data, "startsAt"),
       endsAt: readOptionalDate(data, "endsAt"),
@@ -3369,6 +3501,9 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
     occurrence.endsAt = readOptionalDate(data, "endsAt") ?? occurrence.endsAt;
     occurrence.lifecycleState = readLifecycleState(data, "lifecycleState", occurrence.lifecycleState);
     occurrence.publicVisibility = publicVisibility;
+    occurrence.locationText = incomingLocationText ?? occurrence.locationText ?? publicLocation?.label;
+    occurrence.locationStatus = locationStatus;
+    if (sourceLocation) occurrence.sourcePublicLocation = sourceLocation;
     occurrence.publicLocation = publicLocation;
     if (previousVisibility !== publicVisibility) {
       audit(store, "state_change", "occurrence", id, publicVisibility === "source_only"
@@ -3376,6 +3511,7 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
         : "개별 일정 근거가 확인되어 현장 이벤트를 공개 상태로 전환했습니다.");
     }
   }
+  if (officialSource) auditOfficialLocationChange(store, occurrence, previousLocation, previousLocationStatus);
 
   const officialMetadata = officialSource ? officialEvidenceMetadata(officialSource, data, id, normalizedStatement) : undefined;
   const existingOfficialEvidence = officialMetadata?.externalId
@@ -3404,6 +3540,7 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
     recordPublicSourceRefresh(store, data, 1);
     audit(store, "correction", "occurrence", id, corrected ? "official public occurrence statement corrected without duplicate Claim" : "public occurrence refreshed without duplicate Claim");
     reconcileOccurrenceLinksFromEvidence(store);
+    reconcileOccurrencePublicLocation(store, "occurrence", occurrence.id);
     return json(200, {
       status: "public_occurrence_refreshed",
       occurrence: toPublicOccurrence(occurrence, publicClaimsForTarget(store, "occurrence", occurrence.id)),
@@ -3433,6 +3570,7 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
   });
   refreshIssueLawGroupLinks(store);
   reconcileOccurrenceLinksFromEvidence(store);
+  reconcileOccurrencePublicLocation(store, "occurrence", occurrence.id);
   recordPublicSourceRefresh(store, data, 1);
   audit(store, created ? "split" : "correction", "occurrence", id, "public occurrence ingested as Claim/Evidence");
   return json(created ? 201 : 200, {
@@ -3533,10 +3671,53 @@ function officialPublicLocation(
   data: Record<string, unknown>
 ): Occurrence["publicLocation"] | undefined {
   const key = readOptionalString(data, "publicLocationKey");
-  if (!key) return undefined;
-  const location = officialPublicLocationAllowlist[key];
-  if (!location || location.regionCode !== source.regionCode) throw new ApiError(400, "official_source_location_invalid");
-  return { lng: location.lng, lat: location.lat, label: location.label, precision: "area", source: "public_source" };
+  if (key) {
+    const location = officialPublicLocationAllowlist[key];
+    if (!location || location.regionCode !== source.regionCode) throw new ApiError(400, "official_source_location_invalid");
+    const blurred = blurPublicCoordinate(location.lng, location.lat, 300);
+    return {
+      ...blurred,
+      label: location.label,
+      precision: "area",
+      source: "public_source",
+      status: "SOURCE_GEOCODED",
+      publicRadiusM: 300,
+      uncertaintyRadiusM: 300,
+      fieldEvidenceCount: 0,
+      updatedAt: new Date()
+    };
+  }
+  if (data.sourceGranularity !== "individual_schedule") return undefined;
+  const locationText = readOptionalString(data, "publicLocationText");
+  return locationText ? resolveOfficialLocationEstimate(source.regionCode, locationText) : undefined;
+}
+
+function initialOfficialLocation(occurrence: Occurrence | undefined, candidate: Occurrence["publicLocation"]): Occurrence["publicLocation"] {
+  if (!occurrence?.publicLocation) return candidate;
+  if (occurrence.locationStatus === "FIELD_CORROBORATED" || occurrence.locationStatus === "CORRECTED" || occurrence.locationStatus === "LOCATION_DISPUTED") {
+    return occurrence.publicLocation;
+  }
+  return candidate ?? occurrence.publicLocation;
+}
+
+function auditOfficialLocationChange(
+  store: Store,
+  occurrence: Occurrence,
+  previous: Occurrence["publicLocation"],
+  previousStatus: LocationResolutionStatus | undefined
+): void {
+  const next = occurrence.publicLocation;
+  if (!previous && next) {
+    audit(store, "state_change", "occurrence", occurrence.id, "공개자료 장소명을 행정구역 위치 정보와 연결해 흐린 예상 위치를 생성했습니다.");
+    return;
+  }
+  if (previousStatus !== occurrence.locationStatus) {
+    audit(store, "state_change", "occurrence", occurrence.id, `공개 위치 상태가 ${locationStatusLabel(occurrence.locationStatus)}로 변경되었습니다.`);
+    return;
+  }
+  if (previous && next && (previous.lng !== next.lng || previous.lat !== next.lat || previous.label !== next.label)) {
+    audit(store, "correction", "occurrence", occurrence.id, "공개자료의 변경된 장소 정보를 반영해 흐린 예상 위치를 갱신했습니다.");
+  }
 }
 
 function ensureOfficialIngestReferences(
@@ -3934,6 +4115,9 @@ function patchInternalDeviceIntegrity(store: Store, id: string | undefined, body
   evidence.deviceIntegrityCheckedAt = new Date();
   evidence.deviceIntegrityProofHash = proofHash;
   audit(store, status === "pass" ? "correction" : "hold", "evidence", evidence.id, "device integrity result recorded by trusted verifier");
+  for (const claim of store.claims.filter((item) => item.evidenceIds.includes(evidence.id))) {
+    reconcileOccurrencePublicLocation(store, claim.targetType, claim.targetId);
+  }
   return json(200, {
     status: "device_integrity_recorded",
     evidence: {
@@ -3970,6 +4154,9 @@ function patchInternalEvidenceRedaction(store: Store, id: string | undefined, bo
   evidence.redactionCheckedAt = new Date();
   evidence.redactionProofHash = proofHash;
   audit(store, "mask", "evidence", evidence.id, "redacted public media recorded by trusted worker");
+  for (const claim of store.claims.filter((item) => item.evidenceIds.includes(evidence.id))) {
+    reconcileOccurrencePublicLocation(store, claim.targetType, claim.targetId);
+  }
   return json(200, {
     status: "redaction_recorded",
     evidence: {
@@ -4020,6 +4207,7 @@ function patchAdminClaim(store: Store, id: string | undefined, body: unknown): A
     throw new ApiError(400, "device_integrity_required");
   }
   if (visibility) setClaimVisibility(store, claim, visibility);
+  reconcileOccurrencePublicLocation(store, claim.targetType, claim.targetId);
   audit(store, "correction", "claim", claim.id, readOptionalString(data, "publicReason") ?? "admin reviewed Claim");
   return json(200, { status: "claim_reviewed", claim: toPublicClaim(claim) });
 }
@@ -5304,6 +5492,9 @@ function toPublicOccurrence(occurrence: Occurrence, claims?: Claim[]) {
     type: occurrence.type,
     regionLabel: occurrence.regionLabel,
     title: occurrence.title,
+    locationText: occurrence.locationText,
+    locationStatus: occurrence.locationStatus ?? occurrence.publicLocation?.status ?? "TEXT_ONLY",
+    locationStatusLabel: locationStatusLabel(occurrence.locationStatus ?? occurrence.publicLocation?.status),
     publicLocation: occurrence.publicLocation,
     lifecycleState: occurrence.lifecycleState,
     startsAt: occurrence.startsAt?.toISOString(),

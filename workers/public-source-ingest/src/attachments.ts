@@ -20,6 +20,7 @@ export type ExtractedAssemblyEvent = {
   startTime: string;
   endTime?: string;
   safeLocationLabel: string;
+  identityLocationKey?: string;
   participantCount?: number;
 };
 
@@ -228,7 +229,9 @@ export function parseAssemblyAttachmentEvents(
 
   const events = candidates.flatMap((candidate) => {
     if (/(?:현재\s*)?집회\s*일시.*집회\s*장소/i.test(candidate.content.join(" "))) return [];
-    const safeLocationLabel = safeLocation(candidate.content.join(" "), context.regionLabel);
+    const rawLocation = candidate.content.join(" ");
+    const identityLocationKey = legacyLocationForIdentity(rawLocation, context.regionLabel);
+    const safeLocationLabel = safeLocation(rawLocation, context.regionLabel);
     if (!safeLocationLabel || !candidate.startTime) return [];
     return [{
       rowNumber: candidate.rowNumber,
@@ -236,6 +239,7 @@ export function parseAssemblyAttachmentEvents(
       startTime: candidate.startTime,
       endTime: candidate.endTime,
       safeLocationLabel,
+      identityLocationKey,
       participantCount: candidate.participantCount
     }];
   });
@@ -254,7 +258,7 @@ export function toAttachmentEventPayload(
   const endsAt = event.endTime ? `${event.date}T${event.endTime}:00.000+09:00` : undefined;
   const reference = new Date(endsAt ?? startsAt);
   const sourceItemId = `${bulletin.sourceItemId}:attachment:${attachmentIndex + 1}:event:${event.rowNumber}`;
-  const stableId = createHash("sha256").update(`${source.id}:${sourceItemId}:${event.safeLocationLabel}:${startsAt}`).digest("hex").slice(0, 20);
+  const stableId = createHash("sha256").update(`${source.id}:${sourceItemId}:${event.identityLocationKey ?? event.safeLocationLabel}:${startsAt}`).digest("hex").slice(0, 20);
   return {
     id: `occ_${source.regionCode}_${stableId}`,
     type: "static_assembly",
@@ -286,6 +290,7 @@ export function toAttachmentEventPayload(
     sourcePublishedAt: bulletin.sourcePublishedAt ?? bulletin.evidenceUploadedAt,
     sourceTitle: bulletin.sourceTitle ?? bulletin.title,
     sourceGranularity: "individual_schedule",
+    publicLocationText: event.safeLocationLabel,
     parserVersion: "3"
   };
 }
@@ -299,6 +304,31 @@ function isEventStart(lines: string[], index: number): boolean {
 }
 
 function safeLocation(value: string, regionLabel: string): string | undefined {
+  let location = value
+    .split(/(?:※\s*)?(?:행진|이동)(?:로)?\s*[:：]?/)[0]
+    .split(/(?:오\s*늘\s*)?주\s*요\s*집\s*회|신고인원\s*[,·]?\s*시간/u)[0]
+    .replace(/--\s*\d+\s*of\s*\d+/gi, " ")
+    .replace(/--\s*[’']?\d{2}\.\s*\d{1,2}\.[\s\S]*$/g, " ")
+    .replace(/\([^)]*(?:km|개\s*차로)[^)]*\)/gi, " ")
+    .split(/(?:→|⇒|➡|행진로\s*[:：]?)/)[0]
+    .replace(/\d[\d,]*\s*명/g, " ")
+    .replace(/(?:상행|하행)?\s*\d+\s*개\s*차로[\s\S]*$/g, " ")
+    .replace(/공사현\s+장/g, "공사현장")
+    .replace(/건\s+설현장/g, "건설현장")
+    .replace(/(?:서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)?\s*(?:중\s*부|동\s*부|서\s*부|남\s*부|북\s*부|수\s*성|달\s*서|성\s*주|김\s*천|경\s*주|의\s*성|포\s*항|구\s*미|안\s*동|영\s*주|영\s*천|상\s*주|문\s*경|칠\s*곡)\s*$/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/^[,·\-\s]+|[,·\-\s]+$/g, "")
+    .trim();
+  if (!location) return undefined;
+  if (!location.includes(regionLabel) && !/(?:시|군|구|동|읍|면|리|로|길|R|앞|교|공원|광장|청|현장|아파트)/.test(location)) return undefined;
+  if (location.length > 70) location = location.slice(0, 70).replace(/\s+\S*$/, "");
+  if (location.length < 2) return undefined;
+  return /(?:앞|일대|부근|인근|광장|공원|현장|아파트|교|R)$/.test(location) ? location : `${location} 일대`;
+}
+
+// Keep the pre-sanitization identity stable for records already ingested before
+// route/footer cleanup. Display text may improve without creating duplicates.
+function legacyLocationForIdentity(value: string, regionLabel: string): string | undefined {
   let location = value
     .replace(/--\s*\d+\s*of\s*\d+/gi, " ")
     .replace(/\([^)]*(?:km|개\s*차로)[^)]*\)/gi, " ")

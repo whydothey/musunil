@@ -70,6 +70,10 @@ export interface OccurrenceDigest {
   title: string;
   regionLabel: string;
   locationLabel?: string;
+  locationStatus?: "TEXT_ONLY" | "SOURCE_GEOCODED" | "FIELD_CORROBORATED" | "CORRECTED" | "LOCATION_DISPUTED";
+  locationStatusLabel?: string;
+  locationUncertaintyRadiusM?: number;
+  fieldLocationEvidenceCount?: number;
   lifecycleState: LifecycleState;
   startsAt?: string;
   endsAt?: string;

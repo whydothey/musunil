@@ -4,8 +4,42 @@ import { canServePublicRedactedMedia, createApp, createSeedStore, decryptLiveMed
 import { enforcePublicWriteRateLimit, publicWriteRateLimitKey, readJsonBody } from "./http-boundary.ts";
 import { assertStorageSmokeKey, storageSmokeKey, storageSmokePrefix } from "./live-media-storage.ts";
 import { decryptSnapshot, encryptSnapshot, hydrateStore } from "./postgres-store.ts";
+import { blurPublicCoordinate, metersBetween, reconcileLocationFromFieldEvidence, resolveOfficialLocationEstimate } from "./location-resolution.ts";
 
 const now = new Date("2026-07-07T09:00:00.000Z");
+const daeguSourceEstimate = resolveOfficialLocationEstimate("daegu", "남산동, 중구 선거관리위원회 앞", now);
+assert.ok(daeguSourceEstimate);
+assert.equal(daeguSourceEstimate.status, "SOURCE_GEOCODED");
+assert.equal(daeguSourceEstimate.publicRadiusM, 300);
+assert.equal(daeguSourceEstimate.uncertaintyRadiusM, 1_500);
+assert.deepEqual(blurPublicCoordinate(128.59, 35.864, 300), { lng: daeguSourceEstimate.lng, lat: daeguSourceEstimate.lat });
+const fieldPoints = [
+  { evidenceId: "field-a", lng: 128.5902, lat: 35.8641, gpsAccuracyM: 18, capturedAt: now },
+  { evidenceId: "field-b", lng: 128.5904, lat: 35.8642, gpsAccuracyM: 24, capturedAt: now }
+];
+const corroboratedLocation = reconcileLocationFromFieldEvidence(daeguSourceEstimate, daeguSourceEstimate, fieldPoints, daeguSourceEstimate.label, now);
+assert.equal(corroboratedLocation.status, "FIELD_CORROBORATED");
+assert.equal(corroboratedLocation.location?.source, "field_evidence");
+assert.equal(corroboratedLocation.fieldEvidenceCount, 2);
+const remoteFieldPoints = [
+  { evidenceId: "remote-a", lng: 128.6311, lat: 35.8581, gpsAccuracyM: 20, capturedAt: now },
+  { evidenceId: "remote-b", lng: 128.6312, lat: 35.8582, gpsAccuracyM: 20, capturedAt: now }
+];
+const disputedLocation = reconcileLocationFromFieldEvidence(daeguSourceEstimate, daeguSourceEstimate, remoteFieldPoints, daeguSourceEstimate.label, now);
+assert.equal(disputedLocation.status, "LOCATION_DISPUTED");
+assert.equal(disputedLocation.location?.lng, daeguSourceEstimate.lng);
+const correctedLocation = reconcileLocationFromFieldEvidence(daeguSourceEstimate, daeguSourceEstimate, [
+  ...remoteFieldPoints,
+  { evidenceId: "remote-c", lng: 128.6313, lat: 35.8583, gpsAccuracyM: 25, capturedAt: now }
+], daeguSourceEstimate.label, now);
+assert.equal(correctedLocation.status, "CORRECTED");
+assert.equal(correctedLocation.location?.source, "field_evidence");
+assert.equal(metersBetween(correctedLocation.location!, daeguSourceEstimate) > 1_500, true);
+const conflictingLocation = reconcileLocationFromFieldEvidence(daeguSourceEstimate, daeguSourceEstimate, [
+  ...fieldPoints,
+  ...remoteFieldPoints
+], daeguSourceEstimate.label, now);
+assert.equal(conflictingLocation.status, "LOCATION_DISPUTED");
 const store = createSeedStore();
 const internalHeaders = { "x-musunil-internal-key": "test_internal_key" };
 const testUserTokenSecret = "test_user_token_secret_32_bytes_minimum";
@@ -204,6 +238,14 @@ assert.equal(hydratedLegacyStore.issueLawGroupLinks.some((link) => link.status =
 assert.equal("lawTopics" in hydratedLegacyStore, false);
 assert.equal(hydratedLegacyStore.issues[0]?.kind, "schedule_cluster");
 assert.equal(hydratedLegacyStore.auditLogs.some((log) => log.targetId === hydratedLegacyStore.issues[0]?.id && log.action === "state_change"), true);
+const hydratedLocatedOccurrence = hydratedLegacyStore.occurrences.find((occurrence) => occurrence.publicLocation);
+assert.ok(hydratedLocatedOccurrence);
+assert.equal(hydratedLocatedOccurrence.locationStatus, "SOURCE_GEOCODED");
+assert.equal(hydratedLocatedOccurrence.publicLocation?.publicRadiusM, 300);
+assert.equal(hydratedLocatedOccurrence.sourcePublicLocation?.source, hydratedLocatedOccurrence.publicLocation?.source);
+const locationMigrationLogCount = hydratedLegacyStore.auditLogs.filter((log) => log.targetId === hydratedLocatedOccurrence.id && log.action === "state_change").length;
+hydrateStore(hydratedLegacyStore);
+assert.equal(hydratedLegacyStore.auditLogs.filter((log) => log.targetId === hydratedLocatedOccurrence.id && log.action === "state_change").length, locationMigrationLogCount);
 const generatedStorageSmokeKey = storageSmokeKey();
 assert.equal(generatedStorageSmokeKey.startsWith(storageSmokePrefix()), true);
 assert.doesNotThrow(() => assertStorageSmokeKey(generatedStorageSmokeKey));
@@ -410,6 +452,8 @@ const unscopedVerification = await app.handle({
     uploadedAt: new Date("2026-07-07T09:04:00.000Z").toISOString(),
     foregroundGps: true,
     gpsAccuracyM: 30,
+    gpsLng: 126.9783,
+    gpsLat: 37.5667,
     distanceToTargetM: 80,
     deviceIntegrityStatus: "pass",
     deviceAttestation: "field-device-cluster"
@@ -427,6 +471,8 @@ const badVerification = await app.handle({
     uploadedAt: new Date(Date.now() - 9 * 60_000).toISOString(),
     foregroundGps: true,
     gpsAccuracyM: 30,
+    gpsLng: 126.9783,
+    gpsLat: 37.5667,
     distanceToTargetM: 80,
     deviceIntegrityStatus: "pass",
     deviceAttestation: "field-device-cluster"
@@ -444,6 +490,8 @@ const alignedVerification = await app.handle({
     uploadedAt: new Date("2026-07-07T09:04:00.000Z").toISOString(),
     foregroundGps: true,
     gpsAccuracyM: 30,
+    gpsLng: 126.9783,
+    gpsLat: 37.5667,
     distanceToTargetM: 80,
     deviceIntegrityStatus: "pass",
     deviceAttestation: "field-device-cluster"
@@ -495,6 +543,8 @@ const disputedVerification = await app.handle({
     uploadedAt: new Date("2026-07-07T09:04:00.000Z").toISOString(),
     foregroundGps: true,
     gpsAccuracyM: 30,
+    gpsLng: 126.9783,
+    gpsLat: 37.5667,
     distanceToTargetM: 80,
     deviceIntegrityStatus: "pass",
     deviceAttestation: "field-device-cluster"
@@ -528,6 +578,46 @@ assert.equal(
   200
 );
 assert.equal(store.claims.find((item) => item.id === "claim_occ_live_1")?.disputedByClaimIds.includes(disputedVerificationClaimId), true);
+const independentLocationVerification = await app.handle({
+  method: "POST",
+  path: "/claims/claim_occ_live_1/field-verifications",
+  headers: userHeaders(cookieOnlySession),
+  body: {
+    userId: cookieOnlySession.userId,
+    fieldVerification: "rights_review_needed",
+    capturedAt: freshFieldCapturedAt,
+    foregroundGps: true,
+    gpsAccuracyM: 25,
+    gpsLng: 126.9784,
+    gpsLat: 37.5668,
+    deviceAttestation: "field-device-independent"
+  }
+});
+assert.equal(independentLocationVerification.status, 202);
+const independentLocationClaimId = (independentLocationVerification.body as { claim: { id: string }; evidenceId: string }).claim.id;
+const independentLocationEvidenceId = (independentLocationVerification.body as { claim: { id: string }; evidenceId: string }).evidenceId;
+assert.equal((await app.handle({
+  method: "PATCH",
+  path: `/internal/evidence/${independentLocationEvidenceId}/device-integrity`,
+  headers: internalHeaders,
+  body: { deviceIntegrityStatus: "pass", provider: "play_integrity", attestationToken: "trusted-field-location-token" }
+})).status, 200);
+assert.equal((await app.handle({
+  method: "PATCH",
+  path: `/admin/claims/${independentLocationClaimId}`,
+  headers: internalHeaders,
+  body: { visibility: "public", riskLevel: "rights_risk", publicReason: "독립 현장 위치 근거 검수 통과" }
+})).status, 200);
+const fieldLocatedOccurrence = store.occurrences.find((item) => item.id === "occ_1");
+assert.equal(fieldLocatedOccurrence?.locationStatus, "FIELD_CORROBORATED");
+assert.equal(fieldLocatedOccurrence?.publicLocation?.source, "field_evidence");
+assert.equal(fieldLocatedOccurrence?.publicLocation?.fieldEvidenceCount, 2);
+assert.equal(fieldLocatedOccurrence?.publicLocation?.publicRadiusM, 300);
+assert.equal(store.auditLogs.some((log) => log.targetId === "occ_1" && log.reason.includes("독립적인 현장 위치 근거 2건")), true);
+const fieldLocatedPublicDetail = await app.handle({ method: "GET", path: "/occurrences/occ_1" });
+assert.equal((fieldLocatedPublicDetail.body as { occurrence: { locationStatus: string } }).occurrence.locationStatus, "FIELD_CORROBORATED");
+assert.equal(JSON.stringify(fieldLocatedPublicDetail.body).includes("privateLng"), false);
+assert.equal(JSON.stringify(fieldLocatedPublicDetail.body).includes("sourcePublicLocation"), false);
 const liveClaimsAfterVerification = await app.handle({ method: "GET", path: "/targets/occurrence/occ_1/live-claims" });
 const verifiedLiveClaim = (liveClaimsAfterVerification.body as { liveClaims: Array<{ fieldVerification: { aligned: number; disputed: number; statusLabel: string } }> }).liveClaims[0];
 assert.equal(verifiedLiveClaim.fieldVerification.aligned, 1);
@@ -762,6 +852,30 @@ const shortLive = await app.handle({
 });
 assert.equal(shortLive.status, 422);
 assert.equal((shortLive.body as { error: string }).error, "proof_of_presence_failed");
+
+const forgedDistanceLive = await app.handle({
+  method: "POST",
+  path: "/reports/live",
+  headers: user1Headers,
+  body: {
+    userId: user1Session.userId,
+    targetType: "occurrence",
+    targetId: "occ_1",
+    capturedAt: liveCapturedAt,
+    foregroundGps: true,
+    gpsAccuracyM: 30,
+    distanceToTargetM: 0,
+    deviceIntegrityStatus: "pass",
+    ...liveVideoFields("live"),
+    gpsLng: 129.0756,
+    gpsLat: 35.1796,
+    storageKey: (liveUpload.body as { storageKey: string }).storageKey,
+    hash: (liveUpload.body as { hash: string }).hash,
+    uploadedAt: liveUploadedAt
+  }
+});
+assert.equal(forgedDistanceLive.status, 422);
+assert.equal((forgedDistanceLive.body as { error: string }).error, "proof_of_presence_failed");
 
 const live = await app.handle({
   method: "POST",
@@ -1891,11 +2005,54 @@ assert.equal(individualDetail.status, 200);
 assert.equal(JSON.stringify(individualDetail.body).includes("광화문교차로 행진 경로"), false);
 assert.equal((individualDetail.body as { occurrence: { publicLocation: { label: string; precision: string } } }).occurrence.publicLocation.label, "서울광장·광화문 일대");
 assert.equal((individualDetail.body as { occurrence: { publicLocation: { label: string; precision: string } } }).occurrence.publicLocation.precision, "area");
+assert.equal((individualDetail.body as { occurrence: { locationStatus: string } }).occurrence.locationStatus, "SOURCE_GEOCODED");
 const individualIssueId = (individualDetail.body as { occurrence: { issueId?: string } }).occurrence.issueId;
 assert.equal(individualIssueId, undefined);
 assert.equal(emptyOfficialStore.issues.some((issue) => issue.title === "서울광장·광화문 일대 집회 일정"), false);
 const individualHome = await emptyOfficialApp.handle({ method: "GET", path: "/home" });
 assert.equal(JSON.stringify((individualHome.body as { issueCards: unknown }).issueCards).includes("서울광장·광화문 일대 집회 일정"), false);
+const textLocatedEventBatch = await emptyOfficialApp.handle({
+  method: "POST",
+  path: "/internal/ingest/public-occurrences/batch",
+  headers: internalHeaders,
+  body: {
+    sourceId: "daegu_today_assembly",
+    checkedAt: "2026-07-20T07:20:00.000Z",
+    status: "success",
+    parsedCount: 1,
+    records: [{
+      id: "occ_daegu_location_estimate_test",
+      type: "static_assembly",
+      areaClusterId: "area_daegu",
+      regionLabel: "대구",
+      title: "남산동 중구 선거관리위원회 앞 집회 일정",
+      startsAt: "2026-07-20T09:00:00.000+09:00",
+      lifecycleState: "UPCOMING",
+      sourceProvenance: "government_or_police",
+      claimantLabel: "대구경찰청 공개자료",
+      normalizedStatement: "공개 첨부자료에 남산동 집회 일정이 안내되어 있습니다.",
+      rawText: "공개하지 않는 원문",
+      evidenceUploadedAt: "2026-07-20T07:15:00.000+09:00",
+      sourceItemId: "location-estimate-test",
+      sourceUrl: "https://www.dgpolice.go.kr/official-attachment.pdf",
+      sourceGranularity: "individual_schedule",
+      publicLocationText: "남산동, 중구 선거관리위원회 앞"
+    }]
+  }
+});
+assert.equal(textLocatedEventBatch.status, 200);
+const textLocatedDetail = await emptyOfficialApp.handle({ method: "GET", path: "/occurrences/occ_daegu_location_estimate_test" });
+const textLocatedOccurrence = (textLocatedDetail.body as { occurrence: { locationStatus: string; publicLocation: { publicRadiusM: number; uncertaintyRadiusM: number; source: string } } }).occurrence;
+assert.equal(textLocatedOccurrence.locationStatus, "SOURCE_GEOCODED");
+assert.equal(textLocatedOccurrence.publicLocation.publicRadiusM, 300);
+assert.equal(textLocatedOccurrence.publicLocation.uncertaintyRadiusM, 1_500);
+assert.equal(textLocatedOccurrence.publicLocation.source, "public_source");
+assert.equal(JSON.stringify(textLocatedDetail.body).includes("sourcePublicLocation"), false);
+const textLocatedMap = await emptyOfficialApp.handle({ method: "GET", path: "/map" });
+const textLocatedPin = (textLocatedMap.body as { geojson: { pins: { features: Array<{ properties: Record<string, unknown> }> } } }).geojson.pins.features
+  .find((feature) => feature.properties.occurrenceUnitId === "occ_daegu_location_estimate_test");
+assert.equal(textLocatedPin?.properties.locationStatus, "SOURCE_GEOCODED");
+assert.equal(textLocatedPin?.properties.publicRadiusM, 300);
 const legacyIndividualStore = structuredClone(emptyOfficialStore);
 const legacyIndividualOccurrence = legacyIndividualStore.occurrences.find((item) => item.id === "occ_seoul_2026_07_20_2021_1");
 if (!legacyIndividualOccurrence) throw new Error("individual schedule reconcile fixture missing");

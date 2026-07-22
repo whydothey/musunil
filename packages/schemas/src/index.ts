@@ -281,6 +281,9 @@ export type Occurrence = {
   regionLabel: string;
   title: string;
   publicVisibility?: "public" | "source_only";
+  locationText?: string;
+  locationStatus?: LocationResolutionStatus;
+  sourcePublicLocation?: PublicLocation;
   publicLocation?: PublicLocation;
   startsAt?: Date;
   endsAt?: Date;
@@ -321,9 +324,16 @@ export type PublicLocation = {
   lng: number;
   lat: number;
   label: string;
-  precision: "venue" | "area";
-  source: "public_source" | "operator_review";
+  precision: "venue" | "area" | "region";
+  source: "public_source" | "operator_review" | "field_evidence";
+  status?: Exclude<LocationResolutionStatus, "TEXT_ONLY">;
+  publicRadiusM?: number;
+  uncertaintyRadiusM?: number;
+  fieldEvidenceCount?: number;
+  updatedAt?: Date;
 };
+
+export type LocationResolutionStatus = "TEXT_ONLY" | "SOURCE_GEOCODED" | "FIELD_CORROBORATED" | "CORRECTED" | "LOCATION_DISPUTED";
 
 // Public UI contracts deliberately expose only derived, display-safe fields.
 // They never include raw report text, precise reporter coordinates, or private media paths.
@@ -355,6 +365,10 @@ export type OccurrenceDigest = {
   title: string;
   regionLabel: string;
   locationLabel?: string;
+  locationStatus?: LocationResolutionStatus;
+  locationStatusLabel?: string;
+  locationUncertaintyRadiusM?: number;
+  fieldLocationEvidenceCount?: number;
   lifecycleState: LifecycleState;
   startsAt?: string;
   endsAt?: string;

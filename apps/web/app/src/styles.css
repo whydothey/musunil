@@ -237,13 +237,15 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .map-results span { color: var(--brand); font-size: 11px; }
 .map-results strong { font-size: 13px; line-height: 1.35; }
 .map-results > p { margin: 0; padding: 18px; color: var(--ink-faint); font-size: 13px; text-align: center; }
-.map-key { position: absolute; z-index: 8; left: 12px; bottom: 12px; display: flex; gap: 12px; padding: 8px 10px; border: 1px solid rgba(90,105,110,.14); border-radius: 6px; background: rgba(255,255,255,.93); color: var(--ink-soft); font-size: 10px; }
+.map-key { position: absolute; z-index: 8; left: 12px; bottom: 12px; max-width: min(620px, calc(100% - 24px)); display: flex; flex-wrap: wrap; gap: 7px 12px; padding: 8px 10px; border: 1px solid rgba(90,105,110,.14); border-radius: 6px; background: rgba(255,255,255,.93); color: var(--ink-soft); font-size: 10px; }
 .map-key span { display: flex; align-items: center; gap: 5px; }
 .map-key i { display: inline-block; }
-.key-current, .key-upcoming, .key-past { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 0 2px white; }
+.key-current, .key-upcoming, .key-past, .key-source, .key-disputed { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 0 2px white; }
 .key-current { background: #0b7a67; }
 .key-upcoming { background: #2563a7; }
 .key-past { background: #899598; }
+.key-source { background: #647b82; }
+.key-disputed { background: #b86b18; }
 .key-area { width: 13px; height: 9px; border: 1px solid var(--brand); background: var(--brand-soft); }
 .map-notice { position: absolute; z-index: 9; top: 70px; left: 50%; transform: translateX(-50%); padding: 8px 12px; border-radius: 6px; background: rgba(255,255,255,.94); color: var(--ink-soft); font-size: 11px; white-space: nowrap; }
 .map-basemap-notice { position: absolute; z-index: 9; top: 70px; left: 50%; transform: translateX(-50%); padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255,255,255,.94); color: var(--ink-soft); font-size: 10px; white-space: nowrap; }

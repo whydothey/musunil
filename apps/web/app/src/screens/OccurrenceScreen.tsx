@@ -29,7 +29,11 @@ export function OccurrenceScreen({ id }: { id: string }) {
       </div>
 
       <dl className="fact-list" aria-label="현장 핵심 정보">
-        <FactRow label="장소" value={occurrence.locationLabel || occurrence.regionLabel} supporting="자료에 공개된 위치" />
+        <FactRow
+          label="장소"
+          value={occurrence.locationLabel || occurrence.regionLabel}
+          supporting={`${occurrence.locationStatusLabel || "좌표 확인 중"}${occurrence.fieldLocationEvidenceCount ? ` · 독립 현장 근거 ${occurrence.fieldLocationEvidenceCount}건` : ""}`}
+        />
         <FactRow label="시간" value={formatDateTime(occurrence.startsAt)} supporting={occurrence.endsAt ? `${formatDateTime(occurrence.endsAt)}까지` : undefined} />
         <FactRow label="규모" value={scaleLabel(occurrence)} supporting={occurrence.scale ? `공개 근거 ${occurrence.evidenceCount}건 기준` : "확인 가능한 근거가 더 필요합니다"} />
         <FactRow label="근거" value={evidenceLabel(occurrence.evidenceStrength)} supporting={`공식 자료 ${occurrence.officialClaimCount}건 · 현장 영상 ${occurrence.publicVideoCount}건`} />

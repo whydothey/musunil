@@ -199,6 +199,33 @@ export function hydrateStore(store: Store): Store {
   for (const occurrence of store.occurrences) {
     occurrence.startsAt = optionalDate(occurrence.startsAt);
     occurrence.endsAt = optionalDate(occurrence.endsAt);
+    if (occurrence.publicLocation?.updatedAt) occurrence.publicLocation.updatedAt = date(occurrence.publicLocation.updatedAt);
+    if (occurrence.sourcePublicLocation?.updatedAt) occurrence.sourcePublicLocation.updatedAt = date(occurrence.sourcePublicLocation.updatedAt);
+    const hadLocationStatus = Boolean(occurrence.locationStatus);
+    if (occurrence.publicLocation) {
+      const inferredStatus: NonNullable<typeof occurrence.publicLocation.status> = occurrence.publicLocation.status
+        ?? (occurrence.locationStatus === "TEXT_ONLY" ? undefined : occurrence.locationStatus)
+        ?? (occurrence.publicLocation.source === "field_evidence" ? "FIELD_CORROBORATED" : "SOURCE_GEOCODED");
+      occurrence.locationStatus = inferredStatus;
+      occurrence.publicLocation.status = inferredStatus;
+      occurrence.publicLocation.publicRadiusM ??= 300;
+      occurrence.publicLocation.uncertaintyRadiusM ??= occurrence.publicLocation.publicRadiusM;
+      occurrence.publicLocation.fieldEvidenceCount ??= 0;
+      occurrence.locationText ??= occurrence.publicLocation.label;
+      if (!occurrence.sourcePublicLocation && occurrence.publicLocation.source !== "field_evidence") {
+        occurrence.sourcePublicLocation = { ...occurrence.publicLocation, status: "SOURCE_GEOCODED", fieldEvidenceCount: 0 };
+      }
+    } else {
+      occurrence.locationStatus ??= "TEXT_ONLY";
+    }
+    if (!hadLocationStatus) {
+      const createdAt = new Date();
+      const reason = occurrence.locationStatus === "TEXT_ONLY"
+        ? "기존 일정의 위치 상태를 좌표 확인 중으로 명시했습니다."
+        : "기존 공개 위치를 공개자료 기반 위치 상태로 이전했습니다.";
+      store.auditLogs.push({ id: randomUUID(), action: "state_change", targetType: "occurrence", targetId: occurrence.id, createdAt, reason });
+      store.transparencyLogs.push({ id: randomUUID(), action: "state_change", targetType: "occurrence", targetId: occurrence.id, createdAt, publicReason: reason });
+    }
   }
   for (const presence of store.continuousPresences) {
     presence.firstProofOfPresenceAt = optionalDate(presence.firstProofOfPresenceAt);

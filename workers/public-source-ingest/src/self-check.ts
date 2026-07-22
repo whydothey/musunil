@@ -20,7 +20,7 @@ import { parseGyeonggiNorthTodayAssemblyList, toGyeonggiNorthPublicOccurrencePay
 import { ingestablePublicAssemblySources, policeRegions, publicAssemblySources, sourceCoverageReport, sourceOperationalDiagnostics } from "./sources.ts";
 import { fetchLawPayloads, lawOperationalDiagnostics, readLawRuntime } from "./laws.ts";
 import { cleanNewsText, fetchNewsPayloads, newsOperationalDiagnostics, parsePublisherRss, readNewsRuntime } from "./news.ts";
-import { discoverOfficialAttachmentLinks, extractAttachmentText, parseAssemblyAttachmentEvents } from "./attachments.ts";
+import { discoverOfficialAttachmentLinks, extractAttachmentText, parseAssemblyAttachmentEvents, toAttachmentEventPayload } from "./attachments.ts";
 import AdmZip from "adm-zip";
 import * as XLSX from "@e965/xlsx";
 import { readFileSync } from "node:fs";
@@ -109,6 +109,14 @@ const gyeongbukAttachmentEvents = parseAssemblyAttachmentEvents(`
 assert.equal(gyeongbukAttachmentEvents.length, 3);
 assert.equal(gyeongbukAttachmentEvents[0]?.safeLocationLabel.includes("차로"), false);
 assert.equal(gyeongbukAttachmentEvents[2]?.rowNumber, 3);
+const routedGyeongbukEvent = parseAssemblyAttachmentEvents(`
+4 100명, 08:00∼10:00
+포항시 북구 시청 앞 ※ 행진 시청→중앙R 신고인원, 시간 -- ’26. 7. 21. 오늘 주요 집회
+`, { defaultDate: "2026-07-21", regionLabel: "경북" })[0];
+assert.ok(routedGyeongbukEvent);
+assert.equal(routedGyeongbukEvent.safeLocationLabel, "포항시 북구 시청 앞");
+assert.equal(routedGyeongbukEvent.safeLocationLabel.includes("행진"), false);
+assert.equal(routedGyeongbukEvent.safeLocationLabel.includes("신고인원"), false);
 
 const hwpMarkdownEvents = parseAssemblyAttachmentEvents(`
 **2026. 4. 1.(水)**
@@ -259,6 +267,19 @@ assert.equal(gyeongbukPayload.startsAt, "2026-07-10T00:00:00.000+09:00");
 assert.equal(gyeongbukPayload.endsAt, "2026-07-12T23:59:59.000+09:00");
 assert.equal(gyeongbukPayload.lifecycleState, "UPCOMING");
 assert.equal(gyeongbukPayload.rawText.includes("wr_id=2611"), true);
+const gyeongbukSource = publicAssemblySources.find((source) => source.id === "gyeongbuk_today_assembly");
+if (!gyeongbukSource) throw new Error("gyeongbuk source fixture missing");
+const routedGyeongbukPayload = toAttachmentEventPayload(
+  gyeongbukSource,
+  { ...gyeongbukPayload, sourceItemId: "2611", sourceUrl: "https://www.gbpolice.go.kr/bbs/view.do?wr_id=2611" },
+  { url: "https://www.gbpolice.go.kr/attachment.pdf", fileName: "assembly.pdf", format: "pdf" },
+  routedGyeongbukEvent,
+  0,
+  new Date("2026-07-21T00:00:00.000+09:00")
+);
+assert.equal(routedGyeongbukPayload.publicLocationText, "포항시 북구 시청 앞");
+assert.equal(routedGyeongbukPayload.title.includes("행진"), false);
+assert.equal(routedGyeongbukPayload.sourceGranularity, "individual_schedule");
 
 const gyeongnamRows = parseGyeongnamTodayAssemblyList(
   JSON.stringify({

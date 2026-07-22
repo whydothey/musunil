@@ -39,7 +39,7 @@ export function ExploreScreen() {
 
       <OccurrenceMap pins={dataset?.map.geojson.pins} areas={dataset?.map.geojson.presenceAreas} occurrences={dataset?.occurrences || []} selectedId={selectedId} onSelect={selectOccurrence} />
 
-      <div className="map-key" aria-label="일정 상태 표시 설명"><span><i className="key-current" />진행 중</span><span><i className="key-upcoming" />예정</span><span><i className="key-past" />지난 일정 · 오래될수록 흐림</span><span><i className="key-area" />현장 인증 범위</span></div>
+      <div className="map-key" aria-label="일정 및 위치 상태 표시 설명"><span><i className="key-current" />진행 중</span><span><i className="key-upcoming" />예정</span><span><i className="key-past" />지난 일정 · 오래될수록 흐림</span><span><i className="key-source" />공개자료 예상</span><span><i className="key-disputed" />위치 확인 중</span><span><i className="key-area" />현장 근거 범위</span></div>
 
       {serviceSyncState === "unavailable" ? <div className="map-notice">공개 지도 자료 연결을 확인하고 있습니다</div> : null}
       {selected ? <MapSelection occurrence={selected} onClose={() => selectOccurrence(undefined)} /> : null}
@@ -71,7 +71,8 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
         properties: {
           ...feature.properties,
           schedulePhase: occurrence ? schedulePhase(occurrence) : "current",
-          markerOpacity: occurrence ? pastMarkerOpacity(occurrence) : 1
+          markerOpacity: occurrence ? pastMarkerOpacity(occurrence) : 1,
+          locationStatus: occurrence?.locationStatus || feature.properties.locationStatus || "SOURCE_GEOCODED"
         }
       };
     })
@@ -137,7 +138,12 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
         layout: { "circle-sort-key": ["get", "markerOpacity"] },
         paint: {
           "circle-radius": 8,
-          "circle-color": ["match", ["get", "schedulePhase"], "past", "#899598", "upcoming", "#2563a7", "#0b7a67"],
+          "circle-color": [
+            "case",
+            ["==", ["get", "locationStatus"], "LOCATION_DISPUTED"], "#b86b18",
+            ["==", ["get", "locationStatus"], "SOURCE_GEOCODED"], "#647b82",
+            ["match", ["get", "schedulePhase"], "past", "#899598", "upcoming", "#2563a7", "#0b7a67"]
+          ],
           "circle-opacity": ["case", ["==", ["get", "occurrenceUnitId"], selectedId || ""], 1, ["get", "markerOpacity"]],
           "circle-stroke-width": ["case", ["==", ["get", "occurrenceUnitId"], selectedId || ""], 3, 0],
           "circle-stroke-color": "#9dd8dc"
@@ -249,6 +255,7 @@ function MapSelection({ occurrence, onClose }: { occurrence: OccurrenceDigest; o
       <span className={`selection-state phase-${phase}`}><i />{schedulePhaseLabel(phase)}</span>
       <h2>{occurrence.title}</h2>
       <p>{occurrence.locationLabel || occurrence.regionLabel}</p>
+      <p>{occurrence.locationStatusLabel || "좌표 확인 중"}{occurrence.fieldLocationEvidenceCount ? ` · 독립 현장 근거 ${occurrence.fieldLocationEvidenceCount}건` : ""}</p>
       <p>{formatDateTime(occurrence.startsAt)} · {scaleLabel(occurrence)}</p>
       <Link href={`/occurrences/${encodeURIComponent(occurrence.id)}`} className="primary-button">현장 보기<ChevronRight /></Link>
     </aside>
