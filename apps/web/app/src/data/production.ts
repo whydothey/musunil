@@ -1,5 +1,7 @@
 import type {
   AppDataset,
+  EventTopicDetailData,
+  EventTopicGroup,
   IssueDetailData,
   IssueOverview,
   LawInterestItem,
@@ -9,7 +11,8 @@ import type {
   OccurrenceDetailData,
   OccurrenceDigest,
   PublicClaim,
-  ServiceReadiness
+  ServiceReadiness,
+  TransparencyData
 } from "../contracts";
 import type { DataSource } from "./source-contract";
 
@@ -63,12 +66,28 @@ export async function getServiceReadiness(): Promise<ServiceReadiness> {
   return request<ServiceReadiness>("/readiness", 10_000);
 }
 
+export async function getEventTopicDetail(id: string): Promise<EventTopicDetailData> {
+  return request<EventTopicDetailData>(`/event-topics/${encodeURIComponent(id)}`);
+}
+
+export async function getTransparency(cursor?: string, action?: string): Promise<TransparencyData> {
+  const search = new URLSearchParams({ limit: "50" });
+  if (cursor) search.set("cursor", cursor);
+  if (action) search.set("action", action);
+  const [coverage, monthly, logs] = await Promise.all([
+    request<{ coverage: TransparencyData["coverage"] }>("/public-sources/coverage"),
+    request<{ month: string; counts: Record<string, number> }>("/transparency/monthly"),
+    request<{ logs: TransparencyData["logs"]; nextCursor?: string }>(`/transparency/logs?${search}`)
+  ]);
+  return { coverage: coverage.coverage, monthly, logs: logs.logs, nextCursor: logs.nextCursor };
+}
+
 export const dataSource: DataSource = {
   mode: "production",
   loadReadiness: getServiceReadiness,
   async loadDataset(): Promise<AppDataset> {
     const results = await Promise.allSettled([
-      request<{ issueOverviews?: IssueOverview[]; occurrenceDigests?: OccurrenceDigest[] }>("/home"),
+      request<{ issueOverviews?: IssueOverview[]; occurrenceDigests?: OccurrenceDigest[]; eventTopicGroups?: EventTopicGroup[]; topicUnknownActiveCount?: number }>("/home"),
       request<MapData>("/map")
     ]);
     const home = results[0].status === "fulfilled" ? results[0].value : {};
@@ -86,6 +105,8 @@ export const dataSource: DataSource = {
     const newsByIssue: AppDataset["newsByIssue"] = {};
     return {
       issues,
+      eventTopicGroups: home.eventTopicGroups || [],
+      topicUnknownActiveCount: home.topicUnknownActiveCount || 0,
       occurrences,
       reels: [],
       laws: [],
@@ -103,14 +124,17 @@ export const dataSource: DataSource = {
       const reels = await request<{ reels?: AppDataset["reels"] }>("/reels");
       return { reels: reels.reels || [] };
     }
+    if (scope === "transparency") return { transparency: await getTransparency() };
     const laws = await request<{ lawInterestItems?: LawInterestItem[]; lawGroups?: LawGroupCard[] }>("/laws?sort=interest");
     return { laws: laws.lawInterestItems || [], lawGroups: laws.lawGroups || [] };
   },
   loadIssue: getIssueDetail,
+  loadEventTopic: getEventTopicDetail,
   loadOccurrence(id, targetType) {
     return targetType === "continuous_presence" ? getContinuousPresenceDetail(id) : getOccurrenceDetail(id);
   },
-  loadLawGroup: getLawGroupDetail
+  loadLawGroup: getLawGroupDetail,
+  loadTransparency: getTransparency
 };
 
 function sanitizeOfficialScheduleOccurrence(occurrence: OccurrenceDigest): OccurrenceDigest {

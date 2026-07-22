@@ -155,7 +155,7 @@ assert.equal(synthesisSnapshot?.evidenceCount, 2);
 assert.equal(synthesisSnapshot?.facets.some((facet) => facet.coreTopicKey === newsReviewTopic.key && facet.claimIds.length === 2), true);
 assert.equal(newsReviewStore.lawGroupMemberships.every((membership) => Boolean(membership.coreTopicKey && membership.classificationBasis)), true);
 const synthesizedHome = await newsReviewApp.handle({ method: "GET", path: "/home" });
-assert.equal((synthesizedHome.body as { issueOverviews: Array<{ id: string; occurrenceCount: number; latestChange?: string }> }).issueOverviews.some((issue) => issue.id === synthesizedNewsCandidate.issueId && issue.occurrenceCount === 0 && issue.latestChange?.includes("근거 2건(발행사 1곳)")), true);
+assert.equal((synthesizedHome.body as { issueOverviews: Array<{ id: string; occurrenceCount: number }> }).issueOverviews.some((issue) => issue.id === synthesizedNewsCandidate.issueId), false);
 const newsGroupDetail = await newsReviewApp.handle({ method: "GET", path: `/law-groups/${newsReviewGroup.id}` });
 assert.equal((newsGroupDetail.body as { issues: Array<{ newsCount: number; recentNews: unknown[] }> }).issues.some((issue) => issue.newsCount === 2 && issue.recentNews.length === 2), true);
 const filteredGroupDetail = await newsReviewApp.handle({ method: "GET", path: `/law-groups/${newsReviewGroup.id}?coreTopic=${encodeURIComponent(newsReviewTopic.key)}&pageSize=1&page=1` });
@@ -423,6 +423,9 @@ for (const payload of publicPayloads) {
   assert.equal(payload.status, 200);
   assertPublicPayloadSafe(payload.body);
 }
+const transparencyPage = await app.handle({ method: "GET", path: "/transparency/logs?limit=2" });
+assert.equal((transparencyPage.body as { logs: unknown[] }).logs.length <= 2, true);
+assert.equal(JSON.stringify(transparencyPage.body).includes("statement"), false);
 const liveClaims = await app.handle({ method: "GET", path: "/targets/occurrence/occ_1/live-claims" });
 assert.equal(liveClaims.status, 200);
 assert.equal((liveClaims.body as { liveClaims: Array<{ claim: { id: string }; redactionStatus: string; media: { redactedClipUrl: string } }> }).liveClaims[0]?.claim.id, "claim_occ_live_1");
@@ -2095,6 +2098,7 @@ const individualEventBatch = await emptyOfficialApp.handle({
       sourcePublishedAt: "2026-07-20T07:11:23.000+09:00",
       sourceTitle: "7월 20일 (월) 행사 및 집회",
       sourceGranularity: "individual_schedule",
+      declaredParticipantCount: 120,
       publicLocationKey: "seoul_civic_center_area"
     }]
   }
@@ -2106,11 +2110,13 @@ assert.equal(JSON.stringify(individualDetail.body).includes("광화문교차로 
 assert.equal((individualDetail.body as { occurrence: { publicLocation: { label: string; precision: string } } }).occurrence.publicLocation.label, "서울광장·광화문 일대");
 assert.equal((individualDetail.body as { occurrence: { publicLocation: { label: string; precision: string } } }).occurrence.publicLocation.precision, "area");
 assert.equal((individualDetail.body as { occurrence: { locationStatus: string } }).occurrence.locationStatus, "SOURCE_GEOCODED");
-const individualDigest = (individualDetail.body as { occurrenceDigest: { title: string; issueTitle?: string; topicStatus: string; topicStatusLabel: string } }).occurrenceDigest;
+const individualDigest = (individualDetail.body as { occurrenceDigest: { title: string; issueTitle?: string; topicStatus: string; topicStatusLabel: string; declaredParticipantCount?: number; scale?: unknown } }).occurrenceDigest;
 assert.equal(individualDigest.title, "서울광장 집회");
 assert.equal(individualDigest.issueTitle, undefined);
 assert.equal(individualDigest.topicStatus, "source_not_disclosed");
 assert.equal(individualDigest.topicStatusLabel, "경찰 공개자료에 주제 미기재");
+assert.equal(individualDigest.declaredParticipantCount, 120);
+assert.equal(individualDigest.scale, undefined);
 const individualIssueId = (individualDetail.body as { occurrence: { issueId?: string } }).occurrence.issueId;
 assert.equal(individualIssueId, undefined);
 assert.equal(emptyOfficialStore.issues.some((issue) => issue.title === "서울광장·광화문 일대 집회 일정"), false);
@@ -2303,6 +2309,13 @@ assert.equal((topicIngestAgain.body as { occurrence: { issueId?: string } }).occ
 const topicHome = await protectedApp.handle({ method: "GET", path: "/home" });
 assert.equal(JSON.stringify((topicHome.body as { issueCards: unknown }).issueCards).includes("부정선거 의혹 제기 집회"), true);
 assert.equal(JSON.stringify((topicHome.body as { issueCards: unknown }).issueCards).includes("\"title\":\"부정선거\""), false);
+const topicGroups = (topicHome.body as { eventTopicGroups: Array<{ id: string; title: string; status: string; occurrenceCount: number }> }).eventTopicGroups;
+assert.equal(topicGroups.some((group) => group.title === "부정선거 의혹 제기 집회" && group.status === "approved" && group.occurrenceCount >= 1), true);
+const topicGroup = topicGroups.find((group) => group.title === "부정선거 의혹 제기 집회");
+if (!topicGroup) throw new Error("event topic group missing");
+const topicGroupDetail = await protectedApp.handle({ method: "GET", path: `/event-topics/${topicGroup.id}` });
+assert.equal(topicGroupDetail.status, 200);
+assert.equal((topicGroupDetail.body as { occurrenceDigests: unknown[] }).occurrenceDigests.length >= 1, true);
 const topicIssue = await protectedApp.handle({ method: "GET", path: `/issues/${topicIssueId}` });
 assert.equal(topicIssue.status, 200);
 assert.equal((topicIssue.body as { nationalSummary: { regionCount: number; targetCount: number } }).nationalSummary.regionCount, 2);

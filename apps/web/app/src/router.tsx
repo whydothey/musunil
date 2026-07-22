@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
 
-export type RouteName = "home" | "issue" | "occurrence" | "reels" | "explore" | "laws" | "law" | "law-group" | "report" | "trust";
+export type RouteName = "home" | "event-topic" | "issue" | "occurrence" | "reels" | "explore" | "laws" | "law" | "law-group" | "report" | "trust";
 export interface Route {
   name: RouteName;
   id?: string;
@@ -17,6 +17,8 @@ function readRoute(): Route {
   if (issue) return { name: "issue", id: decodeURIComponent(issue[1]), search, hash, path };
   const occurrence = path.match(/^\/occurrences\/([^/]+)$/);
   if (occurrence) return { name: "occurrence", id: decodeURIComponent(occurrence[1]), search, hash, path };
+  const eventTopic = path.match(/^\/event-topics\/([^/]+)$/);
+  if (eventTopic) return { name: "event-topic", id: decodeURIComponent(eventTopic[1]), search, hash, path };
   const lawGroup = path.match(/^\/laws\/(?:groups|topics)\/([^/]+)$/);
   if (lawGroup) return { name: "law-group", id: decodeURIComponent(lawGroup[1]), search, hash, path };
   const law = path.match(/^\/laws\/([^/]+)$/);

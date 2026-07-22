@@ -445,7 +445,20 @@ const lawGroupsByIssue: AppDataset["lawGroupsByIssue"] = Object.fromEntries(Obje
   const group = lawGroups.find((item) => item.id === groupId);
   return group ? issueIds.map((issueId) => [issueId, [group]]) : [];
 }));
-const dataset: AppDataset = { issues, occurrences, reels, laws, lawGroups, claimsByIssue, newsByIssue, synthesisByIssue, lawGroupsByIssue, claimsByOccurrence, map };
+const eventTopicGroups: AppDataset["eventTopicGroups"] = issues.filter((issue) => issue.occurrenceCount > 0).map((issue) => ({
+  id: `event-topic-${issue.id}`,
+  title: issue.title,
+  status: "approved",
+  statusLabel: "검토된 주제",
+  occurrenceCount: issue.occurrenceCount,
+  currentCount: occurrences.filter((item) => item.issueId === issue.id && item.lifecycleState !== "ENDED").length,
+  upcomingCount: occurrences.filter((item) => item.issueId === issue.id && item.lifecycleState === "UPCOMING").length,
+  regionCount: issue.regionCount,
+  sourceCount: Math.max(1, issue.officialClaimCount),
+  evidenceCount: occurrences.filter((item) => item.issueId === issue.id).reduce((count, item) => count + item.evidenceCount, 0),
+  representativeOccurrenceId: issue.representativeOccurrenceId || occurrences.find((item) => item.issueId === issue.id)?.id || ""
+}));
+const dataset: AppDataset = { issues, eventTopicGroups, topicUnknownActiveCount: 0, occurrences, reels, laws, lawGroups, claimsByIssue, newsByIssue, synthesisByIssue, lawGroupsByIssue, claimsByOccurrence, map };
 
 export const dataSource: DataSource = {
   mode: "fixture",
@@ -464,6 +477,12 @@ export const dataSource: DataSource = {
       topicGrouping: dataset.synthesisByIssue[id] ? { synthesisBasis: "evidence_aggregate", policy: "사실 확정이 아닌 탐색 단위", basis: ["공개 근거 종합"], synthesis: dataset.synthesisByIssue[id] } : undefined,
       relatedLawGroups: dataset.lawGroupsByIssue[id] || []
     };
+  },
+  async loadEventTopic(id) {
+    const group = dataset.eventTopicGroups.find((item) => item.id === id);
+    if (!group) throw new Error("event_topic_not_found");
+    const issueId = id.replace(/^event-topic-/, "");
+    return { group, occurrenceDigests: dataset.occurrences.filter((item) => item.issueId === issueId) };
   },
   async loadOccurrence(id) {
     const occurrenceDigest = dataset.occurrences.find((item) => item.id === id);

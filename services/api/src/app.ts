@@ -19,6 +19,7 @@ import {
   type Evidence,
   type EvidenceReel,
   type EvidenceStrength,
+  type EventTopicGroup,
   type IdentityVerificationSession,
   type Issue,
   type IssueSynthesisSnapshot,
@@ -934,12 +935,26 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
   if (request.method === "GET" && path === "/home") {
     const cards = homeCards(store, options.publicDiscoveryNow?.() ?? new Date());
     const issues = issueCards(store, cards);
+    const occurrenceDigests = cards.map((card) => toOccurrenceDigest(store, card.targetType as Extract<TargetType, "occurrence" | "continuous_presence">, card.id));
+    const eventTopicGroups = buildEventTopicGroups(occurrenceDigests, options.publicDiscoveryNow?.() ?? new Date());
     return json(200, {
       issueCards: issues,
       cards,
-      issueOverviews: issues.map((issue) => toIssueOverview(store, issue, cards)),
-      occurrenceDigests: cards.map((card) => toOccurrenceDigest(store, card.targetType as Extract<TargetType, "occurrence" | "continuous_presence">, card.id))
+      issueOverviews: issues.map((issue) => toIssueOverview(store, issue, cards)).filter((issue) => issue.occurrenceCount > 0),
+      occurrenceDigests,
+      eventTopicGroups,
+      topicUnknownActiveCount: occurrenceDigests.filter((item) => isActiveSchedule(item, options.publicDiscoveryNow?.() ?? new Date()) && !item.issueTitle && !item.topicCandidate).length
     });
+  }
+  if (request.method === "GET" && path.startsWith("/event-topics/")) {
+    const now = options.publicDiscoveryNow?.() ?? new Date();
+    const cards = homeCards(store, now);
+    const occurrenceDigests = cards.map((card) => toOccurrenceDigest(store, card.targetType as Extract<TargetType, "occurrence" | "continuous_presence">, card.id));
+    const groups = buildEventTopicGroups(occurrenceDigests, now);
+    const group = groups.find((item) => item.id === path.split("/")[2]);
+    if (!group) return json(404, { error: "event_topic_not_found" });
+    const groupOccurrences = occurrenceDigests.filter((item) => eventTopicGroupId(item) === group.id).sort(eventTopicOccurrenceOrder);
+    return json(200, { group, occurrenceDigests: groupOccurrences });
   }
   if (request.method === "GET" && path === "/laws") {
     const sort = url.searchParams.get("sort");
@@ -977,7 +992,17 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
   if (request.method === "GET" && path === "/me/subscriptions") {
     return withVerifiedUserScope(store, request, options, url.searchParams.get("userId"), (userId) => getMySubscriptions(store, userId));
   }
-  if (request.method === "GET" && path === "/transparency/logs") return json(200, { logs: store.transparencyLogs.map(toPublicTransparencyLog) });
+  if (request.method === "GET" && path === "/transparency/logs") {
+    const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") || 50) || 50));
+    const action = url.searchParams.get("action");
+    const cursor = url.searchParams.get("cursor");
+    const ordered = [...store.transparencyLogs]
+      .filter((log) => !action || log.action === action)
+      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime() || right.id.localeCompare(left.id));
+    const start = cursor ? Math.max(0, ordered.findIndex((log) => log.id === cursor) + 1) : 0;
+    const page = ordered.slice(start, start + limit);
+    return json(200, { logs: page.map(toPublicTransparencyLog), nextCursor: start + limit < ordered.length ? page.at(-1)?.id : undefined });
+  }
   if (request.method === "GET" && path === "/transparency/monthly") return getTransparencyMonthly(store);
   if (request.method === "POST" && path === "/uploads/live") return await postLiveUpload(store, request, options);
   if (request.method === "POST" && path === "/reports/live") return postLiveReport(store, request, options);
@@ -1652,6 +1677,7 @@ function toOccurrenceDigest(store: Store, targetType: Extract<TargetType, "occur
     publicVideoCount: claims.filter((claim) => hasPublicLiveEvidence(store, claim)).length,
     disputeCount: claims.filter(isDisputeSource).length,
     evidenceCount: evidence.length,
+    declaredParticipantCount: occurrence?.declaredParticipantCount,
     scale: estimate ? { minCount: estimate.minCount, maxCount: estimate.maxCount, confidence: estimate.confidence } : undefined,
     issueTitle: issue?.title,
     topicStatus,
@@ -1661,6 +1687,64 @@ function toOccurrenceDigest(store: Store, targetType: Extract<TargetType, "occur
     keyPoint: strongestClaim?.normalizedStatement,
     officialSources
   };
+}
+
+function buildEventTopicGroups(digests: OccurrenceDigest[], now: Date): EventTopicGroup[] {
+  const grouped = new Map<string, OccurrenceDigest[]>();
+  for (const digest of digests) {
+    if (!isActiveSchedule(digest, now)) continue;
+    const id = eventTopicGroupId(digest);
+    if (!id) continue;
+    grouped.set(id, [...(grouped.get(id) ?? []), digest]);
+  }
+  return [...grouped.entries()].map(([id, occurrences]) => {
+    occurrences.sort(eventTopicOccurrenceOrder);
+    const representative = occurrences[0];
+    const approved = Boolean(representative.issueTitle);
+    const sourceUrls = new Set(occurrences.flatMap((item) => item.officialSources?.map((source) => source.sourceUrl) ?? []));
+    const sourceCount = approved ? sourceUrls.size : Math.max(...occurrences.map((item) => item.topicCandidate?.sourceCount ?? 0));
+    return {
+      id,
+      title: approved ? representative.issueTitle! : representative.topicCandidate!.title,
+      status: approved ? "approved" as const : "candidate" as const,
+      statusLabel: approved ? "검토된 주제" : `공개 근거 ${sourceCount}곳의 주제 후보`,
+      occurrenceCount: occurrences.length,
+      currentCount: occurrences.filter((item) => scheduleState(item, now) === "current").length,
+      upcomingCount: occurrences.filter((item) => scheduleState(item, now) === "upcoming").length,
+      regionCount: new Set(occurrences.map((item) => item.regionLabel)).size,
+      sourceCount,
+      evidenceCount: occurrences.reduce((count, item) => count + item.evidenceCount, 0),
+      representativeOccurrenceId: representative.id,
+      startsAt: representative.startsAt
+    };
+  }).sort((left, right) => {
+    if (left.status !== right.status) return left.status === "approved" ? -1 : 1;
+    if (left.currentCount !== right.currentCount) return right.currentCount - left.currentCount;
+    return String(left.startsAt ?? "").localeCompare(String(right.startsAt ?? ""));
+  });
+}
+
+function eventTopicGroupId(digest: OccurrenceDigest): string | undefined {
+  const key = digest.issueTitle ? `approved:${digest.issueTitle}` : digest.topicCandidate ? `candidate:${digest.topicCandidate.title}` : undefined;
+  return key ? `event_topic_${createHash("sha1").update(key.normalize("NFKC").replace(/\s+/g, " ").trim()).digest("hex").slice(0, 16)}` : undefined;
+}
+
+function isActiveSchedule(digest: OccurrenceDigest, now: Date): boolean {
+  return scheduleState(digest, now) !== "past";
+}
+
+function scheduleState(digest: OccurrenceDigest, now: Date): "current" | "upcoming" | "past" {
+  const start = digest.startsAt ? new Date(digest.startsAt).getTime() : undefined;
+  const end = digest.endsAt ? new Date(digest.endsAt).getTime() : start;
+  if (start !== undefined && start > now.getTime()) return "upcoming";
+  if (end !== undefined && end < now.getTime()) return "past";
+  return "current";
+}
+
+function eventTopicOccurrenceOrder(left: OccurrenceDigest, right: OccurrenceDigest): number {
+  const now = new Date();
+  const rank = (item: OccurrenceDigest) => scheduleState(item, now) === "current" ? 0 : scheduleState(item, now) === "upcoming" ? 1 : 2;
+  return rank(left) - rank(right) || String(left.startsAt ?? "").localeCompare(String(right.startsAt ?? ""));
 }
 
 function occurrenceEventDisplayTitle(title: string): string {
@@ -3568,6 +3652,7 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
       startsAt: readOptionalDate(data, "startsAt"),
       endsAt: readOptionalDate(data, "endsAt"),
       lifecycleState: readLifecycleState(data, "lifecycleState", "UNKNOWN"),
+      declaredParticipantCount: readDeclaredParticipantCount(data),
       claimIds: [],
       evidenceIds: []
     };
@@ -3595,6 +3680,11 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
     occurrence.startsAt = readOptionalDate(data, "startsAt") ?? occurrence.startsAt;
     occurrence.endsAt = readOptionalDate(data, "endsAt") ?? occurrence.endsAt;
     occurrence.lifecycleState = readLifecycleState(data, "lifecycleState", occurrence.lifecycleState);
+    const declaredParticipantCount = readDeclaredParticipantCount(data);
+    if (declaredParticipantCount !== undefined && declaredParticipantCount !== occurrence.declaredParticipantCount) {
+      occurrence.declaredParticipantCount = declaredParticipantCount;
+      audit(store, "correction", "occurrence", id, "공개자료 기재 인원을 갱신했습니다.");
+    }
     occurrence.publicVisibility = publicVisibility;
     occurrence.locationText = incomingLocationText ?? occurrence.locationText ?? publicLocation?.label;
     occurrence.locationStatus = locationStatus;
@@ -3673,6 +3763,14 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
     occurrence: toPublicOccurrence(occurrence, publicClaimsForTarget(store, "occurrence", occurrence.id)),
     claim: toPublicClaim(claim)
   });
+}
+
+function readDeclaredParticipantCount(data: Record<string, unknown>): number | undefined {
+  const value = data.declaredParticipantCount;
+  if (value === undefined || value === null || value === "") return undefined;
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 1_000_000) throw new ApiError(400, "invalid_declared_participant_count");
+  return parsed;
 }
 
 function postInternalIngestPublicOccurrenceBatch(store: Store, body: unknown): ApiResponse {
@@ -5725,6 +5823,7 @@ function toPublicOccurrence(occurrence: Occurrence, claims?: Claim[]) {
     locationStatusLabel: locationStatusLabel(occurrence.locationStatus ?? occurrence.publicLocation?.status),
     publicLocation: occurrence.publicLocation,
     lifecycleState: occurrence.lifecycleState,
+    declaredParticipantCount: occurrence.declaredParticipantCount,
     startsAt: occurrence.startsAt?.toISOString(),
     endsAt: occurrence.endsAt?.toISOString(),
     claimCount: counts.claimCount,

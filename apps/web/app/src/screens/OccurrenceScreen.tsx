@@ -37,9 +37,10 @@ export function OccurrenceScreen({ id }: { id: string }) {
         <FactRow
           label="장소"
           value={occurrence.locationLabel || occurrence.regionLabel}
-          supporting={`${occurrence.locationStatusLabel || "좌표 확인 중"}${occurrence.fieldLocationEvidenceCount ? ` · 독립 현장 근거 ${occurrence.fieldLocationEvidenceCount}건` : ""}`}
+          supporting={`${occurrence.locationStatusLabel || "좌표 확인 중"}${occurrence.locationUncertaintyRadiusM ? ` · 약 ${formatRadius(occurrence.locationUncertaintyRadiusM)} 범위의 위치 추정` : ""}${occurrence.fieldLocationEvidenceCount ? ` · 독립 현장 근거 ${occurrence.fieldLocationEvidenceCount}건` : ""}`}
         />
         <FactRow label="시간" value={formatDateTime(occurrence.startsAt)} supporting={occurrence.endsAt ? `${formatDateTime(occurrence.endsAt)}까지` : undefined} />
+        {occurrence.declaredParticipantCount ? <FactRow label="기재 인원" value={`${occurrence.declaredParticipantCount.toLocaleString("ko-KR")}명`} supporting="경찰 공개 일정에 적힌 신고·예정 인원이며 실제 현장 규모가 아닙니다" /> : null}
         <FactRow label="규모" value={scaleLabel(occurrence)} supporting={occurrence.scale ? `공개 근거 ${occurrence.evidenceCount}건 기준` : "확인 가능한 근거가 더 필요합니다"} />
         <FactRow label="근거" value={evidenceLabel(occurrence.evidenceStrength)} supporting={`공식 자료 ${occurrence.officialClaimCount}건 · 현장 영상 ${occurrence.publicVideoCount}건`} />
       </dl>
@@ -80,4 +81,8 @@ export function OccurrenceScreen({ id }: { id: string }) {
       <Link href={`/rights?targetType=occurrence&targetId=${encodeURIComponent(id)}`} className="rights-link"><span>이 정보에 대한 정정·반론·권리침해 안내</span></Link>
     </section>
   );
+}
+
+function formatRadius(radiusM: number) {
+  return radiusM >= 1_000 ? `${Math.round(radiusM / 1_000)}km` : `${Math.round(radiusM / 100) * 100}m`;
 }

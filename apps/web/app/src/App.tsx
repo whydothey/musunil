@@ -1,4 +1,4 @@
-import { Camera, Home, Landmark, Map, PlaySquare } from "lucide-react";
+import { Camera, FileCheck2, Home, Landmark, Map, PlaySquare } from "lucide-react";
 import { lazy, Suspense } from "react";
 import { AppStateProvider, useAppState } from "./app-state";
 import { Link, RouterProvider, useRouter, type RouteName } from "./router";
@@ -6,6 +6,7 @@ import { LoadingState } from "./components";
 import { HomeScreen } from "./screens/HomeScreen";
 
 const ExploreScreen = lazy(() => import("./screens/ExploreScreen").then((module) => ({ default: module.ExploreScreen })));
+const EventTopicScreen = lazy(() => import("./screens/EventTopicScreen").then((module) => ({ default: module.EventTopicScreen })));
 const IssueScreen = lazy(() => import("./screens/IssueScreen").then((module) => ({ default: module.IssueScreen })));
 const LawScreen = lazy(() => import("./screens/LawScreen").then((module) => ({ default: module.LawScreen })));
 const LawGroupScreen = lazy(() => import("./screens/LawTopicScreen").then((module) => ({ default: module.LawGroupScreen })));
@@ -17,10 +18,9 @@ const TrustScreen = lazy(() => import("./screens/TrustScreen").then((module) => 
 
 const navigation = [
   { route: "home" as const, href: "/", label: "홈", icon: Home },
-  { route: "reels" as const, href: "/reels", label: "영상", icon: PlaySquare },
   { route: "explore" as const, href: "/explore", label: "탐색", icon: Map },
   { route: "laws" as const, href: "/laws", label: "법안", icon: Landmark },
-  { route: "report" as const, href: "/report", label: "제보", icon: Camera }
+  { route: "trust" as const, href: "/transparency", label: "투명성", icon: FileCheck2 }
 ];
 
 export function App() {
@@ -35,10 +35,16 @@ export function App() {
 
 function AppShell() {
   const { route } = useRouter();
-  const { serviceSyncState, readiness } = useAppState();
-  const activeRoute: RouteName = route.name === "issue" || route.name === "occurrence" || route.name === "trust" ? "home" : route.name === "law" || route.name === "law-group" ? "laws" : route.name;
+  const { dataset, serviceSyncState, readiness } = useAppState();
+  const readyFeatures = [
+    ...(dataset?.occurrences.some((item) => item.publicVideoCount > 0) ? [{ route: "reels" as const, href: "/reels", label: "영상", icon: PlaySquare }] : []),
+    ...(readiness?.gates?.contribution.ready ? [{ route: "report" as const, href: "/report", label: "제보", icon: Camera }] : [])
+  ];
+  const desktopNavigation = [...navigation, ...readyFeatures];
+  const mobileNavigation = [...navigation, ...readyFeatures.slice(0, 1)];
+  const activeRoute: RouteName = route.name === "issue" || route.name === "occurrence" || route.name === "event-topic" ? "home" : route.name === "law" || route.name === "law-group" ? "laws" : route.name;
   const isImmersive = route.name === "reels" || route.name === "explore";
-  const isDetail = route.name === "issue" || route.name === "occurrence" || route.name === "law" || route.name === "law-group";
+  const isDetail = route.name === "issue" || route.name === "occurrence" || route.name === "event-topic" || route.name === "law" || route.name === "law-group";
 
   return (
     <div className={`app-shell ${isImmersive ? "is-immersive" : ""} ${isDetail ? "is-detail" : ""}`}>
@@ -48,7 +54,7 @@ function AppShell() {
           <span>무슨일</span>
         </Link>
         <nav className="desktop-nav">
-          {navigation.map(({ route: navRoute, href, label, icon: Icon }) => (
+          {desktopNavigation.map(({ route: navRoute, href, label, icon: Icon }) => (
             <Link key={navRoute} href={href} className={`nav-link ${activeRoute === navRoute ? "is-active" : ""}`} ariaLabel={label}>
               <Icon aria-hidden="true" />
               <span>{label}</span>
@@ -56,8 +62,9 @@ function AppShell() {
           ))}
         </nav>
         <div className="sidebar-foot">
+          {!dataset?.occurrences.some((item) => item.publicVideoCount > 0) || !readiness?.gates?.contribution.ready ? <div className="prepared-links"><span>준비 중인 기능</span>{!dataset?.occurrences.some((item) => item.publicVideoCount > 0) ? <Link href="/reels">현장 영상</Link> : null}{!readiness?.gates?.contribution.ready ? <Link href="/report">본인확인 제보</Link> : null}</div> : null}
           <div className="trust-links"><Link href="/methodology">방법론</Link><Link href="/transparency">투명성</Link><Link href="/privacy">개인정보</Link><Link href="/rights">정정·권리</Link></div>
-          <div className="sync-status"><span className={`sync-dot ${serviceSyncState}`} aria-hidden="true" /><span>{serviceSyncState === "live" && readiness?.gates?.publicRead.ready ? "공개 자료 정상" : serviceSyncState === "live" ? "일부 자료 확인 중" : serviceSyncState === "fixture" ? "검수 화면" : serviceSyncState === "loading" ? "자료 확인 중" : "연결 확인 중"}</span></div>
+          <div className="sync-status"><span className={`sync-dot ${serviceSyncState}`} aria-hidden="true" /><span>{serviceSyncState === "live" && readiness?.gates?.publicRead.ready ? "공개자료 갱신 정상" : serviceSyncState === "live" ? "공개자료 일부 확인 중" : serviceSyncState === "fixture" ? "검수 화면" : serviceSyncState === "loading" ? "자료 확인 중" : "연결 확인 중"}</span></div>
         </div>
       </aside>
 
@@ -73,7 +80,7 @@ function AppShell() {
       </main>
 
       <nav className="mobile-tabbar" aria-label="주요 메뉴">
-        {navigation.map(({ route: navRoute, href, label, icon: Icon }) => (
+        {mobileNavigation.map(({ route: navRoute, href, label, icon: Icon }) => (
           <Link key={navRoute} href={href} className={`tab-link ${activeRoute === navRoute ? "is-active" : ""}`} ariaLabel={label}>
             <Icon aria-hidden="true" />
             <span>{label}</span>
@@ -87,6 +94,7 @@ function AppShell() {
 function Screen() {
   const { route } = useRouter();
   if (route.name === "issue") return <IssueScreen id={route.id || ""} />;
+  if (route.name === "event-topic") return <EventTopicScreen id={route.id || ""} />;
   if (route.name === "occurrence") return <OccurrenceScreen id={route.id || ""} />;
   if (route.name === "law") return <LawScreen id={route.id || ""} />;
   if (route.name === "law-group") return <LawGroupScreen id={route.id || ""} />;

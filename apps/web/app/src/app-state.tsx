@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import dataSource from "@musunil/data-source";
 import type { AppDataset, ServiceReadiness } from "./contracts";
 import { useRouter } from "./router";
@@ -31,13 +31,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [selectedIssueId, selectIssue] = useState<string>();
   const [selectedOccurrenceId, setSelectedOccurrenceId] = useState<string>();
   const [attempt, setAttempt] = useState(0);
+  const lastRefreshAt = useRef(0);
 
   useEffect(() => {
     let active = true;
     setServiceSyncState("loading");
     dataSource.loadDataset().then((next) => {
       if (!active) return;
-      setDataset(next);
+      setDataset((current) => current ? mergeDataset(current, next) : next);
+      lastRefreshAt.current = Date.now();
       setServiceSyncState(dataSource.mode === "fixture" ? "fixture" : "live");
       if (dataSource.loadReadiness) void dataSource.loadReadiness().then((status) => { if (active) setReadiness(status); }).catch(() => {
         if (active) setReadiness({ gates: { publicRead: { ready: true, failedIds: [] }, contribution: { ready: false, failedIds: ["readiness_unavailable"] }, operator: { ready: false, failedIds: ["readiness_unavailable"] } } });
@@ -51,8 +53,24 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, [attempt]);
 
   useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      void dataSource.loadDataset().then((next) => {
+        setDataset((current) => current ? mergeDataset(current, next) : next);
+        setServiceSyncState(dataSource.mode === "fixture" ? "fixture" : "live");
+        lastRefreshAt.current = Date.now();
+      }).catch(() => undefined);
+    };
+    const interval = window.setInterval(refresh, 5 * 60_000);
+    const onFocus = () => { if (Date.now() - lastRefreshAt.current > 60_000) refresh(); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => { window.clearInterval(interval); window.removeEventListener("focus", onFocus); document.removeEventListener("visibilitychange", onFocus); };
+  }, []);
+
+  useEffect(() => {
     if (!dataSource.loadSupplementalDataset || !dataset) return;
-    const scope = route.name === "reels" ? "reels" : ["laws", "law", "law-group"].includes(route.name) ? "laws" : undefined;
+    const scope = route.name === "reels" ? "reels" : ["laws", "law", "law-group"].includes(route.name) ? "laws" : route.name === "trust" && route.id === "transparency" ? "transparency" : undefined;
     if (!scope) return;
     let active = true;
     void dataSource.loadSupplementalDataset(scope).then((supplemental) => {
@@ -118,6 +136,21 @@ function mergeById<T extends { id: string }>(current: T[], incoming: T[]): T[] {
   const merged = new Map(current.map((item) => [item.id, item]));
   for (const item of incoming) merged.set(item.id, item);
   return [...merged.values()];
+}
+
+function mergeDataset(current: AppDataset, incoming: AppDataset): AppDataset {
+  return {
+    ...incoming,
+    reels: current.reels.length ? current.reels : incoming.reels,
+    laws: current.laws.length ? current.laws : incoming.laws,
+    lawGroups: current.lawGroups.length ? current.lawGroups : incoming.lawGroups,
+    claimsByIssue: { ...incoming.claimsByIssue, ...current.claimsByIssue },
+    newsByIssue: { ...incoming.newsByIssue, ...current.newsByIssue },
+    synthesisByIssue: { ...incoming.synthesisByIssue, ...current.synthesisByIssue },
+    lawGroupsByIssue: { ...incoming.lawGroupsByIssue, ...current.lawGroupsByIssue },
+    claimsByOccurrence: { ...incoming.claimsByOccurrence, ...current.claimsByOccurrence },
+    transparency: current.transparency ?? incoming.transparency
+  };
 }
 
 export function useAppState() {

@@ -317,6 +317,7 @@ const routedGyeongbukPayload = toAttachmentEventPayload(
 assert.equal(routedGyeongbukPayload.publicLocationText, "포항시 북구 시청 앞");
 assert.equal(routedGyeongbukPayload.title.includes("행진"), false);
 assert.equal(routedGyeongbukPayload.sourceGranularity, "individual_schedule");
+assert.equal(routedGyeongbukPayload.declaredParticipantCount, 100);
 
 const gyeongnamRows = parseGyeongnamTodayAssemblyList(
   JSON.stringify({

@@ -84,6 +84,7 @@ export interface OccurrenceDigest {
   publicVideoCount: number;
   disputeCount: number;
   evidenceCount: number;
+  declaredParticipantCount?: number;
   scale?: { minCount: number; maxCount: number; confidence: "low" | "medium" | "high" };
   issueTitle?: string;
   topicStatus?: "linked" | "candidate" | "source_not_disclosed" | "unlinked";
@@ -105,6 +106,53 @@ export interface OccurrenceDigest {
     checkedAt?: string;
     granularity: "bulletin" | "individual_schedule";
   }>;
+}
+
+export interface EventTopicGroup {
+  id: string;
+  title: string;
+  status: "approved" | "candidate";
+  statusLabel: string;
+  occurrenceCount: number;
+  currentCount: number;
+  upcomingCount: number;
+  regionCount: number;
+  sourceCount: number;
+  evidenceCount: number;
+  representativeOccurrenceId: string;
+  startsAt?: string;
+}
+
+export interface EventTopicDetailData {
+  group: EventTopicGroup;
+  occurrenceDigests: OccurrenceDigest[];
+}
+
+export interface TransparencyLogItem {
+  id: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  createdAt: string;
+  publicReason: string;
+}
+
+export interface TransparencyData {
+  coverage?: {
+    totalPoliceRegions?: number;
+    eventCoverage?: {
+      sourceReachRegions: number;
+      eventLevelRegions: number;
+      geocodedEventRegions: number;
+      mappedUpcomingCount: number;
+      locationPendingUpcomingCount: number;
+      boardPostOnlyRegions: string[];
+      parserEmptySourceIds: string[];
+    };
+  };
+  monthly?: { month: string; counts: Record<string, number> };
+  logs: TransparencyLogItem[];
+  nextCursor?: string;
 }
 
 export interface PublicClaim {
@@ -260,6 +308,8 @@ export interface MapData {
 
 export interface AppDataset {
   issues: IssueOverview[];
+  eventTopicGroups: EventTopicGroup[];
+  topicUnknownActiveCount: number;
   occurrences: OccurrenceDigest[];
   reels: EvidenceReel[];
   laws: LawInterestItem[];
@@ -270,6 +320,7 @@ export interface AppDataset {
   lawGroupsByIssue: Record<string, LawGroupCard[]>;
   claimsByOccurrence: Record<string, PublicClaim[]>;
   map: MapData;
+  transparency?: TransparencyData;
 }
 
 export interface ServiceReadiness {

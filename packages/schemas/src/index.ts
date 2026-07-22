@@ -288,6 +288,7 @@ export type Occurrence = {
   startsAt?: Date;
   endsAt?: Date;
   lifecycleState: LifecycleState;
+  declaredParticipantCount?: number;
   claimIds: string[];
   evidenceIds: string[];
 };
@@ -379,6 +380,8 @@ export type OccurrenceDigest = {
   publicVideoCount: number;
   disputeCount: number;
   evidenceCount: number;
+  /** Number written in an official schedule. This is not an observed crowd estimate. */
+  declaredParticipantCount?: number;
   scale?: { minCount: number; maxCount: number; confidence: CrowdEstimate["confidence"] };
   issueTitle?: string;
   topicStatus?: "linked" | "candidate" | "source_not_disclosed" | "unlinked";
@@ -400,6 +403,21 @@ export type OccurrenceDigest = {
     checkedAt?: string;
     granularity: "bulletin" | "individual_schedule";
   }>;
+};
+
+export type EventTopicGroup = {
+  id: string;
+  title: string;
+  status: "approved" | "candidate";
+  statusLabel: string;
+  occurrenceCount: number;
+  currentCount: number;
+  upcomingCount: number;
+  regionCount: number;
+  sourceCount: number;
+  evidenceCount: number;
+  representativeOccurrenceId: string;
+  startsAt?: string;
 };
 
 export type EvidenceReel = {

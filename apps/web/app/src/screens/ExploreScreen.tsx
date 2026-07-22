@@ -14,18 +14,21 @@ export function ExploreScreen() {
   const { route } = useRouter();
   const [query, setQuery] = useState("");
   const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>("active");
+  const [now, setNow] = useState(() => Date.now());
+  const [listOpen, setListOpen] = useState(false);
+  const [clusterRegion, setClusterRegion] = useState<string>();
   const requestedOccurrenceId = route.search.get("occurrence") || undefined;
   const selectedId = selectedOccurrenceId || requestedOccurrenceId;
   const selected = dataset?.occurrences.find((item) => item.id === selectedId);
   const phaseCounts = useMemo(() => (dataset?.occurrences || []).reduce((counts, item) => {
-    counts[schedulePhase(item)] += 1;
+    counts[schedulePhase(item, now)] += 1;
     return counts;
-  }, { current: 0, upcoming: 0, past: 0 }), [dataset]);
+  }, { current: 0, upcoming: 0, past: 0 }), [dataset, now]);
   const visibleOccurrences = useMemo(() => (dataset?.occurrences || []).filter((item) => {
-    const phase = schedulePhase(item);
+    const phase = schedulePhase(item, now);
     if (phaseFilter === "active") return phase !== "past";
     return phaseFilter === "all" || phase === "past";
-  }), [dataset, phaseFilter]);
+  }), [dataset, phaseFilter, now]);
   const visibleIds = useMemo(() => new Set(visibleOccurrences.map((item) => item.id)), [visibleOccurrences]);
   const visiblePins = useMemo<GeoJsonFeatureCollection | undefined>(() => dataset?.map.geojson.pins ? ({
     ...dataset.map.geojson.pins,
@@ -40,8 +43,12 @@ export function ExploreScreen() {
     const matches = normalized
       ? dataset?.occurrences.filter((item) => `${item.title} ${item.regionLabel} ${item.issueTitle || ""} ${item.topicCandidate?.title || ""} ${item.topicStatusLabel || ""}`.toLocaleLowerCase("ko").includes(normalized)) || []
       : dataset?.occurrences || [];
-    return [...matches].sort((left, right) => phaseOrder(schedulePhase(left)) - phaseOrder(schedulePhase(right)) || String(left.startsAt || "").localeCompare(String(right.startsAt || "")));
-  }, [dataset, query]);
+    return [...matches].sort((left, right) => phaseOrder(schedulePhase(left, now)) - phaseOrder(schedulePhase(right, now)) || String(left.startsAt || "").localeCompare(String(right.startsAt || "")));
+  }, [dataset, query, now]);
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
   useEffect(() => {
     if (!requestedOccurrenceId) return;
     selectOccurrence(requestedOccurrenceId);
@@ -68,9 +75,15 @@ export function ExploreScreen() {
         </div> : null}
       </div>
 
-      <OccurrenceMap pins={visiblePins} areas={visibleAreas} occurrences={visibleOccurrences} selectedId={selectedId} onSelect={selectOccurrence} />
+      <OccurrenceMap pins={visiblePins} areas={visibleAreas} occurrences={visibleOccurrences} selectedId={selectedId} now={now} onSelect={selectOccurrence} onCluster={(region) => { setClusterRegion(region); setListOpen(true); selectOccurrence(undefined); }} />
 
-      <div className="map-key" aria-label="일정 및 위치 상태 표시 설명"><span><i className="key-current" />진행 중</span><span><i className="key-upcoming" />예정</span><span><i className="key-past" />지난 일정 · 오래될수록 흐림</span><span><i className="key-source" />공개자료 예상</span><span><i className="key-disputed" />위치 확인 중</span><span><i className="key-area" />현장 근거 범위</span></div>
+      <div className="map-key" aria-label="일정 및 위치 상태 표시 설명"><span><i className="key-current" />진행 중</span><span><i className="key-upcoming" />예정</span><span><i className="key-past" />지난 일정 · 오래될수록 흐림</span><span><i className="key-source" />공개자료 위치·넓은 원은 추정</span><span><i className="key-area" />현장 인증 범위</span></div>
+
+      <button type="button" className="map-list-toggle" aria-expanded={listOpen} onClick={() => { setListOpen((value) => !value); setClusterRegion(undefined); }}>일정 목록 {visibleOccurrences.length}</button>
+      {listOpen ? <aside className="map-event-list" aria-label="지도에 포함된 일정 목록">
+        <div><strong>{clusterRegion ? `${clusterRegion} 권역 일정` : "전체 일정"}</strong><button type="button" onClick={() => setListOpen(false)} aria-label="일정 목록 닫기"><X /></button></div>
+        {(clusterRegion ? visibleOccurrences.filter((item) => item.regionLabel === clusterRegion) : visibleOccurrences).sort((a, b) => phaseOrder(schedulePhase(a, now)) - phaseOrder(schedulePhase(b, now)) || String(a.startsAt || "").localeCompare(String(b.startsAt || ""))).map((item) => <button key={item.id} type="button" onClick={() => { selectOccurrence(item.id); setListOpen(false); }}><span>{schedulePhaseLabel(schedulePhase(item, now))} · {item.regionLabel}</span><strong>{occurrenceTopicTitle(item)}</strong><small>{item.locationLabel || item.title} · {formatDateTime(item.startsAt)}</small></button>)}
+      </aside> : null}
 
       {serviceSyncState === "unavailable" ? <div className="map-notice">공개 지도 자료 연결을 확인하고 있습니다</div> : null}
       {selected ? <MapSelection occurrence={selected} onClose={() => selectOccurrence(undefined)} /> : null}
@@ -82,12 +95,14 @@ function phaseOrder(phase: ReturnType<typeof schedulePhase>): number {
   return phase === "current" ? 0 : phase === "upcoming" ? 1 : 2;
 }
 
-function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
+function OccurrenceMap({ pins, areas, occurrences, selectedId, now, onSelect, onCluster }: {
   pins?: GeoJsonFeatureCollection;
   areas?: GeoJsonFeatureCollection;
   occurrences: OccurrenceDigest[];
   selectedId?: string;
+  now: number;
   onSelect: (id?: string) => void;
+  onCluster: (region: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | undefined>(undefined);
@@ -97,22 +112,25 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
   const [baseMapFallback, setBaseMapFallback] = useState(false);
   const [locationMessage, setLocationMessage] = useState("");
   const occurrenceById = useMemo(() => new Map(occurrences.map((item) => [item.id, item])), [occurrences]);
-  const pinData: GeoJsonFeatureCollection = useMemo(() => ({
-    type: "FeatureCollection" as const,
-    features: (pins?.features || []).map((feature) => {
+  const mapDisplay = useMemo(() => {
+    const displayPins: GeoJsonFeatureCollection["features"] = [];
+    const regional = new Map<string, GeoJsonFeatureCollection["features"]>();
+    for (const feature of pins?.features || []) {
       const occurrence = occurrenceById.get(String(feature.properties.occurrenceUnitId || ""));
-      return {
-        ...feature,
-        properties: {
-          ...feature.properties,
-          schedulePhase: occurrence ? schedulePhase(occurrence) : "current",
-          markerOpacity: occurrence ? pastMarkerOpacity(occurrence) : 1,
-          locationStatus: occurrence?.locationStatus || feature.properties.locationStatus || "SOURCE_GEOCODED"
-        }
-      };
-    })
-  }), [pins, occurrenceById]);
-  const areaData = useMemo(() => areas || { type: "FeatureCollection" as const, features: [] }, [areas]);
+      if (!occurrence || feature.geometry.type !== "Point") continue;
+      const radius = occurrence.locationUncertaintyRadiusM ?? Number(feature.properties.uncertaintyRadiusM || 300);
+      const decorated = { ...feature, properties: { ...feature.properties, schedulePhase: schedulePhase(occurrence, now), markerOpacity: pastMarkerOpacity(occurrence, now), markerKind: radius > 1_500 ? "fuzzy" : "event", locationStatus: occurrence.locationStatus || feature.properties.locationStatus || "SOURCE_GEOCODED" } };
+      if (radius > 15_000) regional.set(occurrence.regionLabel, [...(regional.get(occurrence.regionLabel) || []), decorated]);
+      else displayPins.push(decorated);
+    }
+    for (const [region, features] of regional) {
+      const coordinates = features.map((feature) => feature.geometry.coordinates as [number, number]);
+      displayPins.push({ type: "Feature", geometry: { type: "Point", coordinates: [coordinates.reduce((sum, item) => sum + item[0], 0) / coordinates.length, coordinates.reduce((sum, item) => sum + item[1], 0) / coordinates.length] }, properties: { id: `region-${region}`, occurrenceUnitId: "", clusterRegion: region, clusterCount: features.length, markerKind: "region", markerOpacity: 1, schedulePhase: "current", locationStatus: "SOURCE_GEOCODED" } });
+    }
+    return { pins: { type: "FeatureCollection" as const, features: displayPins }, areas: areas || { type: "FeatureCollection" as const, features: [] } };
+  }, [pins, areas, occurrenceById, now]);
+  const pinData = mapDisplay.pins;
+  const areaData = mapDisplay.areas;
   const pinDataRef = useRef(pinData);
   const areaDataRef = useRef(areaData);
   pinDataRef.current = pinData;
@@ -172,7 +190,7 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
         source: "occurrence-pins",
         layout: { "circle-sort-key": ["get", "markerOpacity"] },
         paint: {
-          "circle-radius": 8,
+          "circle-radius": ["match", ["get", "markerKind"], "region", 13, "fuzzy", 10, 8],
           "circle-color": [
             "case",
             ["==", ["get", "locationStatus"], "LOCATION_DISPUTED"], "#b86b18",
@@ -187,6 +205,8 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
       if (!interactionsBound) {
         const handleClick = (event: MapLayerMouseEvent) => {
           const feature = event.features?.[0] as MapGeoJSONFeature | undefined;
+          const region = String(feature?.properties?.clusterRegion || "");
+          if (region) { onCluster(region); return; }
           const id = String(feature?.properties?.occurrenceUnitId || "");
           if (id) onSelect(id);
         };
@@ -257,7 +277,7 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, onSelect }: {
   };
 
   return <>
-    <div ref={containerRef} className="map-canvas" data-map-ready={mapReady ? "true" : "false"} data-basemap-ready={baseMapReady ? "true" : "false"} aria-label={`지도 핀 ${pinData.features.length}개, 위치 확인 중 ${Math.max(0, occurrences.length - pinData.features.length)}개`} />
+    <div ref={containerRef} className="map-canvas" data-map-ready={mapReady ? "true" : "false"} data-basemap-ready={baseMapReady ? "true" : "false"} aria-label={`지도 표시 ${pinData.features.length}개, 전체 일정 ${occurrences.length}건. 일정 목록 버튼에서 모두 확인할 수 있습니다.`} />
     <button type="button" className="map-locate" onClick={locateUser} aria-label="내 위치로 지도 이동"><LocateFixed aria-hidden="true" /><span>내 위치</span></button>
     <p className="map-location-message" aria-live="polite">{locationMessage}</p>
     {baseMapFallback ? <div className="map-basemap-notice">대체 지도 연결됨</div> : null}
@@ -292,9 +312,13 @@ function MapSelection({ occurrence, onClose }: { occurrence: OccurrenceDigest; o
       <p className="selection-topic">{occurrenceTopicContext(occurrence)}</p>
       <p className="selection-event">개별 일정 · {occurrence.title}</p>
       <p>장소 · {occurrence.locationLabel || occurrence.regionLabel}</p>
-      <p>{occurrence.locationStatusLabel || "좌표 확인 중"}{occurrence.fieldLocationEvidenceCount ? ` · 독립 현장 근거 ${occurrence.fieldLocationEvidenceCount}건` : ""}</p>
-      <p>{formatDateTime(occurrence.startsAt)} · {scaleLabel(occurrence)}</p>
+      <p>{occurrence.locationStatusLabel || "좌표 확인 중"}{occurrence.locationUncertaintyRadiusM ? ` · 약 ${formatRadius(occurrence.locationUncertaintyRadiusM)} 범위의 위치 추정` : ""}{occurrence.fieldLocationEvidenceCount ? ` · 독립 현장 근거 ${occurrence.fieldLocationEvidenceCount}건` : ""}</p>
+      <p>{formatDateTime(occurrence.startsAt)} · {occurrence.declaredParticipantCount ? `공개자료 기재 인원 ${occurrence.declaredParticipantCount.toLocaleString("ko-KR")}명` : scaleLabel(occurrence)}</p>
       <Link href={`/occurrences/${encodeURIComponent(occurrence.id)}`} className="primary-button">현장 보기<ChevronRight /></Link>
     </aside>
   );
+}
+
+function formatRadius(radiusM: number) {
+  return radiusM >= 1_000 ? `${Math.round(radiusM / 1_000)}km` : `${Math.round(radiusM / 100) * 100}m`;
 }

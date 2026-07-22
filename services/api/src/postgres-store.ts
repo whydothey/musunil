@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from "node:crypto";
 import pg from "pg";
 import type { Store } from "./app.ts";
-import { buildLawGroups } from "./law-topics.ts";
+import { buildLawGroups, lawGroupClassificationVersion } from "./law-topics.ts";
 import { resolveOfficialLocationEstimate } from "./location-resolution.ts";
 import { publicAssemblySources } from "../../../packages/schemas/src/public-sources.ts";
 
@@ -118,8 +118,18 @@ export function hydrateStore(store: Store): Store {
     law.effectiveDate = optionalDate(law.effectiveDate);
   }
   const builtGroups = buildLawGroups(store.lawItems ?? []);
-  store.lawGroups ??= builtGroups.groups;
-  store.lawGroupMemberships ??= builtGroups.memberships;
+  const classificationUpgrade = !store.lawGroups?.length || store.lawGroups.some((group) => group.classificationVersion !== lawGroupClassificationVersion);
+  if (classificationUpgrade) {
+    store.lawGroups = builtGroups.groups;
+    store.lawGroupMemberships = builtGroups.memberships;
+    const createdAt = new Date();
+    const reason = "공식 요약 규칙에 맞지 않는 자동 키워드 주제를 '세부 내용 확인 중'으로 재분류했습니다.";
+    store.auditLogs.push({ id: randomUUID(), action: "correction", targetType: "law_topic", targetId: lawGroupClassificationVersion, createdAt, reason });
+    store.transparencyLogs.push({ id: randomUUID(), action: "correction", targetType: "law_topic", targetId: lawGroupClassificationVersion, createdAt, publicReason: reason });
+  } else {
+    store.lawGroups ??= builtGroups.groups;
+    store.lawGroupMemberships ??= builtGroups.memberships;
+  }
   store.issueLawGroupLinks ??= [];
   store.newsIssueCandidates ??= [];
   store.newsProviderUsage ??= [];

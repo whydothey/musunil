@@ -1,5 +1,9 @@
+import { useState } from "react";
+import dataSource from "@musunil/data-source";
 import { FileCheck2, Scale, ShieldCheck } from "lucide-react";
 import { ScreenHeader } from "../components";
+import { useAppState } from "../app-state";
+import type { TransparencyData } from "../contracts";
 
 const pages = {
   methodology: {
@@ -46,11 +50,47 @@ const pages = {
 } as const;
 
 export function TrustScreen({ id }: { id: string }) {
+  const { dataset } = useAppState();
   const page = pages[id as keyof typeof pages] ?? pages.methodology;
   const Icon = page.icon;
   return <section className="screen screen-detail trust-screen" data-screen="trust">
     <ScreenHeader title={page.title} eyebrow={page.eyebrow} back />
     <div className="trust-lead"><Icon aria-hidden="true" /><p>객관적인 공개 정보와 시민의 알권리를 위해 적용하는 비협상 원칙입니다.</p></div>
     {page.sections.map(([title, body]) => <section className="content-section trust-section" key={title}><h2>{title}</h2><p>{body}</p></section>)}
+    {id === "transparency" ? <LiveTransparency initial={dataset?.transparency} /> : null}
   </section>;
+}
+
+function LiveTransparency({ initial }: { initial?: TransparencyData }) {
+  const [data, setData] = useState(initial);
+  const [loading, setLoading] = useState(false);
+  const coverage = data?.coverage?.eventCoverage;
+  const loadMore = async () => {
+    if (!data?.nextCursor || !dataSource.loadTransparency) return;
+    setLoading(true);
+    try {
+      const next = await dataSource.loadTransparency(data.nextCursor);
+      setData({ ...next, logs: [...data.logs, ...next.logs] });
+    } finally { setLoading(false); }
+  };
+  if (!data) return <section className="content-section trust-section"><h2>실시간 공개 지표</h2><p>공개 지표를 불러오고 있습니다.</p></section>;
+  return <>
+    <section className="content-section trust-section"><h2>공개자료 범위</h2>
+      {coverage ? <div className="metric-grid">
+        <div><strong>{coverage.sourceReachRegions}</strong><span>소스 접근 지역</span></div>
+        <div><strong>{coverage.eventLevelRegions}</strong><span>개별 일정 추출 지역</span></div>
+        <div><strong>{coverage.geocodedEventRegions}</strong><span>위치 확인 지역</span></div>
+        <div><strong>{coverage.mappedUpcomingCount}</strong><span>지도 진행·예정 일정</span></div>
+      </div> : <p>범위 집계 중입니다.</p>}
+      {coverage?.boardPostOnlyRegions.length ? <p className="metric-note">게시물만 확인되고 개별 일정은 아직 추출하지 못한 지역 {coverage.boardPostOnlyRegions.length}곳: {coverage.boardPostOnlyRegions.join(", ")}</p> : null}
+    </section>
+    <section className="content-section trust-section"><h2>{data.monthly?.month || "이번 달"} 변경 기록</h2><div className="metric-grid compact">{Object.entries(data.monthly?.counts || {}).map(([action, count]) => <div key={action}><strong>{count}</strong><span>{actionLabel(action)}</span></div>)}</div></section>
+    <section className="content-section trust-section"><h2>최근 공개 변경</h2><ol className="transparency-log-list">{data.logs.map((log) => <li key={log.id}><span>{actionLabel(log.action)} · {new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(log.createdAt))}</span><p>{log.publicReason}</p></li>)}</ol>
+      {data.nextCursor ? <button type="button" className="secondary-button" disabled={loading} onClick={loadMore}>{loading ? "불러오는 중" : "더 보기"}</button> : null}
+    </section>
+  </>;
+}
+
+function actionLabel(action: string) {
+  return ({ state_change: "상태 변경", split: "분리", merge: "연결·병합", hold: "보류", correction: "정정", restore: "복원", rights_report: "권리 신고" } as Record<string, string>)[action] || "검토 기록";
 }

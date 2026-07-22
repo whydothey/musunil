@@ -354,6 +354,7 @@ export function toAttachmentEventPayload(
     sourceTitle: bulletin.sourceTitle ?? bulletin.title,
     sourceGranularity: "individual_schedule",
     publicLocationText: event.safeLocationLabel,
+    declaredParticipantCount: event.participantCount,
     parserVersion: "3"
   };
 }

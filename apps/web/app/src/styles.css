@@ -101,6 +101,31 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .feed-intro span { color: var(--ink-faint); font-weight: 700; }
 
 .issue-feed { background: var(--surface); }
+.event-topic-card { display: block; padding: 20px 18px; border-bottom: 1px solid var(--line); color: inherit; text-decoration: none; }
+.event-topic-card:hover { background: #f7faf9; }
+.event-topic-card h2 { margin: 7px 0; font-size: 18px; line-height: 1.4; }
+.event-topic-card p, .event-topic-card small { display: block; margin: 3px 0 0; color: var(--ink-soft); }
+.event-topic-status { display: inline-flex; padding: 4px 7px; border-radius: 4px; background: #e5f2ee; color: #0b6b5c; font-size: 11px; font-weight: 700; }
+.event-topic-card.status-candidate .event-topic-status { background: #f5eee2; color: #855d21; }
+.topic-unknown-callout { margin: 14px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: #f8faf9; }
+.topic-unknown-callout p { margin: 6px 0; color: var(--ink-soft); font-size: 13px; }
+.topic-unknown-callout a { color: var(--accent); font-size: 13px; font-weight: 700; }
+.topic-group-summary { margin: 16px; padding: 18px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.topic-group-summary > span { font-weight: 800; color: #0b6b5c; }
+.topic-group-summary p { margin: 8px 0 4px; }
+.topic-group-summary small, .topic-group-summary em { display: block; margin-top: 7px; color: var(--ink-soft); font-style: normal; }
+.topic-group-summary.status-candidate { border-color: #d9c39d; background: #fffbf4; }
+.metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; margin-top: 12px; }
+.metric-grid > div { display: grid; gap: 3px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; }
+.metric-grid strong { font-size: 20px; }
+.metric-grid span { color: var(--ink-soft); font-size: 11px; }
+.metric-note { margin-top: 12px; color: var(--ink-soft); font-size: 12px; }
+.transparency-log-list { margin: 12px 0; padding: 0; list-style: none; }
+.transparency-log-list li { padding: 11px 0; border-bottom: 1px solid var(--line); }
+.transparency-log-list span { color: var(--ink-soft); font-size: 11px; }
+.transparency-log-list p { margin: 5px 0 0; font-size: 13px; }
+.prepared-links { display: grid; gap: 5px; margin-bottom: 12px; font-size: 11px; }
+.prepared-links span { color: var(--ink-soft); }
 .issue-row { position: relative; min-height: 122px; display: block; padding: 16px 18px 14px; border-bottom: 1px solid var(--line); transition: background 180ms var(--ease), transform 180ms var(--ease); }
 .issue-row:active { background: var(--surface-muted); transform: scale(0.995); }
 .issue-row-top { display: grid; grid-template-columns: 10px minmax(0, 1fr) 20px; align-items: start; gap: 10px; }
@@ -273,6 +298,13 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .primary-button:hover { background: var(--brand-strong); }
 .secondary-button { border-color: var(--line-strong); background: white; color: var(--ink); }
 .map-selection .primary-button { min-height: 42px; margin-top: 12px; padding: 0 14px; font-size: 13px; }
+.map-list-toggle { position: absolute; z-index: 9; left: 12px; bottom: 54px; min-height: 40px; padding: 0 13px; border: 1px solid var(--line-strong); border-radius: 6px; background: white; font-weight: 800; box-shadow: 0 4px 14px rgba(25,40,44,.12); }
+.map-event-list { position: absolute; z-index: 16; left: 10px; right: 10px; bottom: 10px; max-height: min(58dvh, 520px); overflow: auto; border: 1px solid var(--line-strong); border-radius: 8px; background: white; box-shadow: 0 8px 26px rgba(25,40,44,.2); }
+.map-event-list > div { position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; align-items: center; padding: 13px 14px; border-bottom: 1px solid var(--line); background: white; }
+.map-event-list > div button { width: 36px; height: 36px; border: 0; background: transparent; }
+.map-event-list > button { width: 100%; display: grid; gap: 4px; padding: 12px 14px; border: 0; border-bottom: 1px solid var(--line); background: white; text-align: left; }
+.map-event-list > button:hover, .map-event-list > button:focus-visible { background: #f4f8f7; }
+.map-event-list span, .map-event-list small { color: var(--ink-soft); font-size: 11px; }
 .maplibregl-ctrl-bottom-right { bottom: 10px; right: 8px; }
 .maplibregl-ctrl-attrib { font-size: 9px; }
 

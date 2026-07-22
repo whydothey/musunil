@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { LawCoreTopic, LawGroup, LawGroupMembership, LawItem } from "../../../packages/schemas/src/index.ts";
 
-export const lawGroupClassificationVersion = "exact-title-groups-v1";
+export const lawGroupClassificationVersion = "exact-title-groups-v2";
 
 type TopicRule = {
   key: string;
@@ -112,10 +112,7 @@ function classifyLaw(law: LawItem): { key: string; label: string; keywords: stri
   }).filter((item) => item.score > 0).sort((left, right) => right.score - left.score || right.candidate.label.length - left.candidate.label.length || left.candidate.key.localeCompare(right.candidate.key));
   if (scored[0]) return { key: scored[0].candidate.key, label: scored[0].candidate.label, keywords: scored[0].candidate.keywords, basis: "official_summary_rule" };
 
-  const keywords = extractFallbackKeywords(actionText || summary, law.lawName);
-  if (keywords.length === 0) return { key: "summary-pending", label: "세부 내용 확인 중", keywords: ["공식 요약 확인 중"], basis: "summary_pending" };
-  const label = keywords.slice(0, 2).join("·");
-  return { key: `keyword-${keywords.slice(0, 2).join("-")}`, label, keywords: keywords.slice(0, 3), basis: "keyword_fallback" };
+  return { key: "summary-pending", label: "세부 내용 확인 중", keywords: ["공식 요약 규칙 검토 중"], basis: "summary_pending" };
 }
 
 function extractFallbackKeywords(value: string, lawName: string): string[] {

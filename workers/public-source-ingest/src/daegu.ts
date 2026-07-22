@@ -33,6 +33,7 @@ export type PublicOccurrencePayload = {
   publicLocationKey?: string;
   publicLocationText?: string;
   parserVersion?: string;
+  declaredParticipantCount?: number;
 };
 
 export function parseDaeguTodayAssemblyList(html: string): DaeguAssemblyRow[] {
