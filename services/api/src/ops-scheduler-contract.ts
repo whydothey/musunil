@@ -73,7 +73,9 @@ export const opsTaskDefinitions: OpsTaskDefinition[] = [
   }
 ];
 
-export const opsLeaseSeconds = 30 * 60;
+// Workers renew this lease while running. Keep the orphan window short enough
+// that a Render Free deploy cannot suppress scheduled ingestion for 30 minutes.
+export const opsLeaseSeconds = 5 * 60;
 
 export function taskById(id: string): OpsTaskDefinition | undefined {
   return opsTaskDefinitions.find((task) => task.id === id);

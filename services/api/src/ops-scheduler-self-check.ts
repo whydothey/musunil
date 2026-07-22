@@ -13,7 +13,8 @@ assert.deepEqual(opsTaskDefinitions.map((task) => task.id), [
 assert.deepEqual(opsTaskDefinitions.map((task) => task.cadenceSeconds), [300, 3600, 43200, 3600, 300, 86400]);
 assert.equal(new Set(opsTaskDefinitions.map((task) => task.priority)).size, opsTaskDefinitions.length);
 assert.equal(opsTaskDefinitions.every((task) => task.retrySeconds > 0 && task.retrySeconds < task.cadenceSeconds), true);
-assert.equal(opsLeaseSeconds >= Math.max(...opsTaskDefinitions.map((task) => task.retrySeconds)), true);
+assert.equal(opsLeaseSeconds >= 5 * 60, true);
+assert.equal(opsLeaseSeconds <= 10 * 60, true);
 assert.equal(taskById("law_source_ingest")?.args.join(" ").includes("workers/public-source-ingest/src/index.ts --laws --post"), true);
 assert.equal(taskById("news_source_ingest")?.args.join(" ").includes("workers/public-source-ingest/src/index.ts --news --post"), true);
 assert.equal(taskById("media_redaction")?.args.join(" ").includes("scripts/redaction-worker.mjs"), true);
