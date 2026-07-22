@@ -305,7 +305,10 @@ async function verifyLiveViewport(browserInstance, viewport) {
 
     await page.goto(`${baseUrl}/report`, { waitUntil: "domcontentloaded" });
     await page.locator('[data-screen="report"]').waitFor({ state: "visible" });
-    check((await page.getByRole("button", { name: "근처 현장 찾기" }).count()) === 1, `${viewport.id}: live report entry changed`);
+    const liveReportEntryReady = (await page.getByRole("button", { name: "근처 현장 찾기" }).count()) === 1;
+    const liveReportEntryHeld = (await page.getByRole("heading", { name: "검증된 현장 제보를 준비하고 있습니다" }).count()) === 1
+      && (await page.getByText("현재 웹에서는 영상을 접수하지 않습니다.", { exact: false }).count()) === 1;
+    check(liveReportEntryReady || liveReportEntryHeld, `${viewport.id}: live report entry changed`);
     await shot(page, `${viewport.id}_report.png`);
 
     const finalMetrics = await metrics(page);
