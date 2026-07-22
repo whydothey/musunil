@@ -317,6 +317,10 @@ async function verifyLiveViewport(browserInstance, viewport) {
 
     await page.goto(`${baseUrl}/report`, { waitUntil: "domcontentloaded" });
     await page.locator('[data-screen="report"]').waitFor({ state: "visible" });
+    await page.waitForFunction(() => {
+      const text = document.body.innerText;
+      return text.includes("근처 현장 찾기") || text.includes("검증된 현장 제보를 준비하고 있습니다");
+    }, undefined, { timeout: 10_000 });
     const liveReportEntryReady = (await page.getByRole("button", { name: "근처 현장 찾기" }).count()) === 1;
     const liveReportEntryHeld = (await page.getByRole("heading", { name: "검증된 현장 제보를 준비하고 있습니다" }).count()) === 1
       && (await page.getByText("현재 웹에서는 영상을 접수하지 않습니다.", { exact: false }).count()) === 1;
