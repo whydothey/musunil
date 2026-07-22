@@ -102,6 +102,12 @@ const edailyArchiveFeed: NewsFeed = {
   url: "https://www.edaily.co.kr/search/news/?keyword=%EC%A7%91%ED%9A%8C"
 };
 
+const newsisDailyScheduleFeed: NewsFeed = {
+  id: "newsis_daily_society_archive",
+  publisherLabel: "뉴시스",
+  url: "https://www.newsis.com/newsis_news_google.xml"
+};
+
 export function readNewsRuntime(config: Record<string, unknown>, env: NodeJS.ProcessEnv = process.env): NewsRuntime {
   return {
     feeds: readConfiguredFeeds(config, env),
@@ -214,6 +220,13 @@ export async function fetchNewsPayloads(
   }
 
   if (occurrences.length > 0 && callCount < remainingMonthlyCalls) {
+    const dailySchedules = await fetchNewsisDailySchedules(runtime, remainingMonthlyCalls - callCount);
+    callCount += dailySchedules.callCount;
+    failures.push(...dailySchedules.failures);
+    for (const article of dailySchedules.articles) collectArticle(article, newsisDailyScheduleFeed);
+  }
+
+  if (occurrences.length > 0 && callCount < remainingMonthlyCalls) {
     const archive = await fetchEdailyEventArchive(runtime, remainingMonthlyCalls - callCount);
     callCount += archive.callCount;
     failures.push(...archive.failures);
@@ -224,6 +237,73 @@ export async function fetchNewsPayloads(
   const eventTopicPayloads = [...bestEventTopicByOccurrenceAndUrl.values()].sort((left, right) => right.publishedAt.localeCompare(left.publishedAt));
   for (const payload of payloads) payload.sourceBatchSize = payloads.length;
   return { payloads, eventTopicPayloads, callCount, queryCount: callCount, failures };
+}
+
+async function fetchNewsisDailySchedules(
+  runtime: NewsRuntime,
+  remainingCalls: number
+): Promise<{ articles: ParsedNewsArticle[]; callCount: number; failures: Array<{ query: string; status: number }> }> {
+  const failures: Array<{ query: string; status: number }> = [];
+  if (remainingCalls < 1) return { articles: [], callCount: 0, failures };
+  let callCount = 1;
+  let response: Response;
+  try {
+    response = await fetch(newsisDailyScheduleFeed.url, {
+      headers: { accept: "application/xml,text/xml;q=0.9", "user-agent": "MusunilNewsSourceWorker/0.5 (official publisher sitemap schedule ingest)" },
+      signal: AbortSignal.timeout(20_000)
+    });
+  } catch {
+    return { articles: [], callCount, failures: [{ query: "newsis_daily_sitemap", status: 0 }] };
+  }
+  if (!response.ok || new URL(response.url).hostname !== "www.newsis.com") {
+    return { articles: [], callCount, failures: [{ query: "newsis_daily_sitemap", status: response.status }] };
+  }
+  const descriptors = parseNewsisDailyScheduleSitemap(await response.text()).slice(0, 3);
+  const articles: ParsedNewsArticle[] = [];
+  for (const descriptor of descriptors) {
+    if (callCount >= remainingCalls) break;
+    if (runtime.minRequestIntervalMs > 0) await delay(runtime.minRequestIntervalMs);
+    callCount += 1;
+    try {
+      const articleResponse = await fetch(descriptor.url, {
+        headers: { accept: "text/html", "user-agent": "MusunilNewsSourceWorker/0.5 (official publisher daily schedule ingest)" },
+        signal: AbortSignal.timeout(20_000)
+      });
+      if (!articleResponse.ok || new URL(articleResponse.url).hostname !== "www.newsis.com") {
+        failures.push({ query: "newsis_daily_article", status: articleResponse.status });
+        continue;
+      }
+      const article = parseNewsisDailyScheduleArticle(await articleResponse.text(), descriptor);
+      if (article) articles.push(article);
+    } catch {
+      failures.push({ query: "newsis_daily_article", status: 0 });
+    }
+  }
+  return { articles, callCount, failures };
+}
+
+export function parseNewsisDailyScheduleSitemap(xml: string): Array<{ title: string; url: string; publishedAt: Date }> {
+  return [...xml.matchAll(/<url\b[^>]*>([\s\S]*?)<\/url>/gi)].map((match) => {
+    const entry = match[1] ?? "";
+    const url = safeHttpsUrl(decodeXmlText(readXmlTag(entry, "loc")))?.toString() ?? "";
+    const title = cleanNewsText(readXmlTag(entry, "title"));
+    const publishedAt = new Date(decodeXmlText(readXmlTag(entry, "publication_date")));
+    if (!/^\[오늘의\s*주요일정\]사회/u.test(title) || !url || new URL(url).hostname !== "www.newsis.com" || Number.isNaN(publishedAt.getTime())) return undefined;
+    return { title, url, publishedAt };
+  }).filter((item): item is { title: string; url: string; publishedAt: Date } => Boolean(item))
+    .sort((left, right) => right.publishedAt.getTime() - left.publishedAt.getTime());
+}
+
+export function parseNewsisDailyScheduleArticle(
+  html: string,
+  descriptor: { title: string; url: string; publishedAt: Date }
+): ParsedNewsArticle | undefined {
+  const body = html.match(/<div\b[^>]*class=["'][^"']*viewer[^"']*["'][^>]*>[\s\S]*?<article\b[^>]*>([\s\S]*?)<\/article>/i)?.[1]
+    ?? html.match(/<div\b[^>]*itemprop=["']articleBody["'][^>]*>([\s\S]*?)<\/div>/i)?.[1];
+  if (!body) return undefined;
+  const contentText = `${descriptor.title}. ${cleanLongNewsText(body)}`.replace(/\s+/g, " ").trim();
+  if (!/(?:집회|시위|행진|문화제|국민대회|피켓)/u.test(contentText) && !isNewsisDailyScheduleTitle(descriptor.title)) return undefined;
+  return { ...descriptor, contentText, searchText: normalize(contentText) };
 }
 
 export function parsePublisherRss(xml: string): ParsedNewsArticle[] {
@@ -331,7 +411,8 @@ export function eventTopicPayloadsForArticle(
   occurrences: NewsOccurrence[],
   checkedAt = new Date()
 ): EventTopicEvidencePayload[] {
-  if (!/(?:집회|시위|행진|문화제|국민대회|피켓)/u.test(article.contentText)) return [];
+  const dailySchedule = isNewsisDailyScheduleTitle(article.title);
+  if (!/(?:집회|시위|행진|문화제|국민대회|피켓)/u.test(article.contentText) && !dailySchedule) return [];
   const rawSegments = article.contentText.split(/(?<=[.!?。])\s+/u).map((item) => item.trim()).filter(Boolean);
   const segments = rawSegments.map((item, index) => index > 0 ? `${rawSegments[index - 1]} ${item}` : item);
   const candidates = occurrences.filter((occurrence) => {
@@ -348,7 +429,7 @@ export function eventTopicPayloadsForArticle(
     const terms = eventLocationTerms(occurrence);
     if (terms.length === 0) continue;
     const segment = segments.find((item) => terms.some((term) => normalize(item).includes(normalize(term))));
-    if (!segment || !/(?:집회|시위|행진|문화제|국민대회|피켓)/u.test(segment)) continue;
+    if (!segment || (!dailySchedule && !/(?:집회|시위|행진|문화제|국민대회|피켓)/u.test(segment))) continue;
     const topicTitle = extractPurposeTopic(segment);
     if (!topicTitle) continue;
     const timeMatched = segmentTimes(segment).some((minutes) => Math.abs(minutes - koreaMinutes(startsAt)) <= 90);
@@ -382,9 +463,13 @@ export function eventTopicPayloadsForArticle(
   return payloads;
 }
 
+function isNewsisDailyScheduleTitle(value: string): boolean {
+  return /^\[오늘의\s*주요일정\]사회/u.test(value);
+}
+
 const dayMs = 24 * 60 * 60 * 1000;
-const purposeMarker = "요구|촉구|규탄|반대|찬성|지지|철회|폐지|보장|정상화|재선거|탄핵|처벌|사퇴|진상\\s*규명|개선|보호";
-const purposeActionMarker = "요구|촉구|규탄|반대|찬성|지지|철회|폐지|보장|처벌|사퇴|개선|보호";
+const purposeMarker = "요구|촉구|규탄|반대|찬성|지지|철회|폐지|보장|정상화|재선거|탄핵|처벌|사퇴|진상\\s*규명|개선|보호|해결";
+const purposeActionMarker = "요구|촉구|규탄|반대|찬성|지지|철회|폐지|보장|처벌|사퇴|개선|보호|해결";
 
 function extractPurposeTopic(segment: string): string | undefined {
   const quoted = segment.match(new RegExp(`[‘“\"']([^’”\"']{3,60}(?:${purposeMarker})[^’”\"']*)[’”\"']`, "u"))?.[1];
@@ -421,7 +506,7 @@ function eventLocationTerms(occurrence: NewsOccurrence): string[] {
     .replace(/(?:집회|일정|일대|부근|인근|앞|건너편|이면도로|개\s*차로)/g, " ")
     .replace(/[()·,]/g, " ");
   const suffixTerms = [...text.matchAll(/[가-힣A-Za-z0-9]+(?:입구역|광장|공원|당사|경찰청|도청|시청|구청|교육청|선거관리위원회|교회|시장|현장|사거리|오거리|법원|박물관|기념관|아파트|역)/gu)].map((match) => match[0]);
-  const tokens = text.split(/\s+/).filter((term) => term.length >= 3 && !/^(?:서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주|종로구|서초구|마포구|송파구)$/u.test(term));
+  const tokens = text.split(/\s+/).filter((term) => term.length >= 3 && !/^(?:서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주|종로구|서초구|마포구|송파구|사무실|건설현장|공사현장|진입로)$/u.test(term));
   return [...new Set([...suffixTerms, ...tokens])].sort((left, right) => right.length - left.length).slice(0, 6);
 }
 

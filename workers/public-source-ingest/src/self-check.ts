@@ -19,7 +19,7 @@ import { parseSejongTodayAssemblyList, toSejongPublicOccurrencePayload } from ".
 import { parseGyeonggiNorthTodayAssemblyList, toGyeonggiNorthPublicOccurrencePayload } from "./gyeonggi-north.ts";
 import { ingestablePublicAssemblySources, policeRegions, publicAssemblySources, sourceCoverageReport, sourceOperationalDiagnostics } from "./sources.ts";
 import { fetchLawPayloads, lawOperationalDiagnostics, readLawRuntime } from "./laws.ts";
-import { cleanNewsText, eventTopicPayloadsForArticle, fetchNewsPayloads, newsOperationalDiagnostics, parseEdailySearchResults, parsePublisherRss, readNewsRuntime } from "./news.ts";
+import { cleanNewsText, eventTopicPayloadsForArticle, fetchNewsPayloads, newsOperationalDiagnostics, parseEdailySearchResults, parseNewsisDailyScheduleArticle, parseNewsisDailyScheduleSitemap, parsePublisherRss, readNewsRuntime } from "./news.ts";
 import { discoverOfficialAttachmentLinks, extractAttachmentText, parseAssemblyAttachmentEvents, toAttachmentEventPayload } from "./attachments.ts";
 import AdmZip from "adm-zip";
 import * as XLSX from "@e965/xlsx";
@@ -833,6 +833,10 @@ assert.equal(parsedNews[0]?.title, "공직선거법 투표관리 강화");
 const longRssDescription = `${"일정 안내 ".repeat(80)}오후 7시 민주당사 앞 재선거 요구 집회`;
 const longParsedNews = parsePublisherRss(`<rss><channel><item><title>오늘의 주요일정</title><link>https://www.newsis.com/view/NISX1</link><description><![CDATA[${longRssDescription}]]></description><pubDate>${rssPublishedAt}</pubDate></item></channel></rss>`);
 assert.equal(longParsedNews[0]?.contentText.includes("민주당사 앞 재선거 요구 집회"), true);
+const newsisScheduleDescriptors = parseNewsisDailyScheduleSitemap(`<urlset xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"><url><loc><![CDATA[https://www.newsis.com/view/NISX20260721_0003717726]]></loc><news:news><news:publication_date><![CDATA[2026-07-22T06:00:00+09:00]]></news:publication_date><news:title><![CDATA[[오늘의 주요일정]사회(7월22일 수요일)]]></news:title></news:news></url><url><loc>https://www.newsis.com/view/NISX2</loc><news:news><news:publication_date>2026-07-22T07:00:00+09:00</news:publication_date><news:title>일반 기사</news:title></news:news></url></urlset>`);
+assert.equal(newsisScheduleDescriptors.length, 1);
+const newsisDailyArticle = parseNewsisDailyScheduleArticle(`<html><div class="view" itemprop="articleBody"><div class="viewer"><article>[서울=뉴시스]<br />▲오후 7시 촛불행동, 여의도동 민주당사 앞 이면도로, 보완수사권 완전 폐지 촉구<br /></article></div></div></html>`, newsisScheduleDescriptors[0]!);
+assert.equal(newsisDailyArticle?.contentText.includes("보완수사권 완전 폐지 촉구"), true);
 const eventArticle = parsePublisherRss(`<rss><channel><item><title>주말 도심 집회 안내</title><link>https://news.example/event-article</link><description>토요일인 18일 오후 6시부터 홍대입구역 일대에서 재선거를 요구하는 피켓 집회를 하겠다고 공지했다.</description><pubDate>Fri, 17 Jul 2026 06:00:00 GMT</pubDate></item></channel></rss>`)[0]!;
 const eventTopicPayloads = eventTopicPayloadsForArticle(eventArticle, { id: "event-feed", publisherLabel: "검증일보", url: "https://news.example/rss" }, [{
   id: "occ-hongdae",
