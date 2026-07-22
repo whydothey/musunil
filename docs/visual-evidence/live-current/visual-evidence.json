@@ -9,11 +9,11 @@
         "width": 390,
         "height": 844
       },
-      "issueCount": 0,
+      "issueCount": 1,
       "reelCount": 0,
       "mapPixels": {
-        "colorGroups": 102,
-        "dominantRatio": 0.3754
+        "colorGroups": 163,
+        "dominantRatio": 0.3122
       },
       "home": {
         "overflowX": false,
@@ -34,11 +34,11 @@
         "width": 430,
         "height": 932
       },
-      "issueCount": 0,
+      "issueCount": 1,
       "reelCount": 0,
       "mapPixels": {
-        "colorGroups": 98,
-        "dominantRatio": 0.371
+        "colorGroups": 139,
+        "dominantRatio": 0.3491
       },
       "home": {
         "overflowX": false,
@@ -59,11 +59,11 @@
         "width": 768,
         "height": 1024
       },
-      "issueCount": 0,
+      "issueCount": 1,
       "reelCount": 0,
       "mapPixels": {
-        "colorGroups": 81,
-        "dominantRatio": 0.6216
+        "colorGroups": 94,
+        "dominantRatio": 0.5748
       },
       "home": {
         "overflowX": false,
@@ -84,11 +84,11 @@
         "width": 1440,
         "height": 960
       },
-      "issueCount": 0,
+      "issueCount": 1,
       "reelCount": 0,
       "mapPixels": {
-        "colorGroups": 71,
-        "dominantRatio": 0.7061
+        "colorGroups": 76,
+        "dominantRatio": 0.6381
       },
       "home": {
         "overflowX": false,
