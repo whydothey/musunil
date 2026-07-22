@@ -1608,6 +1608,12 @@ function toOccurrenceDigest(store: Store, targetType: Extract<TargetType, "occur
     : "issueId" in target && target.issueId ? [target.issueId] : [];
   const issueId = issueIds[0];
   const issue = issueId ? store.issues.find((item) => item.id === issueId) : undefined;
+  const officialSources = officialSourcesForEvidence(evidence);
+  const topicStatus = issue
+    ? "linked" as const
+    : officialSources.some((source) => source.granularity === "individual_schedule")
+      ? "source_not_disclosed" as const
+      : "unlinked" as const;
   const updatedAt = latestDate([
     occurrence?.startsAt,
     occurrence?.endsAt,
@@ -1622,7 +1628,7 @@ function toOccurrenceDigest(store: Store, targetType: Extract<TargetType, "occur
     issueId,
     issueIds,
     primaryIssueId: issueId,
-    title: targetTitle(targetType, target),
+    title: occurrence ? occurrenceEventDisplayTitle(occurrence.title) : targetTitle(targetType, target),
     regionLabel: targetRegionLabel(store, targetType, target) ?? "지역 확인 중",
     locationLabel: "publicLocation" in target ? target.publicLocation?.label : undefined,
     locationStatus: targetLocationStatus,
@@ -1641,9 +1647,25 @@ function toOccurrenceDigest(store: Store, targetType: Extract<TargetType, "occur
     evidenceCount: evidence.length,
     scale: estimate ? { minCount: estimate.minCount, maxCount: estimate.maxCount, confidence: estimate.confidence } : undefined,
     issueTitle: issue?.title,
+    topicStatus,
+    topicStatusLabel: occurrenceTopicStatusLabel(topicStatus),
     keyPoint: strongestClaim?.normalizedStatement,
-    officialSources: officialSourcesForEvidence(evidence)
+    officialSources
   };
+}
+
+function occurrenceEventDisplayTitle(title: string): string {
+  const normalized = title.replace(/\s+/g, " ").trim();
+  return normalized
+    .replace(/\s+일대\s+집회\s+일정$/u, " 집회")
+    .replace(/\s+집회\s+일정$/u, " 집회")
+    .replace(/\s+공개\s+(?:일정|자료)$/u, " 집회");
+}
+
+function occurrenceTopicStatusLabel(status: NonNullable<OccurrenceDigest["topicStatus"]>): string {
+  if (status === "linked") return "연결된 주요 주제";
+  if (status === "source_not_disclosed") return "경찰 공개자료에 주제 미기재";
+  return "관련 주제 연결 검토 중";
 }
 
 function officialSourcesForEvidence(evidence: Evidence[]): NonNullable<OccurrenceDigest["officialSources"]> {
@@ -2510,6 +2532,9 @@ function getMap(store: Store, now = new Date()): ApiResponse {
         targetType: unit.targetType,
         targetId: unit.id,
         issueId: unit.issueId,
+        issueTitle: unit.issueTitle,
+        topicStatus: unit.topicStatus,
+        topicStatusLabel: unit.topicStatusLabel,
         title: unit.title,
         regionLabel: unit.regionLabel,
         lifecycleState: unit.lifecycleState,
@@ -2544,6 +2569,9 @@ function getMap(store: Store, now = new Date()): ApiResponse {
       id: unit.id,
       targetType: unit.targetType,
       issueId: unit.issueId,
+      issueTitle: unit.issueTitle,
+      topicStatus: unit.topicStatus,
+      topicStatusLabel: unit.topicStatusLabel,
       title: unit.title,
       regionLabel: unit.regionLabel,
       lifecycleState: unit.lifecycleState,
@@ -2566,6 +2594,9 @@ type MapOccurrenceUnit = {
   id: string;
   targetType: Extract<TargetType, "occurrence" | "continuous_presence">;
   issueId?: string;
+  issueTitle?: string;
+  topicStatus: NonNullable<OccurrenceDigest["topicStatus"]>;
+  topicStatusLabel: string;
   title: string;
   regionLabel: string;
   lifecycleState: string;
@@ -2576,21 +2607,36 @@ type MapOccurrenceUnit = {
 
 function mapOccurrenceUnits(store: Store, now = new Date()): MapOccurrenceUnit[] {
   return [
-    ...store.occurrences.filter((item) => !isSourceOnlyOccurrence(store, item) && isOccurrenceWithinPublicDiscoveryWindow(item, now)).map((item) => ({
-      id: item.id,
-      targetType: "occurrence" as const,
-      issueId: item.issueId,
-      title: item.title,
-      regionLabel: item.regionLabel,
-      lifecycleState: item.lifecycleState,
-      publicLocation: item.publicLocation,
-      locationStatus: item.locationStatus ?? item.publicLocation?.status,
-      updatedAt: item.startsAt
-    })),
+    ...store.occurrences.filter((item) => !isSourceOnlyOccurrence(store, item) && isOccurrenceWithinPublicDiscoveryWindow(item, now)).map((item) => {
+      const issueId = primaryApprovedIssueId(store, item);
+      const issue = issueId ? store.issues.find((candidate) => candidate.id === issueId) : undefined;
+      const hasOfficialIndividualSource = item.evidenceIds.some((evidenceId) => {
+        const evidence = store.evidence.find((candidate) => candidate.id === evidenceId);
+        return evidence?.externalProvider === "official_public_source" && evidence.sourceGranularity === "individual_schedule";
+      });
+      const topicStatus = issue ? "linked" as const : hasOfficialIndividualSource ? "source_not_disclosed" as const : "unlinked" as const;
+      return {
+        id: item.id,
+        targetType: "occurrence" as const,
+        issueId,
+        issueTitle: issue?.title,
+        topicStatus,
+        topicStatusLabel: occurrenceTopicStatusLabel(topicStatus),
+        title: occurrenceEventDisplayTitle(item.title),
+        regionLabel: item.regionLabel,
+        lifecycleState: item.lifecycleState,
+        publicLocation: item.publicLocation,
+        locationStatus: item.locationStatus ?? item.publicLocation?.status,
+        updatedAt: item.startsAt
+      };
+    }),
     ...store.continuousPresences.filter((item) => isContinuousPresenceWithinPublicDiscoveryWindow(item, now)).map((item) => ({
       id: item.id,
       targetType: "continuous_presence" as const,
       issueId: item.issueId,
+      issueTitle: item.issueId ? store.issues.find((candidate) => candidate.id === item.issueId)?.title : undefined,
+      topicStatus: item.issueId ? "linked" as const : "unlinked" as const,
+      topicStatusLabel: occurrenceTopicStatusLabel(item.issueId ? "linked" : "unlinked"),
       title: `${item.regionLabel} 장기 현장`,
       regionLabel: item.regionLabel,
       lifecycleState: item.state,

@@ -86,6 +86,8 @@ export interface OccurrenceDigest {
   evidenceCount: number;
   scale?: { minCount: number; maxCount: number; confidence: "low" | "medium" | "high" };
   issueTitle?: string;
+  topicStatus?: "linked" | "source_not_disclosed" | "unlinked";
+  topicStatusLabel?: string;
   keyPoint?: string;
   officialSources?: Array<{
     label: string;

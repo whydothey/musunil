@@ -106,7 +106,7 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     await page.locator('a[href="/occurrences/occ-network-seoul"]').click();
     await page.waitForURL("**/occurrences/occ-network-seoul");
     await page.locator('[data-screen="occurrence"]').waitFor({ state: "visible" });
-    check((await page.locator('.fact-row').count()) === 4, `${viewport.id}: occurrence facts missing`);
+    check((await page.locator('.fact-row').count()) === 5, `${viewport.id}: occurrence facts missing`);
     check((await page.locator('.context-actions a').count()) === 3, `${viewport.id}: occurrence context actions changed`);
     check((await page.locator('.occurrence-video-cover').count()) === 0, `${viewport.id}: occurrence video action is duplicated by a second cover`);
     await assertAxe(page, `${viewport.id}: occurrence`);
@@ -148,7 +148,8 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     check((await page.locator('.map-selection .primary-button').count()) === 1, `${viewport.id}: map selection must have one primary action`);
     const selectionBox = await page.locator('.map-selection').boundingBox();
     check(Boolean(selectionBox && selectionBox.y >= 0 && selectionBox.y + selectionBox.height <= viewport.height), `${viewport.id}: map selection is outside the viewport`);
-    check((await page.locator('.map-selection h2').innerText()).includes("인천"), `${viewport.id}: map selection does not match the searched occurrence`);
+    check((await page.locator('.map-selection h2').innerText()).includes("정보통신망법"), `${viewport.id}: map selection topic is missing`);
+    check((await page.locator('.map-selection .selection-topic').innerText()).includes("인천"), `${viewport.id}: map selection event does not match the searched occurrence`);
     await page.waitForTimeout(2_500);
     const selectedMapPixels = await pixelMetrics(context, await page.locator('.map-canvas').screenshot({ type: "png" }));
     check(selectedMapPixels.colorGroups >= 60 && selectedMapPixels.dominantRatio <= 0.88, `${viewport.id}: selected basemap did not finish painting (${JSON.stringify(selectedMapPixels)})`);
@@ -296,6 +297,17 @@ async function verifyLiveViewport(browserInstance, viewport) {
     await page.waitForTimeout(1_000);
     const mapPixels = await pixelMetrics(context, await page.locator('.map-canvas').screenshot({ type: "png" }));
     check(mapPixels.colorGroups >= 60 && mapPixels.dominantRatio <= 0.82, `${viewport.id}: live basemap has insufficient visual context (${JSON.stringify(mapPixels)})`);
+    await page.getByLabel("지도 검색").fill("집회");
+    const liveMapResult = page.locator('.map-results button').first();
+    check((await liveMapResult.count()) === 1, `${viewport.id}: live map has no searchable occurrence`);
+    if ((await liveMapResult.count()) === 1) {
+      await liveMapResult.click();
+      await page.locator('.map-selection').waitFor({ state: "visible" });
+      const selectionTitle = await page.locator('.map-selection h2').innerText();
+      const selectionTopic = await page.locator('.map-selection .selection-topic').innerText();
+      check(!selectionTitle.includes("집회 일정"), `${viewport.id}: live event still exposes a generic schedule title`);
+      check(/^(주제|이벤트) · /u.test(selectionTopic), `${viewport.id}: live event topic context is missing`);
+    }
     await shot(page, `${viewport.id}_explore.png`);
 
     await page.goto(`${baseUrl}/laws`, { waitUntil: "domcontentloaded" });

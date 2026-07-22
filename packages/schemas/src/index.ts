@@ -381,6 +381,8 @@ export type OccurrenceDigest = {
   evidenceCount: number;
   scale?: { minCount: number; maxCount: number; confidence: CrowdEstimate["confidence"] };
   issueTitle?: string;
+  topicStatus?: "linked" | "source_not_disclosed" | "unlinked";
+  topicStatusLabel?: string;
   keyPoint?: string;
   officialSources?: Array<{
     label: string;

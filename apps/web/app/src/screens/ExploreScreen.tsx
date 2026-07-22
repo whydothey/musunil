@@ -17,7 +17,7 @@ export function ExploreScreen() {
   const filtered = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("ko");
     if (!normalized) return dataset?.occurrences || [];
-    return dataset?.occurrences.filter((item) => `${item.title} ${item.regionLabel} ${item.issueTitle || ""}`.toLocaleLowerCase("ko").includes(normalized)) || [];
+    return dataset?.occurrences.filter((item) => `${item.title} ${item.regionLabel} ${item.issueTitle || ""} ${item.topicStatusLabel || ""}`.toLocaleLowerCase("ko").includes(normalized)) || [];
   }, [dataset, query]);
   useEffect(() => {
     if (requestedOccurrenceId) selectOccurrence(requestedOccurrenceId);
@@ -32,7 +32,7 @@ export function ExploreScreen() {
           {query ? <button type="button" onClick={() => setQuery("")} aria-label="검색어 지우기"><X /></button> : null}
         </label>
         {query ? <div className="map-results" aria-label="검색 결과">
-          {filtered.slice(0, 5).map((item) => <button key={item.id} type="button" onClick={() => { selectOccurrence(item.id); setQuery(""); }}><span>{item.regionLabel} · {schedulePhaseLabel(schedulePhase(item))}</span><strong>{item.title}</strong><small>{formatDateTime(item.startsAt)} · {item.locationLabel || "위치 확인 중"}</small><ChevronRight /></button>)}
+          {filtered.slice(0, 5).map((item) => <button key={item.id} type="button" onClick={() => { selectOccurrence(item.id); setQuery(""); }}><span>{item.regionLabel} · {schedulePhaseLabel(schedulePhase(item))}</span><strong>{item.issueTitle || item.title}</strong><small>{item.issueTitle ? `${item.title} · ` : `${item.topicStatusLabel || "관련 주제 연결 검토 중"} · `}{formatDateTime(item.startsAt)} · {item.locationLabel || "위치 확인 중"}</small><ChevronRight /></button>)}
           {!filtered.length ? <p>일치하는 공개 현장이 없습니다</p> : null}
         </div> : null}
       </div>
@@ -253,8 +253,9 @@ function MapSelection({ occurrence, onClose }: { occurrence: OccurrenceDigest; o
     <aside className="map-selection" aria-label="선택한 현장">
       <button type="button" className="map-selection-close" onClick={onClose} aria-label="현장 선택 닫기"><X /></button>
       <span className={`selection-state phase-${phase}`}><i />{schedulePhaseLabel(phase)}</span>
-      <h2>{occurrence.title}</h2>
-      <p>{occurrence.locationLabel || occurrence.regionLabel}</p>
+      <h2>{occurrence.issueTitle || occurrence.title}</h2>
+      <p className="selection-topic">{occurrence.issueTitle ? `이벤트 · ${occurrence.title}` : `주제 · ${occurrence.topicStatusLabel || "관련 주제 연결 검토 중"}`}</p>
+      <p>장소 · {occurrence.locationLabel || occurrence.regionLabel}</p>
       <p>{occurrence.locationStatusLabel || "좌표 확인 중"}{occurrence.fieldLocationEvidenceCount ? ` · 독립 현장 근거 ${occurrence.fieldLocationEvidenceCount}건` : ""}</p>
       <p>{formatDateTime(occurrence.startsAt)} · {scaleLabel(occurrence)}</p>
       <Link href={`/occurrences/${encodeURIComponent(occurrence.id)}`} className="primary-button">현장 보기<ChevronRight /></Link>

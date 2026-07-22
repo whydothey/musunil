@@ -22,13 +22,18 @@ export function OccurrenceScreen({ id }: { id: string }) {
 
   return (
     <section className="screen screen-detail occurrence-detail" data-screen="occurrence">
-      <ScreenHeader title={occurrence.title} eyebrow={issue?.title || "집회 현장"} back />
+      <ScreenHeader title={issue?.title || occurrence.issueTitle || occurrence.title} eyebrow={occurrence.issueTitle ? occurrence.title : occurrence.topicStatusLabel || "집회 현장"} back />
       <div className="occurrence-hero">
         <div className="hero-status"><StatusDot state={occurrence.lifecycleState} /><span>{formatRelativeTime(occurrence.updatedAt)}</span></div>
         <p>{occurrence.keyPoint || "공개자료와 현장 근거를 분리해 확인하고 있습니다."}</p>
       </div>
 
       <dl className="fact-list" aria-label="현장 핵심 정보">
+        <FactRow
+          label="주제"
+          value={issue?.title || occurrence.issueTitle || occurrence.topicStatusLabel || "관련 주제 연결 검토 중"}
+          supporting={issue || occurrence.issueTitle ? `개별 이벤트 · ${occurrence.title}` : "공개자료에 없는 목적을 장소만으로 추정하지 않습니다"}
+        />
         <FactRow
           label="장소"
           value={occurrence.locationLabel || occurrence.regionLabel}

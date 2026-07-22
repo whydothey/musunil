@@ -1813,12 +1813,15 @@ assert.equal(mapBody.geojson.pins.features.every((feature) => feature.geometry.t
 assert.equal(mapBody.geojson.presenceAreas.features.every((feature) => feature.geometry.type === "Polygon"), true);
 assert.equal(JSON.stringify(map.body).includes("LineString"), false);
 assert.equal(mapBody.geojson.presenceAreas.features.length >= 1, true);
-const mapContract = map.body as { occurrenceDigests: Array<{ id: string; targetType: string }> };
+const mapContract = map.body as { occurrenceDigests: Array<{ id: string; targetType: string; issueTitle?: string; topicStatus?: string; topicStatusLabel?: string }> };
 assert.equal(mapContract.occurrenceDigests.some((digest) => digest.id === "occ_1" && digest.targetType === "occurrence"), true);
 const homeOccurrence = homeContract.occurrenceDigests.find((digest) => digest.id === "occ_1");
 const mapOccurrence = mapContract.occurrenceDigests.find((digest) => digest.id === "occ_1");
 assert.equal(homeOccurrence?.id, mapOccurrence?.id);
 assert.equal(homeOccurrence?.targetType, mapOccurrence?.targetType);
+assert.equal(mapOccurrence?.topicStatus, "linked");
+assert.equal(mapOccurrence?.topicStatusLabel, "연결된 주요 주제");
+assert.equal(typeof mapOccurrence?.issueTitle, "string");
 assert.equal(JSON.stringify(mapContract).includes("privateLng"), false);
 assert.equal(JSON.stringify(mapContract).includes("privateLat"), false);
 
@@ -2038,6 +2041,11 @@ assert.equal(JSON.stringify(individualDetail.body).includes("광화문교차로 
 assert.equal((individualDetail.body as { occurrence: { publicLocation: { label: string; precision: string } } }).occurrence.publicLocation.label, "서울광장·광화문 일대");
 assert.equal((individualDetail.body as { occurrence: { publicLocation: { label: string; precision: string } } }).occurrence.publicLocation.precision, "area");
 assert.equal((individualDetail.body as { occurrence: { locationStatus: string } }).occurrence.locationStatus, "SOURCE_GEOCODED");
+const individualDigest = (individualDetail.body as { occurrenceDigest: { title: string; issueTitle?: string; topicStatus: string; topicStatusLabel: string } }).occurrenceDigest;
+assert.equal(individualDigest.title, "서울광장 집회");
+assert.equal(individualDigest.issueTitle, undefined);
+assert.equal(individualDigest.topicStatus, "source_not_disclosed");
+assert.equal(individualDigest.topicStatusLabel, "경찰 공개자료에 주제 미기재");
 const individualIssueId = (individualDetail.body as { occurrence: { issueId?: string } }).occurrence.issueId;
 assert.equal(individualIssueId, undefined);
 assert.equal(emptyOfficialStore.issues.some((issue) => issue.title === "서울광장·광화문 일대 집회 일정"), false);
@@ -2132,7 +2140,12 @@ assert.equal(isOccurrenceWithinPublicDiscoveryWindow({
   endsAt: new Date("2026-07-22T01:00:00.000Z")
 }, discoveryNow), true);
 const individualMap = await emptyOfficialApp.handle({ method: "GET", path: "/map" });
-assert.equal((individualMap.body as { geojson: { pins: { features: Array<{ properties: { targetId: string } }> } } }).geojson.pins.features.some((pin) => pin.properties.targetId === "occ_seoul_2026_07_20_2021_1"), true);
+const individualMapPin = (individualMap.body as { geojson: { pins: { features: Array<{ properties: { targetId: string; title: string; topicStatus: string; topicStatusLabel: string } }> } } }).geojson.pins.features.find((pin) => pin.properties.targetId === "occ_seoul_2026_07_20_2021_1");
+assert.ok(individualMapPin);
+assert.equal(individualMapPin.properties.title, "서울광장 집회");
+assert.equal(individualMapPin.properties.title.includes("집회 일정"), false);
+assert.equal(individualMapPin.properties.topicStatus, "source_not_disclosed");
+assert.equal(individualMapPin.properties.topicStatusLabel, "경찰 공개자료에 주제 미기재");
 const emptyOfficialBatch = await emptyOfficialApp.handle({
   method: "POST",
   path: "/internal/ingest/public-occurrences/batch",
