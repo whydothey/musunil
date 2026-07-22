@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { ApiError, canServePublicRedactedMedia, createApp, createSeedStore, reconcileEvidenceSynthesizedTopics, reconcileLegacyLocationScheduleIssues, stripPreviewData } from "./app.ts";
 import { createPublicWriteRateLimiter, readJsonBody } from "./http-boundary.ts";
 import { createLiveMediaStorage } from "./live-media-storage.ts";
-import { loadPostgresStore, pingOpsSchedulerSchema, pingPostgres, savePostgresStore } from "./postgres-store.ts";
+import { loadPostgresStore, pingOpsSchedulerSchema, pingPostgres, reconcileLegacyOfficialTextLocations, savePostgresStore } from "./postgres-store.ts";
 import { loadUserInputs, validateLaunchConfig } from "../../../packages/config/src/index.ts";
 
 const apiDir = dirname(fileURLToPath(import.meta.url));
@@ -29,7 +29,9 @@ const runtimeReadiness = async () => {
 const seedStore = createSeedStore({ includeMockData: runtime.includeMockData });
 const loadedStore = runtime.databaseUrl ? await loadPostgresStore(runtime.databaseUrl, seedStore, runtime.encryptionKey) : seedStore;
 const initialStore = runtime.includeMockData ? loadedStore : stripPreviewData(loadedStore);
-const initialTopicReconcileCount = reconcileLegacyLocationScheduleIssues(initialStore) + reconcileEvidenceSynthesizedTopics(initialStore);
+const initialTopicReconcileCount = reconcileLegacyLocationScheduleIssues(initialStore)
+  + reconcileEvidenceSynthesizedTopics(initialStore)
+  + reconcileLegacyOfficialTextLocations(initialStore);
 const app = createApp(initialStore, {
   readiness: runtimeReadiness,
   internalApiKey: runtime.internalApiKey,
@@ -121,7 +123,9 @@ async function refreshStoreFromPostgresIfDue(): Promise<void> {
   storeIoQueue = storeIoQueue.catch(() => undefined).then(async () => {
     const refreshed = await loadPostgresStore(databaseUrl, app.store, runtime.encryptionKey);
     const visibleStore = runtime.includeMockData ? refreshed : stripPreviewData(refreshed);
-    const reconciled = reconcileLegacyLocationScheduleIssues(visibleStore) + reconcileEvidenceSynthesizedTopics(visibleStore);
+    const reconciled = reconcileLegacyLocationScheduleIssues(visibleStore)
+      + reconcileEvidenceSynthesizedTopics(visibleStore)
+      + reconcileLegacyOfficialTextLocations(visibleStore);
     Object.assign(app.store, visibleStore);
     if (reconciled > 0) await savePostgresStore(databaseUrl, app.store, runtime.encryptionKey);
   });

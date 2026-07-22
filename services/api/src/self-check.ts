@@ -3,7 +3,7 @@ import { EventEmitter } from "node:events";
 import { canServePublicRedactedMedia, createApp, createSeedStore, decryptLiveMediaBytes, emptyStore, isOccurrenceWithinPublicDiscoveryWindow, koreaRecentCalendarCutoff, reconcileEvidenceSynthesizedTopics, reconcileLegacyLocationScheduleIssues } from "./app.ts";
 import { enforcePublicWriteRateLimit, publicWriteRateLimitKey, readJsonBody } from "./http-boundary.ts";
 import { assertStorageSmokeKey, storageSmokeKey, storageSmokePrefix } from "./live-media-storage.ts";
-import { decryptSnapshot, encryptSnapshot, hydrateStore } from "./postgres-store.ts";
+import { decryptSnapshot, encryptSnapshot, hydrateStore, reconcileLegacyOfficialTextLocations } from "./postgres-store.ts";
 import { blurPublicCoordinate, metersBetween, reconcileLocationFromFieldEvidence, resolveOfficialLocationEstimate } from "./location-resolution.ts";
 
 const now = new Date("2026-07-07T09:00:00.000Z");
@@ -256,6 +256,7 @@ delete legacySnapshot.issueLawGroupLinks;
 delete legacySnapshot.legacyLawTopicAliases;
 delete (legacySnapshot.issues as Array<Record<string, unknown>>)[0]?.kind;
 const hydratedLegacyStore = hydrateStore(legacySnapshot as unknown as typeof legacySourceStore);
+assert.equal(reconcileLegacyOfficialTextLocations(hydratedLegacyStore), 1);
 assert.equal(hydratedLegacyStore.lawGroups.length > 0, true);
 assert.equal(hydratedLegacyStore.legacyLawTopicAliases.law_topic_legacy, hydratedLegacyStore.lawItems.find((law) => law.id === legacySourceGroup.billIds[0])?.lawGroupId);
 assert.equal(hydratedLegacyStore.issueLawGroupLinks.some((link) => link.status === "approved" && link.matchBasis === "manual"), true);
@@ -274,6 +275,7 @@ assert.equal(hydratedLegacyTextOccurrence?.publicLocation?.label, "서초구 파
 const legacyTextLocationLogCount = hydratedLegacyStore.auditLogs.filter((log) => log.targetId === legacyTextOccurrenceId && log.action === "state_change").length;
 const locationMigrationLogCount = hydratedLegacyStore.auditLogs.filter((log) => log.targetId === hydratedLocatedOccurrence.id && log.action === "state_change").length;
 hydrateStore(hydratedLegacyStore);
+assert.equal(reconcileLegacyOfficialTextLocations(hydratedLegacyStore), 0);
 assert.equal(hydratedLegacyStore.auditLogs.filter((log) => log.targetId === hydratedLocatedOccurrence.id && log.action === "state_change").length, locationMigrationLogCount);
 assert.equal(hydratedLegacyStore.auditLogs.filter((log) => log.targetId === legacyTextOccurrenceId && log.action === "state_change").length, legacyTextLocationLogCount);
 const generatedStorageSmokeKey = storageSmokeKey();

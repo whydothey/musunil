@@ -219,26 +219,6 @@ export function hydrateStore(store: Store): Store {
       }
     } else {
       occurrence.locationStatus ??= "TEXT_ONLY";
-      const officialEvidence = occurrence.evidenceIds
-        .map((evidenceId) => store.evidence.find((evidence) => evidence.id === evidenceId))
-        .find((evidence) => evidence?.externalProvider === "official_public_source" && evidence.sourceGranularity === "individual_schedule");
-      const officialSource = officialEvidence?.externalId
-        ? publicAssemblySources.find((source) => officialEvidence.externalId?.startsWith(`${source.id}:`))
-        : undefined;
-      const officialLocationText = occurrence.locationText ?? officialLocationTextFromTitle(occurrence.title);
-      const estimate = officialSource && officialLocationText
-        ? resolveOfficialLocationEstimate(officialSource.regionCode, officialLocationText)
-        : undefined;
-      if (estimate) {
-        occurrence.locationText = officialLocationText;
-        occurrence.locationStatus = estimate.status;
-        occurrence.sourcePublicLocation = estimate;
-        occurrence.publicLocation = estimate;
-        const createdAt = new Date();
-        const reason = "기존 공식 개별 일정의 공개 장소 문구를 행정구역 위치 정보와 연결해 흐린 예상 위치를 생성했습니다.";
-        store.auditLogs.push({ id: randomUUID(), action: "state_change", targetType: "occurrence", targetId: occurrence.id, createdAt, reason });
-        store.transparencyLogs.push({ id: randomUUID(), action: "state_change", targetType: "occurrence", targetId: occurrence.id, createdAt, publicReason: reason });
-      }
     }
     if (!hadLocationStatus) {
       const createdAt = new Date();
@@ -301,6 +281,34 @@ export function hydrateStore(store: Store): Store {
     refresh.lastSuccessfulAt = optionalDate(refresh.lastSuccessfulAt);
   }
   return store;
+}
+
+export function reconcileLegacyOfficialTextLocations(store: Store): number {
+  let changed = 0;
+  for (const occurrence of store.occurrences) {
+    if (occurrence.publicLocation || occurrence.locationStatus !== "TEXT_ONLY") continue;
+    const officialEvidence = occurrence.evidenceIds
+      .map((evidenceId) => store.evidence.find((evidence) => evidence.id === evidenceId))
+      .find((evidence) => evidence?.externalProvider === "official_public_source" && evidence.sourceGranularity === "individual_schedule");
+    const officialSource = officialEvidence?.externalId
+      ? publicAssemblySources.find((source) => officialEvidence.externalId?.startsWith(`${source.id}:`))
+      : undefined;
+    const officialLocationText = occurrence.locationText ?? officialLocationTextFromTitle(occurrence.title);
+    const estimate = officialSource && officialLocationText
+      ? resolveOfficialLocationEstimate(officialSource.regionCode, officialLocationText)
+      : undefined;
+    if (!estimate) continue;
+    occurrence.locationText = officialLocationText;
+    occurrence.locationStatus = estimate.status;
+    occurrence.sourcePublicLocation = estimate;
+    occurrence.publicLocation = estimate;
+    const createdAt = new Date();
+    const reason = "기존 공식 개별 일정의 공개 장소 문구를 행정구역 위치 정보와 연결해 흐린 예상 위치를 생성했습니다.";
+    store.auditLogs.push({ id: randomUUID(), action: "state_change", targetType: "occurrence", targetId: occurrence.id, createdAt, reason });
+    store.transparencyLogs.push({ id: randomUUID(), action: "state_change", targetType: "occurrence", targetId: occurrence.id, createdAt, publicReason: reason });
+    changed += 1;
+  }
+  return changed;
 }
 
 function officialLocationTextFromTitle(title: string): string | undefined {
