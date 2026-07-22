@@ -2,7 +2,7 @@ import { ArrowUpRight, FileText, MapPin, PlaySquare } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useAppState } from "../app-state";
 import { EmptyState, FactRow, LoadingState, ScreenHeader, ServiceUnavailable, StatusDot } from "../components";
-import { evidenceLabel, formatDateTime, formatRelativeTime, riskLabel, scaleLabel, sourceLabel } from "../format";
+import { evidenceLabel, formatDateTime, formatRelativeTime, occurrenceTopicContext, occurrenceTopicTitle, riskLabel, scaleLabel, sourceLabel } from "../format";
 import { Link } from "../router";
 
 export function OccurrenceScreen({ id }: { id: string }) {
@@ -22,7 +22,7 @@ export function OccurrenceScreen({ id }: { id: string }) {
 
   return (
     <section className="screen screen-detail occurrence-detail" data-screen="occurrence">
-      <ScreenHeader title={issue?.title || occurrence.issueTitle || occurrence.title} eyebrow={occurrence.issueTitle ? occurrence.title : occurrence.topicStatusLabel || "집회 현장"} back />
+      <ScreenHeader title={issue?.title || occurrenceTopicTitle(occurrence)} eyebrow={occurrenceTopicContext(occurrence)} back />
       <div className="occurrence-hero">
         <div className="hero-status"><StatusDot state={occurrence.lifecycleState} /><span>{formatRelativeTime(occurrence.updatedAt)}</span></div>
         <p>{occurrence.keyPoint || "공개자료와 현장 근거를 분리해 확인하고 있습니다."}</p>
@@ -31,8 +31,8 @@ export function OccurrenceScreen({ id }: { id: string }) {
       <dl className="fact-list" aria-label="현장 핵심 정보">
         <FactRow
           label="주제"
-          value={issue?.title || occurrence.issueTitle || occurrence.topicStatusLabel || "관련 주제 연결 검토 중"}
-          supporting={issue || occurrence.issueTitle ? `개별 이벤트 · ${occurrence.title}` : "공개자료에 없는 목적을 장소만으로 추정하지 않습니다"}
+          value={issue?.title || occurrenceTopicTitle(occurrence)}
+          supporting={`${occurrenceTopicContext(occurrence)} · 개별 일정: ${occurrence.title}`}
         />
         <FactRow
           label="장소"

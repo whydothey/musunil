@@ -296,7 +296,7 @@ export type OccurrenceIssueLink = {
   occurrenceId: string;
   issueId: string;
   status: "candidate" | "approved" | "rejected";
-  matchBasis: "occurrence_claim" | "occurrence_evidence" | "manual";
+  matchBasis: "occurrence_claim" | "occurrence_evidence" | "event_source_match" | "manual";
   confidence: "low" | "medium" | "high";
   supportingClaimIds: string[];
   supportingEvidenceIds: string[];
@@ -381,8 +381,17 @@ export type OccurrenceDigest = {
   evidenceCount: number;
   scale?: { minCount: number; maxCount: number; confidence: CrowdEstimate["confidence"] };
   issueTitle?: string;
-  topicStatus?: "linked" | "source_not_disclosed" | "unlinked";
+  topicStatus?: "linked" | "candidate" | "source_not_disclosed" | "unlinked";
   topicStatusLabel?: string;
+  topicCandidate?: {
+    issueId: string;
+    title: string;
+    confidence: OccurrenceIssueLink["confidence"];
+    sourceCount: number;
+    evidenceCount: number;
+    statusLabel: string;
+  };
+  topicCandidateCount?: number;
   keyPoint?: string;
   officialSources?: Array<{
     label: string;

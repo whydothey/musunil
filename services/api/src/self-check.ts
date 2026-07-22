@@ -190,6 +190,71 @@ const evidenceLinkedOccurrence = await newsReviewApp.handle({
 assert.equal(evidenceLinkedOccurrence.status, 201);
 assert.equal((evidenceLinkedOccurrence.body as { occurrence: { issueId?: string } }).occurrence.issueId, synthesizedNewsCandidate.issueId);
 assert.equal(newsReviewStore.occurrenceIssueLinks.some((link) => link.occurrenceId === "occ_evidence_synthesis_link" && link.issueId === synthesizedNewsCandidate.issueId && link.status === "approved"), true);
+const eventTopicStore = createSeedStore();
+const eventTopicApp = createApp(eventTopicStore, { internalApiKey: "test_internal_key" });
+const eventTopicStartsAt = new Date(Date.now() + 6 * 60 * 60_000);
+const eventTopicDate = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(eventTopicStartsAt);
+const eventTopicOccurrence = await eventTopicApp.handle({
+  method: "POST",
+  path: "/internal/ingest/public-occurrence",
+  headers: internalHeaders,
+  body: {
+    id: "occ_event_topic_candidate",
+    type: "static_assembly",
+    areaClusterId: "area_seoul",
+    regionLabel: "서울",
+    title: "홍대입구역 일대 집회 일정",
+    publicLocationText: "홍대입구역 일대",
+    startsAt: eventTopicStartsAt.toISOString(),
+    lifecycleState: "UPCOMING",
+    sourceProvenance: "government_or_police",
+    claimantLabel: "경찰 공개자료",
+    normalizedStatement: "경찰 공개자료에 홍대입구역 일대 집회 일정이 안내되었습니다."
+  }
+});
+assert.equal(eventTopicOccurrence.status, 201);
+for (const [index, publisherLabel] of ["테스트일보", "검증뉴스"].entries()) {
+  const response = await eventTopicApp.handle({
+    method: "POST",
+    path: "/internal/ingest/event-topic-evidence",
+    headers: internalHeaders,
+    body: {
+      provider: "publisher_rss",
+      occurrenceId: "occ_event_topic_candidate",
+      eventDate: eventTopicDate,
+      topicTitle: "재선거 요구 관련 집회",
+      topicTags: ["재선거", "요구", "집회"],
+      sourceTitle: `공개 응답에 그대로 노출하지 않을 이벤트 보도 제목 ${index + 1}`,
+      sourceUrl: `https://event-news-${index + 1}.example/article`,
+      publisherLabel,
+      publishedAt: new Date(eventTopicStartsAt.getTime() - 24 * 60 * 60_000).toISOString(),
+      providerItemId: `event-topic-provider-${index + 1}`,
+      matchedLocationTerms: ["홍대입구역"],
+      dateMatched: true,
+      locationMatched: true,
+      timeMatched: true,
+      uniqueLocationMatched: true
+    }
+  });
+  assert.equal(response.status, 201);
+  assert.equal((response.body as { linkStatus: string }).linkStatus, index === 0 ? "candidate" : "approved");
+  if (index === 0) {
+    const candidateDetail = await eventTopicApp.handle({ method: "GET", path: "/occurrences/occ_event_topic_candidate" });
+    const candidateDigest = (candidateDetail.body as { occurrenceDigest: { issueTitle?: string; topicStatus: string; topicCandidate?: { title: string; sourceCount: number } } }).occurrenceDigest;
+    assert.equal(candidateDigest.issueTitle, undefined);
+    assert.equal(candidateDigest.topicStatus, "candidate");
+    assert.equal(candidateDigest.topicCandidate?.title, "재선거 요구 관련 집회");
+    assert.equal(candidateDigest.topicCandidate?.sourceCount, 1);
+    assert.equal(JSON.stringify(candidateDetail.body).includes("공개 응답에 그대로 노출하지 않을 이벤트 보도 제목"), false);
+  }
+}
+const approvedEventTopicDetail = await eventTopicApp.handle({ method: "GET", path: "/occurrences/occ_event_topic_candidate" });
+const approvedEventTopicDigest = (approvedEventTopicDetail.body as { occurrenceDigest: { issueTitle?: string; topicStatus: string; topicCandidate?: unknown } }).occurrenceDigest;
+assert.equal(approvedEventTopicDigest.issueTitle, "재선거 요구 관련 집회");
+assert.equal(approvedEventTopicDigest.topicStatus, "linked");
+assert.equal(approvedEventTopicDigest.topicCandidate, undefined);
+assert.equal(eventTopicStore.auditLogs.some((log) => log.targetId === "occ_event_topic_candidate" && log.action === "hold"), true);
+assert.equal(eventTopicStore.auditLogs.some((log) => log.targetId === "occ_event_topic_candidate" && log.action === "merge"), true);
 const alternateIssue = newsReviewStore.issues.find((issue) => issue.id !== synthesizedNewsCandidate.issueId)!;
 newsReviewStore.occurrenceIssueLinks.push({ occurrenceId: "occ_evidence_synthesis_link", issueId: alternateIssue.id, status: "candidate", matchBasis: "occurrence_claim", confidence: "medium", supportingClaimIds: [], supportingEvidenceIds: [], createdAt: new Date() });
 const occurrenceLinkCandidates = await newsReviewApp.handle({ method: "GET", path: "/admin/occurrence-issue-link-candidates", headers: internalHeaders });

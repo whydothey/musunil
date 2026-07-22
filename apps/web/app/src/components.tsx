@@ -2,7 +2,7 @@ import { ArrowLeft, ChevronRight, RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAppState } from "./app-state";
 import type { IssueOverview, OccurrenceDigest } from "./contracts";
-import { formatDateTime, formatRelativeTime, lifecycleLabel, lifecycleTone, occurrenceSummary, scaleLabel } from "./format";
+import { formatDateTime, formatRelativeTime, lifecycleLabel, lifecycleTone, occurrenceSummary, occurrenceTopicContext, occurrenceTopicTitle, scaleLabel } from "./format";
 import { Link, useRouter } from "./router";
 
 export function ScreenHeader({ title, eyebrow, back, trailing }: { title: string; eyebrow?: string; back?: boolean; trailing?: ReactNode }) {
@@ -59,8 +59,9 @@ export function OccurrenceListItem({ occurrence }: { occurrence: OccurrenceDiges
         <StatusDot state={occurrence.lifecycleState} />
         <span>{formatRelativeTime(occurrence.updatedAt)}</span>
       </div>
-      <h3>{occurrence.issueTitle || occurrence.title}</h3>
-      <p className="place-line">{occurrence.issueTitle ? `이벤트 · ${occurrence.title}` : `주제 · ${occurrence.topicStatusLabel || "관련 주제 연결 검토 중"}`}</p>
+      <h3>{occurrenceTopicTitle(occurrence)}</h3>
+      <p className="place-line">{occurrenceTopicContext(occurrence)}</p>
+      <p className="place-line">개별 일정 · {occurrence.title}</p>
       <p className="place-line">{occurrence.locationLabel || occurrence.regionLabel} · {formatDateTime(occurrence.startsAt)}</p>
       <p className="occurrence-meta">{scaleLabel(occurrence)}<span>·</span>{occurrence.publicVideoCount ? `영상 ${occurrence.publicVideoCount}건` : "영상 확인 중"}</p>
       <ChevronRight className="row-chevron" aria-hidden="true" />

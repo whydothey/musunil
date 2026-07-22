@@ -4,7 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppState } from "../app-state";
 import type { GeoJsonFeatureCollection, OccurrenceDigest } from "../contracts";
-import { formatDateTime, pastMarkerOpacity, schedulePhase, schedulePhaseLabel, scaleLabel } from "../format";
+import { formatDateTime, occurrenceTopicContext, occurrenceTopicTitle, pastMarkerOpacity, schedulePhase, schedulePhaseLabel, scaleLabel } from "../format";
 import { Link, useRouter } from "../router";
 
 export function ExploreScreen() {
@@ -17,7 +17,7 @@ export function ExploreScreen() {
   const filtered = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("ko");
     if (!normalized) return dataset?.occurrences || [];
-    return dataset?.occurrences.filter((item) => `${item.title} ${item.regionLabel} ${item.issueTitle || ""} ${item.topicStatusLabel || ""}`.toLocaleLowerCase("ko").includes(normalized)) || [];
+    return dataset?.occurrences.filter((item) => `${item.title} ${item.regionLabel} ${item.issueTitle || ""} ${item.topicCandidate?.title || ""} ${item.topicStatusLabel || ""}`.toLocaleLowerCase("ko").includes(normalized)) || [];
   }, [dataset, query]);
   useEffect(() => {
     if (requestedOccurrenceId) selectOccurrence(requestedOccurrenceId);
@@ -32,7 +32,7 @@ export function ExploreScreen() {
           {query ? <button type="button" onClick={() => setQuery("")} aria-label="검색어 지우기"><X /></button> : null}
         </label>
         {query ? <div className="map-results" aria-label="검색 결과">
-          {filtered.slice(0, 5).map((item) => <button key={item.id} type="button" onClick={() => { selectOccurrence(item.id); setQuery(""); }}><span>{item.regionLabel} · {schedulePhaseLabel(schedulePhase(item))}</span><strong>{item.issueTitle || item.title}</strong><small>{item.issueTitle ? `${item.title} · ` : `${item.topicStatusLabel || "관련 주제 연결 검토 중"} · `}{formatDateTime(item.startsAt)} · {item.locationLabel || "위치 확인 중"}</small><ChevronRight /></button>)}
+          {filtered.slice(0, 5).map((item) => <button key={item.id} type="button" onClick={() => { selectOccurrence(item.id); setQuery(""); }}><span>{item.regionLabel} · {schedulePhaseLabel(schedulePhase(item))}</span><strong>{occurrenceTopicTitle(item)}</strong><small>{occurrenceTopicContext(item)} · {item.title} · {formatDateTime(item.startsAt)}</small><ChevronRight /></button>)}
           {!filtered.length ? <p>일치하는 공개 현장이 없습니다</p> : null}
         </div> : null}
       </div>
@@ -253,8 +253,9 @@ function MapSelection({ occurrence, onClose }: { occurrence: OccurrenceDigest; o
     <aside className="map-selection" aria-label="선택한 현장">
       <button type="button" className="map-selection-close" onClick={onClose} aria-label="현장 선택 닫기"><X /></button>
       <span className={`selection-state phase-${phase}`}><i />{schedulePhaseLabel(phase)}</span>
-      <h2>{occurrence.issueTitle || occurrence.title}</h2>
-      <p className="selection-topic">{occurrence.issueTitle ? `이벤트 · ${occurrence.title}` : `주제 · ${occurrence.topicStatusLabel || "관련 주제 연결 검토 중"}`}</p>
+      <h2>{occurrenceTopicTitle(occurrence)}</h2>
+      <p className="selection-topic">{occurrenceTopicContext(occurrence)}</p>
+      <p className="selection-event">개별 일정 · {occurrence.title}</p>
       <p>장소 · {occurrence.locationLabel || occurrence.regionLabel}</p>
       <p>{occurrence.locationStatusLabel || "좌표 확인 중"}{occurrence.fieldLocationEvidenceCount ? ` · 독립 현장 근거 ${occurrence.fieldLocationEvidenceCount}건` : ""}</p>
       <p>{formatDateTime(occurrence.startsAt)} · {scaleLabel(occurrence)}</p>

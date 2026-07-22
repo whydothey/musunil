@@ -1029,6 +1029,9 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
   if (request.method === "POST" && path === "/internal/ingest/news") {
     return withInternalAuth(request, options, () => postInternalIngestNews(store, request.body));
   }
+  if (request.method === "POST" && path === "/internal/ingest/event-topic-evidence") {
+    return withInternalAuth(request, options, () => postInternalIngestEventTopicEvidence(store, request.body));
+  }
   if (request.method === "GET" && path === "/internal/news-ingest-budget") {
     return withInternalAuth(request, options, () => getInternalNewsIngestBudget(store));
   }
@@ -1608,9 +1611,13 @@ function toOccurrenceDigest(store: Store, targetType: Extract<TargetType, "occur
     : "issueId" in target && target.issueId ? [target.issueId] : [];
   const issueId = issueIds[0];
   const issue = issueId ? store.issues.find((item) => item.id === issueId) : undefined;
+  const topicCandidates = occurrence ? occurrenceTopicCandidates(store, occurrence) : [];
+  const topicCandidate = topicCandidates[0];
   const officialSources = officialSourcesForEvidence(evidence);
   const topicStatus = issue
     ? "linked" as const
+    : topicCandidate
+      ? "candidate" as const
     : officialSources.some((source) => source.granularity === "individual_schedule")
       ? "source_not_disclosed" as const
       : "unlinked" as const;
@@ -1649,6 +1656,8 @@ function toOccurrenceDigest(store: Store, targetType: Extract<TargetType, "occur
     issueTitle: issue?.title,
     topicStatus,
     topicStatusLabel: occurrenceTopicStatusLabel(topicStatus),
+    topicCandidate,
+    topicCandidateCount: topicCandidates.length || undefined,
     keyPoint: strongestClaim?.normalizedStatement,
     officialSources
   };
@@ -1664,8 +1673,38 @@ function occurrenceEventDisplayTitle(title: string): string {
 
 function occurrenceTopicStatusLabel(status: NonNullable<OccurrenceDigest["topicStatus"]>): string {
   if (status === "linked") return "연결된 주요 주제";
+  if (status === "candidate") return "공개 근거에서 확인된 주제 후보";
   if (status === "source_not_disclosed") return "경찰 공개자료에 주제 미기재";
   return "관련 주제 연결 검토 중";
+}
+
+function occurrenceTopicCandidates(store: Store, occurrence: Occurrence): NonNullable<OccurrenceDigest["topicCandidate"]>[] {
+  return store.occurrenceIssueLinks
+    .filter((link) => link.occurrenceId === occurrence.id && link.status === "candidate")
+    .map((link) => {
+      const issue = store.issues.find((item) => item.id === link.issueId && item.kind === "topic" && item.status !== "archived");
+      if (!issue) return undefined;
+      const publicClaims = link.supportingClaimIds
+        .map((id) => store.claims.find((claim) => claim.id === id && claim.visibility === "public"))
+        .filter((claim): claim is Claim => Boolean(claim));
+      const publicEvidenceIds = new Set(publicClaims.flatMap((claim) => claim.evidenceIds));
+      const evidence = link.supportingEvidenceIds
+        .filter((id) => publicEvidenceIds.has(id))
+        .map((id) => store.evidence.find((item) => item.id === id))
+        .filter((item): item is Evidence => Boolean(item));
+      const sources = uniqueStrings(evidence.map((item) => item.publisherLabel || item.externalProvider || "공개 근거"));
+      if (sources.length === 0) return undefined;
+      return {
+        issueId: issue.id,
+        title: issue.title,
+        confidence: link.confidence,
+        sourceCount: sources.length,
+        evidenceCount: evidence.length,
+        statusLabel: `공개 근거 ${sources.length}곳에서 확인 · 연결 검토 중`
+      };
+    })
+    .filter((item): item is NonNullable<OccurrenceDigest["topicCandidate"]> => Boolean(item))
+    .sort((left, right) => right.sourceCount - left.sourceCount || confidenceRank(right.confidence) - confidenceRank(left.confidence) || left.title.localeCompare(right.title, "ko"));
 }
 
 function officialSourcesForEvidence(evidence: Evidence[]): NonNullable<OccurrenceDigest["officialSources"]> {
@@ -2535,6 +2574,8 @@ function getMap(store: Store, now = new Date()): ApiResponse {
         issueTitle: unit.issueTitle,
         topicStatus: unit.topicStatus,
         topicStatusLabel: unit.topicStatusLabel,
+        topicCandidate: unit.topicCandidate,
+        topicCandidateCount: unit.topicCandidateCount,
         title: unit.title,
         regionLabel: unit.regionLabel,
         lifecycleState: unit.lifecycleState,
@@ -2572,6 +2613,8 @@ function getMap(store: Store, now = new Date()): ApiResponse {
       issueTitle: unit.issueTitle,
       topicStatus: unit.topicStatus,
       topicStatusLabel: unit.topicStatusLabel,
+      topicCandidate: unit.topicCandidate,
+      topicCandidateCount: unit.topicCandidateCount,
       title: unit.title,
       regionLabel: unit.regionLabel,
       lifecycleState: unit.lifecycleState,
@@ -2597,6 +2640,8 @@ type MapOccurrenceUnit = {
   issueTitle?: string;
   topicStatus: NonNullable<OccurrenceDigest["topicStatus"]>;
   topicStatusLabel: string;
+  topicCandidate?: NonNullable<OccurrenceDigest["topicCandidate"]>;
+  topicCandidateCount?: number;
   title: string;
   regionLabel: string;
   lifecycleState: string;
@@ -2610,11 +2655,13 @@ function mapOccurrenceUnits(store: Store, now = new Date()): MapOccurrenceUnit[]
     ...store.occurrences.filter((item) => !isSourceOnlyOccurrence(store, item) && isOccurrenceWithinPublicDiscoveryWindow(item, now)).map((item) => {
       const issueId = primaryApprovedIssueId(store, item);
       const issue = issueId ? store.issues.find((candidate) => candidate.id === issueId) : undefined;
+      const topicCandidates = occurrenceTopicCandidates(store, item);
+      const topicCandidate = topicCandidates[0];
       const hasOfficialIndividualSource = item.evidenceIds.some((evidenceId) => {
         const evidence = store.evidence.find((candidate) => candidate.id === evidenceId);
         return evidence?.externalProvider === "official_public_source" && evidence.sourceGranularity === "individual_schedule";
       });
-      const topicStatus = issue ? "linked" as const : hasOfficialIndividualSource ? "source_not_disclosed" as const : "unlinked" as const;
+      const topicStatus = issue ? "linked" as const : topicCandidate ? "candidate" as const : hasOfficialIndividualSource ? "source_not_disclosed" as const : "unlinked" as const;
       return {
         id: item.id,
         targetType: "occurrence" as const,
@@ -2622,6 +2669,8 @@ function mapOccurrenceUnits(store: Store, now = new Date()): MapOccurrenceUnit[]
         issueTitle: issue?.title,
         topicStatus,
         topicStatusLabel: occurrenceTopicStatusLabel(topicStatus),
+        topicCandidate,
+        topicCandidateCount: topicCandidates.length || undefined,
         title: occurrenceEventDisplayTitle(item.title),
         regionLabel: item.regionLabel,
         lifecycleState: item.lifecycleState,
@@ -4737,6 +4786,139 @@ function postInternalIngestNews(store: Store, body: unknown): ApiResponse {
     status: created ? "news_evidence_received" : "news_evidence_refreshed",
     candidate: toAdminNewsCandidate(store, candidate)
   });
+}
+
+function postInternalIngestEventTopicEvidence(store: Store, body: unknown): ApiResponse {
+  const data = asObject(body);
+  if (readString(data, "provider") !== activeNewsProvider) throw new ApiError(400, "news_provider_invalid");
+  const occurrenceId = readString(data, "occurrenceId");
+  const occurrence = store.occurrences.find((item) => item.id === occurrenceId && !isSourceOnlyOccurrence(store, item));
+  if (!occurrence?.startsAt) throw new ApiError(404, "occurrence_not_found");
+  const eventDate = readString(data, "eventDate");
+  if (eventDate !== koreaDateString(occurrence.startsAt)) throw new ApiError(422, "event_topic_date_mismatch");
+  const matchedLocationTerms = readOptionalStringArray(data, "matchedLocationTerms")
+    .map((term) => term.replace(/\s+/g, " ").trim())
+    .filter((term) => term.length >= 2);
+  const occurrenceLocationCorpus = normalizeSearchText([
+    occurrence.title,
+    occurrence.locationText,
+    occurrence.publicLocation?.label,
+    occurrence.sourcePublicLocation?.label
+  ].filter(Boolean).join(" "));
+  if (data.dateMatched !== true || data.locationMatched !== true || (data.timeMatched !== true && data.uniqueLocationMatched !== true)) {
+    throw new ApiError(422, "event_topic_match_signals_insufficient");
+  }
+  if (matchedLocationTerms.length === 0 || !matchedLocationTerms.some((term) => occurrenceLocationCorpus.includes(normalizeSearchText(term)))) {
+    throw new ApiError(422, "event_topic_location_mismatch");
+  }
+
+  const topicTitle = normalizeEventTopicTitle(readString(data, "topicTitle"));
+  const topicTags = uniqueStrings([topicTitle, ...readOptionalStringArray(data, "topicTags")]).slice(0, 8);
+  const sourceUrl = safeExternalNewsUrl(readString(data, "sourceUrl"))!;
+  const sourcePublishedAt = readDate(data, "publishedAt");
+  const publicationLeadMs = occurrence.startsAt.getTime() - sourcePublishedAt.getTime();
+  if (publicationLeadMs < -2 * dayMs || publicationLeadMs > 7 * dayMs) throw new ApiError(422, "event_topic_publication_window_invalid");
+  const sourceTitle = readString(data, "sourceTitle").replace(/\s+/g, " ").trim().slice(0, 300);
+  const publisherLabel = newsPublisherLabel(readOptionalString(data, "publisherLabel"), sourceUrl);
+  const articleExternalId = (readOptionalString(data, "providerItemId") ?? createHash("sha256").update(sourceUrl).digest("hex")).slice(0, 160);
+  let evidence = store.evidence.find((item) => item.externalProvider === activeNewsProvider && item.externalId === articleExternalId);
+  const evidenceCreated = !evidence;
+  if (!evidence) {
+    evidence = {
+      id: `evidence_news_${createHash("sha1").update(`${activeNewsProvider}:${articleExternalId}`).digest("hex").slice(0, 16)}`,
+      evidenceType: "media_link",
+      uploadedAt: new Date(),
+      redactionStatus: "not_required",
+      proofOfPresenceStatus: "material_only",
+      externalProvider: activeNewsProvider,
+      externalId: articleExternalId,
+      sourceUrl,
+      publisherLabel,
+      sourcePublishedAt,
+      sourceTitle,
+      publicSummary: `${topicTitle}의 목적을 설명한 언론 보도입니다.`
+    };
+    store.evidence.push(evidence);
+  }
+
+  let claim = store.claims.find((item) => item.targetType === "occurrence" && item.targetId === occurrence.id && item.evidenceIds.includes(evidence.id));
+  if (!claim) {
+    claim = addClaim(store, {
+      visibility: "public",
+      targetType: "occurrence",
+      targetId: occurrence.id,
+      sourceProvenance: "media_report",
+      claimantLabel: publisherLabel,
+      statement: sourceTitle,
+      normalizedStatement: `${publisherLabel} 보도에서는 이 일정을 ${topicTitle}로 설명했습니다.`,
+      evidenceStrength: "single_source",
+      riskLevel: "misleading_possible",
+      evidenceIds: [evidence.id]
+    });
+    claim.occurredAt = occurrence.startsAt;
+    attachEvidence(store, "occurrence", occurrence.id, evidence.id);
+    audit(store, "correction", "claim", claim.id, "날짜·시간·공개 위치가 일치하는 언론 보도에서 이벤트 목적 Claim을 분리해 연결했습니다.");
+  }
+
+  const issue = ensureIssue(store, { title: topicTitle, topicTags });
+  let link = store.occurrenceIssueLinks.find((item) => item.occurrenceId === occurrence.id && item.issueId === issue.id);
+  const linkCreated = !link;
+  if (!link) {
+    link = {
+      occurrenceId: occurrence.id,
+      issueId: issue.id,
+      status: "candidate",
+      matchBasis: "event_source_match",
+      confidence: "medium",
+      supportingClaimIds: [],
+      supportingEvidenceIds: [],
+      createdAt: new Date(),
+      reviewNote: "날짜·시간·공개 위치가 일치하는 이벤트 목적 보도 1차 연결"
+    };
+    store.occurrenceIssueLinks.push(link);
+  }
+  link.supportingClaimIds = uniqueStrings([...link.supportingClaimIds, claim.id]);
+  link.supportingEvidenceIds = uniqueStrings([...link.supportingEvidenceIds, evidence.id]);
+  const independentSources = uniqueStrings(link.supportingEvidenceIds.map((id) => store.evidence.find((item) => item.id === id)?.publisherLabel).filter((label): label is string => Boolean(label)));
+  const competingCandidates = store.occurrenceIssueLinks.filter((item) => item.occurrenceId === occurrence.id && item.issueId !== issue.id && item.status !== "rejected");
+  if (independentSources.length >= 2 && competingCandidates.length === 0) {
+    if (link.status !== "approved") audit(store, "merge", "occurrence", occurrence.id, `독립 언론 ${independentSources.length}곳의 이벤트 목적 근거가 일치해 주제 '${issue.id}' 연결을 승인했습니다.`);
+    link.status = "approved";
+    link.confidence = "high";
+    link.reviewedAt = new Date();
+    link.reviewNote = `독립 언론 ${independentSources.length}곳의 날짜·시간·공개 위치·목적 일치`;
+  } else {
+    link.status = "candidate";
+    link.confidence = "medium";
+    audit(store, "hold", "occurrence", occurrence.id, competingCandidates.length
+      ? `복수 이벤트 주제 후보가 있어 '${issue.id}' 연결을 공개 후보로 보류했습니다.`
+      : `단일 언론의 이벤트 목적 근거만 확인되어 '${issue.id}' 연결을 후보로 표시했습니다.`);
+  }
+  occurrence.issueId = primaryApprovedIssueId(store, occurrence);
+  return json(evidenceCreated || linkCreated ? 201 : 200, {
+    status: link.status === "approved" ? "event_topic_link_approved" : "event_topic_link_candidate",
+    occurrenceId: occurrence.id,
+    issueId: issue.id,
+    linkStatus: link.status,
+    independentSourceCount: independentSources.length
+  });
+}
+
+function normalizeEventTopicTitle(value: string): string {
+  const normalized = value.normalize("NFKC")
+    .replace(/[“”‘’"']/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/(?:관련\s*)?(?:집회|시위|행진|문화제|국민대회)\s*$/u, "")
+    .trim();
+  if (normalized.length < 3 || normalized.length > 70) throw new ApiError(422, "event_topic_title_invalid");
+  if (!/(?:요구|촉구|규탄|반대|찬성|지지|철회|폐지|보장|정상화|재선거|탄핵|처벌|사퇴|진상\s*규명|개선|보호)/u.test(normalized)) {
+    throw new ApiError(422, "event_topic_purpose_missing");
+  }
+  return `${normalized} 관련 집회`;
+}
+
+function koreaDateString(value: Date): string {
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(value);
 }
 
 const evidenceSynthesisLookbackMs = 30 * dayMs;

@@ -110,6 +110,17 @@ export function occurrenceSummary(occurrence: OccurrenceDigest) {
   return parts.join(" · ");
 }
 
+export function occurrenceTopicTitle(occurrence: OccurrenceDigest) {
+  return occurrence.issueTitle || occurrence.topicCandidate?.title || "집회 주제 확인 중";
+}
+
+export function occurrenceTopicContext(occurrence: OccurrenceDigest) {
+  if (occurrence.issueTitle) return "확인된 주제 · 복수 근거 또는 운영 검토로 연결";
+  if (occurrence.topicCandidate) return `주제 후보 · ${occurrence.topicCandidate.statusLabel}`;
+  if (occurrence.topicStatus === "source_not_disclosed") return "주제 미확인 · 경찰 공개자료에는 집회 목적이 기재되지 않았습니다";
+  return `주제 미확인 · ${occurrence.topicStatusLabel || "연결 가능한 목적 근거를 확인하고 있습니다"}`;
+}
+
 function number(value: number) {
   return new Intl.NumberFormat("ko-KR").format(value);
 }

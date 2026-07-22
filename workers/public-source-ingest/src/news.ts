@@ -37,10 +37,41 @@ export type NewsIngestPayload = {
   sourceBatchSize: number;
 };
 
-type ParsedNewsArticle = {
+export type NewsOccurrence = {
+  id: string;
+  title: string;
+  regionLabel: string;
+  locationLabel?: string;
+  startsAt?: string;
+  endsAt?: string;
+  topicStatus?: string;
+};
+
+export type EventTopicEvidencePayload = {
+  provider: "publisher_rss";
+  occurrenceId: string;
+  eventDate: string;
+  topicTitle: string;
+  topicTags: string[];
+  sourceTitle: string;
+  sourceUrl: string;
+  publisherLabel: string;
+  publishedAt: string;
+  providerItemId: string;
+  sourceId: string;
+  sourceCheckedAt: string;
+  matchedLocationTerms: string[];
+  dateMatched: true;
+  locationMatched: true;
+  timeMatched: boolean;
+  uniqueLocationMatched: boolean;
+};
+
+export type ParsedNewsArticle = {
   title: string;
   url: string;
   searchText: string;
+  contentText: string;
   publishedAt: Date;
 };
 
@@ -63,6 +94,12 @@ const defaultFeeds: NewsFeed[] = [
   { id: "ohmynews_all", publisherLabel: "오마이뉴스", url: "https://rss.ohmynews.com/rss/ohmynews.xml" },
   { id: "mk_politics", publisherLabel: "매일경제", url: "https://www.mk.co.kr/rss/30000001/" }
 ];
+
+const edailyArchiveFeed: NewsFeed = {
+  id: "edaily_official_search",
+  publisherLabel: "이데일리",
+  url: "https://www.edaily.co.kr/search/news/?keyword=%EC%A7%91%ED%9A%8C"
+};
 
 export function readNewsRuntime(config: Record<string, unknown>, env: NodeJS.ProcessEnv = process.env): NewsRuntime {
   return {
@@ -101,15 +138,44 @@ export function newsOperationalDiagnostics(runtime: NewsRuntime) {
 export async function fetchNewsPayloads(
   runtime: NewsRuntime,
   groups: NewsLawGroup[],
-  remainingMonthlyCalls: number
-): Promise<{ payloads: NewsIngestPayload[]; callCount: number; queryCount: number; failures: Array<{ query: string; status: number }> }> {
+  remainingMonthlyCalls: number,
+  occurrences: NewsOccurrence[] = []
+): Promise<{ payloads: NewsIngestPayload[]; eventTopicPayloads: EventTopicEvidencePayload[]; callCount: number; queryCount: number; failures: Array<{ query: string; status: number }> }> {
   const feeds = runtime.feeds.slice(0, Math.min(runtime.maxFeedsPerRun, remainingMonthlyCalls));
   const checkedAt = new Date();
   const cutoff = checkedAt.getTime() - runtime.initialLookbackDays * 24 * 60 * 60 * 1000;
   const bestByGroupAndUrl = new Map<string, NewsIngestPayload>();
+  const bestEventTopicByOccurrenceAndUrl = new Map<string, EventTopicEvidencePayload>();
   const failures: Array<{ query: string; status: number }> = [];
   let callCount = 0;
   let lastRequestAt = 0;
+  const collectArticle = (article: ParsedNewsArticle, feed: NewsFeed) => {
+    if (article.publishedAt.getTime() < cutoff) return;
+    for (const group of groups) {
+      if (!matchesLaw(article.searchText, group)) continue;
+      const coreTopicKey = bestCoreTopicKey(article.searchText, group);
+      const payload: NewsIngestPayload = {
+        provider: "publisher_rss",
+        lawGroupId: group.id,
+        coreTopicKey,
+        sourceTitle: article.title,
+        sourceUrl: article.url,
+        publisherLabel: feed.publisherLabel,
+        publishedAt: article.publishedAt.toISOString(),
+        providerItemId: createHash("sha256").update(article.url).digest("hex"),
+        directBillMatch: matchesBill(article.searchText, group),
+        sourceId: `news_rss_${feed.id}`,
+        sourceCheckedAt: checkedAt.toISOString(),
+        sourceBatchSize: 0
+      };
+      const key = `${group.id}:${article.url}`;
+      const existing = bestByGroupAndUrl.get(key);
+      if (!existing || (existing.coreTopicKey === "_group" && payload.coreTopicKey !== "_group")) bestByGroupAndUrl.set(key, payload);
+    }
+    for (const payload of eventTopicPayloadsForArticle(article, feed, occurrences, checkedAt)) {
+      bestEventTopicByOccurrenceAndUrl.set(`${payload.occurrenceId}:${payload.sourceUrl}`, payload);
+    }
+  };
 
   for (const feed of feeds) {
     const waitMs = Math.max(0, lastRequestAt + runtime.minRequestIntervalMs - Date.now());
@@ -143,35 +209,20 @@ export async function fetchNewsPayloads(
       continue;
     }
 
-    for (const article of articles) {
-      if (article.publishedAt.getTime() < cutoff) continue;
-      for (const group of groups) {
-        if (!matchesLaw(article.searchText, group)) continue;
-        const coreTopicKey = bestCoreTopicKey(article.searchText, group);
-        const payload: NewsIngestPayload = {
-          provider: "publisher_rss",
-          lawGroupId: group.id,
-          coreTopicKey,
-          sourceTitle: article.title,
-          sourceUrl: article.url,
-          publisherLabel: feed.publisherLabel,
-          publishedAt: article.publishedAt.toISOString(),
-          providerItemId: createHash("sha256").update(article.url).digest("hex"),
-          directBillMatch: matchesBill(article.searchText, group),
-          sourceId: `news_rss_${feed.id}`,
-          sourceCheckedAt: checkedAt.toISOString(),
-          sourceBatchSize: 0
-        };
-        const key = `${group.id}:${article.url}`;
-        const existing = bestByGroupAndUrl.get(key);
-        if (!existing || (existing.coreTopicKey === "_group" && payload.coreTopicKey !== "_group")) bestByGroupAndUrl.set(key, payload);
-      }
-    }
+    for (const article of articles) collectArticle(article, feed);
+  }
+
+  if (occurrences.length > 0 && callCount < remainingMonthlyCalls) {
+    const archive = await fetchEdailyEventArchive(runtime, remainingMonthlyCalls - callCount);
+    callCount += archive.callCount;
+    failures.push(...archive.failures);
+    for (const article of archive.articles) collectArticle(article, edailyArchiveFeed);
   }
 
   const payloads = [...bestByGroupAndUrl.values()].sort((left, right) => right.publishedAt.localeCompare(left.publishedAt));
+  const eventTopicPayloads = [...bestEventTopicByOccurrenceAndUrl.values()].sort((left, right) => right.publishedAt.localeCompare(left.publishedAt));
   for (const payload of payloads) payload.sourceBatchSize = payloads.length;
-  return { payloads, callCount, queryCount: feeds.length, failures };
+  return { payloads, eventTopicPayloads, callCount, queryCount: callCount, failures };
 }
 
 export function parsePublisherRss(xml: string): ParsedNewsArticle[] {
@@ -188,8 +239,80 @@ export function parsePublisherRss(xml: string): ParsedNewsArticle[] {
     const rawDate = readXmlTag(entry, "pubDate") || readXmlTag(entry, "date") || readXmlTag(entry, "published") || readXmlTag(entry, "updated");
     const publishedAt = new Date(decodeXmlText(rawDate));
     if (!title || !url || Number.isNaN(publishedAt.getTime())) return undefined;
-    return { title, url, searchText: normalize(`${title} ${description}`), publishedAt };
+    const contentText = `${title}. ${description}`.replace(/\s+/g, " ").trim();
+    return { title, url, searchText: normalize(contentText), contentText, publishedAt };
   }).filter((item): item is ParsedNewsArticle => Boolean(item));
+}
+
+async function fetchEdailyEventArchive(
+  runtime: NewsRuntime,
+  remainingCalls: number
+): Promise<{ articles: ParsedNewsArticle[]; callCount: number; failures: Array<{ query: string; status: number }> }> {
+  const failures: Array<{ query: string; status: number }> = [];
+  const articles: ParsedNewsArticle[] = [];
+  let callCount = 0;
+  let lastRequestAt = 0;
+  const request = async (url: string, query: string): Promise<string | undefined> => {
+    if (callCount >= remainingCalls) return undefined;
+    const waitMs = Math.max(0, lastRequestAt + runtime.minRequestIntervalMs - Date.now());
+    if (waitMs > 0) await delay(waitMs);
+    callCount += 1;
+    try {
+      const response = await fetch(url, {
+        headers: { accept: "application/xml,text/xml,text/html;q=0.9", "user-agent": "MusunilNewsSourceWorker/0.4 (official publisher sitemap event metadata ingest)" },
+        signal: AbortSignal.timeout(20_000)
+      });
+      lastRequestAt = Date.now();
+      if (!response.ok || new URL(response.url).hostname !== "www.edaily.co.kr") {
+        failures.push({ query, status: response.status });
+        return undefined;
+      }
+      return await response.text();
+    } catch {
+      lastRequestAt = Date.now();
+      failures.push({ query, status: 0 });
+      return undefined;
+    }
+  };
+
+  const bestByUrl = new Map<string, ParsedNewsArticle>();
+  for (const keyword of ["집회", "시위", "행진"]) {
+    const url = `https://www.edaily.co.kr/search/news/?keyword=${encodeURIComponent(keyword)}`;
+    const html = await request(url, `edaily_search_${keyword}`);
+    if (!html) continue;
+    for (const article of parseEdailySearchResults(html).slice(0, runtime.maxResultsPerFeed)) bestByUrl.set(article.url, article);
+  }
+  articles.push(...bestByUrl.values());
+  return { articles, callCount, failures };
+}
+
+export function parseEdailySearchResults(html: string): ParsedNewsArticle[] {
+  return [...html.matchAll(/<div\b[^>]*class=["'][^"']*newsbox_04[^"']*["'][^>]*>([\s\S]*?)<div\b[^>]*class=["'][^"']*author_category[^"']*["'][^>]*>([\s\S]*?)(\d{4}\.\d{2}\.\d{2})/gi)].map((match) => {
+    const card = match[1] ?? "";
+    const href = card.match(/<a\b[^>]*href=["']([^"']+)["'][^>]*>/i)?.[1] ?? "";
+    const listItems = [...card.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)].map((item) => cleanLongNewsText(item[1]));
+    const title = listItems[0] || cleanLongNewsText(card.match(/<a\b[^>]*title=["']([^"']+)["']/i)?.[1] ?? "");
+    const description = listItems[1] ?? "";
+    let url = "";
+    try {
+      url = new URL(decodeXmlText(href), "https://www.edaily.co.kr").toString();
+    } catch {
+      return undefined;
+    }
+    const publishedAt = new Date(`${match[3].replaceAll(".", "-")}T00:00:00.000+09:00`);
+    if (!title || !description || new URL(url).hostname !== "www.edaily.co.kr" || Number.isNaN(publishedAt.getTime())) return undefined;
+    const contentText = `${title}. ${description}`.replace(/\s+/g, " ").trim();
+    return { title, url, publishedAt, contentText, searchText: normalize(contentText) };
+  }).filter((item): item is ParsedNewsArticle => Boolean(item));
+}
+
+function cleanLongNewsText(value: string): string {
+  return decodeXmlText(value)
+    .replace(/<br\s*\/?\s*>/gi, ". ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 12_000);
 }
 
 export function cleanNewsText(value: unknown): string {
@@ -199,6 +322,133 @@ export function cleanNewsText(value: unknown): string {
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 500);
+}
+
+export function eventTopicPayloadsForArticle(
+  article: ParsedNewsArticle,
+  feed: NewsFeed,
+  occurrences: NewsOccurrence[],
+  checkedAt = new Date()
+): EventTopicEvidencePayload[] {
+  if (!/(?:집회|시위|행진|문화제|국민대회|피켓)/u.test(article.contentText)) return [];
+  const rawSegments = article.contentText.split(/(?<=[.!?。])\s+/u).map((item) => item.trim()).filter(Boolean);
+  const segments = rawSegments.map((item, index) => index > 0 ? `${rawSegments[index - 1]} ${item}` : item);
+  const candidates = occurrences.filter((occurrence) => {
+    if (!occurrence.startsAt || occurrence.topicStatus === "linked") return false;
+    const startsAt = new Date(occurrence.startsAt);
+    if (Number.isNaN(startsAt.getTime())) return false;
+    const leadMs = startsAt.getTime() - article.publishedAt.getTime();
+    return leadMs >= -2 * dayMs && leadMs <= 7 * dayMs;
+  });
+  const payloads: EventTopicEvidencePayload[] = [];
+  for (const occurrence of candidates) {
+    const startsAt = new Date(occurrence.startsAt!);
+    const eventDate = koreaDate(startsAt);
+    const terms = eventLocationTerms(occurrence);
+    if (terms.length === 0) continue;
+    const segment = segments.find((item) => terms.some((term) => normalize(item).includes(normalize(term))));
+    if (!segment || !/(?:집회|시위|행진|문화제|국민대회|피켓)/u.test(segment)) continue;
+    const topicTitle = extractPurposeTopic(segment);
+    if (!topicTitle) continue;
+    const timeMatched = segmentTimes(segment).some((minutes) => Math.abs(minutes - koreaMinutes(startsAt)) <= 90);
+    const dateMatched = mentionsEventDate(segment, eventDate) || (koreaDate(article.publishedAt) === eventDate && timeMatched);
+    if (!dateMatched) continue;
+    const sameLocationAndDate = candidates.filter((candidate) => candidate.startsAt && koreaDate(new Date(candidate.startsAt)) === eventDate
+      && eventLocationTerms(candidate).some((term) => terms.some((current) => normalize(current).includes(normalize(term)) || normalize(term).includes(normalize(current)))));
+    const uniqueLocationMatched = sameLocationAndDate.length === 1;
+    if (!timeMatched && !uniqueLocationMatched) continue;
+    const matchedLocationTerms = terms.filter((term) => normalize(segment).includes(normalize(term))).slice(0, 3);
+    payloads.push({
+      provider: "publisher_rss",
+      occurrenceId: occurrence.id,
+      eventDate,
+      topicTitle,
+      topicTags: purposeTopicTags(topicTitle),
+      sourceTitle: article.title,
+      sourceUrl: article.url,
+      publisherLabel: feed.publisherLabel,
+      publishedAt: article.publishedAt.toISOString(),
+      providerItemId: createHash("sha256").update(article.url).digest("hex"),
+      sourceId: `news_rss_${feed.id}`,
+      sourceCheckedAt: checkedAt.toISOString(),
+      matchedLocationTerms,
+      dateMatched: true,
+      locationMatched: true,
+      timeMatched,
+      uniqueLocationMatched
+    });
+  }
+  return payloads;
+}
+
+const dayMs = 24 * 60 * 60 * 1000;
+const purposeMarker = "요구|촉구|규탄|반대|찬성|지지|철회|폐지|보장|정상화|재선거|탄핵|처벌|사퇴|진상\\s*규명|개선|보호";
+const purposeActionMarker = "요구|촉구|규탄|반대|찬성|지지|철회|폐지|보장|처벌|사퇴|개선|보호";
+
+function extractPurposeTopic(segment: string): string | undefined {
+  const quoted = segment.match(new RegExp(`[‘“\"']([^’”\"']{3,60}(?:${purposeMarker})[^’”\"']*)[’”\"']`, "u"))?.[1];
+  if (quoted) return normalizePurposePhrase(quoted);
+  const direct = segment.match(new RegExp(`([가-힣A-Za-z0-9·]+(?:\\s+[가-힣A-Za-z0-9·]+){0,3}?)(?:을|를)?\\s*(${purposeActionMarker})(?:하는|한|하겠다고|을|를)?`, "u"));
+  if (!direct) return undefined;
+  const object = (direct[1].split(/(?:에서|에는|에게|측은|단체는|단체가)/u).at(-1)?.trim() ?? "").replace(/[을를]$/u, "");
+  const marker = direct[2].replace(/\s+/g, " ");
+  return normalizePurposePhrase(`${object} ${marker}`);
+}
+
+function normalizePurposePhrase(value: string): string | undefined {
+  const phrase = value.normalize("NFKC")
+    .replace(/[“”‘’\"']/g, "")
+    .replace(/^\d{1,2}일\s+/u, "")
+    .replace(/^[가-힣A-Za-z0-9·\s]{1,35}(?:들이|측은|측이|단체는|단체가)\s+/u, "")
+    .replace(/^(?:열린|예정된|개최된)\s+/u, "")
+    .replace(/(?:비상대책위원회|대책위원회|추진위원회|준비위원회)\s*$/u, "")
+    .replace(/남녀공학\s*전환/gu, "남녀공학 전환")
+    .replace(/\s*투쟁\s*/gu, " ")
+    .replace(/(?:집회|시위|행진|문화제|국민대회|피켓|투쟁)\s*$/u, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (phrase.length < 3 || phrase.length > 60 || !new RegExp(`(?:${purposeMarker})`, "u").test(phrase)) return undefined;
+  return `${phrase} 관련 집회`;
+}
+
+function purposeTopicTags(title: string): string[] {
+  return [...new Set(title.replace(/\s*관련 집회$/u, "").split(/\s+/).filter((term) => term.length >= 2).concat("집회"))].slice(0, 6);
+}
+
+function eventLocationTerms(occurrence: NewsOccurrence): string[] {
+  const text = `${occurrence.locationLabel ?? ""} ${occurrence.title}`
+    .replace(/(?:집회|일정|일대|부근|인근|앞|건너편|이면도로|개\s*차로)/g, " ")
+    .replace(/[()·,]/g, " ");
+  const suffixTerms = [...text.matchAll(/[가-힣A-Za-z0-9]+(?:입구역|광장|공원|당사|경찰청|도청|시청|구청|교육청|선거관리위원회|교회|시장|현장|사거리|오거리|법원|박물관|기념관|아파트|역)/gu)].map((match) => match[0]);
+  const tokens = text.split(/\s+/).filter((term) => term.length >= 3 && !/^(?:서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주|종로구|서초구|마포구|송파구)$/u.test(term));
+  return [...new Set([...suffixTerms, ...tokens])].sort((left, right) => right.length - left.length).slice(0, 6);
+}
+
+function mentionsEventDate(segment: string, eventDate: string): boolean {
+  const [, month, day] = eventDate.split("-");
+  return new RegExp(`(?:${Number(month)}월\\s*)?${Number(day)}일`, "u").test(segment);
+}
+
+function segmentTimes(segment: string): number[] {
+  const values: number[] = [];
+  for (const match of segment.matchAll(/(?:(오전|오후)\s*)?(\d{1,2})(?::(\d{2}))?\s*시?/gu)) {
+    if (!match[0].includes(":") && !match[0].includes("시")) continue;
+    let hour = Number(match[2]);
+    const minute = Number(match[3] ?? 0);
+    if (match[1] === "오후" && hour < 12) hour += 12;
+    if (match[1] === "오전" && hour === 12) hour = 0;
+    if (hour <= 23 && minute <= 59) values.push(hour * 60 + minute);
+  }
+  return values;
+}
+
+function koreaDate(value: Date): string {
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(value);
+}
+
+function koreaMinutes(value: Date): number {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(value);
+  return Number(parts.find((part) => part.type === "hour")?.value ?? 0) * 60 + Number(parts.find((part) => part.type === "minute")?.value ?? 0);
 }
 
 function readXmlTag(entry: string, tag: string): string {

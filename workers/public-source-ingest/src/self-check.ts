@@ -19,7 +19,7 @@ import { parseSejongTodayAssemblyList, toSejongPublicOccurrencePayload } from ".
 import { parseGyeonggiNorthTodayAssemblyList, toGyeonggiNorthPublicOccurrencePayload } from "./gyeonggi-north.ts";
 import { ingestablePublicAssemblySources, policeRegions, publicAssemblySources, sourceCoverageReport, sourceOperationalDiagnostics } from "./sources.ts";
 import { fetchLawPayloads, lawOperationalDiagnostics, readLawRuntime } from "./laws.ts";
-import { cleanNewsText, fetchNewsPayloads, newsOperationalDiagnostics, parsePublisherRss, readNewsRuntime } from "./news.ts";
+import { cleanNewsText, eventTopicPayloadsForArticle, fetchNewsPayloads, newsOperationalDiagnostics, parseEdailySearchResults, parsePublisherRss, readNewsRuntime } from "./news.ts";
 import { discoverOfficialAttachmentLinks, extractAttachmentText, parseAssemblyAttachmentEvents, toAttachmentEventPayload } from "./attachments.ts";
 import AdmZip from "adm-zip";
 import * as XLSX from "@e965/xlsx";
@@ -793,6 +793,32 @@ const rssPublishedAt = new Date().toUTCString();
 const parsedNews = parsePublisherRss(`<rss><channel><item><title><![CDATA[<b>공직선거법</b> 투표관리 강화]]></title><link>https://news.example/article</link><description>투표용지 공급 대응</description><pubDate>${rssPublishedAt}</pubDate></item></channel></rss>`);
 assert.equal(parsedNews.length, 1);
 assert.equal(parsedNews[0]?.title, "공직선거법 투표관리 강화");
+const eventArticle = parsePublisherRss(`<rss><channel><item><title>주말 도심 집회 안내</title><link>https://news.example/event-article</link><description>토요일인 18일 오후 6시부터 홍대입구역 일대에서 재선거를 요구하는 피켓 집회를 하겠다고 공지했다.</description><pubDate>Fri, 17 Jul 2026 06:00:00 GMT</pubDate></item></channel></rss>`)[0]!;
+const eventTopicPayloads = eventTopicPayloadsForArticle(eventArticle, { id: "event-feed", publisherLabel: "검증일보", url: "https://news.example/rss" }, [{
+  id: "occ-hongdae",
+  title: "마포구 홍대입구역 7번 출구 집회",
+  regionLabel: "서울",
+  locationLabel: "홍대입구역 일대",
+  startsAt: "2026-07-18T09:00:00.000Z",
+  topicStatus: "source_not_disclosed"
+}], new Date("2026-07-17T07:00:00.000Z"));
+assert.equal(eventTopicPayloads.length, 1);
+assert.equal(eventTopicPayloads[0]?.topicTitle, "재선거 요구 관련 집회");
+assert.deepEqual(eventTopicPayloads[0]?.matchedLocationTerms, ["홍대입구역"]);
+assert.equal(eventTopicPayloads[0]?.timeMatched, true);
+const edailySearchFixture = `<div class="newsbox_04"><a href="/News/Read?newsId=1&amp;mediaCodeNo=257"><ul class="newsbox_texts"><li>도심 집회 안내</li><li>18일 오후 6시 홍대입구역에서 재선거를 요구하는 집회가 열린다.</li></ul></a><div class="author_category">2026.07.17`;
+const parsedEdailySearch = parseEdailySearchResults(edailySearchFixture);
+assert.equal(parsedEdailySearch.length, 1);
+assert.equal(parsedEdailySearch[0]?.url, "https://www.edaily.co.kr/News/Read?newsId=1&mediaCodeNo=257");
+assert.equal(parsedEdailySearch[0]?.contentText.includes("재선거를 요구"), true);
+const locationOnlyArticle = { ...eventArticle, contentText: "18일 오후 6시 홍대입구역 일대에서 집회가 예정돼 있습니다." };
+assert.equal(eventTopicPayloadsForArticle(locationOnlyArticle, { id: "event-feed", publisherLabel: "검증일보", url: "https://news.example/rss" }, [{
+  id: "occ-hongdae",
+  title: "마포구 홍대입구역 7번 출구 집회",
+  regionLabel: "서울",
+  locationLabel: "홍대입구역 일대",
+  startsAt: "2026-07-18T09:00:00.000Z"
+}]).length, 0);
 const newsRuntime = readNewsRuntime({ public_data_sources: {
   news_min_request_interval_ms: 0,
   news_rss_feeds: [

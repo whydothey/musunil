@@ -17,7 +17,7 @@ import { parseSeoulAssemblyControlList, parseSeoulAssemblyEvents, toSeoulIndivid
 import { parseSejongTodayAssemblyList, toSejongPublicOccurrencePayload } from "./sejong.ts";
 import { parseGyeonggiNorthTodayAssemblyList, toGyeonggiNorthPublicOccurrencePayload } from "./gyeonggi-north.ts";
 import { fetchLawPayloads, lawOperationalDiagnostics, readLawRuntime } from "./laws.ts";
-import { fetchNewsPayloads, newsOperationalDiagnostics, readNewsRuntime, type NewsLawGroup } from "./news.ts";
+import { fetchNewsPayloads, newsOperationalDiagnostics, readNewsRuntime, type NewsLawGroup, type NewsOccurrence } from "./news.ts";
 import { ingestablePublicAssemblySources, sourceCoverageReport, sourceOperationalDiagnostics, type PublicAssemblySource } from "./sources.ts";
 import { fetchAttachmentEventPayloads } from "./attachments.ts";
 import { resolve } from "node:path";
@@ -97,10 +97,10 @@ if (process.argv.includes("--news")) {
     ...group,
     bills: (lawsBody.lawInterestItems ?? []).filter((law) => law.lawGroupId === group.id).map((law) => ({ assemblyBillNo: law.assemblyBillNo, proposer: law.proposer }))
   }));
-  if (groups.length === 0) {
-    console.log(JSON.stringify({ mode: "news_skipped", reason: "law_groups_empty" }, null, 2));
-    process.exit(0);
-  }
+  const mapResponse = await fetch(`${runtime.apiBaseUrl}/map`, { headers: { accept: "application/json" } });
+  const mapBody = await readResponseBody(mapResponse) as { occurrenceDigests?: NewsOccurrence[] };
+  if (!mapResponse.ok) throw new Error(`news_occurrences_fetch_failed:${mapResponse.status}`);
+  const occurrences = mapBody.occurrenceDigests ?? [];
   let budget: { month?: string; remaining?: number } = { month: new Date().toISOString().slice(0, 7), remaining: 20_000 };
   if (shouldPost) {
     const budgetResponse = await fetch(`${runtime.apiBaseUrl}/internal/news-ingest-budget`, {
@@ -116,9 +116,9 @@ if (process.argv.includes("--news")) {
     console.log(JSON.stringify({ mode: "news_budget_exhausted", month: budgetMonth }, null, 2));
     process.exit(0);
   }
-  const result = await fetchNewsPayloads(newsRuntime, groups, remainingCalls);
+  const result = await fetchNewsPayloads(newsRuntime, groups, remainingCalls, occurrences);
   if (!shouldPost) {
-    console.log(JSON.stringify({ mode: "news_dry_run", groupCount: groups.length, queryCount: result.queryCount, callCount: result.callCount, failures: result.failures, count: result.payloads.length, payloads: result.payloads }, null, 2));
+    console.log(JSON.stringify({ mode: "news_dry_run", groupCount: groups.length, occurrenceCount: occurrences.length, queryCount: result.queryCount, callCount: result.callCount, failures: result.failures, count: result.payloads.length, eventTopicCount: result.eventTopicPayloads.length, payloads: result.payloads, eventTopicPayloads: result.eventTopicPayloads }, null, 2));
     process.exit(0);
   }
   if (result.callCount > 0) {
@@ -138,8 +138,17 @@ if (process.argv.includes("--news")) {
     });
     results.push({ providerItemId: payload.providerItemId, status: response.status, ok: response.ok, body: await readResponseBody(response) });
   }
-  console.log(JSON.stringify({ mode: "news_post", queryCount: result.queryCount, callCount: result.callCount, failures: result.failures, count: results.length, results }, null, 2));
-  if (result.failures.length > 0 || results.some((item) => !item.ok)) process.exit(1);
+  const eventTopicResults = [];
+  for (const payload of result.eventTopicPayloads) {
+    const response = await fetch(`${runtime.apiBaseUrl}/internal/ingest/event-topic-evidence`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-musunil-internal-key": runtime.internalApiKey },
+      body: JSON.stringify(payload)
+    });
+    eventTopicResults.push({ occurrenceId: payload.occurrenceId, providerItemId: payload.providerItemId, status: response.status, ok: response.ok, body: await readResponseBody(response) });
+  }
+  console.log(JSON.stringify({ mode: "news_post", queryCount: result.queryCount, callCount: result.callCount, failures: result.failures, count: results.length, eventTopicCount: eventTopicResults.length, results, eventTopicResults }, null, 2));
+  if (result.failures.length > 0 || results.some((item) => !item.ok) || eventTopicResults.some((item) => !item.ok)) process.exit(1);
   process.exit(0);
 }
 
