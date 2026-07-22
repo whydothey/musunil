@@ -1546,9 +1546,8 @@ function readNested(value: unknown, paths: string[]): unknown {
 function homeCards(store: Store, now = new Date()) {
   const occurrenceCards = store.occurrences
     .filter((occurrence) => {
-      const primaryIssueId = primaryApprovedIssueId(store, occurrence);
-      const issue = primaryIssueId ? store.issues.find((item) => item.id === primaryIssueId) : undefined;
-      return Boolean(issue && isPublicTopicIssue(issue) && !isSourceOnlyOccurrence(store, occurrence) && isOccurrenceWithinPublicDiscoveryWindow(occurrence, now));
+      const legacyBundleIssue = occurrence.issueId ? store.issues.find((item) => item.id === occurrence.issueId && isPublicSourceBundleIssue(item)) : undefined;
+      return !legacyBundleIssue && !isSourceOnlyOccurrence(store, occurrence) && isOccurrenceWithinPublicDiscoveryWindow(occurrence, now);
     })
     .map((occurrence) => {
     const claims = publicClaimsForTarget(store, "occurrence", occurrence.id);
