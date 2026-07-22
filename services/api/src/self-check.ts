@@ -223,6 +223,30 @@ const legacySourceStore = createSeedStore();
 createApp(legacySourceStore);
 const legacySourceGroup = legacySourceStore.lawGroups[0];
 const legacySnapshot = JSON.parse(JSON.stringify(legacySourceStore)) as Record<string, unknown>;
+const legacyTextOccurrenceId = "occ_legacy_official_text_location";
+(legacySnapshot.occurrences as Array<Record<string, unknown>>).push({
+  id: legacyTextOccurrenceId,
+  type: "static_assembly",
+  areaClusterId: "area_seoul",
+  regionLabel: "서울",
+  title: "서초구 파고다타워 일대 집회 일정",
+  publicVisibility: "public",
+  locationStatus: "TEXT_ONLY",
+  startsAt: "2026-07-17T07:00:00.000Z",
+  endsAt: "2026-07-17T11:00:00.000Z",
+  lifecycleState: "ENDED",
+  claimIds: [],
+  evidenceIds: ["ev_legacy_official_text_location"]
+});
+(legacySnapshot.evidence as Array<Record<string, unknown>>).push({
+  id: "ev_legacy_official_text_location",
+  evidenceType: "official_doc",
+  uploadedAt: "2026-07-16T22:23:18.000Z",
+  proofOfPresenceStatus: "material_only",
+  externalProvider: "official_public_source",
+  externalId: "seoul_assembly_control:2013:event:4",
+  sourceGranularity: "individual_schedule"
+});
 legacySnapshot.lawTopics = [{ id: "law_topic_legacy", billIds: legacySourceGroup.billIds, updatedAt: legacySourceGroup.updatedAt }];
 legacySnapshot.lawTopicMemberships = legacySourceGroup.billIds.map((lawItemId) => ({ lawItemId, lawTopicId: "law_topic_legacy" }));
 legacySnapshot.issueLawLinks = [{ issueId: legacySourceStore.issues[0].id, lawItemId: legacySourceGroup.billIds[0], matchBasis: "manual", confidence: "high", claimIds: [] }];
@@ -243,9 +267,15 @@ assert.ok(hydratedLocatedOccurrence);
 assert.equal(hydratedLocatedOccurrence.locationStatus, "SOURCE_GEOCODED");
 assert.equal(hydratedLocatedOccurrence.publicLocation?.publicRadiusM, 300);
 assert.equal(hydratedLocatedOccurrence.sourcePublicLocation?.source, hydratedLocatedOccurrence.publicLocation?.source);
+const hydratedLegacyTextOccurrence = hydratedLegacyStore.occurrences.find((occurrence) => occurrence.id === legacyTextOccurrenceId);
+assert.equal(hydratedLegacyTextOccurrence?.locationStatus, "SOURCE_GEOCODED");
+assert.equal(hydratedLegacyTextOccurrence?.publicLocation?.publicRadiusM, 300);
+assert.equal(hydratedLegacyTextOccurrence?.publicLocation?.label, "서초구 파고다타워 일대");
+const legacyTextLocationLogCount = hydratedLegacyStore.auditLogs.filter((log) => log.targetId === legacyTextOccurrenceId && log.action === "state_change").length;
 const locationMigrationLogCount = hydratedLegacyStore.auditLogs.filter((log) => log.targetId === hydratedLocatedOccurrence.id && log.action === "state_change").length;
 hydrateStore(hydratedLegacyStore);
 assert.equal(hydratedLegacyStore.auditLogs.filter((log) => log.targetId === hydratedLocatedOccurrence.id && log.action === "state_change").length, locationMigrationLogCount);
+assert.equal(hydratedLegacyStore.auditLogs.filter((log) => log.targetId === legacyTextOccurrenceId && log.action === "state_change").length, legacyTextLocationLogCount);
 const generatedStorageSmokeKey = storageSmokeKey();
 assert.equal(generatedStorageSmokeKey.startsWith(storageSmokePrefix()), true);
 assert.doesNotThrow(() => assertStorageSmokeKey(generatedStorageSmokeKey));
