@@ -160,6 +160,21 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     await page.waitForTimeout(1_000);
     const mapPixels = await pixelMetrics(context, await page.locator('.map-canvas').screenshot({ type: "png" }));
     check(mapPixels.colorGroups >= 60 && mapPixels.dominantRatio <= 0.82, `${viewport.id}: basemap has insufficient visual context (${JSON.stringify(mapPixels)})`);
+    check(Number(await page.locator(".map-canvas").getAttribute("data-visible-clusters")) >= 1, `${viewport.id}: overview map no longer groups nearby precise pins`);
+    const regionalShortcut = page.getByRole("button", { name: "대전 권역 내 위치 확인 중 일정 1건 펼치기" });
+    check((await regionalShortcut.count()) === 1, `${viewport.id}: uncertain regional group has no accessible expansion action`);
+    await regionalShortcut.evaluate((button) => button.click());
+    await page.locator('.map-anchor-stack[data-group-kind="region"]').waitFor({ state: "visible" });
+    check(Number(await page.locator(".map-canvas").getAttribute("data-map-zoom")) >= 9, `${viewport.id}: regional group did not expand at the regional detail zoom`);
+    check((await page.locator(".map-anchor-head").innerText()).includes("권역 중심점은 개별 장소가 아닙니다"), `${viewport.id}: regional group lacks location-honesty copy`);
+    check((await page.locator(".map-anchor-items button").count()) === 1, `${viewport.id}: regional group did not split into its individual event`);
+    check((await page.locator(".map-key").count()) === 0, `${viewport.id}: map legend overlaps the expanded regional group`);
+    const regionalStackBox = await page.locator(".map-anchor-stack").boundingBox();
+    check(Boolean(regionalStackBox && regionalStackBox.y >= 0 && regionalStackBox.y + regionalStackBox.height <= viewport.height), `${viewport.id}: regional group stack is outside the viewport`);
+    await shot(page, `${viewport.id}_explore_region_group.png`);
+    await page.getByRole("button", { name: "전체 7" }).click();
+    await page.locator(".map-anchor-stack").waitFor({ state: "detached" });
+    check((await page.locator(".map-anchor-stack").count()) === 0, `${viewport.id}: changing a map filter leaves a stale expanded group`);
     await page.getByLabel("지도 검색").fill("인천");
     await page.locator('.map-results button').click();
     await page.locator('.map-selection').waitFor({ state: "visible" });
@@ -170,6 +185,8 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     check((await page.locator('.map-selection h2').innerText()).includes("정보통신망법"), `${viewport.id}: map selection topic is missing`);
     check((await page.locator('.map-selection .selection-event').innerText()).includes("인천"), `${viewport.id}: map selection event does not match the searched occurrence`);
     await page.waitForTimeout(2_500);
+    check(Number(await page.locator(".map-canvas").getAttribute("data-map-zoom")) >= 13, `${viewport.id}: selecting an individual event did not leave cluster zoom`);
+    check(Number(await page.locator(".map-canvas").getAttribute("data-visible-clusters")) === 0, `${viewport.id}: nearby pins remain clustered at individual-event zoom`);
     const selectedMapPixels = await pixelMetrics(context, await page.locator('.map-canvas').screenshot({ type: "png" }));
     check(selectedMapPixels.colorGroups >= 60 && selectedMapPixels.dominantRatio <= 0.88, `${viewport.id}: selected basemap did not finish painting (${JSON.stringify(selectedMapPixels)})`);
     await assertAxe(page, `${viewport.id}: explore selection`);
@@ -321,6 +338,19 @@ async function verifyLiveViewport(browserInstance, viewport) {
     await page.waitForTimeout(1_000);
     const mapPixels = await pixelMetrics(context, await page.locator('.map-canvas').screenshot({ type: "png" }));
     check(mapPixels.colorGroups >= 60 && mapPixels.dominantRatio <= 0.82, `${viewport.id}: live basemap has insufficient visual context (${JSON.stringify(mapPixels)})`);
+    const liveRegionalShortcuts = page.locator(".map-region-shortcuts button");
+    check((await liveRegionalShortcuts.count()) >= 1, `${viewport.id}: live uncertain locations have no regional expansion action`);
+    if ((await liveRegionalShortcuts.count()) >= 1) {
+      const shortcutName = await liveRegionalShortcuts.first().innerText();
+      const regionalEventCount = Number(shortcutName.match(/일정 (\d+)건/)?.[1] || 0);
+      await liveRegionalShortcuts.first().evaluate((button) => button.click());
+      await page.locator('.map-anchor-stack[data-group-kind="region"]').waitFor({ state: "visible" });
+      check((await page.locator(".map-anchor-head").innerText()).includes("권역 중심점은 개별 장소가 아닙니다"), `${viewport.id}: live regional group lacks location-honesty copy`);
+      const expandedEventCount = await page.locator(".map-anchor-items button").count();
+      check(expandedEventCount >= 1 && expandedEventCount <= 4, `${viewport.id}: live regional group expansion must show one to four event rows`);
+      if (regionalEventCount > 4) check((await page.locator(".map-anchor-all").count()) === 1, `${viewport.id}: live regional group with more than four events lacks the full-list action`);
+      await page.getByRole("button", { name: "펼친 일정 닫기" }).click();
+    }
     await page.getByLabel("지도 검색").fill("집회");
     const liveMapResult = page.locator('.map-results button').first();
     check((await liveMapResult.count()) === 1, `${viewport.id}: live map has no searchable occurrence`);
