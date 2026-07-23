@@ -70,10 +70,14 @@ async function verifyFixtureViewport(browserInstance, viewport) {
   });
   page.on("pageerror", (error) => failures.push(`${viewport.id}: page ${error.message}`));
   try {
-    await page.goto(`${baseUrl}/`, { waitUntil: "load" });
-    await page.locator('[data-screen="home"] .event-topic-card').first().waitFor({ state: "visible" });
+    await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
+    await page.locator('[data-screen="home"]').waitFor({ state: "visible" });
+    check((await page.locator(".feed-intro > span").innerText()).trim() !== "0개", `${viewport.id}: home exposes a false zero while loading`);
+    await page.locator('[data-screen="home"] a[href^="/event-topics/"]').first().waitFor({ state: "visible" });
     const home = await metrics(page);
-    const visibleIssueTitles = await page.locator('.event-topic-card h2').evaluateAll((nodes) => nodes.filter((node) => {
+    const navigationHrefs = await page.locator(".mobile-tabbar .tab-link").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("href")));
+    check(JSON.stringify(navigationHrefs) === JSON.stringify(["/", "/reels", "/explore", "/laws", "/report"]), `${viewport.id}: primary navigation order changed`);
+    const visibleIssueTitles = await page.locator('a[href^="/event-topics/"] h2').evaluateAll((nodes) => nodes.filter((node) => {
       const rect = node.getBoundingClientRect();
       return rect.top >= 0 && rect.bottom <= window.innerHeight;
     }).map((node) => node.textContent));
@@ -85,8 +89,21 @@ async function verifyFixtureViewport(browserInstance, viewport) {
       const feedBox = await page.locator('[data-screen="home"]').boundingBox();
       check(Boolean(feedBox && feedBox.width >= 880), `${viewport.id}: desktop feed remains a narrow mobile column`);
     }
+    const firstTopicRow = page.locator('a[href^="/event-topics/"]').first();
+    const firstTopicBox = await firstTopicRow.boundingBox();
+    check(Boolean(firstTopicBox && firstTopicBox.height >= 120), `${viewport.id}: event topic row lost the established list rhythm`);
+    check((await firstTopicRow.locator(".issue-row-top .bare-dot").count()) === 1, `${viewport.id}: event topic row status dot missing`);
+    check((await firstTopicRow.locator(".issue-row-top svg").count()) === 1, `${viewport.id}: event topic row chevron missing`);
     await assertAxe(page, `${viewport.id}: home`);
     await shot(page, `${viewport.id}_home.png`);
+
+    await firstTopicRow.click();
+    await page.locator('[data-screen="event-topic"]').waitFor({ state: "visible" });
+    check((await page.locator(".event-topic-hero").count()) === 1, `${viewport.id}: event topic detail does not use the established hero`);
+    check((await page.locator(".topic-group-summary").count()) === 0, `${viewport.id}: obsolete event topic summary card remains`);
+    check((await page.locator(".occurrence-row").count()) >= 1, `${viewport.id}: event topic occurrence list missing`);
+    await assertAxe(page, `${viewport.id}: event topic`);
+    await shot(page, `${viewport.id}_event_topic.png`);
 
     await page.goto(`${baseUrl}/issues/issue-network-act`, { waitUntil: "load" });
     await page.locator('[data-screen="issue"]').waitFor({ state: "visible" });
@@ -136,6 +153,8 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     await page.locator('.maplibregl-canvas').waitFor({ state: "visible" });
     await page.locator('[data-map-ready="true"]').waitFor({ state: "visible" });
     await page.locator('[data-basemap-ready="true"]').waitFor({ state: "visible", timeout: 12_000 });
+    check((await page.locator(".map-topbar .map-list-button").count()) === 1, `${viewport.id}: map list action is not in the top filter area`);
+    check((await page.locator(".map-list-toggle").count()) === 0, `${viewport.id}: obsolete floating map list action remains`);
     const mapBox = await page.locator('.map-canvas').boundingBox();
     check(Boolean(mapBox && mapBox.height >= viewport.height * 0.8), `${viewport.id}: map canvas collapsed`);
     await page.waitForTimeout(1_000);
@@ -144,6 +163,7 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     await page.getByLabel("지도 검색").fill("인천");
     await page.locator('.map-results button').click();
     await page.locator('.map-selection').waitFor({ state: "visible" });
+    check((await page.locator(".map-key").count()) === 0, `${viewport.id}: map legend overlaps the selected event sheet`);
     check((await page.locator('.map-selection .primary-button').count()) === 1, `${viewport.id}: map selection must have one primary action`);
     const selectionBox = await page.locator('.map-selection').boundingBox();
     check(Boolean(selectionBox && selectionBox.y >= 0 && selectionBox.y + selectionBox.height <= viewport.height), `${viewport.id}: map selection is outside the viewport`);
@@ -268,19 +288,22 @@ async function verifyLiveViewport(browserInstance, viewport) {
     check(home.nestedInteractive === 0, `${viewport.id}: live home nested interactive controls`);
     check(home.forbidden.length === 0, `${viewport.id}: live forbidden UI ${home.forbidden.join(", ")}`);
     const navigationHrefs = await page.locator(".mobile-tabbar .tab-link").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("href")));
-    check(["/", "/explore", "/laws", "/transparency"].every((href) => navigationHrefs.includes(href)), `${viewport.id}: live navigation is missing a ready public surface`);
+    check(JSON.stringify(navigationHrefs) === JSON.stringify(["/", "/reels", "/explore", "/laws", "/report"]), `${viewport.id}: live primary navigation order changed`);
     check(viewport.width < 1080 || home.mapCount === 0, `${viewport.id}: live desktop home includes map`);
     const bodyText = await page.locator("body").innerText();
     check(!bodyText.includes("정보통신망법 개정안 관련 집회"), `${viewport.id}: fixture issue leaked to live`);
-    const issueCount = await page.locator(".event-topic-card").count();
-    if (issueCount === 0) {
-      check(/확인된 주요 주제가 없습니다|자료 연결을 확인하고 있습니다/.test(bodyText), `${viewport.id}: live empty state is not honest`);
-    } else {
-      await page.locator(".event-topic-card").first().click();
-      await page.locator('[data-screen="event-topic"]').waitFor({ state: "visible" });
-      check((await page.locator('.occurrence-row').count()) >= 1, `${viewport.id}: live event topic has no occurrence list`);
-    }
+    const issueCount = await page.locator('a[href^="/event-topics/"]').count();
+    const unknownTopicLinkCount = await page.locator('a[href="/explore?topic=unknown"]').count();
     await shot(page, `${viewport.id}_home.png`);
+    if (issueCount === 0) {
+      check(unknownTopicLinkCount > 0 || /확인된 주요 주제가 없습니다|자료 연결을 확인하고 있습니다/.test(bodyText), `${viewport.id}: live empty state is not honest`);
+    } else {
+      await page.locator('a[href^="/event-topics/"]').first().click();
+      await page.locator('[data-screen="event-topic"]').waitFor({ state: "visible" });
+      check((await page.locator(".event-topic-hero").count()) === 1, `${viewport.id}: live event topic detail lost the established hero`);
+      check((await page.locator('.occurrence-row').count()) >= 1, `${viewport.id}: live event topic has no occurrence list`);
+      await shot(page, `${viewport.id}_event_topic.png`);
+    }
 
     await page.goto(`${baseUrl}/reels`, { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(500);
@@ -292,6 +315,7 @@ async function verifyLiveViewport(browserInstance, viewport) {
     await page.goto(`${baseUrl}/explore`, { waitUntil: "domcontentloaded" });
     await page.locator(".map-canvas").waitFor({ state: "visible" });
     await page.locator('[data-basemap-ready="true"]').waitFor({ state: "visible", timeout: 12_000 });
+    check((await page.locator(".map-topbar .map-list-button").count()) === 1, `${viewport.id}: live map list action is not in the top filter area`);
     const mapBox = await page.locator(".map-canvas").boundingBox();
     check(Boolean(mapBox && mapBox.height >= viewport.height * 0.8), `${viewport.id}: live map canvas collapsed`);
     await page.waitForTimeout(1_000);
@@ -303,6 +327,7 @@ async function verifyLiveViewport(browserInstance, viewport) {
     if ((await liveMapResult.count()) === 1) {
       await liveMapResult.click();
       await page.locator('.map-selection').waitFor({ state: "visible" });
+      check((await page.locator(".map-key").count()) === 0, `${viewport.id}: live map legend overlaps the selected event sheet`);
       const selectionTitle = await page.locator('.map-selection h2').innerText();
       const selectionTopic = await page.locator('.map-selection .selection-topic').innerText();
       check(!selectionTitle.includes("집회 일정"), `${viewport.id}: live event still exposes a generic schedule title`);

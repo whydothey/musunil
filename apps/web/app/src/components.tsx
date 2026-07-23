@@ -1,7 +1,7 @@
 import { ArrowLeft, ChevronRight, RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAppState } from "./app-state";
-import type { IssueOverview, OccurrenceDigest } from "./contracts";
+import type { EventTopicGroup, IssueOverview, OccurrenceDigest } from "./contracts";
 import { formatDateTime, formatRelativeTime, lifecycleLabel, lifecycleTone, occurrenceSummary, occurrenceTopicContext, occurrenceTopicTitle, scaleLabel } from "./format";
 import { Link, useRouter } from "./router";
 
@@ -47,6 +47,30 @@ export function IssueListItem({ issue }: { issue: IssueOverview }) {
         {issue.disputeCount ? <><span aria-hidden="true">·</span><strong>다른 주장 있음</strong></> : null}
       </p>
       {issue.synthesisEvidenceCount ? <p className="issue-provenance">근거 {issue.synthesisEvidenceCount}건 · 서로 다른 발행사 {issue.synthesisPublisherCount || 0}곳</p> : null}
+    </Link>
+  );
+}
+
+export function EventTopicListItem({ group }: { group: EventTopicGroup }) {
+  const tone = group.currentCount > 0 ? "verified" : "pending";
+  return (
+    <Link href={`/event-topics/${encodeURIComponent(group.id)}`} className="issue-row event-topic-row" ariaLabel={`${group.title} 주제 상세 보기`}>
+      <div className="issue-row-top">
+        <span className={`bare-dot tone-${tone}`} aria-hidden="true" />
+        <h2>{group.title}</h2>
+        <ChevronRight aria-hidden="true" />
+      </div>
+      <p className="issue-change">{group.status === "candidate" ? "공개 근거에서 추출한 주제 후보 · 연결 검토 중" : "검토된 주제로 연결된 집회·시위 일정"}</p>
+      <p className="issue-meta">
+        진행 {group.currentCount}건
+        <span aria-hidden="true">·</span>
+        예정 {group.upcomingCount}건
+        <span aria-hidden="true">·</span>
+        {group.regionCount}개 지역
+        <span aria-hidden="true">·</span>
+        개별 일정 {group.occurrenceCount}건
+      </p>
+      <p className="issue-provenance">공개 근거 {group.evidenceCount}건 · 출처 {group.sourceCount}곳{group.status === "candidate" ? " · 승인 전 후보" : ""}</p>
     </Link>
   );
 }

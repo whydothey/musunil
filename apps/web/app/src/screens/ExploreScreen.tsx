@@ -1,4 +1,4 @@
-import { ChevronRight, LocateFixed, Search, X } from "lucide-react";
+import { ChevronRight, List, LocateFixed, Search, X } from "lucide-react";
 import maplibregl, { type Map as MapLibreMap, type MapLayerMouseEvent, type MapGeoJSONFeature, type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -11,24 +11,26 @@ type PhaseFilter = "active" | "past" | "all";
 
 export function ExploreScreen() {
   const { dataset, serviceSyncState, selectedOccurrenceId, selectOccurrence } = useAppState();
-  const { route } = useRouter();
+  const { route, navigate } = useRouter();
   const [query, setQuery] = useState("");
   const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>("active");
   const [now, setNow] = useState(() => Date.now());
   const [listOpen, setListOpen] = useState(false);
   const [clusterRegion, setClusterRegion] = useState<string>();
   const requestedOccurrenceId = route.search.get("occurrence") || undefined;
+  const topicUnknownOnly = route.search.get("topic") === "unknown";
   const selectedId = selectedOccurrenceId || requestedOccurrenceId;
   const selected = dataset?.occurrences.find((item) => item.id === selectedId);
-  const phaseCounts = useMemo(() => (dataset?.occurrences || []).reduce((counts, item) => {
+  const scopedOccurrences = useMemo(() => (dataset?.occurrences || []).filter((item) => !topicUnknownOnly || item.topicStatus === "source_not_disclosed" || item.topicStatus === "unlinked"), [dataset, topicUnknownOnly]);
+  const phaseCounts = useMemo(() => scopedOccurrences.reduce((counts, item) => {
     counts[schedulePhase(item, now)] += 1;
     return counts;
-  }, { current: 0, upcoming: 0, past: 0 }), [dataset, now]);
-  const visibleOccurrences = useMemo(() => (dataset?.occurrences || []).filter((item) => {
+  }, { current: 0, upcoming: 0, past: 0 }), [scopedOccurrences, now]);
+  const visibleOccurrences = useMemo(() => scopedOccurrences.filter((item) => {
     const phase = schedulePhase(item, now);
     if (phaseFilter === "active") return phase !== "past";
     return phaseFilter === "all" || phase === "past";
-  }), [dataset, phaseFilter, now]);
+  }), [scopedOccurrences, phaseFilter, now]);
   const visibleIds = useMemo(() => new Set(visibleOccurrences.map((item) => item.id)), [visibleOccurrences]);
   const visiblePins = useMemo<GeoJsonFeatureCollection | undefined>(() => dataset?.map.geojson.pins ? ({
     ...dataset.map.geojson.pins,
@@ -41,10 +43,10 @@ export function ExploreScreen() {
   const filtered = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("ko");
     const matches = normalized
-      ? dataset?.occurrences.filter((item) => `${item.title} ${item.regionLabel} ${item.issueTitle || ""} ${item.topicCandidate?.title || ""} ${item.topicStatusLabel || ""}`.toLocaleLowerCase("ko").includes(normalized)) || []
-      : dataset?.occurrences || [];
+      ? scopedOccurrences.filter((item) => `${item.title} ${item.regionLabel} ${item.issueTitle || ""} ${item.topicCandidate?.title || ""} ${item.topicStatusLabel || ""}`.toLocaleLowerCase("ko").includes(normalized))
+      : scopedOccurrences;
     return [...matches].sort((left, right) => phaseOrder(schedulePhase(left, now)) - phaseOrder(schedulePhase(right, now)) || String(left.startsAt || "").localeCompare(String(right.startsAt || "")));
-  }, [dataset, query, now]);
+  }, [scopedOccurrences, query, now]);
   useEffect(() => {
     const interval = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(interval);
@@ -69,17 +71,17 @@ export function ExploreScreen() {
           {!filtered.length ? <p>일치하는 공개 현장이 없습니다</p> : null}
         </div> : null}
         {!query ? <div className="map-phase-filters" aria-label="일정 시점 필터">
+          {topicUnknownOnly ? <button type="button" className="map-topic-filter" aria-pressed="true" onClick={() => navigate("/explore")}><span>주제 확인 중</span><X aria-hidden="true" /></button> : null}
           <button type="button" aria-pressed={phaseFilter === "active"} onClick={() => { setPhaseFilter("active"); selectOccurrence(undefined); }}><i className="key-current" />진행 {phaseCounts.current} · 예정 {phaseCounts.upcoming}</button>
           <button type="button" aria-pressed={phaseFilter === "past"} onClick={() => { setPhaseFilter("past"); selectOccurrence(undefined); }}><i className="key-past" />지난 {phaseCounts.past}</button>
-          <button type="button" aria-pressed={phaseFilter === "all"} onClick={() => { setPhaseFilter("all"); selectOccurrence(undefined); }}>전체 {dataset?.occurrences.length || 0}</button>
+          <button type="button" aria-pressed={phaseFilter === "all"} onClick={() => { setPhaseFilter("all"); selectOccurrence(undefined); }}>전체 {scopedOccurrences.length}</button>
+          <button type="button" className="map-list-button" aria-pressed={listOpen} aria-expanded={listOpen} onClick={() => { setListOpen((value) => !value); setClusterRegion(undefined); selectOccurrence(undefined); }}><List aria-hidden="true" />일정 목록 {visibleOccurrences.length}</button>
         </div> : null}
       </div>
 
       <OccurrenceMap pins={visiblePins} areas={visibleAreas} occurrences={visibleOccurrences} selectedId={selectedId} now={now} onSelect={selectOccurrence} onCluster={(region) => { setClusterRegion(region); setListOpen(true); selectOccurrence(undefined); }} />
 
-      <div className="map-key" aria-label="일정 및 위치 상태 표시 설명"><span><i className="key-current" />진행 중</span><span><i className="key-upcoming" />예정</span><span><i className="key-past" />지난 일정 · 오래될수록 흐림</span><span><i className="key-source" />공개자료 위치·넓은 원은 추정</span><span><i className="key-area" />현장 인증 범위</span></div>
-
-      <button type="button" className="map-list-toggle" aria-expanded={listOpen} onClick={() => { setListOpen((value) => !value); setClusterRegion(undefined); }}>일정 목록 {visibleOccurrences.length}</button>
+      {!selected && !listOpen ? <div className="map-key" aria-label="일정 및 위치 상태 표시 설명"><span><i className="key-current" />진행 중</span><span><i className="key-upcoming" />예정</span><span><i className="key-past" />지난 일정 · 오래될수록 흐림</span><span><i className="key-source" />공개자료 위치·넓은 원은 추정</span><span><i className="key-area" />현장 인증 범위</span></div> : null}
       {listOpen ? <aside className="map-event-list" aria-label="지도에 포함된 일정 목록">
         <div><strong>{clusterRegion ? `${clusterRegion} 권역 일정` : "전체 일정"}</strong><button type="button" onClick={() => setListOpen(false)} aria-label="일정 목록 닫기"><X /></button></div>
         {(clusterRegion ? visibleOccurrences.filter((item) => item.regionLabel === clusterRegion) : visibleOccurrences).sort((a, b) => phaseOrder(schedulePhase(a, now)) - phaseOrder(schedulePhase(b, now)) || String(a.startsAt || "").localeCompare(String(b.startsAt || ""))).map((item) => <button key={item.id} type="button" onClick={() => { selectOccurrence(item.id); setListOpen(false); }}><span>{schedulePhaseLabel(schedulePhase(item, now))} · {item.regionLabel}</span><strong>{occurrenceTopicTitle(item)}</strong><small>{item.locationLabel || item.title} · {formatDateTime(item.startsAt)}</small></button>)}
@@ -202,6 +204,21 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, now, onSelect, on
           "circle-stroke-color": "#9dd8dc"
         }
       });
+      if (map.getStyle().glyphs) {
+        map.addLayer({
+          id: "occurrence-region-count",
+          type: "symbol",
+          source: "occurrence-pins",
+          filter: ["==", ["get", "markerKind"], "region"],
+          layout: {
+            "text-field": ["to-string", ["get", "clusterCount"]],
+            "text-size": 11,
+            "text-allow-overlap": true,
+            "text-ignore-placement": true
+          },
+          paint: { "text-color": "#ffffff", "text-halo-width": 0 }
+        });
+      }
       if (!interactionsBound) {
         const handleClick = (event: MapLayerMouseEvent) => {
           const feature = event.features?.[0] as MapGeoJSONFeature | undefined;
@@ -219,7 +236,7 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, now, onSelect, on
     };
     map.on("style.load", installLayers);
     map.on("idle", () => {
-      const contextualLayers = map.getStyle().layers.filter((layer) => !["background", "fallback-background", "presence-fill", "presence-outline", "occurrence-pin-shadow", "occurrence-pins"].includes(layer.id));
+      const contextualLayers = map.getStyle().layers.filter((layer) => !["background", "fallback-background", "presence-fill", "presence-outline", "occurrence-pin-shadow", "occurrence-pins", "occurrence-region-count"].includes(layer.id));
       if (!contextualLayers.length) return;
       contextualPaintReady = true;
       setBaseMapReady(true);
