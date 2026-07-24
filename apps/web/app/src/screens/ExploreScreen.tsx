@@ -4,7 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useAppState } from "../app-state";
 import type { GeoJsonFeatureCollection, OccurrenceDigest } from "../contracts";
-import { formatDateTime, locationPrecisionLabel, occurrenceDisplayTitle, occurrencePurposeLabel, occurrenceTopicTitle, pastMarkerOpacity, schedulePhase, schedulePresentation, scaleLabel } from "../format";
+import { formatDateTime, occurrenceDisplayTitle, occurrencePurposeLabel, occurrenceTopicTitle, pastMarkerOpacity, schedulePhase, schedulePresentation } from "../format";
 import { Link, useRouter } from "../router";
 
 type PhaseFilter = "active" | "past" | "all";
@@ -80,13 +80,30 @@ export function ExploreScreen() {
     const requested = dataset?.occurrences.find((item) => item.id === requestedOccurrenceId);
     if (requested) setPhaseFilter(schedulePhase(requested) === "past" ? "past" : "active");
   }, [dataset, requestedOccurrenceId, selectOccurrence]);
+  useEffect(() => {
+    const closeTopSurface = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (query) setQuery("");
+      else if (listOpen) { setListOpen(false); setListGroup(undefined); setListQuery(""); }
+      else if (selectedId) selectOccurrence(undefined);
+      else if (mapGroupOpen) setMapGroupDismissal((value) => value + 1);
+    };
+    window.addEventListener("keydown", closeTopSurface);
+    return () => window.removeEventListener("keydown", closeTopSurface);
+  }, [query, listOpen, selectedId, mapGroupOpen, selectOccurrence]);
 
   return (
     <section className="explore-screen" data-screen="explore">
       <div className="map-topbar">
         <label className="map-search">
           <Search aria-hidden="true" />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="지역, 이슈, 현장 검색" aria-label="지도 검색" />
+          <input value={query} onChange={(event) => {
+            setQuery(event.target.value);
+            setListOpen(false);
+            setListGroup(undefined);
+            setMapGroupDismissal((value) => value + 1);
+            selectOccurrence(undefined);
+          }} placeholder="지역, 이슈, 현장 검색" aria-label="지도 검색" />
           {query ? <button type="button" onClick={() => setQuery("")} aria-label="검색어 지우기"><X /></button> : null}
         </label>
         {query ? <div className="map-results" aria-label="검색 결과">
@@ -99,14 +116,20 @@ export function ExploreScreen() {
           {topicUnknownOnly ? <button type="button" className="map-topic-filter" aria-pressed="true" onClick={() => { setMapGroupOpen(false); setMapGroupDismissal((value) => value + 1); navigate("/explore"); }}><span>주제 확인 중</span><X aria-hidden="true" /></button> : null}
           <button type="button" aria-pressed={phaseFilter === "active"} onClick={() => { setPhaseFilter("active"); setListQuery(""); setMapGroupOpen(false); setMapGroupDismissal((value) => value + 1); selectOccurrence(undefined); }}><i className="key-current" />진행 {phaseCounts.current} · 예정 {phaseCounts.upcoming}</button>
           <button type="button" aria-pressed={phaseFilter === "past"} onClick={() => { setPhaseFilter("past"); setListQuery(""); setMapGroupOpen(false); setMapGroupDismissal((value) => value + 1); selectOccurrence(undefined); }}><i className="key-past" />지난 {phaseCounts.past}</button>
-          <button type="button" aria-pressed={phaseFilter === "all"} onClick={() => { setPhaseFilter("all"); setListQuery(""); setMapGroupOpen(false); setMapGroupDismissal((value) => value + 1); selectOccurrence(undefined); }}>전체 {scopedOccurrences.length}</button>
           <button type="button" className="map-list-button" aria-pressed={listOpen} aria-expanded={listOpen} onClick={() => { setListOpen((value) => !value); setListGroup(undefined); setListQuery(""); setMapGroupOpen(false); setMapGroupDismissal((value) => value + 1); selectOccurrence(undefined); }}><List aria-hidden="true" />일정 목록 {visibleOccurrences.length}</button>
         </div> : null}
       </div>
 
-      <OccurrenceMap pins={visiblePins} areas={visibleAreas} occurrences={visibleOccurrences} selectedId={selectedId} now={now} dismissGroupSignal={mapGroupDismissal} onSelect={selectOccurrence} onGroupOpenChange={setMapGroupOpen} onOpenGroupList={(group) => { setListGroup(group); setListOpen(true); selectOccurrence(undefined); }} />
+      <OccurrenceMap pins={visiblePins} areas={visibleAreas} occurrences={visibleOccurrences} selectedId={selectedId} now={now} dismissGroupSignal={mapGroupDismissal} onSelect={(id) => { setQuery(""); setListOpen(false); setListGroup(undefined); selectOccurrence(id); }} onGroupOpenChange={(open) => {
+        setMapGroupOpen(open);
+        if (open) {
+          setQuery("");
+          setListOpen(false);
+          setListGroup(undefined);
+          selectOccurrence(undefined);
+        }
+      }} onOpenGroupList={(group) => { setQuery(""); setListGroup(group); setListOpen(true); selectOccurrence(undefined); }} />
 
-      {!selected && !listOpen && !mapGroupOpen ? <div className="map-key" aria-label="일정 및 위치 상태 표시 설명"><span><i className="key-current" />진행 중</span><span><i className="key-upcoming" />예정</span><span><i className="key-past" />지난 일정 · 오래될수록 흐림</span><span><i className="key-source" />공개자료 위치·넓은 원은 추정</span><span><i className="key-area" />현장 인증 범위</span></div> : null}
       {listOpen ? <aside className="map-event-list" aria-label="지도에 포함된 일정 목록">
         <div><strong>{listGroup?.label || (listQuery ? `"${listQuery}" 검색 결과` : "전체 일정")} · {listedOccurrences.length}건</strong><button type="button" onClick={() => { setListOpen(false); setListQuery(""); }} aria-label="일정 목록 닫기"><X /></button></div>
         {listedOccurrences.map((item) => <button key={item.id} type="button" onClick={() => { selectOccurrence(item.id); setListOpen(false); setListGroup(undefined); setListQuery(""); }}><span>{schedulePresentation(item, now).label} · {item.regionLabel}</span><strong>{occurrenceDisplayTitle(item)}</strong><small>주제 · {occurrenceTopicTitle(item)} · {item.locationLabel || item.regionLabel} · {formatDateTime(item.startsAt)}</small></button>)}
@@ -147,7 +170,6 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, now, dismissGroup
   const [mapZoom, setMapZoom] = useState(6.3);
   const [visibleClusterCount, setVisibleClusterCount] = useState(0);
   const [locationMessage, setLocationMessage] = useState("");
-  const [showLocationHint, setShowLocationHint] = useState(false);
   const [activeGroup, setActiveGroup] = useState<MapGroupSelection>();
   const [anchorPosition, setAnchorPosition] = useState<{ x: number; y: number }>();
   const occurrenceById = useMemo(() => new Map(occurrences.map((item) => [item.id, item])), [occurrences]);
@@ -197,9 +219,6 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, now, dismissGroup
   const onSelectRef = useRef(onSelect);
   const onGroupOpenChangeRef = useRef(onGroupOpenChange);
   const onOpenGroupListRef = useRef(onOpenGroupList);
-  useEffect(() => {
-    try { setShowLocationHint(window.sessionStorage.getItem("musunil:location-hint") !== "seen"); } catch { setShowLocationHint(true); }
-  }, []);
   const expandRegionalGroupRef = useRef<((group: MapGroupSelection) => void) | undefined>(undefined);
   precisePinDataRef.current = precisePinData;
   regionalPinDataRef.current = regionalPinData;
@@ -460,13 +479,11 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, now, dismissGroup
   }, [selectedId, mapDisplay.individualCoordinates, occurrenceById]);
 
   const locateUser = () => {
-    setShowLocationHint(false);
-    try { window.sessionStorage.setItem("musunil:location-hint", "seen"); } catch { /* storage is optional */ }
     if (!navigator.geolocation) {
       setLocationMessage("이 기기에서는 위치 기능을 사용할 수 없습니다.");
       return;
     }
-    setLocationMessage("현재 위치를 확인하고 있습니다.");
+    setLocationMessage("내 위치를 확인 중입니다 · 지도 이동에만 사용합니다.");
     navigator.geolocation.getCurrentPosition(({ coords }) => {
       const center: [number, number] = [coords.longitude, coords.latitude];
       if (center[0] < 124.4 || center[0] > 132.0 || center[1] < 32.8 || center[1] > 38.7) {
@@ -478,14 +495,17 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, now, dismissGroup
       userMarkerRef.current?.remove();
       userMarkerRef.current = new maplibregl.Marker({ color: "#ec5f4f", scale: 0.72 }).setLngLat(center).addTo(map);
       map.easeTo({ center, zoom: Math.max(map.getZoom(), 12), duration: 520 });
-      setLocationMessage("현재 위치를 지도에 표시했습니다. 위치 정보는 기기 밖으로 전송하지 않습니다.");
-    }, () => setLocationMessage("위치 권한을 허용하면 내 주변 지도를 볼 수 있습니다."), { enableHighAccuracy: false, timeout: 10_000, maximumAge: 60_000 });
+      setLocationMessage("내 위치를 표시했습니다.");
+      window.setTimeout(() => setLocationMessage(""), 2_500);
+    }, () => {
+      setLocationMessage("위치 권한을 허용하면 내 주변을 볼 수 있습니다.");
+      window.setTimeout(() => setLocationMessage(""), 3_500);
+    }, { enableHighAccuracy: false, timeout: 10_000, maximumAge: 60_000 });
   };
 
   return <>
     <div ref={containerRef} className="map-canvas" data-map-ready={mapReady ? "true" : "false"} data-basemap-ready={baseMapReady ? "true" : "false"} data-map-zoom={mapZoom.toFixed(1)} data-visible-clusters={visibleClusterCount} aria-label={`정밀 위치 ${precisePinData.features.length}개와 권역 위치 ${regionalPinData.features.length}개를 표시한 지도. 전체 일정 ${occurrences.length}건이며 일정 목록 버튼에서 모두 확인할 수 있습니다.`} />
     <button type="button" className="map-locate" onClick={locateUser} aria-label="내 위치로 지도 이동"><LocateFixed aria-hidden="true" /><span>내 위치</span></button>
-    {showLocationHint ? <div className="map-location-hint" role="note"><span>내 위치는 주변 지도를 찾을 때만 기기에서 사용하며 서버로 보내지 않습니다.</span><button type="button" onClick={() => { setShowLocationHint(false); try { window.sessionStorage.setItem("musunil:location-hint", "seen"); } catch { /* storage is optional */ } }} aria-label="내 위치 안내 닫기"><X /></button></div> : null}
     <div className="map-region-shortcuts" aria-label="지도 권역 묶음 바로가기">
       {mapDisplay.regionalGroups.map((group) => <button key={group.id} type="button" onClick={() => expandRegionalGroupRef.current?.(group)}>{group.label} 일정 {group.occurrenceIds.length}건 펼치기</button>)}
     </div>
@@ -507,8 +527,8 @@ function MapAnchorStack({ group, occurrences, position, now, onClose, onSelect, 
   const sorted = [...occurrences].sort((left, right) => phaseOrder(schedulePhase(left, now)) - phaseOrder(schedulePhase(right, now)) || String(left.startsAt || "").localeCompare(String(right.startsAt || "")));
   const style = { "--anchor-x": `${position?.x || 0}px`, "--anchor-y": `${position?.y || 0}px` } as CSSProperties;
   return <aside className="map-anchor-stack" style={style} aria-label={group.label} data-group-kind={group.kind}>
-    <div className="map-anchor-head"><div><strong>{group.label}</strong><span>{group.kind === "region" ? "권역 중심점은 개별 장소가 아닙니다" : "같은 좌표에 연결된 개별 일정입니다"}</span></div><button type="button" onClick={onClose} aria-label="펼친 일정 닫기"><X /></button></div>
-    <div className="map-anchor-items">{sorted.slice(0, 4).map((item) => <button key={item.id} type="button" onClick={() => onSelect(item.id)}><span>{schedulePresentation(item, now).label} · {item.regionLabel}</span><strong>{occurrenceDisplayTitle(item)}</strong><small>주제 · {occurrenceTopicTitle(item)} · {item.locationLabel || item.regionLabel} · {formatDateTime(item.startsAt)}</small></button>)}</div>
+    <div className="map-anchor-head"><div><strong>{group.label}</strong><span>{occurrences.length}개 일정</span></div><button type="button" onClick={onClose} aria-label="펼친 일정 닫기"><X /></button></div>
+    <div className="map-anchor-items">{sorted.slice(0, 4).map((item) => <button key={item.id} type="button" onClick={() => onSelect(item.id)}><span>{schedulePresentation(item, now).label} · {formatDateTime(item.startsAt)}</span><strong>{occurrenceDisplayTitle(item)}</strong><small>{occurrenceTopicTitle(item)}</small></button>)}</div>
     {sorted.length > 4 ? <button type="button" className="map-anchor-all" onClick={onOpenAll}>전체 {sorted.length}건 보기<ChevronRight /></button> : null}
   </aside>;
 }
@@ -539,15 +559,8 @@ function MapSelection({ occurrence, now, onClose }: { occurrence: OccurrenceDige
       <span className={`selection-state phase-${schedule.phase}`}><i />{schedule.label}</span>
       <h2>{occurrenceDisplayTitle(occurrence)}</h2>
       <p className="selection-topic">주제 · {occurrence.issueTitle || occurrence.topicCandidate?.title || occurrencePurposeLabel(occurrence)}</p>
-      {occurrenceDisplayTitle(occurrence) !== occurrence.title ? <p className="selection-event">개별 일정 · {occurrence.title}</p> : null}
-      <p>장소 · {occurrence.locationLabel || occurrence.regionLabel}</p>
-      <p>{locationPrecisionLabel(occurrence)}{occurrence.locationUncertaintyRadiusM ? ` · 약 ${formatRadius(occurrence.locationUncertaintyRadiusM)} 범위` : ""}{occurrence.fieldLocationEvidenceCount ? ` · 독립 현장 근거 ${occurrence.fieldLocationEvidenceCount}건` : ""}</p>
-      <p>{formatDateTime(occurrence.startsAt)} · {occurrence.declaredParticipantCount ? `공개자료 기재 인원 ${occurrence.declaredParticipantCount.toLocaleString("ko-KR")}명` : scaleLabel(occurrence)}</p>
-      <Link href={`/occurrences/${encodeURIComponent(occurrence.id)}`} className="primary-button">현장 보기<ChevronRight /></Link>
+      <p>{formatDateTime(occurrence.startsAt)} · {occurrence.locationLabel || occurrence.regionLabel}</p>
+      <Link href={`/occurrences/${encodeURIComponent(occurrence.id)}`} className="primary-button">자세히<ChevronRight /></Link>
     </aside>
   );
-}
-
-function formatRadius(radiusM: number) {
-  return radiusM >= 1_000 ? `${Math.round(radiusM / 1_000)}km` : `${Math.round(radiusM / 100) * 100}m`;
 }

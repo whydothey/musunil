@@ -52,9 +52,8 @@ export function ReportScreen() {
       <ScreenHeader title="현장 제보" eyebrow="Android 앱 우선 제공" />
       <div className="report-start contribution-unavailable" role="status">
         <span className="report-start-icon"><ShieldCheck /></span>
-        <h2>검증된 현장 제보를 준비하고 있습니다</h2>
-        <p>앱에서 직접 촬영한 영상의 시각·위치·기기 상태를 확인하고, 얼굴과 차량번호를 가릴 수 있을 때만 제보를 받습니다. 현재 웹에서는 영상을 접수하지 않습니다.</p>
-        <dl><div><dt>정보 보기</dt><dd>로그인 없이 계속 이용 가능</dd></div><div><dt>현장 제보</dt><dd>안전 검증을 갖춘 Android 앱에서 제공 예정</dd></div></dl>
+        <h2>현장 제보는 준비 중입니다</h2>
+        <p>안전한 촬영과 개인정보 보호 기능을 갖춘 뒤 제공하겠습니다.</p>
       </div>
     </section>
   );

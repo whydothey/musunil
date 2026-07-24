@@ -22,12 +22,12 @@
         "forbidden": []
       },
       "mapPixels": {
-        "colorGroups": 143,
-        "dominantRatio": 0.3061
+        "colorGroups": 131,
+        "dominantRatio": 0.3436
       },
       "selectedMapPixels": {
-        "colorGroups": 141,
-        "dominantRatio": 0.4117
+        "colorGroups": 154,
+        "dominantRatio": 0.3306
       },
       "finalMetrics": {
         "overflowX": false,
@@ -56,12 +56,12 @@
         "forbidden": []
       },
       "mapPixels": {
-        "colorGroups": 128,
-        "dominantRatio": 0.3463
+        "colorGroups": 113,
+        "dominantRatio": 0.3876
       },
       "selectedMapPixels": {
-        "colorGroups": 131,
-        "dominantRatio": 0.3792
+        "colorGroups": 126,
+        "dominantRatio": 0.3042
       },
       "finalMetrics": {
         "overflowX": false,
@@ -90,12 +90,12 @@
         "forbidden": []
       },
       "mapPixels": {
-        "colorGroups": 96,
-        "dominantRatio": 0.5671
+        "colorGroups": 72,
+        "dominantRatio": 0.6058
       },
       "selectedMapPixels": {
-        "colorGroups": 100,
-        "dominantRatio": 0.2558
+        "colorGroups": 87,
+        "dominantRatio": 0.2865
       },
       "finalMetrics": {
         "overflowX": false,
@@ -124,12 +124,12 @@
         "forbidden": []
       },
       "mapPixels": {
-        "colorGroups": 78,
-        "dominantRatio": 0.6259
+        "colorGroups": 65,
+        "dominantRatio": 0.6602
       },
       "selectedMapPixels": {
-        "colorGroups": 96,
-        "dominantRatio": 0.302
+        "colorGroups": 85,
+        "dominantRatio": 0.3255
       },
       "finalMetrics": {
         "overflowX": false,

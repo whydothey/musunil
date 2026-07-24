@@ -24,7 +24,7 @@ export function ReelsScreen() {
   if (serviceSyncState === "loading" || supplementalStates.reels === "idle" || supplementalStates.reels === "loading") return <section className="reels-state"><LoadingState label="공개 영상을 확인하고 있습니다" /></section>;
   if (serviceSyncState === "unavailable") return <section className="reels-state"><ServiceUnavailable /></section>;
   if (supplementalStates.reels === "error") return <section className="reels-state"><ServiceUnavailable title="영상 목록을 불러오지 못했습니다" description="지도와 일정 정보는 계속 볼 수 있습니다." /></section>;
-  if (!reels.length) return <section className="reels-state"><EmptyState title="공개된 현장 영상이 없습니다" description="위치·시각 확인과 비식별 검토를 마친 영상이 생기면 이곳에 표시합니다." actionHref="/explore" actionLabel="지도에서 일정 보기" /></section>;
+  if (!reels.length) return <section className="reels-state"><EmptyState title="아직 공개된 영상이 없습니다" description="검토를 마친 현장 영상만 표시합니다." actionHref="/explore" actionLabel="지도에서 일정 보기" /></section>;
 
   return (
     <section className="reels-screen" data-screen="reels" aria-label="현장 영상">

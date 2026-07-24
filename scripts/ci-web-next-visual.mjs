@@ -91,7 +91,7 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     }
     const firstTopicRow = page.locator('a[href^="/event-topics/"]').first();
     const firstTopicBox = await firstTopicRow.boundingBox();
-    check(Boolean(firstTopicBox && firstTopicBox.height >= 120), `${viewport.id}: event topic row lost the established list rhythm`);
+    check(Boolean(firstTopicBox && firstTopicBox.height >= 80 && firstTopicBox.height <= 112), `${viewport.id}: event topic row is not commercially concise`);
     check((await firstTopicRow.locator(".issue-row-top .bare-dot").count()) === 1, `${viewport.id}: event topic row status dot missing`);
     check((await firstTopicRow.locator(".issue-row-top svg").count()) === 1, `${viewport.id}: event topic row chevron missing`);
     await assertAxe(page, `${viewport.id}: home`);
@@ -122,8 +122,10 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     await page.locator('a[href="/occurrences/occ-network-seoul"]').click();
     await page.waitForURL("**/occurrences/occ-network-seoul");
     await page.locator('[data-screen="occurrence"]').waitFor({ state: "visible" });
-    check((await page.locator('.fact-row').count()) === 5, `${viewport.id}: occurrence facts missing`);
-    check((await page.locator('.context-actions a').count()) === 3, `${viewport.id}: occurrence context actions changed`);
+    check((await page.locator('.fact-row').count()) === 4, `${viewport.id}: occurrence concise facts changed`);
+    check((await page.locator('.context-actions a').count()) === 2, `${viewport.id}: occurrence available actions changed`);
+    check((await page.locator('.evidence-disclosure').count()) === 1, `${viewport.id}: occurrence evidence disclosure missing`);
+    check((await page.locator('.evidence-disclosure').getAttribute("open")) === null, `${viewport.id}: occurrence evidence is expanded by default`);
     check((await page.locator('.occurrence-video-cover').count()) === 0, `${viewport.id}: occurrence video action is duplicated by a second cover`);
     await assertAxe(page, `${viewport.id}: occurrence`);
     await shot(page, `${viewport.id}_occurrence.png`);
@@ -148,6 +150,7 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     await page.locator("#evidence").waitFor({ state: "visible" });
     await page.waitForFunction(() => document.activeElement?.id === "evidence", undefined, { timeout: 2_500 }).catch(() => undefined);
     check(await page.evaluate(() => document.activeElement?.id === "evidence"), `${viewport.id}: reel evidence action did not focus the evidence section`);
+    check((await page.locator("#evidence").getAttribute("open")) !== null, `${viewport.id}: reel evidence deep link did not expand the disclosure`);
 
     await page.goto(`${baseUrl}/explore`, { waitUntil: "load" });
     await page.locator('.maplibregl-canvas').waitFor({ state: "visible" });
@@ -155,6 +158,8 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     await page.locator('[data-basemap-ready="true"]').waitFor({ state: "visible", timeout: 12_000 });
     check((await page.locator(".map-topbar .map-list-button").count()) === 1, `${viewport.id}: map list action is not in the top filter area`);
     check((await page.locator(".map-list-toggle").count()) === 0, `${viewport.id}: obsolete floating map list action remains`);
+    check((await page.locator(".map-phase-filters > button").count()) === 3, `${viewport.id}: map exposes more than three primary filter actions`);
+    check((await page.locator(".map-key,.map-location-hint,.map-selection,.map-event-list,.map-anchor-stack").count()) === 0, `${viewport.id}: map opens an information surface before user action`);
     const mapBox = await page.locator('.map-canvas').boundingBox();
     check(Boolean(mapBox && mapBox.height >= viewport.height * 0.8), `${viewport.id}: map canvas collapsed`);
     await page.waitForTimeout(1_000);
@@ -166,19 +171,20 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     await regionalShortcut.evaluate((button) => button.click());
     await page.locator('.map-anchor-stack[data-group-kind="region"]').waitFor({ state: "visible" });
     check(Number(await page.locator(".map-canvas").getAttribute("data-map-zoom")) >= 9, `${viewport.id}: regional group did not expand at the regional detail zoom`);
-    check((await page.locator(".map-anchor-head").innerText()).includes("권역 중심점은 개별 장소가 아닙니다"), `${viewport.id}: regional group lacks location-honesty copy`);
+    check((await page.locator(".map-anchor-head").innerText()).includes("1개 일정"), `${viewport.id}: regional group summary is not concise`);
     check((await page.locator(".map-anchor-items button").count()) === 1, `${viewport.id}: regional group did not split into its individual event`);
-    check((await page.locator(".map-key").count()) === 0, `${viewport.id}: map legend overlaps the expanded regional group`);
+    check((await page.locator(".map-selection,.map-event-list").count()) === 0, `${viewport.id}: regional group competes with another map panel`);
     const regionalStackBox = await page.locator(".map-anchor-stack").boundingBox();
     check(Boolean(regionalStackBox && regionalStackBox.y >= 0 && regionalStackBox.y + regionalStackBox.height <= viewport.height), `${viewport.id}: regional group stack is outside the viewport`);
     await shot(page, `${viewport.id}_explore_region_group.png`);
-    await page.getByRole("button", { name: "전체 7" }).click();
+    await page.locator(".map-phase-filters button").filter({ hasText: "지난" }).click();
     await page.locator(".map-anchor-stack").waitFor({ state: "detached" });
     check((await page.locator(".map-anchor-stack").count()) === 0, `${viewport.id}: changing a map filter leaves a stale expanded group`);
+    await page.locator(".map-phase-filters button").filter({ hasText: "진행" }).click();
     await page.getByLabel("지도 검색").fill("인천");
     await page.locator('.map-results button').click();
     await page.locator('.map-selection').waitFor({ state: "visible" });
-    check((await page.locator(".map-key").count()) === 0, `${viewport.id}: map legend overlaps the selected event sheet`);
+    check((await page.locator(".map-anchor-stack,.map-event-list").count()) === 0, `${viewport.id}: selected event competes with another map panel`);
     check((await page.locator('.map-selection .primary-button').count()) === 1, `${viewport.id}: map selection must have one primary action`);
     const selectionBox = await page.locator('.map-selection').boundingBox();
     check(Boolean(selectionBox && selectionBox.y >= 0 && selectionBox.y + selectionBox.height <= viewport.height), `${viewport.id}: map selection is outside the viewport`);
@@ -191,6 +197,9 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     check(selectedMapPixels.colorGroups >= 60 && selectedMapPixels.dominantRatio <= 0.88, `${viewport.id}: selected basemap did not finish painting (${JSON.stringify(selectedMapPixels)})`);
     await assertAxe(page, `${viewport.id}: explore selection`);
     await shot(page, `${viewport.id}_explore.png`);
+    await page.keyboard.press("Escape");
+    await page.locator(".map-selection").waitFor({ state: "detached" });
+    check((await page.locator(".map-selection,.map-anchor-stack,.map-event-list").count()) === 0, `${viewport.id}: Escape did not close the active map surface`);
 
     await page.goto(`${baseUrl}/laws`, { waitUntil: "load" });
     await page.locator('[data-screen="laws"]').waitFor({ state: "visible" });
@@ -310,10 +319,9 @@ async function verifyLiveViewport(browserInstance, viewport) {
     const bodyText = await page.locator("body").innerText();
     check(!bodyText.includes("정보통신망법 개정안 관련 집회"), `${viewport.id}: fixture issue leaked to live`);
     const issueCount = await page.locator('a[href^="/event-topics/"]').count();
-    const unknownTopicLinkCount = await page.locator('a[href="/explore?topic=unknown"]').count();
     await shot(page, `${viewport.id}_home.png`);
     if (issueCount === 0) {
-      check(unknownTopicLinkCount > 0 || /확인된 주제는 아직 없습니다|자료 연결을 확인하고 있습니다/.test(bodyText), `${viewport.id}: live empty state is not honest`);
+      check(/확인된 주요 이슈가 아직 없습니다|자료 연결을 확인하고 있습니다/.test(bodyText), `${viewport.id}: live empty state is not honest`);
     } else {
       await page.locator('a[href^="/event-topics/"]').first().click();
       await page.locator('[data-screen="event-topic"]').waitFor({ state: "visible" });
@@ -326,13 +334,15 @@ async function verifyLiveViewport(browserInstance, viewport) {
     await page.waitForTimeout(500);
     const reelCount = await page.locator(".reel-card").count();
     if (reelCount > 0) check((await page.locator(".reel-card").first().locator(".reel-actions a").count()) === 3, `${viewport.id}: live reel action rail changed`);
-    else check(/공개된 현장 영상이 없습니다|자료 연결을 확인하고 있습니다/.test(await page.locator("body").innerText()), `${viewport.id}: live reels empty state is not honest`);
+    else check(/아직 공개된 영상이 없습니다|자료 연결을 확인하고 있습니다/.test(await page.locator("body").innerText()), `${viewport.id}: live reels empty state is not honest`);
     await shot(page, `${viewport.id}_reels.png`);
 
     await page.goto(`${baseUrl}/explore`, { waitUntil: "domcontentloaded" });
     await page.locator(".map-canvas").waitFor({ state: "visible" });
     await page.locator('[data-basemap-ready="true"]').waitFor({ state: "visible", timeout: 12_000 });
     check((await page.locator(".map-topbar .map-list-button").count()) === 1, `${viewport.id}: live map list action is not in the top filter area`);
+    check((await page.locator(".map-phase-filters > button").count()) === 3, `${viewport.id}: live map exposes more than three primary filter actions`);
+    check((await page.locator(".map-key,.map-location-hint,.map-selection,.map-event-list,.map-anchor-stack").count()) === 0, `${viewport.id}: live map opens an information surface before user action`);
     const mapBox = await page.locator(".map-canvas").boundingBox();
     check(Boolean(mapBox && mapBox.height >= viewport.height * 0.8), `${viewport.id}: live map canvas collapsed`);
     await page.waitForTimeout(1_000);
@@ -345,7 +355,7 @@ async function verifyLiveViewport(browserInstance, viewport) {
       const regionalEventCount = Number(shortcutName.match(/일정 (\d+)건/)?.[1] || 0);
       await liveRegionalShortcuts.first().evaluate((button) => button.click());
       await page.locator('.map-anchor-stack[data-group-kind="region"]').waitFor({ state: "visible" });
-      check((await page.locator(".map-anchor-head").innerText()).includes("권역 중심점은 개별 장소가 아닙니다"), `${viewport.id}: live regional group lacks location-honesty copy`);
+      check(/개 일정/.test(await page.locator(".map-anchor-head").innerText()), `${viewport.id}: live regional group summary is missing`);
       const expandedEventCount = await page.locator(".map-anchor-items button").count();
       check(expandedEventCount >= 1 && expandedEventCount <= 4, `${viewport.id}: live regional group expansion must show one to four event rows`);
       if (regionalEventCount > 4) check((await page.locator(".map-anchor-all").count()) === 1, `${viewport.id}: live regional group with more than four events lacks the full-list action`);
@@ -357,7 +367,7 @@ async function verifyLiveViewport(browserInstance, viewport) {
     if ((await liveMapResult.count()) === 1) {
       await liveMapResult.click();
       await page.locator('.map-selection').waitFor({ state: "visible" });
-      check((await page.locator(".map-key").count()) === 0, `${viewport.id}: live map legend overlaps the selected event sheet`);
+      check((await page.locator(".map-anchor-stack,.map-event-list").count()) === 0, `${viewport.id}: live selected event competes with another map panel`);
       const selectionTitle = await page.locator('.map-selection h2').innerText();
       const selectionTopic = await page.locator('.map-selection .selection-topic').innerText();
       check(!selectionTitle.includes("집회 일정"), `${viewport.id}: live event still exposes a generic schedule title`);
@@ -374,11 +384,11 @@ async function verifyLiveViewport(browserInstance, viewport) {
     await page.locator('[data-screen="report"]').waitFor({ state: "visible" });
     await page.waitForFunction(() => {
       const text = document.body.innerText;
-      return text.includes("근처 현장 찾기") || text.includes("검증된 현장 제보를 준비하고 있습니다");
+      return text.includes("근처 현장 찾기") || text.includes("현장 제보는 준비 중입니다");
     }, undefined, { timeout: 10_000 });
     const liveReportEntryReady = (await page.getByRole("button", { name: "근처 현장 찾기" }).count()) === 1;
-    const liveReportEntryHeld = (await page.getByRole("heading", { name: "검증된 현장 제보를 준비하고 있습니다" }).count()) === 1
-      && (await page.getByText("현재 웹에서는 영상을 접수하지 않습니다.", { exact: false }).count()) === 1;
+    const liveReportEntryHeld = (await page.getByRole("heading", { name: "현장 제보는 준비 중입니다" }).count()) === 1
+      && (await page.getByText("안전한 촬영과 개인정보 보호 기능을 갖춘 뒤 제공하겠습니다.", { exact: false }).count()) === 1;
     check(liveReportEntryReady || liveReportEntryHeld, `${viewport.id}: live report entry changed`);
     await shot(page, `${viewport.id}_report.png`);
 

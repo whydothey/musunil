@@ -2,7 +2,7 @@ import { ArrowLeft, ChevronRight, RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAppState } from "./app-state";
 import type { EventTopicGroup, IssueOverview, OccurrenceDigest } from "./contracts";
-import { formatDateTime, formatRelativeTime, lifecycleLabel, lifecycleTone, locationPrecisionLabel, occurrenceDisplayTitle, occurrenceTopicTitle, scaleLabel, schedulePresentation } from "./format";
+import { formatDateTime, formatRelativeTime, lifecycleLabel, lifecycleTone, occurrenceDisplayTitle, occurrenceTopicTitle, schedulePresentation } from "./format";
 import { Link, useRouter } from "./router";
 
 export function ScreenHeader({ title, eyebrow, back, trailing }: { title: string; eyebrow?: string; back?: boolean; trailing?: ReactNode }) {
@@ -65,17 +65,13 @@ export function EventTopicListItem({ group }: { group: EventTopicGroup }) {
         <h2>{group.title}</h2>
         <ChevronRight aria-hidden="true" />
       </div>
-      <p className="issue-change">{group.status === "candidate" ? "공개 근거에서 추출한 주제 후보 · 연결 검토 중" : "검토된 주제로 연결된 집회·시위 일정"}</p>
       <p className="issue-meta">
         진행 {group.currentCount}건
         <span aria-hidden="true">·</span>
         예정 {group.upcomingCount}건
         <span aria-hidden="true">·</span>
         {group.regionCount}개 지역
-        <span aria-hidden="true">·</span>
-        개별 일정 {group.occurrenceCount}건
       </p>
-      <p className="issue-provenance">공개 근거 {group.evidenceCount}건 · 출처 {group.sourceCount}곳{group.status === "candidate" ? " · 승인 전 후보" : ""}</p>
     </Link>
   );
 }
@@ -91,7 +87,6 @@ export function OccurrenceListItem({ occurrence }: { occurrence: OccurrenceDiges
       <h3>{occurrenceDisplayTitle(occurrence)}</h3>
       <p className="place-line">주제 · {occurrenceTopicTitle(occurrence)}</p>
       <p className="place-line">{occurrence.locationLabel || occurrence.regionLabel} · {formatDateTime(occurrence.startsAt)}</p>
-      <p className="occurrence-meta"><span className="location-precision-label">{locationPrecisionLabel(occurrence)}</span><span>·</span>{scaleLabel(occurrence)}<span>·</span>{occurrence.publicVideoCount ? `영상 ${occurrence.publicVideoCount}건` : "공개 영상 없음"}</p>
       <ChevronRight className="row-chevron" aria-hidden="true" />
     </Link>
   );

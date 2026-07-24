@@ -1250,6 +1250,8 @@ if (
   !/nestedInteractive/.test(visualSurfaceSmoke) ||
   !/desktop home includes map/.test(visualSurfaceSmoke) ||
   !/issue detail must expose exactly four tabs/.test(visualSurfaceSmoke) ||
+  !/event topic row is not commercially concise/.test(visualSurfaceSmoke) ||
+  !/map opens an information surface before user action/.test(visualSurfaceSmoke) ||
   !/reel action rail changed/.test(visualSurfaceSmoke) ||
   !/report entry must expose one action/.test(visualSurfaceSmoke)
 ) {
@@ -1297,7 +1299,7 @@ if (
   failures.push("Commercial visual surface smoke must guard issue visibility, nested actions, dashboard map regression, overflow, and accessibility");
 }
 if (
-  !/(확인된 주요 이슈가 없습니다|확인된 주요 주제가 없습니다|확인된 주제는 아직 없습니다)/.test(visualSurfaceSmoke) ||
+  !/(확인된 주요 이슈가 없습니다|확인된 주요 이슈가 아직 없습니다|확인된 주요 주제가 없습니다)/.test(visualSurfaceSmoke) ||
   !/자료 연결을 확인하고 있습니다/.test(visualSurfaceSmoke) ||
   !/live empty state is not honest/.test(visualSurfaceSmoke)
 ) {

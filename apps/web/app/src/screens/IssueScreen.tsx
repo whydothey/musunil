@@ -38,15 +38,15 @@ export function IssueScreen({ id }: { id: string }) {
     <section className="screen screen-detail" data-screen="issue">
       <ScreenHeader title={issue.title} eyebrow="주요 이슈" back />
       <div className="issue-hero">
-        <div className="hero-status"><StatusDot state={issue.lifecycleState} /><span>{formatRelativeTime(issue.latestUpdatedAt)}</span></div>
+        <div className="hero-status"><StatusDot state={issue.lifecycleState} /></div>
         <p>{issue.latestChange || `${issue.regionCount}개 지역의 공개 현장을 확인하고 있습니다.`}</p>
-        {synthesis?.facets.length ? <div className="issue-facet-panel"><strong>근거에서 확인된 핵심 논점</strong><div>{synthesis.facets.map((facet) => <span key={facet.coreTopicKey}>{facet.label}<small>근거 {facet.evidenceCount}건 · 발행사 {facet.publisherCount}곳</small></span>)}</div><p>논점은 공개 근거를 종합한 탐색 단위이며 사실 확정이나 찬반 판단이 아닙니다.</p></div> : null}
         <div className="hero-summary" aria-label="이슈 현황">
           <span><strong>{issue.occurrenceCount}</strong> 현장</span>
           <span><strong>{issue.regionCount}</strong> 지역</span>
           <span><strong>{issue.publicVideoCount}</strong> 영상</span>
           {issue.disputeCount ? <span className="has-dispute">다른 주장 있음</span> : null}
         </div>
+        {synthesis?.facets.length ? <details className="topic-method-disclosure"><summary>핵심 논점 {synthesis.facets.length}개</summary><div className="issue-facet-list">{synthesis.facets.map((facet) => <span key={facet.coreTopicKey}>{facet.label}</span>)}</div><p>공개 근거에서 반복 확인된 탐색 기준이며 사실 확정이나 찬반 판단이 아닙니다.</p></details> : null}
       </div>
 
       <div className="detail-tabs" role="tablist" aria-label="이슈 정보">
@@ -56,14 +56,14 @@ export function IssueScreen({ id }: { id: string }) {
       <div className="detail-tab-panel" role="tabpanel">
         {tab === "occurrences" ? (
           <div className="section-list">
-            <div className="section-heading"><div><h2>전국 현장</h2><p>같은 주제로 확인되는 집회·시위입니다</p></div><MapPin aria-hidden="true" /></div>
+            <div className="section-heading"><div><h2>전국 현장</h2></div><MapPin aria-hidden="true" /></div>
             {occurrences.length ? occurrences.map((occurrence) => <OccurrenceListItem key={occurrence.id} occurrence={occurrence} />) : <EmptyState title="공개된 현장이 없습니다" description="위치와 근거가 확인된 현장부터 표시합니다." />}
           </div>
         ) : null}
 
         {tab === "videos" ? (
           <div className="section-list">
-            <div className="section-heading"><div><h2>현장 영상</h2><p>위치·시각 확인과 비식별 검토를 마친 영상입니다</p></div><PlaySquare aria-hidden="true" /></div>
+            <div className="section-heading"><div><h2>현장 영상</h2></div><PlaySquare aria-hidden="true" /></div>
             {reels.length ? reels.map((reel) => (
               <Link key={reel.id} href={`/reels?issue=${encodeURIComponent(id)}&reel=${encodeURIComponent(reel.id)}`} className="video-list-row">
                 <img src={reel.media.redactedPosterUrl} alt="비식별 처리된 현장 영상 미리보기" />
@@ -76,7 +76,7 @@ export function IssueScreen({ id }: { id: string }) {
 
         {tab === "evidence" ? (
           <div className="section-list evidence-section">
-            <div className="section-heading"><div><h2>확인 근거</h2><p>출처, 근거 강도, 공개 위험을 각각 구분합니다</p></div><FileText aria-hidden="true" /></div>
+            <div className="section-heading"><div><h2>확인 근거</h2></div><FileText aria-hidden="true" /></div>
             {detailState === "loading" || detailState === "idle" ? <LoadingState label="이 주제의 공개 근거를 확인하고 있습니다" /> : null}
             {detailState === "error" ? <ServiceUnavailable title="근거를 불러오지 못했습니다" description="주제 정보는 볼 수 있지만 근거 목록 연결을 다시 확인해야 합니다." /> : null}
             {detailState === "ready" && claims.length ? claims.map((claim) => (
@@ -88,7 +88,7 @@ export function IssueScreen({ id }: { id: string }) {
             )) : null}
             {detailState === "ready" && !claims.length ? <EmptyState title="공개된 근거 요약이 없습니다" description="출처와 공개 위험을 검토한 요약만 표시합니다." /> : null}
             {news.length ? <section className="issue-news-section" aria-labelledby="issue-news-heading">
-              <div className="section-heading"><div><h3 id="issue-news-heading">관련 언론 보도</h3><p>언론 보도는 사실 확정이 아니라 출처별 주장으로 구분합니다</p></div><Newspaper aria-hidden="true" /></div>
+              <div className="section-heading"><div><h3 id="issue-news-heading">관련 언론 보도</h3></div><Newspaper aria-hidden="true" /></div>
               <div className="news-link-list">{news.map((article) => (
                 <a key={article.id} href={article.sourceUrl} target="_blank" rel="noopener noreferrer" className="news-link-row">
                   <span><strong>{article.headline}</strong><small>{article.summary} · {article.publisherLabel} · {new Date(article.publishedAt).toLocaleDateString("ko-KR")}</small></span><ExternalLink aria-hidden="true" />
@@ -100,7 +100,7 @@ export function IssueScreen({ id }: { id: string }) {
 
         {tab === "laws" ? (
           <div className="section-list">
-            <div className="section-heading"><div><h2>관련 법안</h2><p>국회·국가법령정보의 공식 자료입니다</p></div><Scale aria-hidden="true" /></div>
+            <div className="section-heading"><div><h2>관련 법안</h2></div><Scale aria-hidden="true" /></div>
             {lawGroups.length ? lawGroups.map((group) => (
               <Link key={group.id} href={`/laws/groups/${encodeURIComponent(group.id)}`} className="law-inline-row">
                 <span>국회 공식 법안 그룹</span>
