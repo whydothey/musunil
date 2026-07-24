@@ -1297,7 +1297,7 @@ if (
   failures.push("Commercial visual surface smoke must guard issue visibility, nested actions, dashboard map regression, overflow, and accessibility");
 }
 if (
-  !/(확인된 주요 이슈가 없습니다|확인된 주요 주제가 없습니다)/.test(visualSurfaceSmoke) ||
+  !/(확인된 주요 이슈가 없습니다|확인된 주요 주제가 없습니다|확인된 주제는 아직 없습니다)/.test(visualSurfaceSmoke) ||
   !/자료 연결을 확인하고 있습니다/.test(visualSurfaceSmoke) ||
   !/live empty state is not honest/.test(visualSurfaceSmoke)
 ) {
