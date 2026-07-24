@@ -53,8 +53,8 @@ export function ReportScreen() {
       <div className="report-start contribution-unavailable" role="status">
         <span className="report-start-icon"><ShieldCheck /></span>
         <h2>검증된 현장 제보를 준비하고 있습니다</h2>
-        <p>앱 내 촬영, 실시간 GPS, Play Integrity, 본인확인과 비식별 처리가 모두 준비된 뒤에만 제보를 받습니다. 현재 웹에서는 영상을 접수하지 않습니다.</p>
-        <dl><div><dt>공개 읽기</dt><dd>로그인 없이 계속 이용 가능</dd></div><div><dt>현장 제보</dt><dd>안전 게이트 통과 후 Android 앱에서 제공</dd></div></dl>
+        <p>앱에서 직접 촬영한 영상의 시각·위치·기기 상태를 확인하고, 얼굴과 차량번호를 가릴 수 있을 때만 제보를 받습니다. 현재 웹에서는 영상을 접수하지 않습니다.</p>
+        <dl><div><dt>정보 보기</dt><dd>로그인 없이 계속 이용 가능</dd></div><div><dt>현장 제보</dt><dd>안전 검증을 갖춘 Android 앱에서 제공 예정</dd></div></dl>
       </div>
     </section>
   );
@@ -97,7 +97,7 @@ export function ReportScreen() {
           <p className="confirm-kicker">제보할 현장</p>
           <h2>{selected.title}</h2>
           <p>{selected.issueTitle}</p>
-          <dl><div><dt>장소</dt><dd>{selected.locationLabel || selected.regionLabel}</dd></div><div><dt>연결</dt><dd>이 현장의 영상 Claim</dd></div><div><dt>공개 위치</dt><dd>최소 200m 반경으로 흐림</dd></div></dl>
+          <dl><div><dt>장소</dt><dd>{selected.locationLabel || selected.regionLabel}</dd></div><div><dt>연결</dt><dd>이 현장의 영상 근거</dd></div><div><dt>공개 위치</dt><dd>최소 200m 반경으로 흐림</dd></div></dl>
           <button type="button" className="primary-button report-primary" onClick={beginCapture}><Camera />이 현장 촬영하기</button>
         </div>
       ) : null}

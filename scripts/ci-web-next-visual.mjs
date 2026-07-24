@@ -182,8 +182,8 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     check((await page.locator('.map-selection .primary-button').count()) === 1, `${viewport.id}: map selection must have one primary action`);
     const selectionBox = await page.locator('.map-selection').boundingBox();
     check(Boolean(selectionBox && selectionBox.y >= 0 && selectionBox.y + selectionBox.height <= viewport.height), `${viewport.id}: map selection is outside the viewport`);
-    check((await page.locator('.map-selection h2').innerText()).includes("정보통신망법"), `${viewport.id}: map selection topic is missing`);
-    check((await page.locator('.map-selection .selection-event').innerText()).includes("인천"), `${viewport.id}: map selection event does not match the searched occurrence`);
+    check((await page.locator('.map-selection h2').innerText()).includes("인천"), `${viewport.id}: map selection event does not match the searched occurrence`);
+    check((await page.locator('.map-selection .selection-topic').innerText()).includes("정보통신망법"), `${viewport.id}: map selection topic is missing`);
     await page.waitForTimeout(2_500);
     check(Number(await page.locator(".map-canvas").getAttribute("data-map-zoom")) >= 13, `${viewport.id}: selecting an individual event did not leave cluster zoom`);
     check(Number(await page.locator(".map-canvas").getAttribute("data-visible-clusters")) === 0, `${viewport.id}: nearby pins remain clustered at individual-event zoom`);
@@ -313,7 +313,7 @@ async function verifyLiveViewport(browserInstance, viewport) {
     const unknownTopicLinkCount = await page.locator('a[href="/explore?topic=unknown"]').count();
     await shot(page, `${viewport.id}_home.png`);
     if (issueCount === 0) {
-      check(unknownTopicLinkCount > 0 || /확인된 주요 주제가 없습니다|자료 연결을 확인하고 있습니다/.test(bodyText), `${viewport.id}: live empty state is not honest`);
+      check(unknownTopicLinkCount > 0 || /확인된 주제는 아직 없습니다|자료 연결을 확인하고 있습니다/.test(bodyText), `${viewport.id}: live empty state is not honest`);
     } else {
       await page.locator('a[href^="/event-topics/"]').first().click();
       await page.locator('[data-screen="event-topic"]').waitFor({ state: "visible" });
@@ -361,7 +361,7 @@ async function verifyLiveViewport(browserInstance, viewport) {
       const selectionTitle = await page.locator('.map-selection h2').innerText();
       const selectionTopic = await page.locator('.map-selection .selection-topic').innerText();
       check(!selectionTitle.includes("집회 일정"), `${viewport.id}: live event still exposes a generic schedule title`);
-      check(/^(확인된 주제|주제 후보|주제 미확인) · /u.test(selectionTopic), `${viewport.id}: live event topic context is missing`);
+      check(/^주제 · (?!$)/u.test(selectionTopic), `${viewport.id}: live event topic context is missing`);
     }
     await shot(page, `${viewport.id}_explore.png`);
 

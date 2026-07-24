@@ -2,7 +2,7 @@ import { ExternalLink, FileText, MapPin, Newspaper, PlaySquare, Scale } from "lu
 import { useEffect, useMemo, useState } from "react";
 import { useAppState } from "../app-state";
 import { EmptyState, LoadingState, OccurrenceListItem, ScreenHeader, ServiceUnavailable, StatusDot } from "../components";
-import { evidenceLabel, formatRelativeTime, riskLabel, sourceLabel } from "../format";
+import { evidenceLabel, formatRelativeTime, riskLabel } from "../format";
 import { Link } from "../router";
 
 type IssueTab = "occurrences" | "videos" | "evidence" | "laws";
@@ -14,7 +14,7 @@ const tabs: Array<{ id: IssueTab; label: string }> = [
 ];
 
 export function IssueScreen({ id }: { id: string }) {
-  const { dataset, serviceSyncState, selectIssue, ensureIssue } = useAppState();
+  const { dataset, serviceSyncState, issueDetailStates, selectIssue, ensureIssue } = useAppState();
   const [tab, setTab] = useState<IssueTab>("occurrences");
   const issue = dataset?.issues.find((item) => item.id === id);
   const occurrences = useMemo(() => dataset?.occurrences.filter((item) => item.issueId === id || item.issueIds?.includes(id)) || [], [dataset, id]);
@@ -23,6 +23,8 @@ export function IssueScreen({ id }: { id: string }) {
   const synthesis = dataset?.synthesisByIssue[id];
   const claims = dataset?.claimsByIssue[id] || [];
   const news = dataset?.newsByIssue[id] || [];
+  const hasClaimPayload = Object.prototype.hasOwnProperty.call(dataset?.claimsByIssue || {}, id);
+  const detailState = issueDetailStates[id] || (hasClaimPayload ? "ready" : "idle");
   useEffect(() => {
     selectIssue(id);
     if (!Object.prototype.hasOwnProperty.call(dataset?.claimsByIssue || {}, id)) ensureIssue(id).catch(() => undefined);
@@ -75,18 +77,21 @@ export function IssueScreen({ id }: { id: string }) {
         {tab === "evidence" ? (
           <div className="section-list evidence-section">
             <div className="section-heading"><div><h2>확인 근거</h2><p>출처, 근거 강도, 공개 위험을 각각 구분합니다</p></div><FileText aria-hidden="true" /></div>
-            {claims.length ? claims.map((claim) => (
+            {detailState === "loading" || detailState === "idle" ? <LoadingState label="이 주제의 공개 근거를 확인하고 있습니다" /> : null}
+            {detailState === "error" ? <ServiceUnavailable title="근거를 불러오지 못했습니다" description="주제 정보는 볼 수 있지만 근거 목록 연결을 다시 확인해야 합니다." /> : null}
+            {detailState === "ready" && claims.length ? claims.map((claim) => (
               <article className="claim-row" key={claim.id}>
-                <div className="claim-source"><span>{sourceLabel(claim.sourceProvenance)}</span><time>{formatRelativeTime(claim.createdAt)}</time></div>
+                <div className="claim-source"><span>{claim.claimantLabel}</span><time>{formatRelativeTime(claim.createdAt)}</time></div>
                 <p>{claim.normalizedStatement}</p>
                 <dl className="claim-meta"><div><dt>근거</dt><dd>{evidenceLabel(claim.evidenceStrength)}</dd></div><div><dt>공개</dt><dd>{riskLabel(claim.riskLevel)}</dd></div></dl>
               </article>
-            )) : <EmptyState title="공개된 근거가 없습니다" description="검토를 통과한 Claim만 이곳에 표시합니다." />}
+            )) : null}
+            {detailState === "ready" && !claims.length ? <EmptyState title="공개된 근거 요약이 없습니다" description="출처와 공개 위험을 검토한 요약만 표시합니다." /> : null}
             {news.length ? <section className="issue-news-section" aria-labelledby="issue-news-heading">
-              <div className="section-heading"><div><h3 id="issue-news-heading">관련 언론 보도</h3><p>언론 보도는 사실 확정이 아니라 출처별 Claim입니다</p></div><Newspaper aria-hidden="true" /></div>
+              <div className="section-heading"><div><h3 id="issue-news-heading">관련 언론 보도</h3><p>언론 보도는 사실 확정이 아니라 출처별 주장으로 구분합니다</p></div><Newspaper aria-hidden="true" /></div>
               <div className="news-link-list">{news.map((article) => (
                 <a key={article.id} href={article.sourceUrl} target="_blank" rel="noopener noreferrer" className="news-link-row">
-                  <span><strong>{article.summary}</strong><small>{article.publisherLabel} · {new Date(article.publishedAt).toLocaleDateString("ko-KR")}</small></span><ExternalLink aria-hidden="true" />
+                  <span><strong>{article.headline}</strong><small>{article.summary} · {article.publisherLabel} · {new Date(article.publishedAt).toLocaleDateString("ko-KR")}</small></span><ExternalLink aria-hidden="true" />
                 </a>
               ))}</div>
             </section> : null}

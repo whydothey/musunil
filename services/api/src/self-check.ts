@@ -56,6 +56,7 @@ const app = createApp(store, {
   userTokenSecret: testUserTokenSecret,
   identity: testIdentity,
   publicDiscoveryNow: () => now,
+  serviceProfile: { supportEmail: "support@musunil.test" },
   readiness: () => ({ ready: true, checks: [{ id: "test", ok: true, message: "ok" }] })
 });
 const productionSeed = createSeedStore({ includeMockData: false });
@@ -417,7 +418,8 @@ const publicPayloads = [
   await app.handle({ method: "GET", path: "/reels?seed=public-surface" }),
   await app.handle({ method: "GET", path: "/area-clusters" }),
   await app.handle({ method: "GET", path: "/map" }),
-  await app.handle({ method: "GET", path: "/transparency/logs" })
+  await app.handle({ method: "GET", path: "/transparency/logs" }),
+  await app.handle({ method: "GET", path: "/service-profile" })
 ];
 for (const payload of publicPayloads) {
   assert.equal(payload.status, 200);
@@ -426,6 +428,9 @@ for (const payload of publicPayloads) {
 const transparencyPage = await app.handle({ method: "GET", path: "/transparency/logs?limit=2" });
 assert.equal((transparencyPage.body as { logs: unknown[] }).logs.length <= 2, true);
 assert.equal(JSON.stringify(transparencyPage.body).includes("statement"), false);
+assert.equal((transparencyPage.body as { logs: Array<{ category: string; count: number }> }).logs.every((log) => Boolean(log.category) && log.count >= 1), true);
+const serviceProfile = await app.handle({ method: "GET", path: "/service-profile" });
+assert.deepEqual(serviceProfile.body, { supportAvailable: true, supportEmail: "support@musunil.test" });
 const liveClaims = await app.handle({ method: "GET", path: "/targets/occurrence/occ_1/live-claims" });
 assert.equal(liveClaims.status, 200);
 assert.equal((liveClaims.body as { liveClaims: Array<{ claim: { id: string }; redactionStatus: string; media: { redactedClipUrl: string } }> }).liveClaims[0]?.claim.id, "claim_occ_live_1");

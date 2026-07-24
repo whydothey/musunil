@@ -124,7 +124,16 @@ export const dataSource: DataSource = {
       const reels = await request<{ reels?: AppDataset["reels"] }>("/reels");
       return { reels: reels.reels || [] };
     }
-    if (scope === "transparency") return { transparency: await getTransparency() };
+    if (scope === "trust") {
+      return { serviceProfile: await request<NonNullable<AppDataset["serviceProfile"]>>("/service-profile") };
+    }
+    if (scope === "transparency") {
+      const [transparency, serviceProfile] = await Promise.all([
+        getTransparency(),
+        request<NonNullable<AppDataset["serviceProfile"]>>("/service-profile")
+      ]);
+      return { transparency, serviceProfile };
+    }
     const laws = await request<{ lawInterestItems?: LawInterestItem[]; lawGroups?: LawGroupCard[] }>("/laws?sort=interest");
     return { laws: laws.lawInterestItems || [], lawGroups: laws.lawGroups || [] };
   },

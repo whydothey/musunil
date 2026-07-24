@@ -131,6 +131,8 @@ export interface EventTopicDetailData {
 export interface TransparencyLogItem {
   id: string;
   action: string;
+  category?: "source_refresh" | "content_correction" | "link_change" | "moderation" | "rights";
+  count?: number;
   targetType: string;
   targetId: string;
   createdAt: string;
@@ -157,6 +159,7 @@ export interface TransparencyData {
 
 export interface PublicClaim {
   id: string;
+  claimantLabel: string;
   normalizedStatement: string;
   sourceProvenance: string;
   evidenceStrength: EvidenceStrength;
@@ -235,6 +238,7 @@ export interface NewsArticle {
   issueId: string;
   lawGroupId: string;
   coreTopicKey: string;
+  headline: string;
   publisherLabel: string;
   publishedAt: string;
   summary: string;
@@ -321,6 +325,10 @@ export interface AppDataset {
   claimsByOccurrence: Record<string, PublicClaim[]>;
   map: MapData;
   transparency?: TransparencyData;
+  serviceProfile?: {
+    supportAvailable: boolean;
+    supportEmail?: string;
+  };
 }
 
 export interface ServiceReadiness {

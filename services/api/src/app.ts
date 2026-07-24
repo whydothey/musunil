@@ -159,6 +159,9 @@ export type AppOptions = {
   requireReadyForWrites?: boolean;
   allowAnonymousSession?: boolean;
   publicDiscoveryNow?: () => Date;
+  serviceProfile?: {
+    supportEmail?: string;
+  };
   retention?: {
     rawClaimStatementDays?: number;
     unverifiedOriginalMediaDays?: number;
@@ -923,6 +926,12 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
   if (request.method === "GET" && path === "/readiness") {
     return json(200, describeReadiness(await (options.readiness?.() ?? defaultReadiness())));
   }
+  if (request.method === "GET" && path === "/service-profile") {
+    return json(200, {
+      supportAvailable: Boolean(options.serviceProfile?.supportEmail),
+      supportEmail: options.serviceProfile?.supportEmail
+    });
+  }
   if (options.requireReadyForWrites && request.method !== "GET" && !path.startsWith("/internal/")) {
     const readiness = describeReadiness(await (options.readiness?.() ?? defaultReadiness()));
     if (!readiness.ready) return json(503, { error: "runtime_not_ready", checks: readiness.checks, summary: readiness.summary, requiredActions: readiness.requiredActions });
@@ -1000,8 +1009,12 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
       .filter((log) => !action || log.action === action)
       .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime() || right.id.localeCompare(left.id));
     const start = cursor ? Math.max(0, ordered.findIndex((log) => log.id === cursor) + 1) : 0;
-    const page = ordered.slice(start, start + limit);
-    return json(200, { logs: page.map(toPublicTransparencyLog), nextCursor: start + limit < ordered.length ? page.at(-1)?.id : undefined });
+    const summarized = summarizeTransparencyLogs(ordered.slice(start));
+    const page = summarized.slice(0, limit);
+    return json(200, {
+      logs: page.map((item) => toPublicTransparencyLog(item.log, item.count)),
+      nextCursor: page.length < summarized.length ? page.at(-1)?.lastRawId : undefined
+    });
   }
   if (request.method === "GET" && path === "/transparency/monthly") return getTransparencyMonthly(store);
   if (request.method === "POST" && path === "/uploads/live") return await postLiveUpload(store, request, options);
@@ -1646,11 +1659,10 @@ function toOccurrenceDigest(store: Store, targetType: Extract<TargetType, "occur
       ? "source_not_disclosed" as const
       : "unlinked" as const;
   const updatedAt = latestDate([
-    occurrence?.startsAt,
-    occurrence?.endsAt,
     continuous?.lastProofOfPresenceAt,
     continuous?.firstProofOfPresenceAt,
-    ...claims.map((claim) => claim.createdAt)
+    ...claims.map((claim) => claim.createdAt),
+    ...evidence.map((item) => item.sourceCheckedAt ?? item.uploadedAt)
   ]);
 
   return {
@@ -1733,10 +1745,15 @@ function isActiveSchedule(digest: OccurrenceDigest, now: Date): boolean {
 }
 
 function scheduleState(digest: OccurrenceDigest, now: Date): "current" | "upcoming" | "past" {
+  if (["CANCELED", "ENDED", "ARCHIVED"].includes(digest.lifecycleState)) return "past";
+  if (digest.lifecycleState === "POSTPONED") return "upcoming";
   const start = digest.startsAt ? new Date(digest.startsAt).getTime() : undefined;
-  const end = digest.endsAt ? new Date(digest.endsAt).getTime() : start;
-  if (start !== undefined && start > now.getTime()) return "upcoming";
+  const end = digest.endsAt ? new Date(digest.endsAt).getTime() : undefined;
   if (end !== undefined && end < now.getTime()) return "past";
+  if (start !== undefined && start > now.getTime()) return "upcoming";
+  if (digest.lifecycleState === "UPCOMING" && start === undefined) return "upcoming";
+  if (digest.targetType === "continuous_presence" || digest.lifecycleState === "ONGOING_SERIES") return "current";
+  if (start !== undefined && start + 12 * 60 * 60_000 < now.getTime()) return "past";
   return "current";
 }
 
@@ -4541,8 +4558,14 @@ function hasPreciseLocationFields(evidence: Evidence): boolean {
 
 function getTransparencyMonthly(store: Store): ApiResponse {
   const counts: Record<string, number> = {};
-  for (const log of store.auditLogs) counts[log.action] = (counts[log.action] ?? 0) + 1;
-  return json(200, { month: new Date().toISOString().slice(0, 7), counts });
+  const now = new Date();
+  const month = koreaMonthKey(now);
+  for (const log of store.auditLogs) {
+    if (koreaMonthKey(log.createdAt) !== month) continue;
+    const category = transparencyCategory(log.action, log.targetType, log.reason);
+    counts[category] = (counts[category] ?? 0) + 1;
+  }
+  return json(200, { month, counts });
 }
 
 function toPublicLawItem(store: Store, law: LawItem) {
@@ -5456,6 +5479,7 @@ function publicNewsArticlesForIssue(store: Store, issueId: string, lawGroupId?: 
       issueId,
       lawGroupId: candidate.lawGroupId,
       coreTopicKey: candidate.coreTopicKey,
+      headline: candidate.suggestedTitle,
       publisherLabel: evidence.publisherLabel,
       publishedAt: evidence.sourcePublishedAt.toISOString(),
       summary: claim.normalizedStatement,
@@ -5656,15 +5680,79 @@ function audit(store: Store, action: AuditLog["action"], targetType: AuditLog["t
   });
 }
 
-function toPublicTransparencyLog(log: TransparencyLog) {
+function toPublicTransparencyLog(log: TransparencyLog, count = 1) {
   return {
     id: log.id,
     action: log.action,
+    category: transparencyCategory(log.action, log.targetType, log.publicReason),
+    count,
     targetType: log.targetType,
     targetId: log.targetId,
     createdAt: log.createdAt.toISOString(),
-    publicReason: sanitizePublicReason(log.publicReason)
+    publicReason: publicTransparencyReason(log)
   };
+}
+
+function summarizeTransparencyLogs(logs: TransparencyLog[]) {
+  const summarized: Array<{ log: TransparencyLog; count: number; lastRawId: string }> = [];
+  for (const log of logs) {
+    const reason = publicTransparencyReason(log);
+    const category = transparencyCategory(log.action, log.targetType, log.publicReason);
+    const previous = summarized.at(-1);
+    if (
+      previous
+      && transparencyCategory(previous.log.action, previous.log.targetType, previous.log.publicReason) === category
+      && publicTransparencyReason(previous.log) === reason
+      && previous.log.targetType === log.targetType
+      && Math.abs(previous.log.createdAt.getTime() - log.createdAt.getTime()) <= 60_000
+    ) {
+      previous.count += 1;
+      previous.lastRawId = log.id;
+      continue;
+    }
+    summarized.push({ log, count: 1, lastRawId: log.id });
+  }
+  return summarized;
+}
+
+type PublicTransparencyCategory = "source_refresh" | "content_correction" | "link_change" | "moderation" | "rights";
+
+function transparencyCategory(action: string, targetType: string, reason: string): PublicTransparencyCategory {
+  const normalized = reason.toLowerCase();
+  if (action === "rights_report" || action === "rebuttal" || normalized.includes("rights") || normalized.includes("반론") || normalized.includes("권리")) return "rights";
+  if (["hold", "mask", "delete"].includes(action)) return "moderation";
+  if (
+    normalized.includes("public occurrence")
+    || normalized.includes("ingest")
+    || normalized.includes("refreshed")
+    || normalized.includes("공개 근거")
+    || normalized.includes("공개자료")
+  ) return "source_refresh";
+  if (["merge", "split", "state_change"].includes(action) || targetType.includes("link")) return "link_change";
+  return "content_correction";
+}
+
+function publicTransparencyReason(log: TransparencyLog) {
+  const normalized = log.publicReason.replace(/\s+/g, " ").trim();
+  if (/public occurrence refreshed without duplicate claim/i.test(normalized)) return "공개 일정의 확인 시각을 갱신했습니다.";
+  if (/official public occurrence statement corrected/i.test(normalized)) return "경찰 공개자료의 변경 내용을 일정에 반영했습니다.";
+  if (/public occurrence ingested as claim\/evidence/i.test(normalized)) return "경찰 공개자료에서 개별 일정을 반영했습니다.";
+  if (/claim|evidence|auditlog|transparencylog/i.test(normalized)) {
+    const category = transparencyCategory(log.action, log.targetType, normalized);
+    return ({
+      source_refresh: "새 공개자료를 확인해 서비스 정보에 반영했습니다.",
+      content_correction: "공개 정보의 설명을 검토하고 갱신했습니다.",
+      link_change: "주제와 일정의 연결 상태를 검토하고 갱신했습니다.",
+      moderation: "개인정보와 공개 위험을 검토해 공개 범위를 조정했습니다.",
+      rights: "정정·반론·권리 요청의 검토 상태를 갱신했습니다."
+    } as const)[category];
+  }
+  return sanitizePublicReason(normalized);
+}
+
+function koreaMonthKey(value: Date) {
+  const korea = new Date(value.getTime() + koreaUtcOffsetMs);
+  return `${korea.getUTCFullYear()}-${String(korea.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
 function sanitizePublicReason(reason: string): string {

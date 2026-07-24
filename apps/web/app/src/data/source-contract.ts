@@ -4,7 +4,7 @@ export interface DataSource {
   mode: "fixture" | "production";
   loadDataset(): Promise<AppDataset>;
   loadReadiness?(): Promise<ServiceReadiness>;
-  loadSupplementalDataset?(scope: "reels" | "laws" | "transparency"): Promise<Partial<AppDataset>>;
+  loadSupplementalDataset?(scope: "reels" | "laws" | "transparency" | "trust"): Promise<Partial<AppDataset>>;
   loadEventTopic(id: string): Promise<EventTopicDetailData>;
   loadIssue(id: string): Promise<IssueDetailData>;
   loadOccurrence(id: string, targetType: "occurrence" | "continuous_presence"): Promise<OccurrenceDetailData>;

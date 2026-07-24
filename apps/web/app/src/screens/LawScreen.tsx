@@ -2,12 +2,13 @@ import { ArrowUpRight, CalendarDays, FileCheck2, Layers3 } from "lucide-react";
 import { useAppState } from "../app-state";
 import { EmptyState, FactRow, LoadingState, ScreenHeader, ServiceUnavailable } from "../components";
 import { Link } from "../router";
-import { formatOfficialDate } from "../format";
+import { formatOfficialDate, lawStagePresentation } from "../format";
 
 export function LawScreen({ id }: { id: string }) {
   const { dataset, serviceSyncState } = useAppState();
   const law = dataset?.laws.find((item) => item.id === id);
   const group = dataset?.lawGroups.find((item) => item.id === law?.lawGroupId);
+  const stage = lawStagePresentation(law?.stage || "");
 
   if (serviceSyncState === "loading") return <section className="screen screen-detail"><LoadingState label="공식 법안 정보를 확인하고 있습니다" /></section>;
   if (serviceSyncState === "unavailable") return <section className="screen screen-detail"><ServiceUnavailable /></section>;
@@ -16,7 +17,7 @@ export function LawScreen({ id }: { id: string }) {
   return (
     <section className="screen screen-detail law-detail" data-screen="law">
       <ScreenHeader title={law.title} eyebrow={law.source === "assembly_bill" ? "국회 의안" : "현행 법령"} back />
-      <div className="law-detail-status"><FileCheck2 /><div><strong>{law.stage}</strong><span>공식 출처에서 확인된 단계</span></div></div>
+      <div className="law-detail-status"><FileCheck2 /><div><strong>{stage.label}</strong><span>{stage.description}</span></div></div>
       <dl className="fact-list" aria-label="법안 핵심 정보">
         <FactRow label="기준일" value={formatOfficialDate(law.proposedDate || law.statusDate)} supporting={law.source === "assembly_bill" ? "공식 발의일" : "공포·시행 기준일"} />
         {law.assemblyBillNo || law.proposer ? <FactRow label="의안" value={law.assemblyBillNo ? `제${law.assemblyBillNo}호` : "국회 의안"} supporting={law.proposer || "제안자 확인 중"} /> : null}

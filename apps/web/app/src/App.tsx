@@ -36,7 +36,7 @@ export function App() {
 
 function AppShell() {
   const { route } = useRouter();
-  const { serviceSyncState, readiness } = useAppState();
+  const { dataset, serviceSyncState, readiness, supplementalStates } = useAppState();
   const activeRoute: RouteName = route.name === "issue" || route.name === "occurrence" || route.name === "event-topic" || route.name === "trust" ? "home" : route.name === "law" || route.name === "law-group" ? "laws" : route.name;
   const isImmersive = route.name === "reels" || route.name === "explore";
   const isDetail = route.name === "issue" || route.name === "occurrence" || route.name === "event-topic" || route.name === "law" || route.name === "law-group";
@@ -50,9 +50,10 @@ function AppShell() {
         </Link>
         <nav className="desktop-nav">
           {navigation.map(({ route: navRoute, href, label, icon: Icon }) => (
-            <Link key={navRoute} href={href} className={`nav-link ${activeRoute === navRoute ? "is-active" : ""}`} ariaLabel={label}>
+            <Link key={navRoute} href={href} className={`nav-link ${activeRoute === navRoute ? "is-active" : ""}`} ariaLabel={`${label}${navigationBadge(navRoute, dataset?.reels.length, readiness?.gates?.contribution.ready, supplementalStates.reels) ? ` ${navigationBadge(navRoute, dataset?.reels.length, readiness?.gates?.contribution.ready, supplementalStates.reels)}` : ""}`}>
               <Icon aria-hidden="true" />
               <span>{label}</span>
+              {navigationBadge(navRoute, dataset?.reels.length, readiness?.gates?.contribution.ready, supplementalStates.reels) ? <small className="nav-availability">{navigationBadge(navRoute, dataset?.reels.length, readiness?.gates?.contribution.ready, supplementalStates.reels)}</small> : null}
             </Link>
           ))}
         </nav>
@@ -75,14 +76,21 @@ function AppShell() {
 
       <nav className="mobile-tabbar" aria-label="주요 메뉴">
         {navigation.map(({ route: navRoute, href, label, icon: Icon }) => (
-          <Link key={navRoute} href={href} className={`tab-link ${activeRoute === navRoute ? "is-active" : ""}`} ariaLabel={label}>
+          <Link key={navRoute} href={href} className={`tab-link ${activeRoute === navRoute ? "is-active" : ""}`} ariaLabel={`${label}${navigationBadge(navRoute, dataset?.reels.length, readiness?.gates?.contribution.ready, supplementalStates.reels) ? ` ${navigationBadge(navRoute, dataset?.reels.length, readiness?.gates?.contribution.ready, supplementalStates.reels)}` : ""}`}>
             <Icon aria-hidden="true" />
             <span>{label}</span>
+            {navigationBadge(navRoute, dataset?.reels.length, readiness?.gates?.contribution.ready, supplementalStates.reels) ? <small className="tab-availability">{navigationBadge(navRoute, dataset?.reels.length, readiness?.gates?.contribution.ready, supplementalStates.reels)}</small> : null}
           </Link>
         ))}
       </nav>
     </div>
   );
+}
+
+function navigationBadge(route: RouteName, reelCount: number | undefined, contributionReady: boolean | undefined, reelsState: string) {
+  if (route === "report" && contributionReady === false) return "준비 중";
+  if (route === "reels" && reelsState === "ready" && reelCount === 0) return "없음";
+  return undefined;
 }
 
 function Screen() {

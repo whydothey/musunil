@@ -211,6 +211,13 @@ const occurrences: OccurrenceDigest[] = [
 
 const claim = (id: string, statement: string, source: string, strength: PublicClaim["evidenceStrength"], risk: PublicClaim["riskLevel"]): PublicClaim => ({
   id,
+  claimantLabel: ({
+    government_or_police: "관계 기관 공개자료",
+    organizer_or_group: "주최 측 공개 입장",
+    verified_citizen_report: "비식별 현장 인증",
+    rebuttal: "공개 반론",
+    media_report: "언론 보도"
+  } as Record<string, string>)[source] || "출처 확인 중",
   normalizedStatement: statement,
   sourceProvenance: source,
   evidenceStrength: strength,
@@ -398,12 +405,12 @@ const lawGroupIssueIds: Record<string, string[]> = {
 
 const newsByIssue: AppDataset["newsByIssue"] = {
   "issue-network-act": [
-    { id: "news-network-1", issueId: "issue-network-act", lawGroupId: "law-group-network-act", coreTopicKey: "network-protection", publisherLabel: "연합뉴스", publishedAt: "2026-07-16T03:30:00.000Z", summary: "정보통신망법의 '온라인 정보·이용자 보호' 쟁점과 관련된 언론 보도입니다.", sourceUrl: "https://example.com/news/network-1" },
-    { id: "news-network-2", issueId: "issue-network-act", lawGroupId: "law-group-network-act", coreTopicKey: "network-protection", publisherLabel: "뉴시스", publishedAt: "2026-07-16T02:10:00.000Z", summary: "정보통신망법의 '온라인 정보·이용자 보호' 쟁점과 관련된 언론 보도입니다.", sourceUrl: "https://example.com/news/network-2" }
+    { id: "news-network-1", issueId: "issue-network-act", lawGroupId: "law-group-network-act", coreTopicKey: "network-protection", headline: "온라인 정보 유통 책임 범위 놓고 국회 논의", publisherLabel: "연합뉴스", publishedAt: "2026-07-16T03:30:00.000Z", summary: "정보통신망법의 '온라인 정보·이용자 보호' 쟁점과 관련된 언론 보도입니다.", sourceUrl: "https://example.com/news/network-1" },
+    { id: "news-network-2", issueId: "issue-network-act", lawGroupId: "law-group-network-act", coreTopicKey: "network-protection", headline: "정보통신망법 개정안 주요 쟁점 정리", publisherLabel: "뉴시스", publishedAt: "2026-07-16T02:10:00.000Z", summary: "정보통신망법의 '온라인 정보·이용자 보호' 쟁점과 관련된 언론 보도입니다.", sourceUrl: "https://example.com/news/network-2" }
   ],
   "issue-election-process": [
-    { id: "news-election-1", issueId: "issue-election-process", lawGroupId: "law-group-election-act", coreTopicKey: "ballot-supply", publisherLabel: "연합뉴스", publishedAt: "2026-07-15T04:46:42.000Z", summary: "공직선거법의 '투표용지·공급 대응' 쟁점과 관련된 언론 보도입니다.", sourceUrl: "https://example.com/news/election-1" },
-    { id: "news-election-2", issueId: "issue-election-process", lawGroupId: "law-group-election-act", coreTopicKey: "ballot-supply", publisherLabel: "뉴시스", publishedAt: "2026-07-15T04:25:10.000Z", summary: "공직선거법의 '투표용지·공급 대응' 쟁점과 관련된 언론 보도입니다.", sourceUrl: "https://example.com/news/election-2" }
+    { id: "news-election-1", issueId: "issue-election-process", lawGroupId: "law-group-election-act", coreTopicKey: "ballot-supply", headline: "투표용지 공급 비상 대응 절차 논의", publisherLabel: "연합뉴스", publishedAt: "2026-07-15T04:46:42.000Z", summary: "공직선거법의 '투표용지·공급 대응' 쟁점과 관련된 언론 보도입니다.", sourceUrl: "https://example.com/news/election-1" },
+    { id: "news-election-2", issueId: "issue-election-process", lawGroupId: "law-group-election-act", coreTopicKey: "ballot-supply", headline: "선거 물품 관리 개정안 국회 접수", publisherLabel: "뉴시스", publishedAt: "2026-07-15T04:25:10.000Z", summary: "공직선거법의 '투표용지·공급 대응' 쟁점과 관련된 언론 보도입니다.", sourceUrl: "https://example.com/news/election-2" }
   ]
 };
 
@@ -461,7 +468,40 @@ const eventTopicGroups: AppDataset["eventTopicGroups"] = issues.filter((issue) =
   evidenceCount: occurrences.filter((item) => item.issueId === issue.id).reduce((count, item) => count + item.evidenceCount, 0),
   representativeOccurrenceId: issue.representativeOccurrenceId || occurrences.find((item) => item.issueId === issue.id)?.id || ""
 }));
-const dataset: AppDataset = { issues, eventTopicGroups, topicUnknownActiveCount: 0, occurrences, reels, laws, lawGroups, claimsByIssue, newsByIssue, synthesisByIssue, lawGroupsByIssue, claimsByOccurrence, map };
+const fixtureSeedDataset: AppDataset = {
+  issues,
+  eventTopicGroups,
+  topicUnknownActiveCount: 0,
+  occurrences,
+  reels,
+  laws,
+  lawGroups,
+  claimsByIssue,
+  newsByIssue,
+  synthesisByIssue,
+  lawGroupsByIssue,
+  claimsByOccurrence,
+  map,
+  serviceProfile: { supportAvailable: true, supportEmail: "support@musunil.com" }
+};
+const dataset = shiftFixtureDates(fixtureSeedDataset);
+
+function shiftFixtureDates(seed: AppDataset): AppDataset {
+  const anchor = new Date("2026-07-19T05:42:00.000Z").getTime();
+  const offset = Date.now() - anchor;
+  const shifted = JSON.parse(JSON.stringify(seed), (_key, value) => {
+    if (typeof value !== "string" || !/^2026-07-(?:18|19|20|21)T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value)) return value;
+    return new Date(new Date(value).getTime() + offset).toISOString();
+  }) as AppDataset;
+  return {
+    ...shifted,
+    occurrences: shifted.occurrences.map((occurrence) => ({
+      ...occurrence,
+      locationStatus: occurrence.locationStatus ?? (occurrence.targetType === "continuous_presence" ? "FIELD_CORROBORATED" : "SOURCE_GEOCODED"),
+      fieldLocationEvidenceCount: occurrence.fieldLocationEvidenceCount ?? (occurrence.targetType === "continuous_presence" ? 2 : 0)
+    }))
+  };
+}
 
 export const dataSource: DataSource = {
   mode: "fixture",

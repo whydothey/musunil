@@ -4,13 +4,14 @@ import dataSource from "@musunil/data-source";
 import type { LawGroupDetailData } from "../contracts";
 import { EmptyState, LoadingState, ScreenHeader, ServiceUnavailable } from "../components";
 import { Link } from "../router";
-import { formatOfficialDate } from "../format";
+import { formatOfficialDate, lawStagePresentation } from "../format";
 
 export function LawGroupScreen({ id }: { id: string }) {
   const [detail, setDetail] = useState<LawGroupDetailData>();
   const [state, setState] = useState<"loading" | "ready" | "missing" | "unavailable">("loading");
   const [coreTopicKey, setCoreTopicKey] = useState<string>();
   const [page, setPage] = useState(1);
+  const [showAllTopics, setShowAllTopics] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -31,6 +32,9 @@ export function LawGroupScreen({ id }: { id: string }) {
   if (state === "missing" || !detail) return <section className="screen screen-detail"><ScreenHeader title="법안 그룹을 찾을 수 없습니다" back /><EmptyState title="공개된 그룹이 아닙니다" description="동일한 공식 법안명으로 확인된 그룹만 표시합니다." actionHref="/laws" actionLabel="법안 그룹 목록" /></section>;
 
   const { group, bills, issues = [] } = detail;
+  const visibleTopics = showAllTopics
+    ? group.coreTopics
+    : group.coreTopics.filter((topic, index) => index < 6 || topic.key === coreTopicKey);
   return (
     <section className="screen screen-detail law-topic-detail" data-screen="law-group">
       <ScreenHeader title={group.billTitle} eyebrow={group.lawName} back />
@@ -39,8 +43,9 @@ export function LawGroupScreen({ id }: { id: string }) {
         <div className="section-heading"><div><h2>핵심 논점</h2><p>소속 의안들의 국회 공식 제안요약에서 집계했습니다</p></div></div>
         <div className="law-core-topic-filter" role="group" aria-label="핵심 논점으로 법안 필터">
           <button type="button" aria-pressed={!coreTopicKey} onClick={() => { setCoreTopicKey(undefined); setPage(1); }}>전체 {group.billCount}건</button>
-          {group.coreTopics.map((topic) => <button type="button" aria-pressed={coreTopicKey === topic.key} onClick={() => { setCoreTopicKey(topic.key); setPage(1); }} key={topic.key}><strong>{topic.label}</strong><span>{topic.billCount}건</span><small>{topic.representativeKeywords.join(" · ")}</small></button>)}
+          {visibleTopics.map((topic) => <button type="button" aria-pressed={coreTopicKey === topic.key} onClick={() => { setCoreTopicKey(topic.key); setPage(1); }} key={topic.key}><strong>{topic.label}</strong><span>{topic.billCount}건</span><small>{topic.representativeKeywords.join(" · ")}</small></button>)}
         </div>
+        {group.coreTopics.length > 6 ? <button type="button" className="law-topic-expand" aria-expanded={showAllTopics} onClick={() => setShowAllTopics((value) => !value)}>{showAllTopics ? "핵심 논점 접기" : `핵심 논점 ${group.coreTopics.length - 6}개 더 보기`}</button> : null}
       </section>
       <section className="content-section">
         <div className="section-heading"><div><h2>주요 이슈와 관련 뉴스</h2><p>검토 승인된 그룹 단위 이슈와 출처가 확인된 보도만 표시합니다</p></div><Newspaper aria-hidden="true" /></div>
@@ -51,7 +56,7 @@ export function LawGroupScreen({ id }: { id: string }) {
             </Link>
             {issue.recentNews?.length ? <div className="news-link-list">{issue.recentNews.map((article) => (
               <a key={article.id} href={article.sourceUrl} target="_blank" rel="noopener noreferrer" className="news-link-row">
-                <span><strong>{article.summary}</strong><small>{article.publisherLabel} · {new Date(article.publishedAt).toLocaleDateString("ko-KR")}</small></span><ExternalLink aria-hidden="true" />
+                <span><strong>{article.headline}</strong><small>{article.summary} · {article.publisherLabel} · {new Date(article.publishedAt).toLocaleDateString("ko-KR")}</small></span><ExternalLink aria-hidden="true" />
               </a>
             ))}</div> : null}
           </article>
@@ -63,7 +68,7 @@ export function LawGroupScreen({ id }: { id: string }) {
           {bills.map((law) => (
             <Link href={`/laws/${encodeURIComponent(law.id)}`} className="law-row" key={law.id} ariaLabel={`${law.title} ${law.proposer || ""} 상세 보기`}>
               <div className="law-source-line"><span>{law.assemblyBillNo ? `의안 ${law.assemblyBillNo}` : law.source === "assembly_bill" ? "국회 의안" : "현행 법령"}</span><time>{formatOfficialDate(law.proposedDate || law.statusDate)}</time></div>
-              <div className="law-row-main"><div><h2>{law.title}</h2><p>{law.proposer ? `${law.proposer} · ` : ""}{law.stage}</p>{law.coreTopicLabel ? <small>{law.coreTopicLabel}</small> : null}</div><ChevronRight aria-hidden="true" /></div>
+              <div className="law-row-main"><div><h2>{law.title}</h2><p>{law.proposer ? `${law.proposer} · ` : ""}{lawStagePresentation(law.stage).label}</p>{law.coreTopicLabel ? <small>{law.coreTopicLabel}</small> : null}</div><ChevronRight aria-hidden="true" /></div>
             </Link>
           ))}
         </div>

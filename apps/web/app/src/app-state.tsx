@@ -5,12 +5,17 @@ import { useRouter } from "./router";
 
 export type ServiceSyncState = "loading" | "live" | "fixture" | "unavailable";
 export type IdentityState = "unknown" | "anonymous" | "verified" | "expired";
+export type AsyncDataState = "idle" | "loading" | "ready" | "error";
+export type SupplementalScope = "reels" | "laws" | "transparency" | "trust";
 
 interface AppStateValue {
   dataset?: AppDataset;
   serviceSyncState: ServiceSyncState;
   identityState: IdentityState;
   readiness?: ServiceReadiness;
+  supplementalStates: Record<SupplementalScope, AsyncDataState>;
+  issueDetailStates: Record<string, AsyncDataState>;
+  occurrenceDetailStates: Record<string, AsyncDataState>;
   selectedIssueId?: string;
   selectedOccurrenceId?: string;
   selectIssue: (id?: string) => void;
@@ -28,10 +33,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [serviceSyncState, setServiceSyncState] = useState<ServiceSyncState>("loading");
   const [identityState] = useState<IdentityState>("anonymous");
   const [readiness, setReadiness] = useState<ServiceReadiness>();
+  const [supplementalStates, setSupplementalStates] = useState<Record<SupplementalScope, AsyncDataState>>({
+    reels: "idle",
+    laws: "idle",
+    transparency: "idle",
+    trust: "idle"
+  });
+  const [issueDetailStates, setIssueDetailStates] = useState<Record<string, AsyncDataState>>({});
+  const [occurrenceDetailStates, setOccurrenceDetailStates] = useState<Record<string, AsyncDataState>>({});
   const [selectedIssueId, selectIssue] = useState<string>();
   const [selectedOccurrenceId, setSelectedOccurrenceId] = useState<string>();
   const [attempt, setAttempt] = useState(0);
   const lastRefreshAt = useRef(0);
+  const loadedSupplementalScopes = useRef(new Set<SupplementalScope>());
 
   useEffect(() => {
     let active = true;
@@ -69,15 +83,35 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!dataSource.loadSupplementalDataset || !dataset) return;
-    const scope = route.name === "reels" ? "reels" : ["laws", "law", "law-group"].includes(route.name) ? "laws" : route.name === "trust" && route.id === "transparency" ? "transparency" : undefined;
+    if (!dataset) return;
+    const scope: SupplementalScope | undefined = route.name === "reels"
+      ? "reels"
+      : ["laws", "law", "law-group"].includes(route.name)
+        ? "laws"
+        : route.name === "trust" && route.id === "transparency"
+          ? "transparency"
+          : route.name === "trust"
+            ? "trust"
+            : undefined;
     if (!scope) return;
+    if (!dataSource.loadSupplementalDataset) {
+      loadedSupplementalScopes.current.add(scope);
+      setSupplementalStates((current) => ({ ...current, [scope]: "ready" }));
+      return;
+    }
+    if (loadedSupplementalScopes.current.has(scope)) return;
     let active = true;
+    setSupplementalStates((current) => ({ ...current, [scope]: "loading" }));
     void dataSource.loadSupplementalDataset(scope).then((supplemental) => {
-      if (active) setDataset((current) => current ? { ...current, ...supplemental } : current);
-    }).catch(() => undefined);
+      if (!active) return;
+      loadedSupplementalScopes.current.add(scope);
+      setDataset((current) => current ? { ...current, ...supplemental } : current);
+      setSupplementalStates((current) => ({ ...current, [scope]: "ready" }));
+    }).catch(() => {
+      if (active) setSupplementalStates((current) => ({ ...current, [scope]: "error" }));
+    });
     return () => { active = false; };
-  }, [route.name, dataset === undefined]);
+  }, [route.name, route.id, dataset === undefined, attempt]);
 
   const selectOccurrence = useCallback((id?: string) => {
     setSelectedOccurrenceId(id);
@@ -87,32 +121,46 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, [dataset]);
 
   const ensureIssue = useCallback(async (id: string) => {
-    const detail = await dataSource.loadIssue(id);
-    setDataset((current) => {
-      if (!current) return current;
-      const issueOverview = detail.issueOverview;
-      const issues = issueOverview ? mergeById(current.issues, [issueOverview]) : current.issues;
-      return {
-        ...current,
-        issues,
-        occurrences: mergeById(current.occurrences, detail.occurrenceDigests || []),
-        claimsByIssue: { ...current.claimsByIssue, [id]: detail.claims || [] },
-        newsByIssue: { ...current.newsByIssue, [id]: detail.newsArticles || [] },
-        synthesisByIssue: { ...current.synthesisByIssue, [id]: detail.topicGrouping?.synthesis },
-        lawGroupsByIssue: { ...current.lawGroupsByIssue, [id]: detail.relatedLawGroups || [] }
-      };
-    });
+    setIssueDetailStates((current) => ({ ...current, [id]: "loading" }));
+    try {
+      const detail = await dataSource.loadIssue(id);
+      setDataset((current) => {
+        if (!current) return current;
+        const issueOverview = detail.issueOverview;
+        const issues = issueOverview ? mergeById(current.issues, [issueOverview]) : current.issues;
+        return {
+          ...current,
+          issues,
+          occurrences: mergeById(current.occurrences, detail.occurrenceDigests || []),
+          claimsByIssue: { ...current.claimsByIssue, [id]: detail.claims || [] },
+          newsByIssue: { ...current.newsByIssue, [id]: detail.newsArticles || [] },
+          synthesisByIssue: { ...current.synthesisByIssue, [id]: detail.topicGrouping?.synthesis },
+          lawGroupsByIssue: { ...current.lawGroupsByIssue, [id]: detail.relatedLawGroups || [] }
+        };
+      });
+      setIssueDetailStates((current) => ({ ...current, [id]: "ready" }));
+    } catch (error) {
+      setIssueDetailStates((current) => ({ ...current, [id]: "error" }));
+      throw error;
+    }
   }, []);
 
   const ensureOccurrence = useCallback(async (id: string) => {
     const currentOccurrence = dataset?.occurrences.find((item) => item.id === id);
     if (!currentOccurrence) return;
-    const detail = await dataSource.loadOccurrence(id, currentOccurrence.targetType);
-    setDataset((current) => current ? {
-      ...current,
-      occurrences: mergeById(current.occurrences, [detail.occurrenceDigest]),
-      claimsByOccurrence: { ...current.claimsByOccurrence, [id]: detail.claims || [] }
-    } : current);
+    setOccurrenceDetailStates((current) => ({ ...current, [id]: "loading" }));
+    try {
+      const detail = await dataSource.loadOccurrence(id, currentOccurrence.targetType);
+      setDataset((current) => current ? {
+        ...current,
+        occurrences: mergeById(current.occurrences, [detail.occurrenceDigest]),
+        claimsByOccurrence: { ...current.claimsByOccurrence, [id]: detail.claims || [] }
+      } : current);
+      setOccurrenceDetailStates((current) => ({ ...current, [id]: "ready" }));
+    } catch (error) {
+      setOccurrenceDetailStates((current) => ({ ...current, [id]: "error" }));
+      throw error;
+    }
   }, [dataset]);
 
   const value = useMemo<AppStateValue>(() => ({
@@ -120,6 +168,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     serviceSyncState,
     identityState,
     readiness,
+    supplementalStates,
+    issueDetailStates,
+    occurrenceDetailStates,
     selectedIssueId,
     selectedOccurrenceId,
     selectIssue,
@@ -127,7 +178,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     ensureIssue,
     ensureOccurrence,
     retry: () => setAttempt((current) => current + 1)
-  }), [dataset, serviceSyncState, identityState, readiness, selectedIssueId, selectedOccurrenceId, selectOccurrence, ensureIssue, ensureOccurrence]);
+  }), [dataset, serviceSyncState, identityState, readiness, supplementalStates, issueDetailStates, occurrenceDetailStates, selectedIssueId, selectedOccurrenceId, selectOccurrence, ensureIssue, ensureOccurrence]);
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 }
@@ -149,7 +200,8 @@ function mergeDataset(current: AppDataset, incoming: AppDataset): AppDataset {
     synthesisByIssue: { ...incoming.synthesisByIssue, ...current.synthesisByIssue },
     lawGroupsByIssue: { ...incoming.lawGroupsByIssue, ...current.lawGroupsByIssue },
     claimsByOccurrence: { ...incoming.claimsByOccurrence, ...current.claimsByOccurrence },
-    transparency: current.transparency ?? incoming.transparency
+    transparency: current.transparency ?? incoming.transparency,
+    serviceProfile: current.serviceProfile ?? incoming.serviceProfile
   };
 }
 

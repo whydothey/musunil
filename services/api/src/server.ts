@@ -43,6 +43,7 @@ const app = createApp(initialStore, {
   requireExternalLiveStorage: runtime.requireExternalLiveStorage,
   requireReadyForWrites: runtime.requireReadyForWrites,
   allowAnonymousSession: runtime.allowAnonymousSession,
+  serviceProfile: runtime.serviceProfile,
   retention: runtime.retention
 });
 const port = Number(process.env.PORT ?? 4000);
@@ -255,6 +256,8 @@ function loadRuntime() {
     const liveMediaStorage = createLiveMediaStorage(loaded.config);
     const liveMediaEncryptionKey = readString(loaded.config, "security.media_encryption_key");
     const production = readString(loaded.config, "render.environment") === "production";
+    const publicAppUrl = readString(loaded.config, "app.public_base_url");
+    const configuredSupportEmail = process.env.MUSUNIL_SUPPORT_EMAIL || readString(loaded.config, "app.support_email");
     const identityTestModeRequested = process.env.MUSUNIL_IDENTITY_TEST_MODE === "true";
     const identity = {
       provider: "portone" as const,
@@ -286,6 +289,9 @@ function loadRuntime() {
       requireExternalLiveStorage: production,
       requireReadyForWrites: production,
       allowAnonymousSession: !production,
+      serviceProfile: {
+        supportEmail: verifiedPublicSupportEmail(configuredSupportEmail, publicAppUrl)
+      },
       retention,
       autoPublishLiveReports: readBoolean(loaded.config, "moderation.auto_publish_low_risk_live_reports", false),
       includeMockData: readBoolean(loaded.config, "preview.use_mock_data", !production),
@@ -323,6 +329,7 @@ function loadRuntime() {
       requireExternalLiveStorage: productionRuntime,
       requireReadyForWrites: productionRuntime,
       allowAnonymousSession: !productionRuntime,
+      serviceProfile: { supportEmail: undefined },
       autoPublishLiveReports: false,
       includeMockData: !productionRuntime,
       retention: {
@@ -338,6 +345,19 @@ function loadRuntime() {
       })
     };
   }
+}
+
+function verifiedPublicSupportEmail(value: string | undefined, publicAppUrl: string | undefined): string | undefined {
+  const email = String(value || "").trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || /change_me|example\.com/.test(email)) return undefined;
+  let publicHost = "";
+  try {
+    publicHost = new URL(String(publicAppUrl || "")).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return undefined;
+  }
+  const emailHost = email.split("@")[1] || "";
+  return publicHost && (emailHost === publicHost || emailHost.endsWith(`.${publicHost}`)) ? email : undefined;
 }
 
 async function postgresReadyChecks(databaseUrl: string): Promise<Array<{ id: string; ok: boolean; message: string }>> {

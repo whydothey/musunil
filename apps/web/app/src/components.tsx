@@ -2,7 +2,7 @@ import { ArrowLeft, ChevronRight, RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAppState } from "./app-state";
 import type { EventTopicGroup, IssueOverview, OccurrenceDigest } from "./contracts";
-import { formatDateTime, formatRelativeTime, lifecycleLabel, lifecycleTone, occurrenceSummary, occurrenceTopicContext, occurrenceTopicTitle, scaleLabel } from "./format";
+import { formatDateTime, formatRelativeTime, lifecycleLabel, lifecycleTone, locationPrecisionLabel, occurrenceDisplayTitle, occurrenceTopicTitle, scaleLabel, schedulePresentation } from "./format";
 import { Link, useRouter } from "./router";
 
 export function ScreenHeader({ title, eyebrow, back, trailing }: { title: string; eyebrow?: string; back?: boolean; trailing?: ReactNode }) {
@@ -23,6 +23,11 @@ export function ScreenHeader({ title, eyebrow, back, trailing }: { title: string
 
 export function StatusDot({ state, label = true }: { state: OccurrenceDigest["lifecycleState"]; label?: boolean }) {
   return <span className={`status-label tone-${lifecycleTone(state)}`}><span className="status-dot" />{label ? lifecycleLabel(state) : null}</span>;
+}
+
+export function ScheduleStatus({ occurrence, now = Date.now() }: { occurrence: Pick<OccurrenceDigest, "startsAt" | "endsAt" | "lifecycleState" | "targetType">; now?: number }) {
+  const status = schedulePresentation(occurrence, now);
+  return <span className={`status-label tone-${status.tone}`}><span className="status-dot" />{status.label}</span>;
 }
 
 export function IssueListItem({ issue }: { issue: IssueOverview }) {
@@ -80,14 +85,13 @@ export function OccurrenceListItem({ occurrence }: { occurrence: OccurrenceDiges
   return (
     <Link href={`/occurrences/${encodeURIComponent(occurrence.id)}`} onNavigate={() => selectOccurrence(occurrence.id)} className="occurrence-row" ariaLabel={`${occurrence.title} 현장 보기`}>
       <div className="occurrence-row-head">
-        <StatusDot state={occurrence.lifecycleState} />
+        <ScheduleStatus occurrence={occurrence} />
         <span>{formatRelativeTime(occurrence.updatedAt)}</span>
       </div>
-      <h3>{occurrenceTopicTitle(occurrence)}</h3>
-      <p className="place-line">{occurrenceTopicContext(occurrence)}</p>
-      <p className="place-line">개별 일정 · {occurrence.title}</p>
+      <h3>{occurrenceDisplayTitle(occurrence)}</h3>
+      <p className="place-line">주제 · {occurrenceTopicTitle(occurrence)}</p>
       <p className="place-line">{occurrence.locationLabel || occurrence.regionLabel} · {formatDateTime(occurrence.startsAt)}</p>
-      <p className="occurrence-meta">{scaleLabel(occurrence)}<span>·</span>{occurrence.publicVideoCount ? `영상 ${occurrence.publicVideoCount}건` : "영상 확인 중"}</p>
+      <p className="occurrence-meta"><span className="location-precision-label">{locationPrecisionLabel(occurrence)}</span><span>·</span>{scaleLabel(occurrence)}<span>·</span>{occurrence.publicVideoCount ? `영상 ${occurrence.publicVideoCount}건` : "공개 영상 없음"}</p>
       <ChevronRight className="row-chevron" aria-hidden="true" />
     </Link>
   );
@@ -108,13 +112,13 @@ export function EmptyState({ title, description, actionHref, actionLabel }: { ti
   );
 }
 
-export function ServiceUnavailable() {
+export function ServiceUnavailable({ title = "자료 연결을 확인하고 있습니다", description = "확인되지 않은 내용을 대신 표시하지 않습니다. 잠시 후 다시 확인해 주세요." }: { title?: string; description?: string } = {}) {
   const { retry } = useAppState();
   return (
     <div className="state-view state-empty">
       <span className="empty-symbol" aria-hidden="true" />
-      <h2>자료 연결을 확인하고 있습니다</h2>
-      <p>확인되지 않은 내용을 대신 표시하지 않습니다. 잠시 후 다시 확인해 주세요.</p>
+      <h2>{title}</h2>
+      <p>{description}</p>
       <button type="button" className="text-action" onClick={retry}><RefreshCw />다시 확인</button>
     </div>
   );
