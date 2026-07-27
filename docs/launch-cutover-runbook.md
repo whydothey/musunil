@@ -109,7 +109,7 @@ pnpm render:apply -- --api-domain
 - Health Check Path: `/ready`
 - Build Command: `pnpm check`, `pnpm build:web-config`, `pnpm launch:check` 포함
 - Pre Deploy Command: `pnpm db:migrate`
-- Start Command: Dockerfile `pnpm start:render-free` (시작 전 마이그레이션 + 깨어 있는 동안 5분 작업 실행)
+- Start Command: Dockerfile `pnpm start:render-free` (시작 전 마이그레이션 + API 실행). 수집 작업은 API 컨테이너의 메모리를 침범하지 않도록 별도 `musunil-ops-scheduler`에서 5분마다 실행한다.
 - `MUSUNIL_RUNTIME_ENV=production`
 - `DATABASE_URL`, `REDIS_URL`은 Render 관리형 Postgres/Key Value에서 주입
 - `MUSUNIL_INTERNAL_API_KEY`, `MUSUNIL_USER_TOKEN_SECRET`, `MUSUNIL_ENCRYPTION_KEY`는 Render generated value

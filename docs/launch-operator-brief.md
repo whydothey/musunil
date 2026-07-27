@@ -149,7 +149,8 @@ Render API automation:
 - Build Command: `Dockerfile RUN pnpm install --frozen-lockfile && pnpm check`
 - Pre Deploy Command: `pnpm db:migrate`
 - Start Command: `Dockerfile CMD pnpm start:render-free`
-- Health Check Path: `/ready`
+- Embedded Scheduler: `false` (별도 `musunil-ops-scheduler` 사용)
+- Health Check Path: `/health`
 - Custom Domain: `api.musunil.com`
 
 Environment source summary:

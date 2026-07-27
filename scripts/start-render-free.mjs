@@ -3,13 +3,15 @@ import { spawn } from "node:child_process";
 
 const checkOnly = process.argv.includes("--check");
 const schedulerIntervalMs = 5 * 60 * 1_000;
+const embeddedSchedulerEnabled = process.env.MUSUNIL_EMBEDDED_SCHEDULER === "true";
 
 if (checkOnly) {
   console.log(JSON.stringify({
     checked: "render_free_runtime",
     migrateBeforeApi: true,
     schedulerIntervalSeconds: schedulerIntervalMs / 1_000,
-    schedulerRunsAfterWake: true,
+    schedulerRunsAfterWake: embeddedSchedulerEnabled,
+    schedulerMode: embeddedSchedulerEnabled ? "embedded_opt_in" : "separate_cron",
     generatedInternalKeyIsNotLogged: true
   }, null, 2));
   process.exit(0);
@@ -48,7 +50,7 @@ apiProcess.once("exit", (code, signal) => {
 });
 
 await waitForHealth(runtimeEnv.MUSUNIL_API_BASE_URL);
-void runSchedulerLoop();
+if (embeddedSchedulerEnabled) void runSchedulerLoop();
 
 async function runSchedulerLoop() {
   if (stopping) return;

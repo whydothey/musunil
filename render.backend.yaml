@@ -23,6 +23,8 @@ services:
     envVars:
       - key: MUSUNIL_RUNTIME_ENV
         value: production
+      - key: MUSUNIL_EMBEDDED_SCHEDULER
+        value: "false"
       - key: MUSUNIL_INTERNAL_API_KEY
         generateValue: true
       - key: MUSUNIL_USER_TOKEN_SECRET
