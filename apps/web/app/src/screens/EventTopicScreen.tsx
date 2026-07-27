@@ -27,7 +27,7 @@ export function EventTopicScreen({ id }: { id: string }) {
       </div>
       <details className="topic-method-disclosure">
         <summary>이 주제는 어떻게 묶였나요?</summary>
-        <p>{group.status === "candidate" ? "공개 근거에서 반복 확인된 표현을 바탕으로 연결을 검토 중입니다." : "공개 근거에서 같은 목적으로 확인된 일정을 묶었습니다."}</p>
+        <p>{group.status === "candidate" ? "공개 자료에 명시된 표현을 바탕으로 다른 근거와의 연결을 확인 중입니다." : "공개 근거에서 같은 목적으로 확인된 일정을 묶었습니다."}</p>
         <small>근거 {group.evidenceCount}건 · 출처 {group.sourceCount}곳 · 근거가 바뀌면 병합·분기·정정될 수 있습니다.</small>
       </details>
     </div>

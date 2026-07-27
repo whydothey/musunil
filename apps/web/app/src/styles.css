@@ -132,6 +132,8 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .issue-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin: 8px 0 0 20px; color: var(--ink-faint); font-size: 12px; line-height: 1.2; }
 .issue-meta strong { color: var(--dispute); font-weight: 700; }
 .event-topic-row { min-height: 92px; }
+.event-topic-row.is-candidate { background: #fffdf8; }
+.issue-meta .topic-review-status { color: var(--pending); }
 .topic-unknown-row { min-height: 106px; background: #fafbfb; }
 .row-count { min-width: 24px; margin-top: -2px; color: var(--brand); font-size: 13px; font-weight: 800; text-align: right; }
 .feed-count-placeholder { width: 24px; height: 10px; border-radius: 3px; background: var(--line); animation: pulse 1.2s infinite; }

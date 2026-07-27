@@ -57,15 +57,16 @@ export function IssueListItem({ issue }: { issue: IssueOverview }) {
 }
 
 export function EventTopicListItem({ group }: { group: EventTopicGroup }) {
-  const tone = group.currentCount > 0 ? "verified" : "pending";
+  const tone = group.status === "candidate" ? "pending" : group.currentCount > 0 ? "verified" : "pending";
   return (
-    <Link href={`/event-topics/${encodeURIComponent(group.id)}`} className="issue-row event-topic-row" ariaLabel={`${group.title} 주제 상세 보기`}>
+    <Link href={`/event-topics/${encodeURIComponent(group.id)}`} className={`issue-row event-topic-row ${group.status === "candidate" ? "is-candidate" : ""}`} ariaLabel={`${group.title} ${group.status === "candidate" ? "확인 중인 주제 후보" : "주제"} 상세 보기`}>
       <div className="issue-row-top">
         <span className={`bare-dot tone-${tone}`} aria-hidden="true" />
         <h2>{group.title}</h2>
         <ChevronRight aria-hidden="true" />
       </div>
       <p className="issue-meta">
+        {group.status === "candidate" ? <><strong className="topic-review-status">확인 중</strong><span aria-hidden="true">·</span></> : null}
         진행 {group.currentCount}건
         <span aria-hidden="true">·</span>
         예정 {group.upcomingCount}건
