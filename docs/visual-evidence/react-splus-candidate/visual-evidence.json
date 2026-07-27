@@ -27,7 +27,7 @@
       },
       "selectedMapPixels": {
         "colorGroups": 156,
-        "dominantRatio": 0.3382
+        "dominantRatio": 0.3383
       },
       "finalMetrics": {
         "overflowX": false,
@@ -61,7 +61,7 @@
       },
       "selectedMapPixels": {
         "colorGroups": 130,
-        "dominantRatio": 0.3105
+        "dominantRatio": 0.3102
       },
       "finalMetrics": {
         "overflowX": false,
@@ -94,7 +94,7 @@
         "dominantRatio": 0.5653
       },
       "selectedMapPixels": {
-        "colorGroups": 90,
+        "colorGroups": 91,
         "dominantRatio": 0.281
       },
       "finalMetrics": {
@@ -128,7 +128,7 @@
         "dominantRatio": 0.6115
       },
       "selectedMapPixels": {
-        "colorGroups": 93,
+        "colorGroups": 92,
         "dominantRatio": 0.3178
       },
       "finalMetrics": {
