@@ -15,7 +15,11 @@ function databasePool(databaseUrl: string): pg.Pool {
   const pool = new Pool({
     connectionString: databaseUrl,
     connectionTimeoutMillis: 1500,
-    allowExitOnIdle: true
+    idleTimeoutMillis: 10_000,
+    max: 3
+  });
+  pool.on("error", (error) => {
+    console.error("postgres idle connection error", error.message);
   });
   pools.set(databaseUrl, pool);
   return pool;
