@@ -55,13 +55,6 @@ export async function savePostgresStore(databaseUrl: string, store: Store, encry
   return new Date(result.rows[0]?.updated_at ?? Date.now());
 }
 
-export async function postgresStoreUpdatedAt(databaseUrl: string): Promise<Date | undefined> {
-  const pool = databasePool(databaseUrl);
-  await ensureSnapshotTable(pool);
-  const result = await pool.query<{ updated_at: Date }>("select updated_at from store_snapshots where id = $1", [snapshotId]);
-  return result.rows[0]?.updated_at ? new Date(result.rows[0].updated_at) : undefined;
-}
-
 export async function pingPostgres(databaseUrl: string): Promise<void> {
   await databasePool(databaseUrl).query("select 1");
 }
