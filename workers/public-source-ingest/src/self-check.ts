@@ -165,6 +165,48 @@ const sejongInlineEvents = parseAssemblyAttachmentEvents(`
 assert.equal(sejongInlineEvents.length, 2);
 assert.equal(sejongInlineEvents[0]?.safeLocationLabel, "농식품부 일대");
 
+const purposeLabeledEvents = parseAssemblyAttachmentEvents(`
+2026. 7. 28.(화) 09:00 목적: 노동조건 개선 촉구 장소: 서울시청 앞
+2026. 7. 28.(화) 11:00 집회명: 안전대책 마련 요구 장소: 광화문광장 연락처 010-1234-5678
+`, { defaultDate: "2026-07-28", regionLabel: "서울" });
+assert.equal(purposeLabeledEvents.length, 2);
+assert.equal(purposeLabeledEvents[0]?.purposeLabel, "노동조건 개선 촉구");
+assert.equal(purposeLabeledEvents[0]?.safeLocationLabel, "서울시청 앞");
+assert.equal(purposeLabeledEvents[1]?.purposeLabel, "안전대책 마련 요구");
+assert.equal(purposeLabeledEvents[1]?.safeLocationLabel.includes("010-1234-5678"), false);
+const purposePayload = toAttachmentEventPayload({
+  id: "seoul_today_assembly",
+  regionCode: "seoul",
+  regionLabel: "서울",
+  url: "https://www.smpa.go.kr/",
+  pageUrl: "https://www.smpa.go.kr/",
+  parser: "seoul"
+} as never, {
+  id: "bulletin",
+  sourceItemId: "bulletin",
+  sourceUrl: "https://www.smpa.go.kr/",
+  type: "static_assembly",
+  areaClusterId: "area_seoul",
+  regionLabel: "서울",
+  title: "공개 일정",
+  startsAt: "2026-07-28T00:00:00.000+09:00",
+  lifecycleState: "UPCOMING",
+  sourceProvenance: "government_or_police",
+  claimantLabel: "서울경찰청 공개자료",
+  rawText: "",
+  normalizedStatement: "",
+  evidenceStrength: "single_source",
+  riskLevel: "low",
+  evidenceUploadedAt: "2026-07-27T00:00:00.000+09:00"
+}, {
+  url: "https://www.smpa.go.kr/file.pdf",
+  fileName: "schedule.pdf",
+  format: "pdf"
+}, purposeLabeledEvents[0]!, 0, new Date("2026-07-27T00:00:00.000+09:00"));
+assert.equal(purposePayload.publicPurposeText, "노동조건 개선 촉구");
+assert.equal(purposePayload.normalizedStatement.includes("노동조건 개선 촉구 관련"), true);
+assert.equal(purposePayload.rawText.includes("노동조건 개선 촉구"), false);
+
 const hwpxFixture = new AdmZip();
 hwpxFixture.addFile("Contents/section0.xml", Buffer.from(`<hp:p><hp:t>7.21.(화) 09:00 대구시청 앞</hp:t></hp:p>`));
 assert.equal((await extractAttachmentText(hwpxFixture.toBuffer(), "hwpx")).includes("대구시청 앞"), true);

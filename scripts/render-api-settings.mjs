@@ -70,7 +70,7 @@ if (!dockerfile.includes('CMD ["pnpm", "start:render-free"]')) {
   failures.push("musunil-api Dockerfile must use the Render Free migration and scheduler launcher");
 }
 if (!/apt-get install[^\n]*ffmpeg/.test(dockerfile)) failures.push("musunil-api Dockerfile must install ffmpeg");
-if (settings.healthCheckPath !== "/ready") failures.push("musunil-api healthCheckPath must be /ready");
+if (settings.healthCheckPath !== "/ready/public-read") failures.push("musunil-api healthCheckPath must be /ready/public-read");
 if (!settings.envSummary.fixed.includes("MUSUNIL_USER_INPUTS_FILE_PATH=/etc/secrets/musunil.user-inputs.yaml")) {
   failures.push("musunil-api must load the Render Secret File from /etc/secrets/musunil.user-inputs.yaml");
 }

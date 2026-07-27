@@ -1,4 +1,4 @@
-import { ChevronRight, List, LocateFixed, Search, X } from "lucide-react";
+import { ChevronRight, List, LocateFixed, Maximize2, Search, X } from "lucide-react";
 import maplibregl, { type Map as MapLibreMap, type MapGeoJSONFeature, type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
@@ -136,7 +136,7 @@ export function ExploreScreen() {
         {!listedOccurrences.length ? <p className="map-event-list-empty">표시할 일정이 없습니다.</p> : null}
       </aside> : null}
 
-      {serviceSyncState === "unavailable" ? <div className="map-notice">공개 지도 자료 연결을 확인하고 있습니다</div> : null}
+      {serviceSyncState === "unavailable" || serviceSyncState === "partial" || serviceSyncState === "stale" ? <div className="map-notice">{serviceSyncState === "stale" ? "마지막으로 확인된 지도 자료입니다" : serviceSyncState === "partial" ? "일부 지도 자료의 연결을 확인하고 있습니다" : "공개 지도 자료 연결을 확인하고 있습니다"}</div> : null}
       {selected ? <MapSelection occurrence={selected} now={now} onClose={() => selectOccurrence(undefined)} /> : null}
     </section>
   );
@@ -149,6 +149,7 @@ function phaseOrder(phase: ReturnType<typeof schedulePhase>): number {
 const REGIONAL_UNCERTAINTY_THRESHOLD_M = 15_000;
 const REGIONAL_EXPANSION_ZOOM = 9;
 const EVENT_CLUSTER_MAX_ZOOM = 12;
+const SOUTH_KOREA_BOUNDS: [[number, number], [number, number]] = [[124.4, 32.8], [132.0, 38.7]];
 
 function OccurrenceMap({ pins, areas, occurrences, selectedId, now, dismissGroupSignal, onSelect, onGroupOpenChange, onOpenGroupList }: {
   pins?: GeoJsonFeatureCollection;
@@ -240,13 +241,14 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, now, dismissGroup
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
+    const minimumZoom = minimumKoreaViewportZoom(containerRef.current.clientWidth, containerRef.current.clientHeight);
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: window.MUSUNIL_WEB_CONFIG?.mapStyleUrl || "https://tiles.openfreemap.org/styles/positron",
       center: [127.7, 36.35],
-      zoom: 6.3,
-      minZoom: 6,
-      maxBounds: [[124.4, 32.8], [132.0, 38.7]],
+      zoom: Math.max(6.3, minimumZoom),
+      minZoom: minimumZoom,
+      maxBounds: SOUTH_KOREA_BOUNDS,
       renderWorldCopies: false,
       attributionControl: false
     });
@@ -434,6 +436,10 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, now, dismissGroup
     };
     map.on("style.load", installLayers);
     map.on("move", () => { if (activeGroupRef.current) positionGroup(activeGroupRef.current); });
+    map.on("resize", () => {
+      const container = map.getContainer();
+      map.setMinZoom(minimumKoreaViewportZoom(container.clientWidth, container.clientHeight));
+    });
     map.on("zoomend", syncExpandedRegionalGroup);
     map.on("moveend", () => { syncExpandedRegionalGroup(); syncVisibleClusters(); });
     map.on("idle", () => {
@@ -503,9 +509,25 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, now, dismissGroup
     }, { enableHighAccuracy: false, timeout: 10_000, maximumAge: 60_000 });
   };
 
+  const resetToPublicSchedules = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const coordinates = [
+      ...mapDisplay.individualCoordinates.values(),
+      ...mapDisplay.regionalGroups.map((group) => group.coordinate)
+    ];
+    if (coordinates.length === 0) {
+      map.easeTo({ center: [127.7, 36.35], zoom: map.getMinZoom(), duration: 420 });
+      return;
+    }
+    const bounds = coordinates.reduce((current, coordinate) => current.extend(coordinate), new maplibregl.LngLatBounds(coordinates[0], coordinates[0]));
+    map.fitBounds(bounds, { padding: { top: 130, bottom: 90, left: 40, right: 40 }, maxZoom: 11, duration: 420 });
+  };
+
   return <>
     <div ref={containerRef} className="map-canvas" data-map-ready={mapReady ? "true" : "false"} data-basemap-ready={baseMapReady ? "true" : "false"} data-map-zoom={mapZoom.toFixed(1)} data-visible-clusters={visibleClusterCount} aria-label={`정밀 위치 ${precisePinData.features.length}개와 권역 위치 ${regionalPinData.features.length}개를 표시한 지도. 전체 일정 ${occurrences.length}건이며 일정 목록 버튼에서 모두 확인할 수 있습니다.`} />
     <button type="button" className="map-locate" onClick={locateUser} aria-label="내 위치로 지도 이동"><LocateFixed aria-hidden="true" /><span>내 위치</span></button>
+    <button type="button" className="map-reset" onClick={resetToPublicSchedules} aria-label="공개 일정 전체 보기"><Maximize2 aria-hidden="true" /><span>전체 일정</span></button>
     <div className="map-region-shortcuts" aria-label="지도 권역 묶음 바로가기">
       {mapDisplay.regionalGroups.map((group) => <button key={group.id} type="button" onClick={() => expandRegionalGroupRef.current?.(group)}>{group.label} 일정 {group.occurrenceIds.length}건 펼치기</button>)}
     </div>
@@ -513,6 +535,19 @@ function OccurrenceMap({ pins, areas, occurrences, selectedId, now, dismissGroup
     {baseMapFallback ? <div className="map-basemap-notice">대체 지도 연결됨</div> : null}
     {activeGroup ? <MapAnchorStack group={activeGroup} occurrences={activeGroup.occurrenceIds.map((id) => occurrenceById.get(id)).filter((item): item is OccurrenceDigest => Boolean(item))} position={anchorPosition} now={now} onClose={() => { activeGroupRef.current = undefined; setActiveGroup(undefined); setAnchorPosition(undefined); onGroupOpenChangeRef.current(false); }} onSelect={(id) => { activeGroupRef.current = undefined; setActiveGroup(undefined); setAnchorPosition(undefined); onGroupOpenChangeRef.current(false); onSelectRef.current(id); }} onOpenAll={() => { onOpenGroupListRef.current(activeGroup); activeGroupRef.current = undefined; setActiveGroup(undefined); setAnchorPosition(undefined); onGroupOpenChangeRef.current(false); }} /> : null}
   </>;
+}
+
+function minimumKoreaViewportZoom(width: number, height: number): number {
+  const tileSize = 512;
+  const longitudeSpan = (SOUTH_KOREA_BOUNDS[1][0] - SOUTH_KOREA_BOUNDS[0][0]) / 360;
+  const mercatorY = (latitude: number) => {
+    const radians = latitude * Math.PI / 180;
+    return (1 - Math.log(Math.tan(radians) + 1 / Math.cos(radians)) / Math.PI) / 2;
+  };
+  const latitudeSpan = Math.abs(mercatorY(SOUTH_KOREA_BOUNDS[1][1]) - mercatorY(SOUTH_KOREA_BOUNDS[0][1]));
+  const horizontalZoom = Math.log2(Math.max(1, width) / (tileSize * longitudeSpan));
+  const verticalZoom = Math.log2(Math.max(1, height) / (tileSize * latitudeSpan));
+  return Math.max(6, Number((Math.max(horizontalZoom, verticalZoom) + 0.08).toFixed(2)));
 }
 
 function MapAnchorStack({ group, occurrences, position, now, onClose, onSelect, onOpenAll }: {

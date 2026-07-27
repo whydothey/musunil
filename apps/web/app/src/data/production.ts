@@ -15,10 +15,11 @@ import type {
   TransparencyData
 } from "../contracts";
 import type { DataSource } from "./source-contract";
+import { readPublicCache, writePublicCache } from "./public-cache";
 
 const apiBaseUrl = String(window.MUSUNIL_WEB_CONFIG?.apiBaseUrl || "").replace(/\/$/, "");
 
-async function request<T>(path: string, timeoutMs = 65_000): Promise<T> {
+async function request<T>(path: string, timeoutMs = 5_000): Promise<T> {
   if (!apiBaseUrl) throw new Error("service_unavailable");
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
@@ -37,11 +38,11 @@ async function request<T>(path: string, timeoutMs = 65_000): Promise<T> {
 }
 
 export async function getIssueDetail(id: string): Promise<IssueDetailData> {
-  return request<IssueDetailData>(`/issues/${encodeURIComponent(id)}`);
+  return request<IssueDetailData>(`/issues/${encodeURIComponent(id)}`, 8_000);
 }
 
 export async function getOccurrenceDetail(id: string): Promise<OccurrenceDetailData> {
-  const detail = await request<OccurrenceDetailData>(`/occurrences/${encodeURIComponent(id)}`);
+  const detail = await request<OccurrenceDetailData>(`/occurrences/${encodeURIComponent(id)}`, 8_000);
   if (!detail.occurrenceDigest.officialSources?.length) return detail;
   return {
     ...detail,
@@ -51,7 +52,7 @@ export async function getOccurrenceDetail(id: string): Promise<OccurrenceDetailD
 }
 
 export async function getContinuousPresenceDetail(id: string): Promise<OccurrenceDetailData> {
-  const body = await request<{ occurrenceDigest: OccurrenceDigest; claims: PublicClaim[]; evidenceCount: number }>(`/continuous-presences/${encodeURIComponent(id)}`);
+  const body = await request<{ occurrenceDigest: OccurrenceDigest; claims: PublicClaim[]; evidenceCount: number }>(`/continuous-presences/${encodeURIComponent(id)}`, 8_000);
   return { occurrenceDigest: body.occurrenceDigest, claims: body.claims, evidenceCount: body.evidenceCount };
 }
 
@@ -59,7 +60,7 @@ export async function getLawGroupDetail(id: string, options?: { coreTopicKey?: s
   const search = new URLSearchParams({ pageSize: "15" });
   if (options?.coreTopicKey) search.set("coreTopic", options.coreTopicKey);
   if (options?.page) search.set("page", String(options.page));
-  return request<LawGroupDetailData>(`/law-groups/${encodeURIComponent(id)}?${search}`);
+  return request<LawGroupDetailData>(`/law-groups/${encodeURIComponent(id)}?${search}`, 8_000);
 }
 
 export async function getServiceReadiness(): Promise<ServiceReadiness> {
@@ -67,7 +68,7 @@ export async function getServiceReadiness(): Promise<ServiceReadiness> {
 }
 
 export async function getEventTopicDetail(id: string): Promise<EventTopicDetailData> {
-  return request<EventTopicDetailData>(`/event-topics/${encodeURIComponent(id)}`);
+  return request<EventTopicDetailData>(`/event-topics/${encodeURIComponent(id)}`, 8_000);
 }
 
 export async function getTransparency(cursor?: string, action?: string): Promise<TransparencyData> {
@@ -86,19 +87,28 @@ export const dataSource: DataSource = {
   mode: "production",
   loadReadiness: getServiceReadiness,
   async loadDataset(): Promise<AppDataset> {
+    type HomeResponse = { issueOverviews?: IssueOverview[]; occurrenceDigests?: OccurrenceDigest[]; eventTopicGroups?: EventTopicGroup[]; topicUnknownActiveCount?: number };
     const results = await Promise.allSettled([
-      request<{ issueOverviews?: IssueOverview[]; occurrenceDigests?: OccurrenceDigest[]; eventTopicGroups?: EventTopicGroup[]; topicUnknownActiveCount?: number }>("/home"),
+      request<HomeResponse>("/home"),
       request<MapData>("/map")
     ]);
-    const home = results[0].status === "fulfilled" ? results[0].value : {};
-    const map = results[1].status === "fulfilled" ? results[1].value : {
+    const liveHome = results[0].status === "fulfilled" ? results[0].value : undefined;
+    const liveMap = results[1].status === "fulfilled" ? results[1].value : undefined;
+    if (liveHome) void writePublicCache("/home", liveHome);
+    if (liveMap) void writePublicCache("/map", liveMap);
+    const [cachedHome, cachedMap] = await Promise.all([
+      liveHome ? Promise.resolve(undefined) : readPublicCache<HomeResponse>("/home"),
+      liveMap ? Promise.resolve(undefined) : readPublicCache<MapData>("/map")
+    ]);
+    const home = liveHome ?? cachedHome?.value ?? {};
+    const map = liveMap ?? cachedMap?.value ?? {
       occurrenceDigests: [],
       geojson: {
         pins: { type: "FeatureCollection" as const, features: [] },
         presenceAreas: { type: "FeatureCollection" as const, features: [] }
       }
     };
-    if (results.every((result) => result.status === "rejected")) throw new Error("service_unavailable");
+    if (!liveHome && !cachedHome && !liveMap && !cachedMap) throw new Error("service_unavailable");
     const issues = home.issueOverviews || [];
     const occurrences = (home.occurrenceDigests?.length ? home.occurrenceDigests : map.occurrenceDigests || []).map(sanitizeOfficialScheduleOccurrence);
     const claimsByIssue: Record<string, PublicClaim[]> = {};
@@ -116,7 +126,12 @@ export const dataSource: DataSource = {
       synthesisByIssue: {},
       lawGroupsByIssue: {},
       claimsByOccurrence: {},
-      map
+      map,
+      publicDataStatus: {
+        home: liveHome ? "ready" : cachedHome ? "stale" : "error",
+        map: liveMap ? "ready" : cachedMap ? "stale" : "error",
+        lastSuccessfulAt: [cachedHome?.savedAt, cachedMap?.savedAt].filter(Boolean).sort().at(-1) ?? (liveHome || liveMap ? new Date().toISOString() : undefined)
+      }
     };
   },
   async loadSupplementalDataset(scope) {

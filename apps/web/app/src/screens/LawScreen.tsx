@@ -9,6 +9,7 @@ export function LawScreen({ id }: { id: string }) {
   const law = dataset?.laws.find((item) => item.id === id);
   const group = dataset?.lawGroups.find((item) => item.id === law?.lawGroupId);
   const stage = lawStagePresentation(law?.stage || "");
+  const proposalPreview = proposalSummaryPreview(law?.proposalSummary);
 
   if (serviceSyncState === "loading") return <section className="screen screen-detail"><LoadingState label="공식 법안 정보를 확인하고 있습니다" /></section>;
   if (serviceSyncState === "unavailable") return <section className="screen screen-detail"><ServiceUnavailable /></section>;
@@ -23,9 +24,21 @@ export function LawScreen({ id }: { id: string }) {
         {law.assemblyBillNo || law.proposer ? <FactRow label="의안" value={law.assemblyBillNo ? `제${law.assemblyBillNo}호` : "국회 의안"} supporting={law.proposer || "제안자 확인 중"} /> : null}
         {law.coreTopicLabel ? <FactRow label="핵심 논점" value={law.coreTopicLabel} /> : null}
       </dl>
+      {proposalPreview ? <section className="content-section law-plain-summary"><h2>한눈에 보기</h2><p>{proposalPreview}</p><small>국회 공식 제안요약을 짧게 표시했습니다.</small></section> : null}
       {group ? <section className="content-section law-topic-link-section"><Link href={`/laws/groups/${encodeURIComponent(group.id)}`} className="law-related-row"><span><strong>같은 이름의 법안 {group.billCount}건</strong><small>{group.billTitle}</small></span><Layers3 aria-hidden="true" /></Link></section> : null}
       {law.proposalSummary ? <details className="evidence-disclosure law-summary-section"><summary>제안이유와 주요내용 보기</summary><div className="evidence-disclosure-content"><p className="law-official-summary">{law.proposalSummary}</p></div></details> : null}
       {law.officialUrl ? <a className="official-law-link" href={law.officialUrl} target="_blank" rel="noreferrer"><CalendarDays /><span><strong>공식 자료에서 확인</strong><small>국회·국가법령정보 원문</small></span><ArrowUpRight /></a> : null}
     </section>
   );
+}
+
+function proposalSummaryPreview(summary?: string): string | undefined {
+  if (!summary) return undefined;
+  const normalized = summary
+    .replace(/(?:제안이유|주요내용)\s*[:：]?/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const sentences = normalized.split(/(?<=[.!?다])\s+/).filter((sentence) => sentence.length >= 12);
+  const preview = (sentences.length ? sentences.slice(0, 2).join(" ") : normalized).trim();
+  return preview.length > 220 ? `${preview.slice(0, 220).replace(/\s+\S*$/, "")}…` : preview;
 }

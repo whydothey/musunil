@@ -482,6 +482,7 @@ const fixtureSeedDataset: AppDataset = {
   lawGroupsByIssue,
   claimsByOccurrence,
   map,
+  publicDataStatus: { home: "ready", map: "ready", lastSuccessfulAt: new Date().toISOString() },
   serviceProfile: { supportAvailable: true, supportEmail: "support@musunil.com" }
 };
 const dataset = shiftFixtureDates(fixtureSeedDataset);

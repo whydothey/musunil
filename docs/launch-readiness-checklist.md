@@ -54,7 +54,7 @@
 - 배포 후 `pnpm launch:final-gate`의 `sources:refresh-preflight` 단계가 18개 활성 공개 집회 원천의 기존 refresh ledger를 먼저 확인하고, 부족하며 `MUSUNIL_INTERNAL_API_KEY`가 있으면 `pnpm sources:assemblies:post`를 실행해 실제 API에 ingest한다. 수동으로 먼저 확인할 때도 `pnpm sources:refresh-preflight`를 사용한다.
 - 배포 후 `pnpm launch:post-deploy-smoke -- --require-laws --require-source-refreshes` 통과. 이 명령은 production 기본값으로 `https://musunil.com`, `https://api.musunil.com`, 현재 Git SHA, strict Web headers를 보정한다. staging/preview 도메인을 검증할 때만 `MUSUNIL_WEB_BASE_URL`, `MUSUNIL_API_BASE_URL`, `MUSUNIL_EXPECTED_API_BASE_URL`, `MUSUNIL_EXPECTED_COMMIT_SHA`를 override한다. Web `config.js`가 같은 API를 가리키는지, Web no-store/CSP/Permissions/Referrer/nosniff/frame headers, 요청 timeout과 redirect 수동 처리, API 보안 헤더, CORS 경계, `/home.issueCards` 주제형 Issue 3개 이상과 첫 항목 공개자료 묶음 금지, `/issues`, 첫 이슈 상세, 첫 이슈 live-claims, `/area-clusters`, `/map`, `/public-sources/coverage.sourceRefreshes`, `/laws`, 첫 법안 상세 공개 응답 안전성을 함께 확인한다.
 - 배포 후 `pnpm launch:post-deploy-smoke`는 API `/media/redacted/preview-occ-live-1-poster.png`가 200 `image/png`, `/media/redacted/preview-occ-live-1.webm`이 200 `video/webm`으로 열리고 encoded traversal가 차단되는지 확인한다.
-- Render API health check path가 `/ready`다.
+- Render API health check path는 공개 읽기 게이트인 `/ready/public-read`다. 전체 `/ready`는 제보·본인확인·스토리지 등 출시 준비도를 계속 엄격하게 보고한다.
 - Render API build에서 `pnpm check`, `pnpm build:web-config`, `pnpm launch:check`가 실행된다.
 - Render API pre-deploy에서 `pnpm db:migrate`가 실행된다.
 - Render Blueprint가 `musunil-postgres`와 `musunil-redis`를 생성하고 private-network-only로 둔다. Redis는 원문 IP를 저장하지 않는 HMAC key 기반 분산 쓰기 제한에만 사용하므로 비영속 Free plan을 사용한다.

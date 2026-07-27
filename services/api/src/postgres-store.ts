@@ -7,66 +7,69 @@ import { publicAssemblySources } from "../../../packages/schemas/src/public-sour
 
 const { Pool } = pg;
 const snapshotId = "main";
+const pools = new Map<string, pg.Pool>();
 
-export async function loadPostgresStore(databaseUrl: string, fallback: Store, encryptionKey?: string): Promise<Store> {
-  const pool = new Pool({ connectionString: databaseUrl });
-  try {
-    await ensureSnapshotTable(pool);
-    const result = await pool.query("select state, state_ciphertext from store_snapshots where id = $1", [snapshotId]);
-    if (result.rowCount === 0) {
-      await savePostgresStore(databaseUrl, fallback, encryptionKey);
-      return fallback;
-    }
-    const row = result.rows[0] as { state: Store; state_ciphertext?: string | null };
-    if (row.state_ciphertext) {
-      if (!encryptionKey) throw new Error("security.encryption_key is required to read encrypted store snapshot.");
-      return hydrateStore(JSON.parse(decryptSnapshot(row.state_ciphertext, encryptionKey)) as Store);
-    }
-    return hydrateStore(row.state as Store);
-  } finally {
-    await pool.end();
-  }
+function databasePool(databaseUrl: string): pg.Pool {
+  const existing = pools.get(databaseUrl);
+  if (existing) return existing;
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    connectionTimeoutMillis: 1500,
+    allowExitOnIdle: true
+  });
+  pools.set(databaseUrl, pool);
+  return pool;
 }
 
-export async function savePostgresStore(databaseUrl: string, store: Store, encryptionKey?: string): Promise<void> {
-  const pool = new Pool({ connectionString: databaseUrl });
-  try {
-    await ensureSnapshotTable(pool);
-    // ponytail: single-row JSONB persistence for v1; switch to normalized tables when query volume requires it.
-    const serialized = JSON.stringify(store);
-    const state = encryptionKey ? "{}" : serialized;
-    const stateCiphertext = encryptionKey ? encryptSnapshot(serialized, encryptionKey) : null;
-    await pool.query(
-      "insert into store_snapshots(id, state, state_ciphertext, updated_at) values ($1, $2, $3, now()) on conflict (id) do update set state = excluded.state, state_ciphertext = excluded.state_ciphertext, updated_at = now()",
-      [snapshotId, state, stateCiphertext]
-    );
-  } finally {
-    await pool.end();
+export async function loadPostgresStore(databaseUrl: string, fallback: Store, encryptionKey?: string): Promise<Store> {
+  const pool = databasePool(databaseUrl);
+  await ensureSnapshotTable(pool);
+  const result = await pool.query("select state, state_ciphertext from store_snapshots where id = $1", [snapshotId]);
+  if (result.rowCount === 0) {
+    await savePostgresStore(databaseUrl, fallback, encryptionKey);
+    return fallback;
   }
+  const row = result.rows[0] as { state: Store; state_ciphertext?: string | null };
+  if (row.state_ciphertext) {
+    if (!encryptionKey) throw new Error("security.encryption_key is required to read encrypted store snapshot.");
+    return hydrateStore(JSON.parse(decryptSnapshot(row.state_ciphertext, encryptionKey)) as Store);
+  }
+  return hydrateStore(row.state as Store);
+}
+
+export async function savePostgresStore(databaseUrl: string, store: Store, encryptionKey?: string): Promise<Date> {
+  const pool = databasePool(databaseUrl);
+  await ensureSnapshotTable(pool);
+  // ponytail: single-row JSONB persistence for v1; switch to normalized tables when query volume requires it.
+  const serialized = JSON.stringify(store);
+  const state = encryptionKey ? "{}" : serialized;
+  const stateCiphertext = encryptionKey ? encryptSnapshot(serialized, encryptionKey) : null;
+  const result = await pool.query<{ updated_at: Date }>(
+    "insert into store_snapshots(id, state, state_ciphertext, updated_at) values ($1, $2, $3, now()) on conflict (id) do update set state = excluded.state, state_ciphertext = excluded.state_ciphertext, updated_at = now() returning updated_at",
+    [snapshotId, state, stateCiphertext]
+  );
+  return new Date(result.rows[0]?.updated_at ?? Date.now());
+}
+
+export async function postgresStoreUpdatedAt(databaseUrl: string): Promise<Date | undefined> {
+  const pool = databasePool(databaseUrl);
+  await ensureSnapshotTable(pool);
+  const result = await pool.query<{ updated_at: Date }>("select updated_at from store_snapshots where id = $1", [snapshotId]);
+  return result.rows[0]?.updated_at ? new Date(result.rows[0].updated_at) : undefined;
 }
 
 export async function pingPostgres(databaseUrl: string): Promise<void> {
-  const pool = new Pool({ connectionString: databaseUrl, connectionTimeoutMillis: 1500 });
-  try {
-    await pool.query("select 1");
-  } finally {
-    await pool.end();
-  }
+  await databasePool(databaseUrl).query("select 1");
 }
 
 export async function pingOpsSchedulerSchema(databaseUrl: string): Promise<void> {
-  const pool = new Pool({ connectionString: databaseUrl, connectionTimeoutMillis: 1500 });
-  try {
-    const result = await pool.query<{ task_count: number }>(
-      `select count(*)::integer as task_count
-       from ops_task_leases
-       where task_id = any($1::text[])`,
-      [["notification_dispatch", "public_source_ingest", "law_source_ingest", "news_source_ingest", "media_redaction", "privacy_purge"]]
-    );
-    if (result.rows[0]?.task_count !== 6) throw new Error("ops scheduler task rows are incomplete");
-  } finally {
-    await pool.end();
-  }
+  const result = await databasePool(databaseUrl).query<{ task_count: number }>(
+    `select count(*)::integer as task_count
+     from ops_task_leases
+     where task_id = any($1::text[])`,
+    [["notification_dispatch", "public_source_ingest", "law_source_ingest", "news_source_ingest", "media_redaction", "privacy_purge"]]
+  );
+  if (result.rows[0]?.task_count !== 6) throw new Error("ops scheduler task rows are incomplete");
 }
 
 async function ensureSnapshotTable(pool: pg.Pool): Promise<void> {

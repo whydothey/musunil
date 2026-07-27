@@ -310,6 +310,14 @@ export interface MapData {
   };
 }
 
+export type PublicDataScopeState = "ready" | "stale" | "error";
+
+export interface PublicDataStatus {
+  home: PublicDataScopeState;
+  map: PublicDataScopeState;
+  lastSuccessfulAt?: string;
+}
+
 export interface AppDataset {
   issues: IssueOverview[];
   eventTopicGroups: EventTopicGroup[];
@@ -324,6 +332,7 @@ export interface AppDataset {
   lawGroupsByIssue: Record<string, LawGroupCard[]>;
   claimsByOccurrence: Record<string, PublicClaim[]>;
   map: MapData;
+  publicDataStatus?: PublicDataStatus;
   transparency?: TransparencyData;
   serviceProfile?: {
     supportAvailable: boolean;

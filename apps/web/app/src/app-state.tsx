@@ -3,7 +3,7 @@ import dataSource from "@musunil/data-source";
 import type { AppDataset, ServiceReadiness } from "./contracts";
 import { useRouter } from "./router";
 
-export type ServiceSyncState = "loading" | "live" | "fixture" | "unavailable";
+export type ServiceSyncState = "loading" | "live" | "fixture" | "partial" | "stale" | "unavailable";
 export type IdentityState = "unknown" | "anonymous" | "verified" | "expired";
 export type AsyncDataState = "idle" | "loading" | "ready" | "error";
 export type SupplementalScope = "reels" | "laws" | "transparency" | "trust";
@@ -45,16 +45,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [selectedOccurrenceId, setSelectedOccurrenceId] = useState<string>();
   const [attempt, setAttempt] = useState(0);
   const lastRefreshAt = useRef(0);
+  const automaticRetryCount = useRef(0);
   const loadedSupplementalScopes = useRef(new Set<SupplementalScope>());
 
   useEffect(() => {
     let active = true;
-    setServiceSyncState("loading");
+    if (attempt === 0) setServiceSyncState("loading");
     dataSource.loadDataset().then((next) => {
       if (!active) return;
       setDataset((current) => current ? mergeDataset(current, next) : next);
       lastRefreshAt.current = Date.now();
-      setServiceSyncState(dataSource.mode === "fixture" ? "fixture" : "live");
+      setServiceSyncState(syncStateForDataset(next));
       if (dataSource.loadReadiness) void dataSource.loadReadiness().then((status) => { if (active) setReadiness(status); }).catch(() => {
         if (active) setReadiness({ gates: { publicRead: { ready: true, failedIds: [] }, contribution: { ready: false, failedIds: ["readiness_unavailable"] }, operator: { ready: false, failedIds: ["readiness_unavailable"] } } });
       });
@@ -67,13 +68,27 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, [attempt]);
 
   useEffect(() => {
+    if (serviceSyncState === "live" || serviceSyncState === "fixture") {
+      automaticRetryCount.current = 0;
+      return;
+    }
+    if (!["partial", "stale", "unavailable"].includes(serviceSyncState)) return;
+    const retryDelays = [1_000, 3_000, 10_000];
+    const retryIndex = automaticRetryCount.current;
+    if (retryIndex >= retryDelays.length) return;
+    automaticRetryCount.current += 1;
+    const timeout = window.setTimeout(() => setAttempt((current) => current + 1), retryDelays[retryIndex]);
+    return () => window.clearTimeout(timeout);
+  }, [serviceSyncState]);
+
+  useEffect(() => {
     const refresh = () => {
       if (document.visibilityState !== "visible") return;
       void dataSource.loadDataset().then((next) => {
         setDataset((current) => current ? mergeDataset(current, next) : next);
-        setServiceSyncState(dataSource.mode === "fixture" ? "fixture" : "live");
+        setServiceSyncState(syncStateForDataset(next));
         lastRefreshAt.current = Date.now();
-      }).catch(() => undefined);
+      }).catch(() => setServiceSyncState((current) => current === "live" || current === "partial" ? "stale" : current));
     };
     const interval = window.setInterval(refresh, 5 * 60_000);
     const onFocus = () => { if (Date.now() - lastRefreshAt.current > 60_000) refresh(); };
@@ -177,10 +192,22 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     selectOccurrence,
     ensureIssue,
     ensureOccurrence,
-    retry: () => setAttempt((current) => current + 1)
+    retry: () => {
+      automaticRetryCount.current = 0;
+      setAttempt((current) => current + 1);
+    }
   }), [dataset, serviceSyncState, identityState, readiness, supplementalStates, issueDetailStates, occurrenceDetailStates, selectedIssueId, selectedOccurrenceId, selectOccurrence, ensureIssue, ensureOccurrence]);
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
+}
+
+function syncStateForDataset(dataset: AppDataset): ServiceSyncState {
+  if (dataSource.mode === "fixture") return "fixture";
+  const states = dataset.publicDataStatus ? [dataset.publicDataStatus.home, dataset.publicDataStatus.map] : ["ready"];
+  if (states.every((state) => state === "ready")) return "live";
+  if (states.some((state) => state === "ready") && states.some((state) => state === "error")) return "partial";
+  if (states.some((state) => state === "stale")) return "stale";
+  return "partial";
 }
 
 function mergeById<T extends { id: string }>(current: T[], incoming: T[]): T[] {

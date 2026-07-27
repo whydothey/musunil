@@ -23,6 +23,7 @@ export type ExtractedAssemblyEvent = {
   safeLocationLabel: string;
   identityLocationKey?: string;
   participantCount?: number;
+  purposeLabel?: string;
 };
 
 type AttachmentBulletin = PublicOccurrencePayload & {
@@ -291,7 +292,9 @@ export function parseAssemblyAttachmentEvents(
 
   const events = candidates.flatMap((candidate) => {
     if (/(?:현재\s*)?집회\s*일시.*집회\s*장소/i.test(candidate.content.join(" "))) return [];
-    const rawLocation = candidate.content.join(" ");
+    const rawContent = candidate.content.join(" ");
+    const purposeLabel = explicitPurpose(rawContent);
+    const rawLocation = removeExplicitPurpose(rawContent);
     const identityLocationKey = legacyLocationForIdentity(rawLocation, context.regionLabel);
     const safeLocationLabel = safeLocation(rawLocation, context.regionLabel);
     if (!safeLocationLabel || !candidate.startTime) return [];
@@ -302,7 +305,8 @@ export function parseAssemblyAttachmentEvents(
       endTime: candidate.endTime,
       safeLocationLabel,
       identityLocationKey,
-      participantCount: candidate.participantCount
+      participantCount: candidate.participantCount,
+      purposeLabel
     }];
   });
   return dedupeEvents(events);
@@ -344,7 +348,9 @@ export function toAttachmentEventPayload(
       `location=${event.safeLocationLabel}`,
       event.participantCount ? `participantCount=${event.participantCount}` : ""
     ].filter(Boolean).join("; "),
-    normalizedStatement: `${bulletin.claimantLabel} 공개 첨부자료에는 ${event.date} ${event.startTime}부터 ${event.safeLocationLabel}에서 집회 일정이 안내되어 있습니다.`,
+    normalizedStatement: event.purposeLabel
+      ? `${bulletin.claimantLabel} 공개 첨부자료에는 ${event.date} ${event.startTime}부터 ${event.safeLocationLabel}에서 ${event.purposeLabel} 관련 집회 일정이 안내되어 있습니다.`
+      : `${bulletin.claimantLabel} 공개 첨부자료에는 ${event.date} ${event.startTime}부터 ${event.safeLocationLabel}에서 집회 일정이 안내되어 있습니다.`,
     evidenceStrength: "single_source",
     riskLevel: "low",
     evidenceUploadedAt: bulletin.evidenceUploadedAt,
@@ -355,8 +361,30 @@ export function toAttachmentEventPayload(
     sourceGranularity: "individual_schedule",
     publicLocationText: event.safeLocationLabel,
     declaredParticipantCount: event.participantCount,
-    parserVersion: "3"
+    publicPurposeText: event.purposeLabel,
+    parserVersion: "4"
   };
+}
+
+function explicitPurpose(value: string): string | undefined {
+  const match = value.match(/(?:집회\s*명|집회\s*목적|목적|행사\s*명|주요\s*내용)\s*[:：]\s*([\s\S]{2,120}?)(?=\s+(?:장소|집회\s*장소|일시|시간|행진|인원|참가\s*인원|신고\s*인원|관할(?:서)?)\s*[:：]|$)/u);
+  if (!match) return undefined;
+  const purpose = match[1]
+    .replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, "[연락처 비공개]")
+    .replace(/(?:0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4})/g, "[연락처 비공개]")
+    .replace(/\b\d{6}-?[1-4]\d{6}\b/g, "[식별정보 비공개]")
+    .replace(/\s+/g, " ")
+    .replace(/^[,·\-\s]+|[,·\-\s]+$/g, "")
+    .trim();
+  if (purpose.length < 2 || /^(?:없음|미정|미상|확인중|해당없음)$/u.test(purpose)) return undefined;
+  return purpose.length > 80 ? purpose.slice(0, 80).replace(/\s+\S*$/, "") : purpose;
+}
+
+function removeExplicitPurpose(value: string): string {
+  return value
+    .replace(/(?:집회\s*명|집회\s*목적|목적|행사\s*명|주요\s*내용)\s*[:：]\s*[\s\S]{2,120}?(?=\s+(?:장소|집회\s*장소|일시|시간|행진|인원|참가\s*인원|신고\s*인원|관할(?:서)?)\s*[:：]|$)/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function isEventStart(lines: string[], index: number): boolean {
@@ -378,6 +406,10 @@ function splitParticipantSuffix(value: string): { location: string; participantC
 
 function safeLocation(value: string, regionLabel: string): string | undefined {
   let location = value
+    .replace(/^(?:집회\s*)?장소\s*[:：]\s*/u, "")
+    .replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, "[연락처 비공개]")
+    .replace(/(?:연락처\s*[:：]?\s*)?0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4}/g, " ")
+    .replace(/\b\d{6}-?[1-4]\d{6}\b/g, " ")
     .split(/(?:※\s*)?(?:행진|이동)(?:로)?\s*[:：]?/)[0]
     .split(/(?:오\s*늘\s*)?주\s*요\s*집\s*회|신고인원\s*[,·]?\s*시간/u)[0]
     .replace(/--\s*\d+\s*of\s*\d+/gi, " ")

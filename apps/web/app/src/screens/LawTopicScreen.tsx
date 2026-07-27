@@ -41,26 +41,13 @@ export function LawGroupScreen({ id }: { id: string }) {
       <div className="law-topic-summary"><Layers3 aria-hidden="true" /><div><strong>동일 이름 법안 {group.billCount}건</strong><span>그룹 핵심 논점 {group.coreTopics.length}개</span></div></div>
       <section className="content-section">
         <div className="section-heading"><div><h2>핵심 논점</h2><p>소속 의안들의 국회 공식 제안요약에서 집계했습니다</p></div></div>
-        <div className="law-core-topic-filter" role="group" aria-label="핵심 논점으로 법안 필터">
-          <button type="button" aria-pressed={!coreTopicKey} onClick={() => { setCoreTopicKey(undefined); setPage(1); }}>전체 {group.billCount}건</button>
-          {visibleTopics.map((topic) => <button type="button" aria-pressed={coreTopicKey === topic.key} onClick={() => { setCoreTopicKey(topic.key); setPage(1); }} key={topic.key}><strong>{topic.label}</strong><span>{topic.billCount}건</span><small>{topic.representativeKeywords.join(" · ")}</small></button>)}
-        </div>
-        {group.coreTopics.length > 6 ? <button type="button" className="law-topic-expand" aria-expanded={showAllTopics} onClick={() => setShowAllTopics((value) => !value)}>{showAllTopics ? "핵심 논점 접기" : `핵심 논점 ${group.coreTopics.length - 6}개 더 보기`}</button> : null}
-      </section>
-      <section className="content-section">
-        <div className="section-heading"><div><h2>주요 이슈와 관련 뉴스</h2><p>검토 승인된 그룹 단위 이슈와 출처가 확인된 보도만 표시합니다</p></div><Newspaper aria-hidden="true" /></div>
-        {issues.length ? issues.map((issue) => (
-          <article className="law-issue-news-card" key={issue.id}>
-            <Link href={`/issues/${encodeURIComponent(issue.id)}`} className="law-related-row">
-              <span><strong>{issue.title}</strong><small>{issue.newsCount ? `관련 뉴스 ${issue.newsCount}건` : `${issue.regionCount}개 지역 · 현장 ${issue.occurrenceCount}곳`}</small></span><ChevronRight aria-hidden="true" />
-            </Link>
-            {issue.recentNews?.length ? <div className="news-link-list">{issue.recentNews.map((article) => (
-              <a key={article.id} href={article.sourceUrl} target="_blank" rel="noopener noreferrer" className="news-link-row">
-                <span><strong>{article.headline}</strong><small>{article.summary} · {article.publisherLabel} · {new Date(article.publishedAt).toLocaleDateString("ko-KR")}</small></span><ExternalLink aria-hidden="true" />
-              </a>
-            ))}</div> : null}
-          </article>
-        )) : <EmptyState title="연결된 이슈가 없습니다" description="검토 승인된 이슈와 언론 보도가 확인되면 표시합니다." />}
+        {group.coreTopics.length > 1 ? <>
+          <div className="law-core-topic-filter" role="group" aria-label="핵심 논점으로 법안 필터">
+            <button type="button" aria-pressed={!coreTopicKey} onClick={() => { setCoreTopicKey(undefined); setPage(1); }}>전체 {group.billCount}건</button>
+            {visibleTopics.map((topic) => <button type="button" aria-pressed={coreTopicKey === topic.key} onClick={() => { setCoreTopicKey(topic.key); setPage(1); }} key={topic.key}><strong>{topic.label}</strong><span>{topic.billCount}건</span><small>{topic.representativeKeywords.join(" · ")}</small></button>)}
+          </div>
+          {group.coreTopics.length > 6 ? <button type="button" className="law-topic-expand" aria-expanded={showAllTopics} onClick={() => setShowAllTopics((value) => !value)}>{showAllTopics ? "핵심 논점 접기" : `핵심 논점 ${group.coreTopics.length - 6}개 더 보기`}</button> : null}
+        </> : group.coreTopics[0] ? <div className="law-single-topic"><strong>{group.coreTopics[0].label}</strong><span>{group.coreTopics[0].billCount}건 · {group.coreTopics[0].representativeKeywords.join(" · ")}</span></div> : <p className="law-connection-note">공식 제안요약에서 공통 논점을 확인하고 있습니다.</p>}
       </section>
       <section className="content-section">
         <div className="section-heading"><div><h2>개별 법안</h2><p>발의자·발의일·진행단계가 서로 다른 공식 의안입니다</p></div></div>
@@ -73,6 +60,21 @@ export function LawGroupScreen({ id }: { id: string }) {
           ))}
         </div>
         {detail.pagination && detail.pagination.pageCount > 1 ? <nav className="law-pagination" aria-label="개별 법안 페이지"><button type="button" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>이전</button><span>{page} / {detail.pagination.pageCount}</span><button type="button" disabled={page >= detail.pagination.pageCount} onClick={() => setPage((current) => current + 1)}>다음</button></nav> : null}
+      </section>
+      <section className="content-section">
+        <div className="section-heading"><div><h2>관련 이슈와 뉴스</h2><p>검토를 마친 연결만 표시합니다</p></div>{issues.length ? <Newspaper aria-hidden="true" /> : null}</div>
+        {issues.length ? issues.map((issue) => (
+          <article className="law-issue-news-card" key={issue.id}>
+            <Link href={`/issues/${encodeURIComponent(issue.id)}`} className="law-related-row">
+              <span><strong>{issue.title}</strong><small>{issue.newsCount ? `관련 뉴스 ${issue.newsCount}건` : `${issue.regionCount}개 지역 · 현장 ${issue.occurrenceCount}곳`}</small></span><ChevronRight aria-hidden="true" />
+            </Link>
+            {issue.recentNews?.length ? <div className="news-link-list">{issue.recentNews.map((article) => (
+              <a key={article.id} href={article.sourceUrl} target="_blank" rel="noopener noreferrer" className="news-link-row">
+                <span><strong>{article.headline}</strong><small>{article.summary} · {article.publisherLabel} · {new Date(article.publishedAt).toLocaleDateString("ko-KR")}</small></span><ExternalLink aria-hidden="true" />
+              </a>
+            ))}</div> : null}
+          </article>
+        )) : <p className="law-connection-note">현재 이 법안 그룹과 확인된 집회 이슈 연결은 없습니다.</p>}
       </section>
     </section>
   );

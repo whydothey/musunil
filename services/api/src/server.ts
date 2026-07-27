@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { ApiError, canServePublicRedactedMedia, createApp, createSeedStore, reconcileEvidenceSynthesizedTopics, reconcileLegacyLocationScheduleIssues, stripPreviewData } from "./app.ts";
 import { createPublicWriteRateLimiter, readJsonBody } from "./http-boundary.ts";
 import { createLiveMediaStorage } from "./live-media-storage.ts";
-import { loadPostgresStore, pingOpsSchedulerSchema, pingPostgres, reconcileLegacyOfficialTextLocations, savePostgresStore } from "./postgres-store.ts";
+import { loadPostgresStore, pingOpsSchedulerSchema, pingPostgres, postgresStoreUpdatedAt, reconcileLegacyOfficialTextLocations, savePostgresStore } from "./postgres-store.ts";
 import { loadUserInputs, validateLaunchConfig } from "../../../packages/config/src/index.ts";
 
 const apiDir = dirname(fileURLToPath(import.meta.url));
@@ -49,8 +49,12 @@ const app = createApp(initialStore, {
 const port = Number(process.env.PORT ?? 4000);
 let shuttingDown = false;
 let storeIoQueue = Promise.resolve();
-let nextStoreRefreshAt = Date.now() + 30_000;
 let initialReconcileTimer: ReturnType<typeof setTimeout> | undefined;
+let lastStoreUpdatedAt = runtime.databaseUrl ? await postgresStoreUpdatedAt(runtime.databaseUrl) : undefined;
+const storeRefreshTimer = runtime.databaseUrl
+  ? setInterval(() => void refreshStoreFromPostgresIfChanged(), 30_000)
+  : undefined;
+storeRefreshTimer?.unref();
 
 if (runtime.databaseUrl && initialTopicReconcileCount > 0) {
   initialReconcileTimer = setTimeout(() => void persistStore(), 10_000);
@@ -63,7 +67,6 @@ const server = createServer(async (req, res) => {
       send(req, res, 204, undefined);
       return;
     }
-    await refreshStoreFromPostgresIfDue();
     if (await sendPublicRedactedMedia(req, res)) return;
     await publicWriteRateLimiter.enforce(req);
     const body = await readJsonBody(req);
@@ -93,6 +96,7 @@ async function shutdown(signal: string): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
   clearTimeout(initialReconcileTimer);
+  clearInterval(storeRefreshTimer);
   const timeout = setTimeout(() => process.exit(1), 8_000);
   timeout.unref();
 
@@ -112,28 +116,31 @@ async function shutdown(signal: string): Promise<void> {
 function persistStore(): Promise<void> {
   const databaseUrl = runtime.databaseUrl;
   if (!databaseUrl) return Promise.resolve();
-  nextStoreRefreshAt = Date.now() + 30_000;
-  storeIoQueue = storeIoQueue.catch(() => undefined).then(() => savePostgresStore(databaseUrl, app.store, runtime.encryptionKey));
+  storeIoQueue = storeIoQueue.catch(() => undefined).then(async () => {
+    lastStoreUpdatedAt = await savePostgresStore(databaseUrl, app.store, runtime.encryptionKey);
+  });
   return storeIoQueue;
 }
 
-async function refreshStoreFromPostgresIfDue(): Promise<void> {
+async function refreshStoreFromPostgresIfChanged(): Promise<void> {
   const databaseUrl = runtime.databaseUrl;
-  if (!databaseUrl || Date.now() < nextStoreRefreshAt) return;
-  nextStoreRefreshAt = Date.now() + 30_000;
+  if (!databaseUrl || shuttingDown) return;
   storeIoQueue = storeIoQueue.catch(() => undefined).then(async () => {
+    const updatedAt = await postgresStoreUpdatedAt(databaseUrl);
+    if (!updatedAt || (lastStoreUpdatedAt && updatedAt.getTime() <= lastStoreUpdatedAt.getTime())) return;
     const refreshed = await loadPostgresStore(databaseUrl, app.store, runtime.encryptionKey);
     const visibleStore = runtime.includeMockData ? refreshed : stripPreviewData(refreshed);
     const reconciled = reconcileLegacyLocationScheduleIssues(visibleStore)
       + reconcileEvidenceSynthesizedTopics(visibleStore)
       + reconcileLegacyOfficialTextLocations(visibleStore);
     Object.assign(app.store, visibleStore);
-    if (reconciled > 0) await savePostgresStore(databaseUrl, app.store, runtime.encryptionKey);
+    lastStoreUpdatedAt = reconciled > 0
+      ? await savePostgresStore(databaseUrl, app.store, runtime.encryptionKey)
+      : updatedAt;
   });
   try {
     await storeIoQueue;
   } catch (error) {
-    nextStoreRefreshAt = Date.now() + 5_000;
     console.error("postgres store refresh failed", error instanceof Error ? error.message : String(error));
   }
 }

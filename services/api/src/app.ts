@@ -919,6 +919,11 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
   const path = url.pathname;
 
   if (request.method === "GET" && path === "/health") return json(200, { ok: true });
+  if (request.method === "GET" && path === "/ready/public-read") {
+    const readiness = describeReadiness(await (options.readiness?.() ?? defaultReadiness()));
+    const publicReadReady = readiness.gates?.publicRead.ready === true;
+    return json(publicReadReady ? 200 : 503, { ...readiness, ready: publicReadReady });
+  }
   if (request.method === "GET" && path === "/ready") {
     const readiness = describeReadiness(await (options.readiness?.() ?? defaultReadiness()));
     return json(readiness.ready ? 200 : 503, readiness);
@@ -1785,7 +1790,7 @@ function occurrenceTopicCandidates(store: Store, occurrence: Occurrence): NonNul
       const issue = store.issues.find((item) => item.id === link.issueId && item.kind === "topic" && item.status !== "archived");
       if (!issue) return undefined;
       const publicClaims = link.supportingClaimIds
-        .map((id) => store.claims.find((claim) => claim.id === id && claim.visibility === "public"))
+        .map((id) => store.claims.find((claim) => claim.id === id && isPublicClaim(claim)))
         .filter((claim): claim is Claim => Boolean(claim));
       const publicEvidenceIds = new Set(publicClaims.flatMap((claim) => claim.evidenceIds));
       const evidence = link.supportingEvidenceIds
@@ -3740,6 +3745,7 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
     }
     recordPublicSourceRefresh(store, data, 1);
     audit(store, "correction", "occurrence", id, corrected ? "official public occurrence statement corrected without duplicate Claim" : "public occurrence refreshed without duplicate Claim");
+    recordOfficialPurposeCandidate(store, data, occurrence, existingClaim);
     reconcileOccurrenceLinksFromEvidence(store);
     reconcileOccurrencePublicLocation(store, "occurrence", occurrence.id);
     return json(200, {
@@ -3769,6 +3775,7 @@ function postInternalIngestPublicOccurrence(store: Store, body: unknown): ApiRes
     riskLevel: readRiskLevel(data, "riskLevel", "low"),
     evidenceIds: [evidence.id]
   });
+  recordOfficialPurposeCandidate(store, data, occurrence, claim);
   refreshIssueLawGroupLinks(store);
   reconcileOccurrenceLinksFromEvidence(store);
   reconcileOccurrencePublicLocation(store, "occurrence", occurrence.id);
@@ -4058,6 +4065,9 @@ type IssueTopicInput = {
 };
 
 function resolveIssueIdForIngest(store: Store, data: Record<string, unknown>): string | undefined {
+  if (officialAssemblySource(readOptionalString(data, "sourceId")) && data.sourceGranularity === "individual_schedule") {
+    return undefined;
+  }
   const explicitTopic = readOptionalString(data, "topicTitle");
   const inferredTopic = explicitTopic ? topicFromTitle(explicitTopic) : topicFromText(`${readOptionalString(data, "title") ?? ""} ${readOptionalString(data, "normalizedStatement") ?? ""}`);
   if (!inferredTopic) return undefined;
@@ -4066,6 +4076,33 @@ function resolveIssueIdForIngest(store: Store, data: Record<string, unknown>): s
     title: inferredTopic.title,
     topicTags: topicTags.length ? topicTags : inferredTopic.topicTags
   }).id;
+}
+
+function recordOfficialPurposeCandidate(store: Store, data: Record<string, unknown>, occurrence: Occurrence, claim: Claim): void {
+  const purposeText = readOptionalString(data, "publicPurposeText");
+  if (!purposeText || data.sourceGranularity !== "individual_schedule" || !officialAssemblySource(readOptionalString(data, "sourceId"))) return;
+  const topic = topicFromTitle(purposeText);
+  if (!topic) return;
+  const issue = ensureIssue(store, topic);
+  let link = store.occurrenceIssueLinks.find((item) => item.occurrenceId === occurrence.id && item.issueId === issue.id);
+  if (link?.status === "rejected") return;
+  if (!link) {
+    link = {
+      occurrenceId: occurrence.id,
+      issueId: issue.id,
+      status: "candidate",
+      matchBasis: "occurrence_claim",
+      confidence: "medium",
+      supportingClaimIds: [],
+      supportingEvidenceIds: [],
+      createdAt: new Date(),
+      reviewNote: "경찰 공개 첨부자료에 명시된 집회 목적 1차 연결"
+    };
+    store.occurrenceIssueLinks.push(link);
+    audit(store, "hold", "occurrence", occurrence.id, `경찰 공개 첨부자료의 명시 목적을 주제 '${issue.id}' 연결 후보로 추가하고 교차 확인 전 보류했습니다.`);
+  }
+  link.supportingClaimIds = uniqueStrings([...link.supportingClaimIds, claim.id]);
+  link.supportingEvidenceIds = uniqueStrings([...link.supportingEvidenceIds, ...claim.evidenceIds]);
 }
 
 function isPublicSourceBundleIssueId(issueId: string): boolean {

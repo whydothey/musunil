@@ -1835,7 +1835,7 @@ if (!/content-security-policy/.test(webServer) || !/permissions-policy/.test(web
   failures.push("local static web security headers are missing");
 }
 validateWebRuntimeConfig(webConfigJs, failures, loaded?.config);
-if (!/healthCheckPath:\s*\/ready/.test(renderYaml)) failures.push("Render API health check must use /ready");
+if (!/healthCheckPath:\s*\/ready\/public-read/.test(renderYaml)) failures.push("Render API health check must use /ready/public-read");
 for (const [serviceName, block] of [
   ["musunil-api", renderApi],
   ["musunil-web", renderWeb],

@@ -752,6 +752,9 @@ const readyResponse = await app.handle({ method: "GET", path: "/ready" });
 assert.equal(readyResponse.status, 200);
 assert.equal((readyResponse.body as { summary: { failedCount: number } }).summary.failedCount, 0);
 assert.equal((readyResponse.body as { requiredActions: Array<unknown> }).requiredActions.length, 0);
+const publicReadReadyResponse = await app.handle({ method: "GET", path: "/ready/public-read" });
+assert.equal(publicReadReadyResponse.status, 200);
+assert.equal((publicReadReadyResponse.body as { ready: boolean }).ready, true);
 assert.equal(
   (await createApp(createSeedStore(), { readiness: async () => ({ ready: false, checks: [{ id: "postgres", ok: false, message: "postgres unreachable" }] }) }).handle({
     method: "GET",
@@ -763,6 +766,20 @@ assert.equal(
   (await createApp(createSeedStore(), { readiness: async () => ({ ready: false, checks: [{ id: "redis", ok: false, message: "redis unreachable" }] }) }).handle({
     method: "GET",
     path: "/ready"
+  })).status,
+  503
+);
+assert.equal(
+  (await createApp(createSeedStore(), { readiness: async () => ({ ready: false, checks: [{ id: "redis", ok: false, message: "redis unreachable" }] }) }).handle({
+    method: "GET",
+    path: "/ready/public-read"
+  })).status,
+  200
+);
+assert.equal(
+  (await createApp(createSeedStore(), { readiness: async () => ({ ready: false, checks: [{ id: "postgres", ok: false, message: "postgres unreachable" }] }) }).handle({
+    method: "GET",
+    path: "/ready/public-read"
   })).status,
   503
 );
@@ -2017,6 +2034,7 @@ assert.equal(JSON.stringify(ingested.body).includes("공개하면 안 되는 원
 const emptyOfficialStore = emptyStore();
 const emptyOfficialApp = createApp(emptyOfficialStore, {
   internalApiKey: "test_internal_key",
+  publicDiscoveryNow: () => new Date("2026-07-20T00:00:00.000Z"),
   readiness: () => ({ ready: false, checks: [{ id: "launch", ok: false, message: "not launched" }] })
 });
 const officialBatchBody = {
@@ -2105,6 +2123,27 @@ const individualEventBatch = await emptyOfficialApp.handle({
       sourceGranularity: "individual_schedule",
       declaredParticipantCount: 120,
       publicLocationKey: "seoul_civic_center_area"
+    }, {
+      id: "occ_seoul_2026_07_20_2021_2",
+      type: "static_assembly",
+      areaClusterId: "area_seoul_public",
+      regionLabel: "서울",
+      title: "서울광장 일대 집회 일정",
+      startsAt: "2026-07-20T15:00:00.000+09:00",
+      endsAt: "2026-07-20T17:00:00.000+09:00",
+      lifecycleState: "UPCOMING",
+      sourceProvenance: "government_or_police",
+      claimantLabel: "서울경찰청 교통정보센터 집회·통제정보",
+      normalizedStatement: "서울경찰청 공개 첨부자료에는 서울광장 일대에서 노동조건 개선 촉구 관련 집회 일정이 안내되어 있습니다.",
+      rawText: "공개하지 않는 원문",
+      evidenceUploadedAt: "2026-07-20T07:11:23.000+09:00",
+      sourceItemId: "2021:event:2",
+      sourceUrl: "https://www.spatic.go.kr/spatic/assem/getInfoView.do?mgrSeq=2021",
+      sourcePublishedAt: "2026-07-20T07:11:23.000+09:00",
+      sourceTitle: "7월 20일 (월) 행사 및 집회",
+      sourceGranularity: "individual_schedule",
+      publicLocationKey: "seoul_civic_center_area",
+      publicPurposeText: "노동조건 개선 촉구"
     }]
   }
 });
@@ -2127,6 +2166,13 @@ assert.equal(individualIssueId, undefined);
 assert.equal(emptyOfficialStore.issues.some((issue) => issue.title === "서울광장·광화문 일대 집회 일정"), false);
 const individualHome = await emptyOfficialApp.handle({ method: "GET", path: "/home" });
 assert.equal(JSON.stringify((individualHome.body as { issueCards: unknown }).issueCards).includes("서울광장·광화문 일대 집회 일정"), false);
+const purposeCandidateDetail = await emptyOfficialApp.handle({ method: "GET", path: "/occurrences/occ_seoul_2026_07_20_2021_2" });
+const purposeCandidateDigest = (purposeCandidateDetail.body as { occurrenceDigest: { issueTitle?: string; topicStatus: string; topicCandidate?: { title: string } } }).occurrenceDigest;
+assert.equal(purposeCandidateDigest.issueTitle, undefined);
+assert.equal(purposeCandidateDigest.topicStatus, "candidate");
+assert.equal(purposeCandidateDigest.topicCandidate?.title, "노동조건 개선 촉구 관련 집회");
+assert.equal(emptyOfficialStore.occurrenceIssueLinks.some((link) => link.occurrenceId === "occ_seoul_2026_07_20_2021_2" && link.status === "candidate"), true);
+assert.equal(emptyOfficialStore.transparencyLogs.some((log) => log.targetId === "occ_seoul_2026_07_20_2021_2" && log.action === "hold"), true);
 const textLocatedEventBatch = await emptyOfficialApp.handle({
   method: "POST",
   path: "/internal/ingest/public-occurrences/batch",

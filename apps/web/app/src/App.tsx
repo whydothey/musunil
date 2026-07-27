@@ -37,7 +37,13 @@ export function App() {
 function AppShell() {
   const { route } = useRouter();
   const { serviceSyncState } = useAppState();
-  const activeRoute: RouteName = route.name === "issue" || route.name === "occurrence" || route.name === "event-topic" || route.name === "trust" ? "home" : route.name === "law" || route.name === "law-group" ? "laws" : route.name;
+  const activeRoute: RouteName = route.name === "occurrence"
+    ? "explore"
+    : route.name === "issue" || route.name === "event-topic" || route.name === "trust"
+      ? "home"
+      : route.name === "law" || route.name === "law-group"
+        ? "laws"
+        : route.name;
   const isImmersive = route.name === "reels" || route.name === "explore";
   const isDetail = route.name === "issue" || route.name === "occurrence" || route.name === "event-topic" || route.name === "law" || route.name === "law-group";
 
@@ -58,7 +64,7 @@ function AppShell() {
         </nav>
         <div className="sidebar-foot">
           <div className="trust-links"><Link href="/methodology">방법론</Link><Link href="/transparency">투명성</Link><Link href="/privacy">개인정보</Link><Link href="/rights">정정·권리</Link></div>
-          {serviceSyncState === "unavailable" ? <div className="sync-status"><span className="sync-dot unavailable" aria-hidden="true" /><span>자료 연결 확인 중</span></div> : null}
+          {["partial", "stale", "unavailable"].includes(serviceSyncState) ? <div className="sync-status"><span className="sync-dot unavailable" aria-hidden="true" /><span>{serviceSyncState === "stale" ? "마지막 확인 자료" : serviceSyncState === "partial" ? "일부 자료 확인 중" : "자료 연결 확인 중"}</span></div> : null}
         </div>
       </aside>
 

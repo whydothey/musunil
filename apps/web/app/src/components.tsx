@@ -119,6 +119,15 @@ export function ServiceUnavailable({ title = "자료 연결을 확인하고 있�
   );
 }
 
+export function DataStatusNotice({ state, lastSuccessfulAt }: { state: "partial" | "stale"; lastSuccessfulAt?: string }) {
+  const { retry } = useAppState();
+  const time = lastSuccessfulAt ? formatRelativeTime(lastSuccessfulAt) : undefined;
+  return <div className={`data-status-notice is-${state}`} role="status">
+    <p>{state === "stale" ? `마지막으로 확인된 자료입니다${time ? ` · ${time}` : ""}` : "일부 자료의 연결을 확인하고 있습니다"}</p>
+    <button type="button" onClick={retry}><RefreshCw aria-hidden="true" />새로 확인</button>
+  </div>;
+}
+
 export function FactRow({ label, value, supporting }: { label: string; value: string; supporting?: string }) {
   return <div className="fact-row"><dt>{label}</dt><dd><strong>{value}</strong>{supporting ? <span>{supporting}</span> : null}</dd></div>;
 }

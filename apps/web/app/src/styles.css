@@ -99,6 +99,11 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .feed-intro { height: 36px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px 8px; border-bottom: 1px solid var(--line); color: var(--ink-soft); font-size: 13px; }
 .feed-intro p { margin: 0; }
 .feed-intro span { color: var(--ink-soft); font-weight: 700; }
+.home-schedule-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 12px 18px 4px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.home-schedule-summary a { display: grid; gap: 2px; min-width: 0; padding: 12px 10px; color: var(--ink); text-align: center; text-decoration: none; }
+.home-schedule-summary a + a { border-left: 1px solid var(--line); }
+.home-schedule-summary strong { font-size: 16px; }
+.home-schedule-summary span { overflow: hidden; color: var(--ink-soft); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .home-zero-state { margin: 14px 18px 18px; padding: 24px 20px; border-radius: 10px; background: var(--surface-muted); text-align: center; }
 .home-zero-state h2 { margin: 0; font-size: 19px; }
 .home-zero-state > p { margin: 8px auto 0; max-width: 360px; color: var(--ink-soft); font-size: 13px; line-height: 1.55; }
@@ -180,7 +185,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .occurrence-row { position: relative; display: block; min-height: 112px; padding: 14px 48px 14px 18px; border-top: 1px solid var(--line); transition: background 180ms var(--ease); }
 .occurrence-row:active { background: var(--surface-muted); }
 .occurrence-row-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-.occurrence-row-head > span:last-child { color: var(--ink-faint); font-size: 11px; }
+.occurrence-row-head > span:last-child { color: var(--ink-soft); font-size: 11px; }
 .occurrence-row h3 { margin: 9px 0 0; font-size: 16px; line-height: 1.35; }
 .place-line { margin: 5px 0 0; overflow: hidden; color: var(--ink-soft); font-size: 13px; line-height: 1.35; white-space: nowrap; text-overflow: ellipsis; }
 .occurrence-meta { display: flex; gap: 6px; margin: 7px 0 0; color: var(--ink-faint); font-size: 12px; }
@@ -300,8 +305,14 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .key-area { width: 13px; height: 9px; border: 1px solid var(--brand); background: var(--brand-soft); }
 .map-notice { position: absolute; z-index: 9; top: 70px; left: 50%; transform: translateX(-50%); padding: 8px 12px; border-radius: 6px; background: rgba(255,255,255,.94); color: var(--ink-soft); font-size: 11px; white-space: nowrap; }
 .map-basemap-notice { position: absolute; z-index: 9; top: 70px; left: 50%; transform: translateX(-50%); padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255,255,255,.94); color: var(--ink-soft); font-size: 10px; white-space: nowrap; }
+.data-status-notice { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 18px 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-subtle); color: var(--ink-soft); font-size: 12px; }
+.data-status-notice p { margin: 0; }
+.data-status-notice button { display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto; border: 0; background: transparent; color: var(--brand); font: inherit; font-weight: 700; cursor: pointer; }
+.data-status-notice button svg { width: 14px; height: 14px; }
 .map-locate { position: absolute; z-index: 10; top: 108px; right: 12px; min-height: 40px; display: flex; align-items: center; gap: 6px; padding: 0 11px; border: 1px solid var(--line-strong); border-radius: 7px; background: rgba(255,255,255,.96); color: var(--ink); box-shadow: 0 3px 12px rgba(25,40,44,.12); font-size: 11px; font-weight: 750; cursor: pointer; }
 .map-locate svg { width: 16px; height: 16px; color: var(--brand); }
+.map-reset { position: absolute; z-index: 10; top: 154px; right: 12px; min-height: 36px; display: flex; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 7px; background: rgba(255,255,255,.96); color: var(--ink-soft); box-shadow: 0 3px 12px rgba(25,40,44,.1); font-size: 11px; font-weight: 730; cursor: pointer; }
+.map-reset svg { width: 14px; height: 14px; color: var(--brand); }
 .map-location-message { position: absolute; z-index: 9; top: 154px; right: 12px; max-width: 240px; margin: 0; padding: 6px 9px; border-radius: 5px; background: rgba(255,255,255,.94); color: var(--ink-soft); font-size: 10px; line-height: 1.4; }
 .map-location-message:empty { display: none; }
 .map-selection { position: absolute; z-index: 14; left: 10px; right: 10px; bottom: 10px; min-height: 150px; max-height: 32dvh; padding: 15px 54px 14px 16px; border: 1px solid var(--line-strong); border-radius: 10px; background: white; box-shadow: 0 8px 26px rgba(25,40,44,.18); animation: sheet-in 200ms var(--ease); }
@@ -370,17 +381,25 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .law-core-topic-item h3 { margin: 0 0 5px; font-size: 14px; }
 .law-core-topic-item p { margin: 0; color: var(--ink-soft); font-size: 12px; }
 .law-core-topic-item small { display: block; margin-top: 5px; color: var(--ink-soft); font-size: 11px; }
+.law-single-topic { display: flex; flex-direction: column; gap: 5px; margin: 0 18px; padding: 13px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-muted); }
+.law-single-topic strong { font-size: 14px; }
+.law-single-topic span, .law-connection-note { color: var(--ink-soft); font-size: 12px; line-height: 1.55; }
+.law-connection-note { margin: 0; padding: 2px 18px 16px; }
 .law-detail-status { display: flex; align-items: center; gap: 12px; margin: 4px 18px 16px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--brand-soft); color: var(--brand); }
 .law-detail .screen-heading h1 { font-size: 22px; line-height: 1.3; }
 .law-detail-status > svg { flex: 0 0 auto; }
 .law-detail-status div { display: flex; flex-direction: column; gap: 3px; }
 .law-detail-status strong { font-size: 14px; }
 .law-detail-status span { color: var(--ink-soft); font-size: 11px; }
+.law-plain-summary { margin: 4px 18px 16px; padding: 15px 16px; border: 1px solid var(--line); border-radius: 8px; }
+.law-plain-summary h2 { margin: 0 0 7px; font-size: 14px; }
+.law-plain-summary p { display: -webkit-box; overflow: hidden; margin: 0; color: var(--ink); font-size: 13px; line-height: 1.58; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.law-plain-summary small { display: block; margin-top: 7px; color: var(--ink-faint); font-size: 10px; }
 .law-related-section { margin-top: 10px; }
 .law-related-row { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 18px; border-top: 1px solid var(--line); }
 .law-related-row span { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
 .law-related-row strong { font-size: 14px; line-height: 1.4; }
-.law-related-row small { color: var(--ink-faint); font-size: 11px; }
+.law-related-row small { color: var(--ink-soft); font-size: 11px; }
 .law-related-row > svg { flex: 0 0 auto; color: var(--brand); }
 .law-issue-news-card { border-top: 1px solid var(--line); }
 .law-issue-news-card .law-related-row { border-top: 0; }
@@ -502,6 +521,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   .law-detail .screen-heading h1 { font-size: 30px; }
   .screen-header, .issue-hero, .occurrence-hero, .section-heading, .claim-row, .law-row { padding-left: 30px; padding-right: 30px; }
   .feed-intro { padding-left: 30px; padding-right: 30px; }
+  .screen .home-trust-links { display: none; }
   .issue-row { min-height: 100px; padding-left: 30px; padding-right: 30px; }
   .issue-row-top h2 { font-size: 20px; }
   .issue-change { font-size: 14px; }
