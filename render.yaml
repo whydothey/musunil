@@ -16,7 +16,7 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     preDeployCommand: pnpm db:migrate
-    healthCheckPath: /ready/public-read
+    healthCheckPath: /health
     maxShutdownDelaySeconds: 30
     envVars:
       - key: MUSUNIL_RUNTIME_ENV
