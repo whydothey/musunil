@@ -39,12 +39,6 @@ function proposalSummaryPreview(summary?: string): string | undefined {
     .replace(/\s+/g, " ")
     .trim();
   const sentences = normalized.split(/(?<=[.!?다])\s+/).filter((sentence) => sentence.length >= 12);
-  const selected: string[] = [];
-  for (const sentence of sentences) {
-    if (selected.length > 0 && `${selected.join(" ")} ${sentence}`.length > 220) break;
-    selected.push(sentence);
-    if (selected.join(" ").length >= 140) break;
-  }
-  const preview = (selected.length ? selected.join(" ") : normalized).trim();
+  const preview = (sentences[0] || normalized).trim();
   return preview.length > 220 ? `${preview.slice(0, 220).replace(/\s+\S*$/, "")}…` : preview;
 }
