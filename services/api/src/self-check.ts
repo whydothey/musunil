@@ -2367,6 +2367,13 @@ if (!topicGroup) throw new Error("event topic group missing");
 const topicGroupDetail = await protectedApp.handle({ method: "GET", path: `/event-topics/${topicGroup.id}` });
 assert.equal(topicGroupDetail.status, 200);
 assert.equal((topicGroupDetail.body as { occurrenceDigests: unknown[] }).occurrenceDigests.length >= 1, true);
+const recentTopicApp = createApp(protectedApp.store, {
+  internalApiKey: "test_internal_key",
+  publicDiscoveryNow: () => new Date("2026-07-15T01:00:00.000Z")
+});
+const recentTopicHome = await recentTopicApp.handle({ method: "GET", path: "/home" });
+const recentTopicGroups = (recentTopicHome.body as { eventTopicGroups: Array<{ title: string; currentCount: number; upcomingCount: number; recentCount: number }> }).eventTopicGroups;
+assert.equal(recentTopicGroups.some((group) => group.title === "부정선거 의혹 제기 집회" && group.currentCount === 0 && group.upcomingCount === 0 && group.recentCount >= 1), true);
 const topicIssue = await protectedApp.handle({ method: "GET", path: `/issues/${topicIssueId}` });
 assert.equal(topicIssue.status, 200);
 assert.equal((topicIssue.body as { nationalSummary: { regionCount: number; targetCount: number } }).nationalSummary.regionCount, 2);

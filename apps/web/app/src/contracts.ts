@@ -116,6 +116,7 @@ export interface EventTopicGroup {
   occurrenceCount: number;
   currentCount: number;
   upcomingCount: number;
+  recentCount: number;
   regionCount: number;
   sourceCount: number;
   evidenceCount: number;

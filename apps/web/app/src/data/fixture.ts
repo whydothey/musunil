@@ -463,6 +463,7 @@ const eventTopicGroups: AppDataset["eventTopicGroups"] = issues.filter((issue) =
   occurrenceCount: issue.occurrenceCount,
   currentCount: occurrences.filter((item) => item.issueId === issue.id && item.lifecycleState !== "ENDED").length,
   upcomingCount: occurrences.filter((item) => item.issueId === issue.id && item.lifecycleState === "UPCOMING").length,
+  recentCount: occurrences.filter((item) => item.issueId === issue.id && item.lifecycleState === "ENDED").length,
   regionCount: issue.regionCount,
   sourceCount: Math.max(1, issue.officialClaimCount),
   evidenceCount: occurrences.filter((item) => item.issueId === issue.id).reduce((count, item) => count + item.evidenceCount, 0),

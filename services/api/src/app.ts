@@ -1708,25 +1708,28 @@ function toOccurrenceDigest(store: Store, targetType: Extract<TargetType, "occur
 function buildEventTopicGroups(digests: OccurrenceDigest[], now: Date): EventTopicGroup[] {
   const grouped = new Map<string, OccurrenceDigest[]>();
   for (const digest of digests) {
-    if (!isActiveSchedule(digest, now)) continue;
     const id = eventTopicGroupId(digest);
     if (!id) continue;
     grouped.set(id, [...(grouped.get(id) ?? []), digest]);
   }
   return [...grouped.entries()].map(([id, occurrences]) => {
-    occurrences.sort(eventTopicOccurrenceOrder);
+    occurrences.sort((left, right) => eventTopicOccurrenceOrder(left, right, now));
     const representative = occurrences[0];
     const approved = Boolean(representative.issueTitle);
     const sourceUrls = new Set(occurrences.flatMap((item) => item.officialSources?.map((source) => source.sourceUrl) ?? []));
     const sourceCount = approved ? sourceUrls.size : Math.max(...occurrences.map((item) => item.topicCandidate?.sourceCount ?? 0));
+    const currentCount = occurrences.filter((item) => scheduleState(item, now) === "current").length;
+    const upcomingCount = occurrences.filter((item) => scheduleState(item, now) === "upcoming").length;
+    const recentCount = occurrences.filter((item) => scheduleState(item, now) === "past").length;
     return {
       id,
       title: approved ? representative.issueTitle! : representative.topicCandidate!.title,
       status: approved ? "approved" as const : "candidate" as const,
       statusLabel: approved ? "검토된 주제" : `공개 근거 ${sourceCount}곳의 주제 후보`,
       occurrenceCount: occurrences.length,
-      currentCount: occurrences.filter((item) => scheduleState(item, now) === "current").length,
-      upcomingCount: occurrences.filter((item) => scheduleState(item, now) === "upcoming").length,
+      currentCount,
+      upcomingCount,
+      recentCount,
       regionCount: new Set(occurrences.map((item) => item.regionLabel)).size,
       sourceCount,
       evidenceCount: occurrences.reduce((count, item) => count + item.evidenceCount, 0),
@@ -1736,7 +1739,8 @@ function buildEventTopicGroups(digests: OccurrenceDigest[], now: Date): EventTop
   }).sort((left, right) => {
     if (left.status !== right.status) return left.status === "approved" ? -1 : 1;
     if (left.currentCount !== right.currentCount) return right.currentCount - left.currentCount;
-    return String(left.startsAt ?? "").localeCompare(String(right.startsAt ?? ""));
+    if (left.upcomingCount !== right.upcomingCount) return right.upcomingCount - left.upcomingCount;
+    return String(right.startsAt ?? "").localeCompare(String(left.startsAt ?? ""));
   });
 }
 
@@ -1762,10 +1766,12 @@ function scheduleState(digest: OccurrenceDigest, now: Date): "current" | "upcomi
   return "current";
 }
 
-function eventTopicOccurrenceOrder(left: OccurrenceDigest, right: OccurrenceDigest): number {
-  const now = new Date();
+function eventTopicOccurrenceOrder(left: OccurrenceDigest, right: OccurrenceDigest, now = new Date()): number {
   const rank = (item: OccurrenceDigest) => scheduleState(item, now) === "current" ? 0 : scheduleState(item, now) === "upcoming" ? 1 : 2;
-  return rank(left) - rank(right) || String(left.startsAt ?? "").localeCompare(String(right.startsAt ?? ""));
+  const rankDifference = rank(left) - rank(right);
+  if (rankDifference !== 0) return rankDifference;
+  if (scheduleState(left, now) === "past") return String(right.startsAt ?? "").localeCompare(String(left.startsAt ?? ""));
+  return String(left.startsAt ?? "").localeCompare(String(right.startsAt ?? ""));
 }
 
 function occurrenceEventDisplayTitle(title: string): string {

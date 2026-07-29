@@ -23,6 +23,7 @@ export function EventTopicScreen({ id }: { id: string }) {
       <div className="hero-summary" aria-label="주제 일정 현황">
         <span><strong>{group.currentCount}</strong> 진행</span>
         <span><strong>{group.upcomingCount}</strong> 예정</span>
+        {group.recentCount ? <span><strong>{group.recentCount}</strong> 최근</span> : null}
         <span><strong>{group.regionCount}</strong> 지역</span>
       </div>
       <details className="topic-method-disclosure">
