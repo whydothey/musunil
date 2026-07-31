@@ -18,6 +18,16 @@ assert.match(renderServiceBlock(backend, "musunil-api"), /key:\s*MUSUNIL_EMBEDDE
 assert.match(renderServiceBlock(backend, "musunil-api"), /key:\s*MUSUNIL_OPS_TASKS\s*\n\s*value:\s*public_source_ingest/);
 assert.match(renderServiceBlock(backend, "musunil-ops-scheduler"), /plan:\s*starter[\s\S]*branch:\s*main[\s\S]*autoDeployTrigger:\s*checksPass/);
 
+const embeddedRuntimeCheck = spawnSync(process.execPath, ["scripts/start-render-free.mjs", "--check"], {
+  cwd,
+  env: { ...process.env, MUSUNIL_RUNTIME_ENV: "production", MUSUNIL_EMBEDDED_SCHEDULER: "false", MUSUNIL_OPS_TASKS: "" },
+  encoding: "utf8"
+});
+assert.equal(embeddedRuntimeCheck.status, 0, embeddedRuntimeCheck.stderr || embeddedRuntimeCheck.stdout);
+const embeddedRuntime = JSON.parse(embeddedRuntimeCheck.stdout);
+assert.equal(embeddedRuntime.schedulerRunsAfterWake, true);
+assert.equal(embeddedRuntime.schedulerTasks, "public_source_ingest");
+
 const dryRun = spawnSync(process.execPath, ["scripts/render-provisioning-plan.mjs", "--", "--json"], {
   cwd,
   env: { ...process.env, MUSUNIL_RENDER_PAID_RESOURCE_APPROVAL: "" },

@@ -3,8 +3,10 @@ import { spawn } from "node:child_process";
 
 const checkOnly = process.argv.includes("--check");
 const schedulerIntervalMs = 5 * 60 * 1_000;
-const embeddedSchedulerEnabled = process.env.MUSUNIL_EMBEDDED_SCHEDULER === "true";
-const embeddedSchedulerTasks = process.env.MUSUNIL_OPS_TASKS || "all";
+const schedulerMode = process.env.MUSUNIL_EMBEDDED_SCHEDULER;
+const embeddedSchedulerEnabled = schedulerMode === "true"
+  || (process.env.MUSUNIL_RUNTIME_ENV === "production" && schedulerMode !== "separate");
+const embeddedSchedulerTasks = process.env.MUSUNIL_OPS_TASKS || "public_source_ingest";
 
 if (checkOnly) {
   console.log(JSON.stringify({
@@ -23,7 +25,8 @@ const port = process.env.PORT || "10000";
 const runtimeEnv = {
   ...process.env,
   MUSUNIL_INTERNAL_API_KEY: process.env.MUSUNIL_INTERNAL_API_KEY || randomBytes(32).toString("hex"),
-  MUSUNIL_API_BASE_URL: process.env.MUSUNIL_API_BASE_URL || `http://127.0.0.1:${port}`
+  MUSUNIL_API_BASE_URL: process.env.MUSUNIL_API_BASE_URL || `http://127.0.0.1:${port}`,
+  MUSUNIL_OPS_TASKS: embeddedSchedulerTasks
 };
 
 let apiProcess;
