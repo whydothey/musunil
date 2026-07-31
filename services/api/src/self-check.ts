@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import { canServePublicRedactedMedia, createApp, createSeedStore, decryptLiveMediaBytes, emptyStore, isOccurrenceWithinPublicDiscoveryWindow, koreaRecentCalendarCutoff, reconcileEvidenceSynthesizedTopics, reconcileLegacyLocationScheduleIssues } from "./app.ts";
-import { enforcePublicWriteRateLimit, publicWriteRateLimitKey, readJsonBody } from "./http-boundary.ts";
+import { enforceAllowedBrowserOrigin, enforcePublicWriteRateLimit, publicWriteRateLimitKey, readJsonBody } from "./http-boundary.ts";
 import { assertStorageSmokeKey, storageSmokeKey, storageSmokePrefix } from "./live-media-storage.ts";
 import { decryptSnapshot, encryptSnapshot, hydrateStore, reconcileLegacyOfficialTextLocations } from "./postgres-store.ts";
 import { blurPublicCoordinate, metersBetween, reconcileLocationFromFieldEvidence, resolveOfficialLocationEstimate } from "./location-resolution.ts";
@@ -44,11 +44,11 @@ const store = createSeedStore();
 const internalHeaders = { "x-musunil-internal-key": "test_internal_key" };
 const testUserTokenSecret = "test_user_token_secret_32_bytes_minimum";
 const testIdentity = {
+  enabled: true,
   provider: "portone" as const,
   storeId: "test_store",
   identityChannelKey: "test_identity_channel",
   apiSecret: "test_portone_api_secret_32_bytes",
-  sessionCookieDomain: ".musunil.test",
   testMode: true
 };
 const app = createApp(store, {
@@ -362,6 +362,31 @@ const routeOnlySession = await verifiedIdentitySession(app);
 const mutedSession = await verifiedIdentitySession(app);
 const attackerSession = await verifiedIdentitySession(app);
 const cookieOnlySession = await verifiedIdentitySession(app);
+const duplicateIdentityStart = await app.handle({ method: "POST", path: "/auth/identity/start", body: { purpose: "general" } });
+const duplicateIdentityVerificationId = (duplicateIdentityStart.body as { identityVerificationId: string }).identityVerificationId;
+const duplicateIdentityComplete = await app.handle({
+  method: "POST",
+  path: "/auth/identity/complete",
+  body: { identityVerificationId: duplicateIdentityVerificationId, testCi: "ci-deduplication", testDi: "di-deduplication" }
+});
+const duplicateIdentityStartAgain = await app.handle({ method: "POST", path: "/auth/identity/start", body: { purpose: "general" } });
+const duplicateIdentityCompleteAgain = await app.handle({
+  method: "POST",
+  path: "/auth/identity/complete",
+  body: {
+    identityVerificationId: (duplicateIdentityStartAgain.body as { identityVerificationId: string }).identityVerificationId,
+    testCi: "ci-deduplication",
+    testDi: "di-deduplication"
+  }
+});
+assert.equal((duplicateIdentityComplete.body as { userId: string }).userId, (duplicateIdentityCompleteAgain.body as { userId: string }).userId);
+assert.equal(JSON.stringify(duplicateIdentityCompleteAgain.body).includes("ci-deduplication"), false);
+assert.equal(JSON.stringify(duplicateIdentityCompleteAgain.body).includes("di-deduplication"), false);
+
+const identityDisabledApp = createApp(emptyStore(), { identity: { ...testIdentity, enabled: false }, userTokenSecret: testUserTokenSecret });
+const identityDisabledStart = await identityDisabledApp.handle({ method: "POST", path: "/auth/identity/start", body: { purpose: "general" } });
+assert.equal(identityDisabledStart.status, 503);
+assert.equal((identityDisabledStart.body as { error: string }).error, "identity_disabled");
 
 assert.equal((await app.handle({ method: "GET", path: "/health" })).status, 200);
 const sourceCoverage = await app.handle({ method: "GET", path: "/public-sources/coverage" });
@@ -830,6 +855,14 @@ assert.throws(
 );
 enforcePublicWriteRateLimit({ method: "POST", url: "/reports/material", headers: { "x-forwarded-for": "198.51.100.1" } }, rateBuckets, 62_000);
 enforcePublicWriteRateLimit({ method: "GET", url: "/home", headers: { "x-forwarded-for": "198.51.100.1" } }, rateBuckets, 1_000);
+enforceAllowedBrowserOrigin({ method: "POST", url: "/auth/identity/start", headers: { origin: "https://musunil.com" } }, ["https://musunil.com"]);
+enforceAllowedBrowserOrigin({ method: "POST", url: "/auth/identity/start", headers: {} }, ["https://musunil.com"]);
+enforceAllowedBrowserOrigin({ method: "GET", url: "/home", headers: { origin: "https://evil.example" } }, ["https://musunil.com"]);
+enforceAllowedBrowserOrigin({ method: "POST", url: "/auth/identity/start", headers: { origin: "http://localhost:4173" } }, ["https://musunil.com"], true);
+assert.throws(
+  () => enforceAllowedBrowserOrigin({ method: "POST", url: "/auth/identity/start", headers: { origin: "https://evil.example" } }, ["https://musunil.com"]),
+  { status: 403, code: "origin_not_allowed" }
+);
 const distributedRateLimitKey = publicWriteRateLimitKey("198.51.100.1", testUserTokenSecret);
 assert.match(distributedRateLimitKey, /^musunil:write-limit:[a-f0-9]{64}$/);
 assert.equal(distributedRateLimitKey.includes("198.51.100.1"), false);
@@ -1607,7 +1640,7 @@ const cookieMine = await app.handle({ method: "GET", path: `/me/reports?userId=$
 assert.equal(cookieMine.status, 200);
 const cookieLogout = await app.handle({ method: "POST", path: "/auth/logout", headers: identityCookieHeader(cookieOnlySession) });
 assert.equal(cookieLogout.status, 200);
-assert.equal(String(cookieLogout.headers?.["set-cookie"]).includes("Domain=.musunil.test"), true);
+assert.equal(String(cookieLogout.headers?.["set-cookie"]).includes("Domain="), false);
 assert.equal(String(cookieLogout.headers?.["set-cookie"]).includes("Max-Age=0"), true);
 const cookieAfterLogout = await app.handle({ method: "GET", path: "/me", headers: identityCookieHeader(cookieOnlySession) });
 assert.equal((cookieAfterLogout.body as { authenticated: boolean }).authenticated, false);
@@ -2571,6 +2604,7 @@ async function verifiedIdentitySession(app: ReturnType<typeof createApp>): Promi
   assert.equal(start.status, 201);
   const identityVerificationId = (start.body as { identityVerificationId: string }).identityVerificationId;
   assert.equal(typeof identityVerificationId, "string");
+  assert.match(identityVerificationId, /^[A-Za-z0-9]{1,40}$/);
   const response = await app.handle({
     method: "POST",
     path: "/auth/identity/complete",
@@ -2582,6 +2616,15 @@ async function verifiedIdentitySession(app: ReturnType<typeof createApp>): Promi
   assert.equal(typeof body.token, "string");
   assert.equal(body.authLevel, "identity_verified");
   assert.equal(new Date(body.expiresAt).getTime() > Date.now(), true);
+  const replay = await app.handle({
+    method: "POST",
+    path: "/auth/identity/complete",
+    body: { identityVerificationId, testCi: "replay-ci", testDi: "replay-di" }
+  });
+  assert.equal(replay.status, 409);
+  assert.equal((replay.body as { error: string }).error, "identity_session_already_used");
+  assert.equal(app.store.auditLogs.some((log) => log.targetType === "identity_session" && log.targetId === app.store.identityVerificationSessions.find((item) => item.identityVerificationId === identityVerificationId)?.id), true);
+  assert.equal(app.store.transparencyLogs.some((log) => log.targetId === app.store.identityVerificationSessions.find((item) => item.identityVerificationId === identityVerificationId)?.id), false);
   return body;
 }
 

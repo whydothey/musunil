@@ -512,9 +512,31 @@ function shiftFixtureDates(seed: AppDataset): AppDataset {
   };
 }
 
+let fixtureIdentityVerified = false;
+
 export const dataSource: DataSource = {
   mode: "fixture",
-  async loadReadiness() { return { gates: { publicRead: { ready: true, failedIds: [] }, contribution: { ready: true, failedIds: [] }, operator: { ready: true, failedIds: [] } } }; },
+  async loadReadiness() { return { gates: { publicRead: { ready: true, failedIds: [] }, identity: { ready: true, failedIds: [] }, contribution: { ready: true, failedIds: [] }, operator: { ready: true, failedIds: [] } } }; },
+  async loadIdentitySession() {
+    return fixtureIdentityVerified
+      ? { authenticated: true, userId: "fixture-user", authLevel: "identity_verified", expiresAt: new Date(Date.now() + 60 * 60_000).toISOString(), user: { id: "fixture-user", verifiedAt: new Date().toISOString() } }
+      : { authenticated: false, status: "identity_required" };
+  },
+  async startIdentity(purpose) {
+    return {
+      provider: "portone",
+      storeId: "fixture-store",
+      channelKey: "fixture-channel",
+      identityVerificationId: `fixture${Date.now()}`,
+      purpose,
+      expiresAt: new Date(Date.now() + 15 * 60_000).toISOString()
+    };
+  },
+  async completeIdentity() {
+    fixtureIdentityVerified = true;
+    return dataSource.loadIdentitySession();
+  },
+  async logout() { fixtureIdentityVerified = false; },
   async loadDataset() {
     await new Promise((resolve) => window.setTimeout(resolve, 120));
     return dataset;

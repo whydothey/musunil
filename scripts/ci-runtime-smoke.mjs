@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const cwd = resolve(import.meta.dirname, "..");
@@ -14,6 +15,8 @@ const env = {
   MUSUNIL_PORTONE_IDENTITY_CHANNEL_KEY: "ci_portone_identity_channel",
   MUSUNIL_PORTONE_API_SECRET: "ci_portone_api_secret_32_bytes",
   MUSUNIL_IDENTITY_TEST_MODE: "true",
+  MUSUNIL_USER_INPUTS_FILE_PATH: "",
+  MUSUNIL_USER_INPUTS_B64: runtimeTestInputs(),
   PORT: String(port)
 };
 
@@ -89,4 +92,12 @@ function waitForExit(child) {
       resolveExit(code ?? 0);
     });
   });
+}
+
+function runtimeTestInputs() {
+  const config = readFileSync(resolve(cwd, "config/musunil.user-inputs.template.yaml"), "utf8")
+    .replace('environment: "production"', 'environment: "test"')
+    .replace("use_mock_data: false", "use_mock_data: true")
+    .replace("identity:\n  web_enabled: false", "identity:\n  web_enabled: true");
+  return Buffer.from(config).toString("base64");
 }

@@ -162,23 +162,17 @@ export function validateLaunchConfig(config: Record<string, unknown>, env: NodeJ
     requireRealValue(config, issues, "mobile.integrity_smoke_command");
   }
 
-  if (production && read(config, "identity.provider") !== "portone") {
+  const webIdentityEnabled = read(config, "identity.web_enabled") === true;
+  if (production && webIdentityEnabled && read(config, "identity.provider") !== "portone") {
     issues.push({ path: "identity.provider", message: "production identity verification provider must be portone for v1." });
   }
-  if (production) {
+  if (production && webIdentityEnabled) {
     requireRealValueOrEnv(config, env, issues, "identity.portone_store_id", "MUSUNIL_PORTONE_STORE_ID");
     requireRealValueOrEnv(config, env, issues, "identity.portone_identity_channel_key", "MUSUNIL_PORTONE_IDENTITY_CHANNEL_KEY");
     requireSecretOrEnv(config, env, issues, "identity.portone_api_secret", "MUSUNIL_PORTONE_API_SECRET", 24);
-    requireRealValue(config, issues, "identity.session_cookie_domain");
-    const cookieDomain = read(config, "identity.session_cookie_domain");
-    if (
-      typeof cookieDomain === "string" &&
-      appPublicUrl &&
-      apiPublicUrl &&
-      (!cookieDomainMatchesHost(cookieDomain, appPublicUrl.hostname) || !cookieDomainMatchesHost(cookieDomain, apiPublicUrl.hostname))
-    ) {
-      issues.push({ path: "identity.session_cookie_domain", message: "session cookie domain must cover both app.public_base_url and api.public_base_url hosts." });
-    }
+  }
+  if (production && typeof read(config, "identity.session_cookie_domain") === "string" && String(read(config, "identity.session_cookie_domain")).trim().length > 0) {
+    issues.push({ path: "identity.session_cookie_domain", message: "web identity sessions must use an API host-only cookie." });
   }
 
   const mapProvider = read(config, "map.provider");
@@ -362,12 +356,6 @@ function deployedHttpsUrl(value: unknown): URL | undefined {
   } catch {
     return undefined;
   }
-}
-
-function cookieDomainMatchesHost(domain: string, host: string): boolean {
-  const normalizedDomain = domain.trim().toLowerCase().replace(/^\./, "");
-  const normalizedHost = host.trim().toLowerCase();
-  return normalizedHost === normalizedDomain || normalizedHost.endsWith(`.${normalizedDomain}`);
 }
 
 function read(config: Record<string, unknown>, path: string): unknown {

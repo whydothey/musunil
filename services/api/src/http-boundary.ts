@@ -27,6 +27,20 @@ type RateLimitedRequest = {
   socket?: { remoteAddress?: string };
 };
 
+export function enforceAllowedBrowserOrigin(
+  req: RateLimitedRequest,
+  allowedOrigins: string[],
+  allowLocalDevOrigins = false
+): void {
+  if (!["POST", "PATCH", "DELETE"].includes(req.method ?? "")) return;
+  const value = req.headers?.origin;
+  const origin = Array.isArray(value) ? value[0] : value;
+  if (!origin) return;
+  if (allowedOrigins.includes(origin)) return;
+  if (allowLocalDevOrigins && isLocalhostOrigin(origin)) return;
+  throw new ApiError(403, "origin_not_allowed");
+}
+
 export async function createPublicWriteRateLimiter(redisUrl?: string, keySecret?: string): Promise<PublicWriteRateLimiter> {
   if (!redisUrl) {
     return {
@@ -183,4 +197,13 @@ function clientIp(req: {
   if (typeof forwarded === "string" && forwarded.length > 0) return forwarded.split(",")[0].trim();
   if (Array.isArray(forwarded) && forwarded[0]) return forwarded[0].split(",")[0].trim();
   return req.socket?.remoteAddress ?? "unknown";
+}
+
+function isLocalhostOrigin(origin: string): boolean {
+  try {
+    const url = new URL(origin);
+    return url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+  } catch {
+    return false;
+  }
 }

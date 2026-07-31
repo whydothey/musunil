@@ -1,4 +1,4 @@
-import type { AppDataset, EventTopicDetailData, IssueDetailData, LawGroupDetailData, OccurrenceDetailData, ServiceReadiness, TransparencyData } from "../contracts";
+import type { AppDataset, EventTopicDetailData, IdentityPurpose, IdentitySessionResponse, IdentityStartResponse, IssueDetailData, LawGroupDetailData, OccurrenceDetailData, ServiceReadiness, TransparencyData } from "../contracts";
 
 export interface DataSource {
   mode: "fixture" | "production";
@@ -10,4 +10,8 @@ export interface DataSource {
   loadOccurrence(id: string, targetType: "occurrence" | "continuous_presence"): Promise<OccurrenceDetailData>;
   loadLawGroup(id: string, options?: { coreTopicKey?: string; page?: number }): Promise<LawGroupDetailData>;
   loadTransparency?(cursor?: string, action?: string): Promise<TransparencyData>;
+  loadIdentitySession(): Promise<IdentitySessionResponse>;
+  startIdentity(purpose: IdentityPurpose): Promise<IdentityStartResponse>;
+  completeIdentity(identityVerificationId: string): Promise<IdentitySessionResponse>;
+  logout(): Promise<void>;
 }

@@ -52,12 +52,13 @@ mobile:
   ios_app_attest_enabled: false
   integrity_smoke_command: "node scripts/mobile-integrity-smoke-fixture.mjs proof app.musunil.android"
 identity:
+  web_enabled: true
   provider: "portone"
   portone_store_id: "store-musunil-production"
   portone_identity_channel_key: "identity-channel-musunil-production"
   portone_api_secret: "portone_identity_api_secret_32_bytes"
   portone_api_base_url: "https://api.portone.io"
-  session_cookie_domain: ".musunil.com"
+  session_cookie_domain: ""
 map:
   provider: "openfreemap"
   map_style_url: "https://tiles.openfreemap.org/styles/positron"

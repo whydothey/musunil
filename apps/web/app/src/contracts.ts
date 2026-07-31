@@ -348,8 +348,32 @@ export interface AppDataset {
 export interface ServiceReadiness {
   gates?: {
     publicRead: { ready: boolean; failedIds: string[] };
+    identity: { ready: boolean; failedIds: string[] };
     contribution: { ready: boolean; failedIds: string[] };
     operator: { ready: boolean; failedIds: string[] };
+  };
+}
+
+export type IdentityPurpose = "report" | "field_verification" | "rebuttal" | "rights_report" | "subscription" | "general";
+
+export interface IdentityStartResponse {
+  provider: "portone";
+  storeId: string;
+  channelKey: string;
+  identityVerificationId: string;
+  purpose: IdentityPurpose;
+  expiresAt: string;
+}
+
+export interface IdentitySessionResponse {
+  authenticated: boolean;
+  status?: "identity_required";
+  userId?: string;
+  authLevel?: "identity_verified";
+  expiresAt?: string;
+  user?: {
+    id: string;
+    verifiedAt: string;
   };
 }
 

@@ -46,6 +46,13 @@ function userInputs(command) {
   return `features:
   free_comments_enabled: false
   voting_enabled: false
+payments:
+  donations_enabled: false
+  operating_support_enabled: false
+  mode: "disabled"
+  influence_on_ranking_enabled: false
+  influence_on_alerts_enabled: false
+  influence_on_trust_enabled: false
 redaction:
   engine_smoke_command: "${command}"
 `;

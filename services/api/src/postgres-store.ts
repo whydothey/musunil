@@ -277,6 +277,7 @@ export function hydrateStore(store: Store): Store {
     session.requestedAt = date(session.requestedAt);
     session.expiresAt = date(session.expiresAt);
     session.verifiedAt = optionalDate(session.verifiedAt);
+    session.failedAt = optionalDate(session.failedAt);
   }
   store.userSessions ??= [];
   for (const session of store.userSessions) {

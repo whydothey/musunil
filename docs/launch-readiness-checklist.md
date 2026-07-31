@@ -111,7 +111,7 @@
 - 실제 법령·의안 ingest 전 production `/laws`는 preview 법령을 노출하지 않고 빈 목록을 반환한다.
 - `pnpm sources:laws-diagnose -- --require-law-metadata`는 국회 의안 API와 법제처 국가법령 API endpoint가 공식 URL이고 관심 키워드가 1개 이상인지 확인하며, API key/OC 원문을 출력하지 않는다.
 - `pnpm check:ops-diagnostics`는 외부 연결 없이 storage, redaction, mobile integrity, identity metadata 구조를 확인하고 secret 값이나 provider raw output을 출력하지 않는다.
-- production에서 포트원 본인확인 `identity.portone_store_id`, `identity.portone_identity_channel_key`, `identity.portone_api_secret`이 없으면 launch validation이 실패한다.
+- production에서 `identity.web_enabled: true`로 전환하면 포트원 본인확인 `identity.portone_store_id`, `identity.portone_identity_channel_key`, `identity.portone_api_secret`이 없을 때 launch validation이 실패한다. 계약 전 공개 읽기 출시는 `identity.web_enabled: false`로 잠근다.
 - 로그인 없이 공개 읽기 API는 접근 가능하지만, 제보·현장 판단·반론·권리침해 신고·알림 설정·`/me/*`는 본인확인 완료 세션 없이는 `identity_required`로 실패한다.
 - `MUSUNIL_IDENTITY_TEST_MODE=true`는 production 런타임에서 본인확인 우회로 작동하지 않아야 하며, `/ready`는 `identity.test_mode` 실패를 보고해야 한다.
 - 본인확인 완료 후에는 `x-musunil-user-*` 헤더뿐 아니라 HttpOnly `musunil_session` 쿠키만으로도 `/me`와 사용자 범위 API가 인증되어야 한다. Web fetch는 `credentials: "include"`를 사용하고, localStorage token이 사라져도 `/me`로 쿠키 세션을 복구해야 한다.

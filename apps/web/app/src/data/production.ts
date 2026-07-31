@@ -2,6 +2,9 @@ import type {
   AppDataset,
   EventTopicDetailData,
   EventTopicGroup,
+  IdentityPurpose,
+  IdentitySessionResponse,
+  IdentityStartResponse,
   IssueDetailData,
   IssueOverview,
   LawInterestItem,
@@ -19,14 +22,23 @@ import { readPublicCache, writePublicCache } from "./public-cache";
 
 const apiBaseUrl = String(window.MUSUNIL_WEB_CONFIG?.apiBaseUrl || "").replace(/\/$/, "");
 
-async function request<T>(path: string, timeoutMs = 5_000): Promise<T> {
+async function request<T>(
+  path: string,
+  timeoutMs = 5_000,
+  options: { method?: "GET" | "POST"; body?: unknown } = {}
+): Promise<T> {
   if (!apiBaseUrl) throw new Error("service_unavailable");
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(`${apiBaseUrl}${path}`, {
+      method: options.method ?? "GET",
       credentials: "include",
-      headers: { accept: "application/json" },
+      headers: {
+        accept: "application/json",
+        ...(options.body === undefined ? {} : { "content-type": "application/json" })
+      },
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
       signal: controller.signal
     });
     const body = (await response.json().catch(() => ({}))) as T & { error?: string };
@@ -86,6 +98,10 @@ export async function getTransparency(cursor?: string, action?: string): Promise
 export const dataSource: DataSource = {
   mode: "production",
   loadReadiness: getServiceReadiness,
+  loadIdentitySession: () => request<IdentitySessionResponse>("/me"),
+  startIdentity: (purpose: IdentityPurpose) => request<IdentityStartResponse>("/auth/identity/start", 8_000, { method: "POST", body: { purpose } }),
+  completeIdentity: (identityVerificationId: string) => request<IdentitySessionResponse>("/auth/identity/complete", 12_000, { method: "POST", body: { identityVerificationId } }),
+  logout: async () => { await request("/auth/logout", 5_000, { method: "POST", body: {} }); },
   async loadDataset(): Promise<AppDataset> {
     type HomeResponse = { issueOverviews?: IssueOverview[]; occurrenceDigests?: OccurrenceDigest[]; eventTopicGroups?: EventTopicGroup[]; topicUnknownActiveCount?: number };
     const results = await Promise.allSettled([

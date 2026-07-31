@@ -61,7 +61,7 @@ web:
     - "https://musunil.com"
 ```
 
-`web.allowed_origins`는 브라우저 CORS Origin과 정확히 같은 값이어야 한다. 운영에서는 `https://musunil.com`처럼 scheme과 host만 쓰고, 마지막 `/`, path, query, localhost를 넣지 않는다. 이 값에는 `app.public_base_url`의 origin이 반드시 포함되어야 한다. `identity.session_cookie_domain`은 Web과 API를 모두 덮는 `.musunil.com`처럼 설정한다.
+`web.allowed_origins`는 브라우저 CORS Origin과 정확히 같은 값이어야 한다. 운영에서는 `https://musunil.com`처럼 scheme과 host만 쓰고, 마지막 `/`, path, query, localhost를 넣지 않는다. 이 값에는 `app.public_base_url`의 origin이 반드시 포함되어야 한다. `identity.session_cookie_domain`은 비워 두어 API 호스트 전용 쿠키를 사용한다.
 
 국내 한정 운영 기본값은 아래 상태로 둔다.
 
@@ -87,12 +87,15 @@ domestic_operation:
    - 법 탭과 이슈-법안 연결을 실제 공개 원천으로 돌리려면 둘 중 하나가 필요하다.
 
 2. 포트원 본인확인
+   - 계약·운영심사 전에는 `identity.web_enabled: false`
+   - 운영 전환 때만 `identity.web_enabled: true`
    - `identity.provider: "portone"`
    - `identity.portone_store_id`
    - `identity.portone_identity_channel_key`
    - `identity.portone_api_secret`
-   - `identity.session_cookie_domain`
+   - `identity.session_cookie_domain: ""` (호스트 전용 쿠키)
    - 읽기는 공개지만 제보, 현장 판단, 반론, 신고, 알림 설정은 본인확인 완료 세션이 필요하다.
+   - 국내 통신사 본인확인 성공 여부만 사용하며 국적이나 `isForeigner` 값으로 사용자를 거르지 않는다. 이름·전화번호·생년월일 원문은 저장·공개하지 않고 CI/DI는 중복 계정 방지용 HMAC 해시로만 저장한다.
    - 실제 운영 직전에는 포트원 본인확인을 1회 완료하고, 완료된 verification id를 현재 터미널에만 `MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID`로 넣은 뒤 `pnpm identity:smoke`를 실행한다. 이 ID는 YAML이나 Git에 저장하지 않는다.
 
 3. LIVE 현장 영상 원본 저장소

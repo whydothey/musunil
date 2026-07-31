@@ -117,28 +117,33 @@ function mobileIntegrityDiagnostics() {
 }
 
 function identityDiagnostics() {
+  const enabled = readBoolean("identity.web_enabled");
   const provider = readString("identity.provider");
   const apiBaseUrl = readString("identity.portone_api_base_url") ?? "";
+  const hostOnlyCookie = !readString("identity.session_cookie_domain");
   const readyForProductionAuth =
+    enabled &&
     provider === "portone" &&
     status("identity.portone_store_id") === "configured" &&
     status("identity.portone_identity_channel_key") === "configured" &&
     secretStatus(pathOf("identity", "portone" + "_api" + "_secret"), 24) === "configured" &&
-    status("identity.session_cookie_domain") === "configured";
+    hostOnlyCookie;
   return {
+    enabled,
+    enabledStatus: enabled ? "configured" : "not_required",
     provider: provider ?? "missing",
     providerStatus: provider === "portone" ? "configured" : status("identity.provider"),
-    storeIdStatus: status("identity.portone_store_id"),
-    channelKeyStatus: status("identity.portone_identity_channel_key"),
-    apiSecretStatus: secretStatus(pathOf("identity", "portone" + "_api" + "_secret"), 24),
-    sessionCookieDomainStatus: status("identity.session_cookie_domain"),
+    storeIdStatus: enabled ? status("identity.portone_store_id") : "not_required",
+    channelKeyStatus: enabled ? status("identity.portone_identity_channel_key") : "not_required",
+    apiSecretStatus: enabled ? secretStatus(pathOf("identity", "portone" + "_api" + "_secret"), 24) : "not_required",
+    sessionCookieDomainStatus: hostOnlyCookie ? "host_only" : "must_be_empty",
     apiBaseHost: safeHost(apiBaseUrl),
     smokeCommand: "pnpm identity:smoke",
     smokeVerificationIdEnv: "MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID",
-    smokeVerificationIdStatus: secretEnvStatus("MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID", 12),
-    metadataReady: provider === "portone" && safeHost(apiBaseUrl) !== "invalid",
+    smokeVerificationIdStatus: enabled ? secretEnvStatus("MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID", 12) : "not_required",
+    metadataReady: !enabled || (provider === "portone" && safeHost(apiBaseUrl) !== "invalid"),
     readyForProductionAuth,
-    readyForSmoke: readyForProductionAuth && secretEnvStatus("MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID", 12) === "configured"
+    readyForSmoke: !enabled || (readyForProductionAuth && secretEnvStatus("MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID", 12) === "configured")
   };
 }
 
@@ -167,8 +172,8 @@ function requiredActions() {
   if (!diagnostics.components.storage.readyForSmoke) actions.push("storage.*와 security.media_encryption_key를 실제 값으로 채운 뒤 pnpm storage:smoke를 실행한다.");
   if (!diagnostics.components.redaction.readyForSmoke) actions.push("redaction.engine_smoke_command에 {input}/{output}을 받는 실제 비식별 엔진 명령을 넣고 pnpm redaction:smoke를 실행한다.");
   if (!diagnostics.components.mobileIntegrity.readyForSmoke) actions.push("Play Integrity 또는 App Attest 값과 mobile.integrity_smoke_command를 채운 뒤 pnpm mobile:integrity-smoke를 실행한다.");
-  if (!diagnostics.components.identity.readyForProductionAuth) actions.push("PortOne 본인확인 store/channel/API secret/cookie domain을 채우고 인증 리허설을 수행한다.");
-  else if (!diagnostics.components.identity.readyForSmoke) actions.push("실제 PortOne 본인확인을 1회 완료한 뒤 MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID를 현재 셸에 넣고 pnpm identity:smoke를 실행한다.");
+  if (diagnostics.components.identity.enabled && !diagnostics.components.identity.readyForProductionAuth) actions.push("PortOne 본인확인 store/channel/API secret을 채우고 API 호스트 전용 쿠키 상태로 인증 리허설을 수행한다.");
+  else if (diagnostics.components.identity.enabled && !diagnostics.components.identity.readyForSmoke) actions.push("실제 PortOne 본인확인을 1회 완료한 뒤 MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID를 현재 셸에 넣고 pnpm identity:smoke를 실행한다.");
   if (!diagnostics.components.lawSources.readyForSmoke) {
     if (diagnostics.components.lawSources.requiredActions.length > 0) {
       actions.push(...diagnostics.components.lawSources.requiredActions.map((action) => `${action} 이후 pnpm sources:laws를 실행한다.`));

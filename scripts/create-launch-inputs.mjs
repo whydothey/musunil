@@ -82,12 +82,13 @@ mobile:
   integrity_smoke_command: "CHANGE_ME_MOBILE_INTEGRITY_DRY_RUN_COMMAND_PRINTING_STRUCTURED_mobile_integrity_provider_dry_run_JSON"
 
 identity:
+  web_enabled: false
   provider: "portone"
   portone_store_id: "CHANGE_ME_PORTONE_STORE_ID"
   portone_identity_channel_key: "CHANGE_ME_PORTONE_IDENTITY_CHANNEL_KEY"
   portone_api_secret: "CHANGE_ME_PORTONE_API_SECRET"
   portone_api_base_url: "https://api.portone.io"
-  session_cookie_domain: ".musunil.com"
+  session_cookie_domain: ""
 
 public_data_sources:
   national_assembly_bill_api_key: "CHANGE_ME_NATIONAL_ASSEMBLY_BILL_API_KEY_OR_SET_LAW_GO_KR_OC"
@@ -169,6 +170,6 @@ ai:
 
 writeFileSync(outputPath, yaml, { mode: 0o600 });
 console.log(`Created ${outputPath}`);
-console.log("Fill first: support email, organization contacts, PortOne identity verification keys, law source API key, media encryption key, storage provider/bucket/keys, mobile integrity verifier values/smoke command, and a one-time MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID env value for identity smoke. The built-in redaction command is already configured.");
+console.log("Fill first: support email, organization contacts, law source API key, media encryption key, storage provider/bucket/keys, and mobile integrity verifier values/smoke command. Keep identity.web_enabled=false until the PortOne contract is ready; only then add PortOne keys and a one-time MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID for the identity smoke. The built-in redaction command is already configured.");
 console.log("This release is non-revenue: keep donations, operating support, payment mode, personal bank account exposure, and every payment influence flag disabled. Business and PG values are not launch inputs.");
 console.log(`Then run: pnpm launch:ready -- ${outputPath}`);

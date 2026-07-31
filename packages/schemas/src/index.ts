@@ -551,10 +551,12 @@ export type IdentityVerificationSession = {
   provider: "portone";
   identityVerificationId: string;
   purpose: "report" | "field_verification" | "rebuttal" | "rights_report" | "subscription" | "general";
-  status: "requested" | "verified" | "expired" | "failed";
+  status: "requested" | "processing" | "verified" | "expired" | "failed";
   requestedAt: Date;
   expiresAt: Date;
   verifiedAt?: Date;
+  failedAt?: Date;
+  failureCode?: string;
   userId?: string;
 };
 
@@ -587,7 +589,7 @@ export type NotificationOutbox = {
 export type AuditLog = {
   id: string;
   action: "mask" | "hold" | "delete" | "correction" | "rebuttal" | "merge" | "split" | "state_change" | "notification";
-  targetType: TargetType | "claim" | "evidence" | "law_topic" | "law_group" | "news_candidate";
+  targetType: TargetType | "claim" | "evidence" | "law_topic" | "law_group" | "news_candidate" | "identity_session";
   targetId: string;
   createdAt: Date;
   reason: string;

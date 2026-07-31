@@ -23,6 +23,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@portone/browser-sdk':
+        specifier: ^0.1.9
+        version: 0.1.9
       lucide-react:
         specifier: ^1.25.0
         version: 1.25.0(react@19.2.7)
@@ -267,6 +270,9 @@ packages:
 
   '@oxc-project/types@0.139.0':
     resolution: {integrity: sha512-r9gHphtCs+1M7J0pw6Sn/hh/Wpa/iQrOOkrNAlVLF/gHq+/CJmHIWKKUUhdWjcD6CIa8idarspCsASiXCXvFUw==}
+
+  '@portone/browser-sdk@0.1.9':
+    resolution: {integrity: sha512-GiLziqmKKSrorjWDvWjPhtD1nBd4zlY1crIPX5Kisx797MQYveqhtSMYwuyjRgwgInfEWonXjXWkHd5bTFUiWQ==}
 
   '@redis/bloom@5.12.1':
     resolution: {integrity: sha512-PUUfv+ms7jgPSBVoo/DN4AkPHj4D5TZSd6SbJX7egzBplkYUcKmHRE8RKia7UtZ8bSQbLguLvxVO+asKtQfZWA==}
@@ -928,6 +934,8 @@ snapshots:
       - '@emnapi/runtime'
 
   '@oxc-project/types@0.139.0': {}
+
+  '@portone/browser-sdk@0.1.9': {}
 
   '@redis/bloom@5.12.1(@redis/client@5.12.1)':
     dependencies:

@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ApiError, canServePublicRedactedMedia, createApp, createSeedStore, reconcileEvidenceSynthesizedTopics, reconcileLegacyLocationScheduleIssues, stripPreviewData } from "./app.ts";
-import { createPublicWriteRateLimiter, readJsonBody } from "./http-boundary.ts";
+import { createPublicWriteRateLimiter, enforceAllowedBrowserOrigin, readJsonBody } from "./http-boundary.ts";
 import { createLiveMediaStorage } from "./live-media-storage.ts";
 import { loadPostgresStore, pingOpsSchedulerSchema, pingPostgres, reconcileLegacyOfficialTextLocations, savePostgresStore } from "./postgres-store.ts";
 import { loadUserInputs, validateLaunchConfig } from "../../../packages/config/src/index.ts";
@@ -63,6 +63,7 @@ const server = createServer(async (req, res) => {
       return;
     }
     if (await sendPublicRedactedMedia(req, res)) return;
+    enforceAllowedBrowserOrigin(req, runtime.allowedOrigins, runtime.allowLocalDevOrigins);
     await publicWriteRateLimiter.enforce(req);
     const body = await readJsonBody(req);
     const response = await app.handle({
@@ -238,12 +239,12 @@ function loadRuntime() {
     const configuredSupportEmail = process.env.MUSUNIL_SUPPORT_EMAIL || readString(loaded.config, "app.support_email");
     const identityTestModeRequested = process.env.MUSUNIL_IDENTITY_TEST_MODE === "true";
     const identity = {
+      enabled: readBoolean(loaded.config, "identity.web_enabled", false) || (identityTestModeRequested && !production),
       provider: "portone" as const,
       storeId: process.env.MUSUNIL_PORTONE_STORE_ID || readString(loaded.config, "identity.portone_store_id"),
       identityChannelKey: process.env.MUSUNIL_PORTONE_IDENTITY_CHANNEL_KEY || readString(loaded.config, "identity.portone_identity_channel_key"),
       apiSecret: process.env.MUSUNIL_PORTONE_API_SECRET || readString(loaded.config, "identity.portone_api_secret"),
       apiBaseUrl: process.env.MUSUNIL_PORTONE_API_BASE_URL || readString(loaded.config, "identity.portone_api_base_url"),
-      sessionCookieDomain: readString(loaded.config, "identity.session_cookie_domain"),
       testMode: identityTestModeRequested && !production
     };
     const retention = {
@@ -291,6 +292,11 @@ function loadRuntime() {
             ok: readString(loaded.config, "payments.mode") === "disabled",
             message: "payment provider mode disabled for non-revenue launch"
           },
+          {
+            id: "identity.web_enabled",
+            ok: identity.enabled,
+            message: identity.enabled ? "web identity verification enabled" : "web identity verification locked until provider contract"
+          },
           ...issues.map((issue) => ({ id: issue.path, ok: false, message: issue.message })),
           ...(production && identityTestModeRequested ? [{ id: "identity.test_mode", ok: false, message: "MUSUNIL_IDENTITY_TEST_MODE is not allowed in production." }] : [])
         ];
@@ -306,12 +312,12 @@ function loadRuntime() {
       internalApiKey: process.env.MUSUNIL_INTERNAL_API_KEY,
       userTokenSecret: process.env.MUSUNIL_USER_TOKEN_SECRET || process.env.MUSUNIL_INTERNAL_API_KEY,
       identity: {
+        enabled: false,
         provider: "portone" as const,
         storeId: process.env.MUSUNIL_PORTONE_STORE_ID,
         identityChannelKey: process.env.MUSUNIL_PORTONE_IDENTITY_CHANNEL_KEY,
         apiSecret: process.env.MUSUNIL_PORTONE_API_SECRET,
         apiBaseUrl: process.env.MUSUNIL_PORTONE_API_BASE_URL,
-        sessionCookieDomain: ".musunil.com",
         testMode: process.env.MUSUNIL_IDENTITY_TEST_MODE === "true" && !productionRuntime
       },
       encryptionKey: process.env.MUSUNIL_ENCRYPTION_KEY,

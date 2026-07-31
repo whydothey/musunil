@@ -93,6 +93,7 @@ function AppShell() {
 
 function Screen() {
   const { route } = useRouter();
+  if (route.name === "identity-callback") return <section className="screen" aria-live="polite"><LoadingState label="본인확인 결과를 확인하고 있습니다" /></section>;
   if (route.name === "issue") return <IssueScreen id={route.id || ""} />;
   if (route.name === "event-topic") return <EventTopicScreen id={route.id || ""} />;
   if (route.name === "occurrence") return <OccurrenceScreen id={route.id || ""} />;

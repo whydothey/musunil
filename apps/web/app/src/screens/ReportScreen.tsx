@@ -4,20 +4,21 @@ import { useAppState } from "../app-state";
 import type { OccurrenceDigest, ReportCandidate } from "../contracts";
 import { lifecycleLabel } from "../format";
 import { LoadingState, ScreenHeader } from "../components";
+import { useRouter } from "../router";
 
 type Phase = "idle" | "locating" | "candidates" | "selected" | "identity" | "camera" | "preview" | "submitted";
 
 export function ReportScreen() {
-  const { dataset, readiness } = useAppState();
+  const { dataset, readiness, identityState, identityError, requireIdentity } = useAppState();
+  const { route, navigate } = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
   const [location, setLocation] = useState<GeolocationCoordinates>();
   const [locationError, setLocationError] = useState(false);
   const [selectedId, setSelectedId] = useState<string>();
   const [videoUrl, setVideoUrl] = useState<string>();
-  const [verified, setVerified] = useState(false);
   const selected = dataset?.occurrences.find((item) => item.id === selectedId);
   const candidates = useMemo(() => createCandidates(dataset?.occurrences || [], dataset?.map.geojson.pins.features || [], location), [dataset, location]);
-  const contributionReady = __MUSUNIL_UI_DATA_MODE__ === "fixture";
+  const contributionReady = __MUSUNIL_UI_DATA_MODE__ === "fixture" || readiness?.gates?.contribution.ready === true;
 
   const findNearby = () => {
     setPhase("locating");
@@ -35,16 +36,24 @@ export function ReportScreen() {
   };
 
   const choose = (id: string) => { setSelectedId(id); setPhase("selected"); };
-  const beginCapture = () => setPhase(verified ? "camera" : "identity");
-  const confirmIdentity = () => {
-    if (__MUSUNIL_UI_DATA_MODE__ === "fixture") {
-      setVerified(true);
+  const beginCapture = () => setPhase(identityState === "verified" ? "camera" : "identity");
+  const confirmIdentity = async () => {
+    if (!selectedId) return;
+    const verified = await requireIdentity("report", `/report?resume=${encodeURIComponent(selectedId)}`);
+    if (verified) {
+      navigate("/report", { replace: true });
       setPhase("camera");
-      return;
     }
-    window.dispatchEvent(new CustomEvent("musunil:identity-required", { detail: { intent: "live-report" } }));
   };
   const reset = () => { if (videoUrl) URL.revokeObjectURL(videoUrl); setVideoUrl(undefined); setSelectedId(undefined); setPhase("idle"); };
+
+  useEffect(() => {
+    const resumeId = route.search.get("resume");
+    if (!resumeId || identityState !== "verified" || !dataset?.occurrences.some((item) => item.id === resumeId)) return;
+    setSelectedId(resumeId);
+    setPhase("camera");
+    navigate("/report", { replace: true });
+  }, [route.search, identityState, dataset, navigate]);
 
   if (__MUSUNIL_UI_DATA_MODE__ !== "fixture" && !readiness) return <section className="screen report-screen" data-screen="report"><ScreenHeader title="현장 제보" eyebrow="실시간 GPS 영상" /><LoadingState label="안전한 제보 기능의 준비 상태를 확인하고 있습니다" /></section>;
   if (!contributionReady) return (
@@ -107,7 +116,8 @@ export function ReportScreen() {
           <p className="confirm-kicker">제출 전 본인확인</p>
           <h2>한 번만 본인확인해 주세요</h2>
           <p>별도 회원가입 없이 확인이 끝나면 바로 촬영으로 이어집니다. 이름과 전화번호는 공개하지 않습니다.</p>
-          <button type="button" className="primary-button report-primary" onClick={confirmIdentity}><ShieldCheck />본인확인 계속</button>
+          {identityError ? <p className="inline-error" role="alert">{identityError}</p> : null}
+          <button type="button" className="primary-button report-primary" onClick={() => void confirmIdentity()} disabled={identityState === "verifying"}><ShieldCheck />{identityState === "verifying" ? "확인 중…" : "본인확인 계속"}</button>
           <button type="button" className="secondary-button" onClick={() => setPhase("selected")}>현장 다시 확인</button>
         </div>
       ) : null}

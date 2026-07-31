@@ -182,6 +182,7 @@ function identityGroup(component = {}) {
     title: "포트원 본인확인",
     readyForSmoke: Boolean(component.readyForSmoke),
     fields: [
+      field("identity.web_enabled", component.enabledStatus),
       field("identity.provider", component.providerStatus),
       field("identity.portone_store_id", component.storeIdStatus),
       field("identity.portone_identity_channel_key", component.channelKeyStatus),

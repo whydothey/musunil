@@ -56,6 +56,9 @@ assert.equal(launchIssues.some((issue) => issue.path === "public_data_sources.na
 assert.equal(launchIssues.some((issue) => issue.path === "mobile.android_package_name"), true);
 assert.equal(launchIssues.some((issue) => issue.path === "mobile.android_play_integrity_service_account_json_b64"), true);
 assert.equal(launchIssues.some((issue) => issue.path === "mobile.integrity_smoke_command"), true);
+assert.equal(launchIssues.some((issue) => issue.path === "identity.portone_store_id"), false);
+assert.equal(launchIssues.some((issue) => issue.path === "identity.portone_identity_channel_key"), false);
+assert.equal(launchIssues.some((issue) => issue.path === "identity.portone_api_secret"), false);
 assert.equal(launchIssues.some((issue) => issue.path === "features.free_comments_enabled"), false);
 assert.equal(launchIssues.some((issue) => issue.path === "domestic_operation.public_personal_bank_account_exposure_enabled"), false);
 assert.equal(launchIssues.some((issue) => issue.path === "payments.influence_on_ranking_enabled"), false);
@@ -85,6 +88,13 @@ const cookieDomainMismatchProductionConfig = JSON.parse(JSON.stringify(loaded.co
 cookieDomainMismatchProductionConfig.render.environment = "production";
 cookieDomainMismatchProductionConfig.identity.session_cookie_domain = ".example.com";
 assert.equal(validateLaunchConfig(cookieDomainMismatchProductionConfig, {}).some((issue) => issue.path === "identity.session_cookie_domain"), true);
+
+const enabledIdentityProductionConfig = JSON.parse(JSON.stringify(loaded.config));
+enabledIdentityProductionConfig.render.environment = "production";
+enabledIdentityProductionConfig.identity.web_enabled = true;
+assert.equal(validateLaunchConfig(enabledIdentityProductionConfig, {}).some((issue) => issue.path === "identity.portone_store_id"), true);
+assert.equal(validateLaunchConfig(enabledIdentityProductionConfig, {}).some((issue) => issue.path === "identity.portone_identity_channel_key"), true);
+assert.equal(validateLaunchConfig(enabledIdentityProductionConfig, {}).some((issue) => issue.path === "identity.portone_api_secret"), true);
 
 const noMobileIntegrityProductionConfig = JSON.parse(JSON.stringify(loaded.config));
 noMobileIntegrityProductionConfig.render.environment = "production";

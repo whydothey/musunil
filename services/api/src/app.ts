@@ -142,6 +142,7 @@ export type ReadinessReport = {
   requiredActions?: Array<{ id: string; action: string; verify: string }>;
   gates?: {
     publicRead: { ready: boolean; failedIds: string[] };
+    identity: { ready: boolean; failedIds: string[] };
     contribution: { ready: boolean; failedIds: string[] };
     operator: { ready: boolean; failedIds: string[] };
   };
@@ -172,12 +173,12 @@ export type AppOptions = {
 };
 
 export type IdentityRuntime = {
+  enabled: boolean;
   provider: "portone";
   storeId?: string;
   identityChannelKey?: string;
   apiSecret?: string;
   apiBaseUrl?: string;
-  sessionCookieDomain?: string;
   testMode?: boolean;
 };
 
@@ -941,15 +942,30 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
       supportEmail: options.serviceProfile?.supportEmail
     });
   }
-  if (options.requireReadyForWrites && request.method !== "GET" && !path.startsWith("/internal/")) {
-    const readiness = describeReadiness(await (options.readiness?.() ?? defaultReadiness()));
-    if (!readiness.ready) return json(503, { error: "runtime_not_ready", checks: readiness.checks, summary: readiness.summary, requiredActions: readiness.requiredActions });
-  }
-  if (request.method === "POST" && path === "/session/anonymous") return postAnonymousSession(options);
-  if (request.method === "POST" && path === "/auth/identity/start") return postIdentityStart(store, request, options);
-  if (request.method === "POST" && path === "/auth/identity/complete") return await postIdentityComplete(store, request, options);
   if (request.method === "GET" && path === "/me") return getMe(store, request, options);
   if (request.method === "POST" && path === "/auth/logout") return postLogout(store, request, options);
+  if (request.method === "POST" && (path === "/auth/identity/start" || path === "/auth/identity/complete")) {
+    if (!options.identity?.enabled) return json(503, { error: "identity_disabled" });
+    if (options.requireReadyForWrites) {
+      const readiness = describeReadiness(await (options.readiness?.() ?? defaultReadiness()));
+      if (!readiness.gates?.identity.ready) {
+        return json(503, {
+          error: "identity_not_ready",
+          failedIds: readiness.gates?.identity.failedIds ?? [],
+          requiredActions: readiness.requiredActions
+        });
+      }
+    }
+    if (path === "/auth/identity/start") return postIdentityStart(store, request, options);
+    return await postIdentityComplete(store, request, options);
+  }
+  if (options.requireReadyForWrites && request.method !== "GET" && !path.startsWith("/internal/")) {
+    const readiness = describeReadiness(await (options.readiness?.() ?? defaultReadiness()));
+    if (!readiness.gates?.contribution.ready) {
+      return json(503, { error: "runtime_not_ready", checks: readiness.checks, summary: readiness.summary, requiredActions: readiness.requiredActions });
+    }
+  }
+  if (request.method === "POST" && path === "/session/anonymous") return postAnonymousSession(options);
   if (request.method === "GET" && path === "/home") {
     const cards = homeCards(store, options.publicDiscoveryNow?.() ?? new Date());
     const issues = issueCards(store, cards);
@@ -1113,6 +1129,14 @@ function describeReadiness(report: ReadinessReport): ReadinessReport {
   const blockingGroups = unique(failed.map((check) => readinessGroup(check.id)));
   const failedFor = (groups: string[]) => failed.filter((check) => groups.includes(readinessGroup(check.id))).map((check) => check.id);
   const publicReadFailed = failedFor(["database", "public_sources", "runtime_config"]);
+  const identityFailed = failed
+    .filter((check) => {
+      const group = readinessGroup(check.id);
+      return ["database", "redis", "identity", "runtime_config"].includes(group)
+        || check.id === "security.jwt_secret"
+        || check.id === "security.encryption_key";
+    })
+    .map((check) => check.id);
   const contributionFailed = failedFor(["database", "redis", "security", "storage", "redaction", "mobile_integrity", "identity", "runtime_config", "operator_profile"]);
   return {
     ...report,
@@ -1125,6 +1149,7 @@ function describeReadiness(report: ReadinessReport): ReadinessReport {
     },
     gates: {
       publicRead: { ready: publicReadFailed.length === 0, failedIds: publicReadFailed },
+      identity: { ready: identityFailed.length === 0, failedIds: identityFailed },
       contribution: { ready: contributionFailed.length === 0, failedIds: contributionFailed },
       operator: { ready: failed.length === 0, failedIds: failed.map((check) => check.id) }
     },
@@ -1236,13 +1261,14 @@ function postAnonymousSession(options: AppOptions): ApiResponse {
 
 function postIdentityStart(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
   const identity = options.identity;
-  if (!identity || identity.provider !== "portone" || !identity.storeId || !identity.identityChannelKey) {
+  if (!identity?.enabled) return json(503, { error: "identity_disabled" });
+  if (identity.provider !== "portone" || !identity.storeId || !identity.identityChannelKey) {
     return json(503, { error: "identity_provider_not_configured" });
   }
   const data = asObject(request.body);
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 15 * 60_000);
-  const identityVerificationId = `musunil_identity_${randomUUID()}`;
+  const identityVerificationId = `msn${randomBytes(16).toString("hex")}`;
   const session: IdentityVerificationSession = {
     id: randomUUID(),
     provider: "portone",
@@ -1253,6 +1279,7 @@ function postIdentityStart(store: Store, request: ApiRequest, options: AppOption
     expiresAt
   };
   store.identityVerificationSessions.push(session);
+  auditIdentity(store, session.id, "identity verification requested");
   return json(201, {
     provider: "portone",
     storeId: identity.storeId,
@@ -1266,17 +1293,36 @@ function postIdentityStart(store: Store, request: ApiRequest, options: AppOption
 async function postIdentityComplete(store: Store, request: ApiRequest, options: AppOptions): Promise<ApiResponse> {
   if (!options.userTokenSecret) return json(503, { error: "user_token_secret_not_configured" });
   const identity = options.identity;
-  if (!identity || identity.provider !== "portone") return json(503, { error: "identity_provider_not_configured" });
+  if (!identity?.enabled) return json(503, { error: "identity_disabled" });
+  if (identity.provider !== "portone") return json(503, { error: "identity_provider_not_configured" });
   const data = asObject(request.body);
   const identityVerificationId = readString(data, "identityVerificationId");
   const session = store.identityVerificationSessions.find((item) => item.identityVerificationId === identityVerificationId);
   if (!session) return json(404, { error: "identity_session_not_found" });
+  if (session.status === "verified") return json(409, { error: "identity_session_already_used" });
+  if (session.status === "processing") return json(409, { error: "identity_session_in_progress" });
+  if (session.status === "failed") return json(409, { error: "identity_session_failed" });
   if (session.expiresAt.getTime() < Date.now()) {
     session.status = "expired";
+    auditIdentity(store, session.id, "identity verification expired");
     return json(410, { error: "identity_session_expired" });
   }
 
-  const verified = await verifyPortoneIdentity(identity, data, identityVerificationId);
+  let verified: PortoneVerifiedIdentity;
+  session.status = "processing";
+  try {
+    verified = await verifyPortoneIdentity(identity, data, identityVerificationId);
+  } catch (error) {
+    if (error instanceof ApiError && error.status >= 400 && error.status < 500) {
+      session.status = "failed";
+      session.failedAt = new Date();
+      session.failureCode = safeIdentityFailureCode(error.code);
+      auditIdentity(store, session.id, `identity verification failed: ${session.failureCode}`);
+    } else {
+      session.status = "requested";
+    }
+    throw error;
+  }
   const ciHash = verified.ci ? hmacSubject(verified.ci, options.userTokenSecret) : undefined;
   const diHash = verified.di ? hmacSubject(verified.di, options.userTokenSecret) : undefined;
   const subjectHash = ciHash ?? diHash ?? hmacSubject(`${verified.provider}:${verified.providerVerificationId}`, options.userTokenSecret);
@@ -1310,6 +1356,7 @@ async function postIdentityComplete(store: Store, request: ApiRequest, options: 
   session.status = "verified";
   session.verifiedAt = now;
   session.userId = user.id;
+  auditIdentity(store, session.id, "identity verification completed");
 
   const expiresAt = Date.now() + userTokenTtlMs;
   const token = signUserToken(user.id, expiresAt, options.userTokenSecret);
@@ -1322,14 +1369,15 @@ async function postIdentityComplete(store: Store, request: ApiRequest, options: 
     lastSeenAt: now,
     expiresAt: new Date(expiresAt)
   });
-  return json(201, {
+  const body: Record<string, unknown> = {
     authenticated: true,
     user: toPublicVerifiedUser(user),
     userId: user.id,
-    token,
     authLevel: "identity_verified",
     expiresAt: new Date(expiresAt).toISOString()
-  }, identityCookieHeaders(user.id, token, new Date(expiresAt), identity.sessionCookieDomain));
+  };
+  if (identity.testMode) body.token = token;
+  return json(201, body, identityCookieHeaders(user.id, token, new Date(expiresAt)));
 }
 
 function getMe(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
@@ -1346,8 +1394,11 @@ function getMe(store: Store, request: ApiRequest, options: AppOptions): ApiRespo
 
 function postLogout(store: Store, request: ApiRequest, options: AppOptions): ApiResponse {
   const verified = verifiedUserFromRequest(store, request, options);
-  if (verified) verified.session.revokedAt = new Date();
-  return json(200, { status: "logged_out" }, clearIdentityCookieHeaders(options.identity?.sessionCookieDomain));
+  if (verified) {
+    verified.session.revokedAt = new Date();
+    auditIdentity(store, verified.session.id, "identity session logged out");
+  }
+  return json(200, { status: "logged_out" }, clearIdentityCookieHeaders());
 }
 
 function constantTimeStringEqual(candidate: string | undefined, expected: string): boolean {
@@ -1460,7 +1511,7 @@ function toPublicVerifiedUser(user: VerifiedUser) {
   };
 }
 
-function identityCookieHeaders(userId: string, token: string, expiresAt: Date, domain: string | undefined): Record<string, string> {
+function identityCookieHeaders(userId: string, token: string, expiresAt: Date): Record<string, string> {
   const parts = [
     `musunil_session=${encodeURIComponent(`${userId}:${token}`)}`,
     "Path=/",
@@ -1469,11 +1520,10 @@ function identityCookieHeaders(userId: string, token: string, expiresAt: Date, d
     "Secure",
     "SameSite=Lax"
   ];
-  if (domain) parts.splice(2, 0, `Domain=${domain}`);
   return { "set-cookie": parts.join("; ") };
 }
 
-function clearIdentityCookieHeaders(domain: string | undefined): Record<string, string> {
+function clearIdentityCookieHeaders(): Record<string, string> {
   const parts = [
     "musunil_session=",
     "Path=/",
@@ -1482,8 +1532,15 @@ function clearIdentityCookieHeaders(domain: string | undefined): Record<string, 
     "Secure",
     "SameSite=Lax"
   ];
-  if (domain) parts.splice(2, 0, `Domain=${domain}`);
   return { "set-cookie": parts.join("; ") };
+}
+
+function safeIdentityFailureCode(value: string): string {
+  return [
+    "identity_not_verified",
+    "identity_result_incomplete",
+    "identity_session_expired"
+  ].includes(value) ? value : "identity_verification_failed";
 }
 
 function readIdentityPurpose(data: Record<string, unknown>): IdentityVerificationSession["purpose"] {
@@ -4509,6 +4566,11 @@ async function postPrivacyPurgeExpired(store: Store, options: AppOptions): Promi
   let evidenceCleared = 0;
   let originalMediaCleared = 0;
   let liveUploadBuffersCleared = 0;
+  const expiredIdentitySessions = store.identityVerificationSessions.filter((session) => session.expiresAt.getTime() < cutoffs.identitySessionBefore);
+  const expiredUserSessions = store.userSessions.filter((session) => {
+    const inactiveAt = session.revokedAt?.getTime() ?? session.expiresAt.getTime();
+    return inactiveAt < cutoffs.userSessionBefore;
+  });
   const originalMediaToDelete = store.evidence.filter((evidence) => {
     const mediaBefore = evidence.redactionStatus === "completed" ? cutoffs.verifiedMediaBefore : cutoffs.unverifiedMediaBefore;
     return evidence.evidenceType === "live_media" && Boolean(evidence.storageKey) && evidence.uploadedAt.getTime() < mediaBefore;
@@ -4552,6 +4614,12 @@ async function postPrivacyPurgeExpired(store: Store, options: AppOptions): Promi
 
   const auditBeforeCount = store.auditLogs.length;
   store.auditLogs = store.auditLogs.filter((log) => log.createdAt.getTime() >= cutoffs.auditBefore);
+  const expiredIdentityIds = new Set(expiredIdentitySessions.map((session) => session.id));
+  const expiredUserSessionIds = new Set(expiredUserSessions.map((session) => session.id));
+  store.identityVerificationSessions = store.identityVerificationSessions.filter((session) => !expiredIdentityIds.has(session.id));
+  store.userSessions = store.userSessions.filter((session) => !expiredUserSessionIds.has(session.id));
+  for (const session of expiredIdentitySessions) auditIdentity(store, session.id, "expired identity verification session removed by retention policy", "delete");
+  for (const session of expiredUserSessions) auditIdentity(store, session.id, "inactive authenticated session removed by retention policy", "delete");
   return json(200, {
     status: "privacy_purge_completed",
     previewBeforePurge: preview.eligibleCounts,
@@ -4559,6 +4627,8 @@ async function postPrivacyPurgeExpired(store: Store, options: AppOptions): Promi
     evidenceCleared,
     originalMediaCleared,
     liveUploadBuffersCleared,
+    identitySessionsDeleted: expiredIdentitySessions.length,
+    userSessionsDeleted: expiredUserSessions.length,
     auditLogsDeleted: auditBeforeCount - store.auditLogs.length
   });
 }
@@ -4575,6 +4645,8 @@ function privacyPurgePreview(store: Store, options: AppOptions) {
         return evidence.evidenceType === "live_media" && Boolean(evidence.storageKey) && evidence.uploadedAt.getTime() < mediaBefore;
       }).length,
       liveUploadBuffers: store.liveUploads.filter((upload) => upload.privateMediaBase64 && upload.uploadedAt.getTime() < cutoffs.unverifiedMediaBefore).length,
+      identitySessions: store.identityVerificationSessions.filter((session) => session.expiresAt.getTime() < cutoffs.identitySessionBefore).length,
+      userSessions: store.userSessions.filter((session) => (session.revokedAt?.getTime() ?? session.expiresAt.getTime()) < cutoffs.userSessionBefore).length,
       auditLogs: store.auditLogs.filter((log) => log.createdAt.getTime() < cutoffs.auditBefore).length
     }
   };
@@ -4595,6 +4667,8 @@ function privacyCutoffs(options: AppOptions) {
     unverifiedMediaBefore: now - retentionDays.unverifiedOriginalMediaDays * dayMs,
     verifiedMediaBefore: now - retentionDays.verifiedOriginalMediaDays * dayMs,
     preciseBefore: now - retentionDays.preciseLocationDays * dayMs,
+    identitySessionBefore: now - dayMs,
+    userSessionBefore: now - 30 * dayMs,
     auditBefore: now - retentionDays.auditLogDays * dayMs
   };
 }
@@ -4608,6 +4682,7 @@ function getTransparencyMonthly(store: Store): ApiResponse {
   const now = new Date();
   const month = koreaMonthKey(now);
   for (const log of store.auditLogs) {
+    if (log.targetType === "identity_session") continue;
     if (koreaMonthKey(log.createdAt) !== month) continue;
     const category = transparencyCategory(log.action, log.targetType, log.reason);
     counts[category] = (counts[category] ?? 0) + 1;
@@ -5708,7 +5783,7 @@ function setClaimVisibility(store: Store, claim: Claim, visibility: NonNullable<
   if ("evidenceIds" in target) target.evidenceIds = target.evidenceIds.filter((id) => !claim.evidenceIds.includes(id));
 }
 
-function audit(store: Store, action: AuditLog["action"], targetType: AuditLog["targetType"], targetId: string, reason: string): void {
+function audit(store: Store, action: AuditLog["action"], targetType: TransparencyLog["targetType"], targetId: string, reason: string): void {
   store.auditLogs.push({
     id: randomUUID(),
     action,
@@ -5724,6 +5799,17 @@ function audit(store: Store, action: AuditLog["action"], targetType: AuditLog["t
     targetId,
     createdAt: new Date(),
     publicReason: reason
+  });
+}
+
+function auditIdentity(store: Store, targetId: string, reason: string, action: AuditLog["action"] = "state_change"): void {
+  store.auditLogs.push({
+    id: randomUUID(),
+    action,
+    targetType: "identity_session",
+    targetId,
+    createdAt: new Date(),
+    reason
   });
 }
 

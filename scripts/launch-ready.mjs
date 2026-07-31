@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import YAML from "yaml";
 
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
@@ -36,7 +37,8 @@ const env = {
   REDIS_URL: process.env.REDIS_URL ?? "redis://default:password@render-managed-redis:6379",
   MUSUNIL_USER_TOKEN_SECRET: process.env.MUSUNIL_USER_TOKEN_SECRET ?? "render_generated_user_token_secret_32_bytes",
   MUSUNIL_ENCRYPTION_KEY: process.env.MUSUNIL_ENCRYPTION_KEY ?? "render_generated_encryption_key_32_bytes",
-  MUSUNIL_INTERNAL_API_KEY: process.env.MUSUNIL_INTERNAL_API_KEY ?? "render_generated_internal_api_key"
+  MUSUNIL_INTERNAL_API_KEY: process.env.MUSUNIL_INTERNAL_API_KEY ?? "render_generated_internal_api_key",
+  MUSUNIL_IDENTITY_WEB_ENABLED: readIdentityEnabled(inputPath) ? "true" : "false"
 };
 
 for (const step of steps) run(step.args, env);
@@ -45,4 +47,13 @@ console.log(JSON.stringify({ checked: "launch_ready", inputPath, postLaws }, nul
 function run(args, env) {
   const result = spawnSync(pnpm, args, { env, stdio: "inherit" });
   if (result.status !== 0) process.exit(result.status ?? 1);
+}
+
+function readIdentityEnabled(path) {
+  try {
+    const config = YAML.parse(readFileSync(path, "utf8"));
+    return config?.identity?.web_enabled === true;
+  } catch {
+    return false;
+  }
 }

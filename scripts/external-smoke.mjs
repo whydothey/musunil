@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 const postLaws = process.argv.includes("--post-laws");
 const listOnly = process.argv.includes("--list");
+const identityEnabled = process.env.MUSUNIL_IDENTITY_WEB_ENABLED !== "false";
 
 const steps = [
   { id: "storage", args: ["storage:smoke"], requireRealOutput: "storage_put_get_delete" },
@@ -13,7 +14,7 @@ const steps = [
     requireRealOutput: "mobile_integrity_provider_dry_run",
     proofContract: "structured JSON with checked, provider, packageName or bundleId/teamId, and verdict"
   },
-  { id: "identity", args: ["identity:smoke"], requireRealOutput: "identity_portone_verified_lookup" },
+  ...(identityEnabled ? [{ id: "identity", args: ["identity:smoke"], requireRealOutput: "identity_portone_verified_lookup" }] : []),
   {
     id: postLaws ? "laws_post" : "laws_dry_run",
     args: postLaws ? ["--filter", "@musunil/public-source-ingest", "dev", "--", "--laws", "--post"] : ["sources:laws"],
@@ -46,7 +47,7 @@ for (const step of steps) {
   if (!output.includes(step.requireRealOutput)) fail(step.id, `missing expected proof marker: ${step.requireRealOutput}`);
 }
 
-console.log(JSON.stringify({ checked: "external_smoke", postLaws, steps: steps.map((step) => step.id) }, null, 2));
+console.log(JSON.stringify({ checked: "external_smoke", postLaws, identityEnabled, steps: steps.map((step) => step.id) }, null, 2));
 
 function fail(step, message) {
   console.error(JSON.stringify({ error: "external_smoke_failed", step, message }, null, 2));
