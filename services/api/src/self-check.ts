@@ -159,6 +159,7 @@ const synthesizedHome = await newsReviewApp.handle({ method: "GET", path: "/home
 assert.equal((synthesizedHome.body as { issueOverviews: Array<{ id: string; occurrenceCount: number }> }).issueOverviews.some((issue) => issue.id === synthesizedNewsCandidate.issueId), false);
 const newsGroupDetail = await newsReviewApp.handle({ method: "GET", path: `/law-groups/${newsReviewGroup.id}` });
 assert.equal((newsGroupDetail.body as { issues: Array<{ newsCount: number; recentNews: unknown[] }> }).issues.some((issue) => issue.newsCount === 2 && issue.recentNews.length === 2), true);
+assertPublicPayloadSafe(newsGroupDetail.body);
 const filteredGroupDetail = await newsReviewApp.handle({ method: "GET", path: `/law-groups/${newsReviewGroup.id}?coreTopic=${encodeURIComponent(newsReviewTopic.key)}&pageSize=1&page=1` });
 assert.equal((filteredGroupDetail.body as { selectedCoreTopicKey: string }).selectedCoreTopicKey, newsReviewTopic.key);
 assert.equal((filteredGroupDetail.body as { bills: unknown[] }).bills.length <= 1, true);
@@ -166,6 +167,7 @@ assert.equal((filteredGroupDetail.body as { pagination: { total: number } }).pag
 assert.equal(JSON.stringify(newsGroupDetail.body).includes("공개 응답에 노출하면 안 되는 원제목"), false);
 const newsIssueDetail = await newsReviewApp.handle({ method: "GET", path: `/issues/${synthesizedNewsCandidate.issueId}` });
 assert.equal((newsIssueDetail.body as { newsArticles: unknown[] }).newsArticles.length, 2);
+assertPublicPayloadSafe(newsIssueDetail.body);
 assert.equal(JSON.stringify(newsIssueDetail.body).includes("공개 응답에 노출하면 안 되는 원제목"), false);
 assert.equal((newsIssueDetail.body as { topicGrouping: { synthesisBasis: string; basis: string[] } }).topicGrouping.synthesisBasis, "evidence_aggregate");
 assert.equal((newsIssueDetail.body as { topicGrouping: { basis: string[] } }).topicGrouping.basis.some((item) => item.includes("공통 쟁점")), true);

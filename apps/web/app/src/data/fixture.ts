@@ -424,9 +424,7 @@ const synthesisByIssue: AppDataset["synthesisByIssue"] = {
     windowEndedAt: "2026-07-16T03:30:00.000Z",
     evidenceCount: 2,
     publisherCount: 2,
-    claimIds: ["claim-network-media-1", "claim-network-media-2"],
-    evidenceIds: ["news-network-1", "news-network-2"],
-    facets: [{ coreTopicKey: "network-protection", label: "온라인 정보·이용자 보호", evidenceCount: 2, publisherCount: 2, claimIds: ["claim-network-media-1", "claim-network-media-2"], evidenceIds: ["news-network-1", "news-network-2"] }]
+    facets: [{ coreTopicKey: "network-protection", label: "온라인 정보·이용자 보호", evidenceCount: 2, publisherCount: 2 }]
   },
   "issue-election-process": {
     version: "fixture-law-group-evidence-v1",
@@ -437,9 +435,7 @@ const synthesisByIssue: AppDataset["synthesisByIssue"] = {
     windowEndedAt: "2026-07-15T04:46:42.000Z",
     evidenceCount: 2,
     publisherCount: 2,
-    claimIds: ["claim-election-media-1", "claim-election-media-2"],
-    evidenceIds: ["news-election-1", "news-election-2"],
-    facets: [{ coreTopicKey: "ballot-supply", label: "투표용지·공급 대응", evidenceCount: 2, publisherCount: 2, claimIds: ["claim-election-media-1", "claim-election-media-2"], evidenceIds: ["news-election-1", "news-election-2"] }]
+    facets: [{ coreTopicKey: "ballot-supply", label: "투표용지·공급 대응", evidenceCount: 2, publisherCount: 2 }]
   }
 };
 for (const issue of issues) {

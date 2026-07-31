@@ -1953,7 +1953,7 @@ function toIssueOverview(store: Store, issue: ReturnType<typeof issueCards>[numb
     synthesisSummary: synthesis?.neutralSummary,
     synthesisEvidenceCount: synthesis?.evidenceCount,
     synthesisPublisherCount: synthesis?.publisherCount,
-    facets: synthesis?.facets
+    facets: synthesis?.facets.map(toPublicIssueSynthesisFacet)
   };
 }
 
@@ -2259,9 +2259,7 @@ function issueTopicGrouping(store: Store, issue: Issue) {
       windowEndedAt: synthesis.windowEndedAt.toISOString(),
       evidenceCount: synthesis.evidenceCount,
       publisherCount: synthesis.publisherCount,
-      claimIds: synthesis.claimIds,
-      evidenceIds: synthesis.evidenceIds,
-      facets: synthesis.facets
+      facets: synthesis.facets.map(toPublicIssueSynthesisFacet)
     } : undefined,
     basis: [
       ...(issue.synthesisBasis === "evidence_aggregate" ? ["공개 Claim·Evidence 여러 건에서 공통 쟁점을 추출해 만든 주제"] : []),
@@ -2271,6 +2269,15 @@ function issueTopicGrouping(store: Store, issue: Issue) {
       "지역·시간이 다르면 별도 현장으로 유지"
     ],
     policy: "이 묶음은 탐색 단위이며 사실 확정이 아닙니다."
+  };
+}
+
+function toPublicIssueSynthesisFacet(facet: IssueSynthesisSnapshot["facets"][number]) {
+  return {
+    coreTopicKey: facet.coreTopicKey,
+    label: facet.label,
+    evidenceCount: facet.evidenceCount,
+    publisherCount: facet.publisherCount
   };
 }
 

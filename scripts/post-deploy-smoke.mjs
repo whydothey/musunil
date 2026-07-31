@@ -6,6 +6,7 @@ const apiBaseUrl = (process.env.MUSUNIL_API_BASE_URL ?? readString(config, "api.
 const webBaseUrl = (process.env.MUSUNIL_WEB_BASE_URL ?? readString(config, "app.public_base_url") ?? "").replace(/\/$/, "");
 const requireLaws = process.argv.includes("--require-laws");
 const requireSourceRefreshes = process.argv.includes("--require-source-refreshes");
+const publicReadOnly = process.argv.includes("--public-read-only");
 const requestTimeoutMs = 10_000;
 const checks = [];
 
@@ -37,23 +38,23 @@ await check("health", async () => {
 });
 
 await check("public_redacted_media", async () => {
-  const poster = await fetch(`${apiBaseUrl}/media/redacted/preview-occ-live-1-poster.png`, {
-    redirect: "manual",
-    signal: AbortSignal.timeout(requestTimeoutMs)
-  });
-  assert(poster.status === 200, `public redacted poster returned ${poster.status}`);
-  assert(poster.headers.get("content-type")?.startsWith("image/png"), "public redacted poster content-type mismatch");
-  assert(poster.headers.get("x-content-type-options") === "nosniff", "public redacted poster nosniff header missing");
-  assert((await poster.arrayBuffer()).byteLength > 10_000, "public redacted poster payload too small");
-
-  const clip = await fetch(`${apiBaseUrl}/media/redacted/preview-occ-live-1.webm`, {
-    redirect: "manual",
-    signal: AbortSignal.timeout(requestTimeoutMs)
-  });
-  assert(clip.status === 200, `public redacted clip returned ${clip.status}`);
-  assert(clip.headers.get("content-type")?.startsWith("video/webm"), "public redacted clip content-type mismatch");
-  assert(clip.headers.get("x-content-type-options") === "nosniff", "public redacted clip nosniff header missing");
-  assert((await clip.arrayBuffer()).byteLength > 5_000, "public redacted clip payload too small");
+  const reels = await raw("GET", "/reels?seed=post-deploy-media");
+  assert(reels.status === 200, `/reels returned ${reels.status}`);
+  assert(Array.isArray(reels.body?.reels), "/reels list missing");
+  const media = reels.body.reels.map((reel) => reel?.media).find((item) => item?.redactedClipUrl || item?.redactedPosterUrl);
+  if (media?.redactedPosterUrl) {
+    await assertPublicMedia(media.redactedPosterUrl, "image/", 10_000, "poster");
+  }
+  if (media?.redactedClipUrl) {
+    await assertPublicMedia(media.redactedClipUrl, "video/", 5_000, "clip");
+  }
+  if (!media) {
+    const preview = await fetch(`${apiBaseUrl}/media/redacted/preview-occ-live-1-poster.png`, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(requestTimeoutMs)
+    });
+    assert(preview.status === 404, `production preview media should stay absent, got ${preview.status}`);
+  }
 
   const traversal = await fetch(`${apiBaseUrl}/media/redacted/%2e%2e/private/live.png`, {
     redirect: "manual",
@@ -68,18 +69,38 @@ await check("cors_boundary", async () => {
   assert(disallowed.headers["access-control-allow-origin"] !== disallowedOrigin, "disallowed CORS origin was echoed");
   const allowed = await raw("GET", "/health", { origin: webBaseUrl });
   assert(allowed.headers["access-control-allow-origin"] === webBaseUrl, "configured web origin was not CORS-allowed");
-  assert(allowed.headers["vary"] === "Origin", "Vary: Origin header missing");
+  assert(
+    String(allowed.headers["vary"] || "").split(",").map((value) => value.trim().toLowerCase()).includes("origin"),
+    "Vary: Origin header missing"
+  );
 });
 
 await check("ready", async () => {
-  const response = await raw("GET", "/ready");
-  assert(response.status === 200, `/ready returned ${response.status}; ${formatReadinessFailure(response.body)}`);
-  assert(response.body?.ready === true, `/ready returned ready=false; ${formatReadinessFailure(response.body)}`);
-  assert(response.body?.summary?.failedCount === 0, `/ready summary failedCount should be 0; ${formatReadinessFailure(response.body)}`);
-  assert(Array.isArray(response.body?.requiredActions) && response.body.requiredActions.length === 0, `/ready requiredActions should be empty; ${formatReadinessFailure(response.body)}`);
+  const endpoint = publicReadOnly ? "/ready/public-read" : "/ready";
+  const response = await raw("GET", endpoint);
+  assert(response.status === 200, `${endpoint} returned ${response.status}; ${formatReadinessFailure(response.body)}`);
+  assert(response.body?.ready === true, `${endpoint} returned ready=false; ${formatReadinessFailure(response.body)}`);
   assertReadyCheck(response.body, "config_source");
   assertReadyCheck(response.body, "postgres");
-  assertReadyCheck(response.body, "redis");
+  if (publicReadOnly) {
+    assert(response.body?.gates?.publicRead?.ready === true, "/ready/public-read gate is not ready");
+    assert(Array.isArray(response.body?.gates?.publicRead?.failedIds) && response.body.gates.publicRead.failedIds.length === 0, "/ready/public-read has failedIds");
+  } else {
+    assert(response.body?.summary?.failedCount === 0, `/ready summary failedCount should be 0; ${formatReadinessFailure(response.body)}`);
+    assert(Array.isArray(response.body?.requiredActions) && response.body.requiredActions.length === 0, `/ready requiredActions should be empty; ${formatReadinessFailure(response.body)}`);
+    assertReadyCheck(response.body, "redis");
+  }
+});
+
+await check("service_profile", async () => {
+  const response = await raw("GET", "/service-profile");
+  assert(response.status === 200, `/service-profile returned ${response.status}`);
+  if (publicReadOnly) {
+    assert(response.body?.operatingMode === "public_read_only", "service operatingMode is not public_read_only");
+    assert(response.body?.paymentsAvailable === false, "payments must stay unavailable");
+    assert(response.body?.recurringPaymentsAvailable === false, "recurring payments must stay unavailable");
+    assert(response.body?.contributionAvailable === false, "contributions must stay unavailable");
+  }
 });
 
 await check("public_payload_safety", async () => {
@@ -226,7 +247,7 @@ function isValidSourceRefresh(refresh) {
   if (!refresh?.checkedAt || Number.isNaN(new Date(refresh.checkedAt).getTime())) return false;
   if (refresh.status === "failed") return false;
   if (refresh.status === "empty") {
-    return Number(refresh.parsedCount) > 0 && Number(refresh.resultCount) === 0;
+    return Number(refresh.resultCount) === 0 && (publicReadOnly || Number(refresh.parsedCount) > 0);
   }
   return Number(refresh.resultCount) > 0;
 }
@@ -313,10 +334,30 @@ function assertPublicPayloadSafe(path, body) {
 
 function assertHomeIssueReadiness(body) {
   const issues = Array.isArray(body?.issueCards) ? body.issueCards : [];
-  assert(issues.length > 0, "/home issueCards is empty; launch requires topic issue feed data");
+  const eventTopicGroups = Array.isArray(body?.eventTopicGroups) ? body.eventTopicGroups : [];
+  assert(issues.length > 0 || eventTopicGroups.length > 0, "/home topic data is empty; launch requires issueCards or eventTopicGroups");
   const topicIssues = issues.filter((issue) => !isPublicSourceBundleIssue(issue));
-  assert(topicIssues.length >= 3, `/home issueCards needs at least 3 topic Issues, got ${topicIssues.length}`);
-  assert(!isPublicSourceBundleIssue(issues[0]), `/home first issueCard is a public source bundle: ${publicIssueTitle(issues[0])}`);
+  assert(
+    topicIssues.length + eventTopicGroups.length >= 3,
+    `/home needs at least 3 topic entries, got ${topicIssues.length} issueCards and ${eventTopicGroups.length} eventTopicGroups`
+  );
+  if (issues.length > 0) {
+    assert(!isPublicSourceBundleIssue(issues[0]), `/home first issueCard is a public source bundle: ${publicIssueTitle(issues[0])}`);
+  }
+}
+
+async function assertPublicMedia(path, expectedContentTypePrefix, minimumBytes, label) {
+  const url = new URL(path, apiBaseUrl);
+  assert(url.origin === new URL(apiBaseUrl).origin, `public redacted ${label} must stay on the API origin`);
+  assert(url.pathname.startsWith("/media/redacted/"), `public redacted ${label} path is invalid`);
+  const response = await fetch(url, {
+    redirect: "manual",
+    signal: AbortSignal.timeout(requestTimeoutMs)
+  });
+  assert(response.status === 200, `public redacted ${label} returned ${response.status}`);
+  assert(response.headers.get("content-type")?.startsWith(expectedContentTypePrefix), `public redacted ${label} content-type mismatch`);
+  assert(response.headers.get("x-content-type-options") === "nosniff", `public redacted ${label} nosniff header missing`);
+  assert((await response.arrayBuffer()).byteLength > minimumBytes, `public redacted ${label} payload too small`);
 }
 
 function isPublicSourceBundleIssue(issue) {

@@ -135,7 +135,12 @@ export type IssueSynthesisFacet = {
   evidenceIds: string[];
 };
 
-/** Versioned public explanation of how an evidence-aggregate Issue was formed. */
+export type PublicIssueSynthesisFacet = Pick<
+  IssueSynthesisFacet,
+  "coreTopicKey" | "label" | "evidenceCount" | "publisherCount"
+>;
+
+/** Versioned internal record of how an evidence-aggregate Issue was formed. */
 export type IssueSynthesisSnapshot = {
   issueId: string;
   version: string;
@@ -354,7 +359,7 @@ export type IssueOverview = {
   synthesisSummary?: string;
   synthesisEvidenceCount?: number;
   synthesisPublisherCount?: number;
-  facets?: IssueSynthesisFacet[];
+  facets?: PublicIssueSynthesisFacet[];
 };
 
 export type OccurrenceDigest = {

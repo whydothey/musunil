@@ -410,7 +410,7 @@ if (
   !/not-allowed\.musunil\.invalid/.test(postDeploySmoke) ||
   !/assertPublicPayloadSafe/.test(postDeploySmoke) ||
   !/assertHomeIssueReadiness/.test(postDeploySmoke) ||
-  !/at least 3 topic Issues/.test(postDeploySmoke) ||
+  !/at least 3 topic entries/.test(postDeploySmoke) ||
   !/public source bundle/.test(postDeploySmoke) ||
   !/publicPayloadRoutes/.test(postDeploySmoke) ||
   !/\/issues/.test(postDeploySmoke) ||
@@ -430,9 +430,13 @@ if (
   !/\/transparency\/logs/.test(publicApiRoutes) ||
   !/\/transparency\/monthly/.test(publicApiRoutes) ||
   !/\/me/.test(publicApiRoutes) ||
+  !/\/reels\?seed=post-deploy-media/.test(postDeploySmoke) ||
+  !/assertPublicMedia/.test(postDeploySmoke) ||
   !/\/media\/redacted\/preview-occ-live-1-poster\.png/.test(postDeploySmoke) ||
-  !/\/media\/redacted\/preview-occ-live-1\.webm/.test(postDeploySmoke) ||
-  !/video\/webm/.test(postDeploySmoke) ||
+  !/production preview media should stay absent/.test(postDeploySmoke) ||
+  !/publicReadOnly/.test(postDeploySmoke) ||
+  !/\/ready\/public-read/.test(postDeploySmoke) ||
+  !/service_profile/.test(postDeploySmoke) ||
   !/--require-laws/.test(postDeploySmoke) ||
   !/requireSourceRefreshes/.test(postDeploySmoke) ||
   !/--require-source-refreshes/.test(postDeploySmoke) ||

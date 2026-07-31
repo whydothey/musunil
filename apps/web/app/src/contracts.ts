@@ -43,8 +43,6 @@ export interface IssueSynthesisFacet {
   label: string;
   evidenceCount: number;
   publisherCount: number;
-  claimIds: string[];
-  evidenceIds: string[];
 }
 
 export interface IssueSynthesis {
@@ -56,8 +54,6 @@ export interface IssueSynthesis {
   windowEndedAt: string;
   evidenceCount: number;
   publisherCount: number;
-  claimIds: string[];
-  evidenceIds: string[];
   facets: IssueSynthesisFacet[];
 }
 
