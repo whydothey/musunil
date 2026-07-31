@@ -18,7 +18,7 @@ api:
 organization:
   legal_name: "Musunil Inc."
   operator_name: "Musunil Ops"
-  operator_type: "individual_business_pending"
+  operator_type: "individual_non_business"
   business_registration_number: "000-00-00000"
   mail_order_sales_registration_number: ""
   business_bank_account_holder: ""
@@ -83,6 +83,7 @@ public_data_sources:
 payments:
   provider: ""
   mode: "disabled"
+  donations_enabled: false
   operating_support_enabled: false
   influence_on_ranking_enabled: false
   influence_on_alerts_enabled: false

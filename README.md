@@ -198,7 +198,7 @@ Render 배포가 끝난 뒤 로컬 셸 없이 검증하려면 GitHub Actions `po
 
 UI/UX 프리뷰용 외부 연결 순서는 [docs/uiux-preview-connections-guide.md](/Users/mk/Documents/Musunil/docs/uiux-preview-connections-guide.md)에 정리했다. 먼저 지도만 붙이고, 실제 푸시/결제/AI/미디어 저장소는 뒤로 미룬다.
 
-국내 운영과 운영 후원 수익화 순서는 [docs/domestic-operation-and-monetization.md](/Users/mk/Documents/Musunil/docs/domestic-operation-and-monetization.md)에 정리했다. 현재 순서는 도메인 기반 실제 서비스 오픈, 개인사업자 등록 및 사업용 계좌 확보, PG 단발/정기 운영 후원 연결이다. 개인 계좌 공개와 후원 기반 노출/알림/신뢰도 가중은 금지한다.
+국내 운영과 향후 수익화 검토 기준은 [docs/domestic-operation-and-monetization.md](/Users/mk/Documents/Musunil/docs/domestic-operation-and-monetization.md)에 정리했다. 현재 공개 버전은 무수익 모드이며 후원·단발 결제·정기 결제를 모두 제공하지 않는다. 개인 계좌 공개와 결제 기반 노출/알림/신뢰도 가중도 금지한다.
 
 개발용 sample fixture와 실제 공개 원천 ingest 방식은 [docs/data-fixtures-and-real-sources.md](/Users/mk/Documents/Musunil/docs/data-fixtures-and-real-sources.md)에 정리했다.
 

@@ -336,6 +336,10 @@ export interface AppDataset {
   publicDataStatus?: PublicDataStatus;
   transparency?: TransparencyData;
   serviceProfile?: {
+    operatingMode?: "public_read_only";
+    paymentsAvailable?: boolean;
+    recurringPaymentsAvailable?: boolean;
+    contributionAvailable?: boolean;
     supportAvailable: boolean;
     supportEmail?: string;
   };

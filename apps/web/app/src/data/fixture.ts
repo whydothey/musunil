@@ -484,7 +484,14 @@ const fixtureSeedDataset: AppDataset = {
   claimsByOccurrence,
   map,
   publicDataStatus: { home: "ready", map: "ready", lastSuccessfulAt: new Date().toISOString() },
-  serviceProfile: { supportAvailable: true, supportEmail: "support@musunil.com" }
+  serviceProfile: {
+    operatingMode: "public_read_only",
+    paymentsAvailable: false,
+    recurringPaymentsAvailable: false,
+    contributionAvailable: true,
+    supportAvailable: true,
+    supportEmail: "support@musunil.com"
+  }
 };
 const dataset = shiftFixtureDates(fixtureSeedDataset);
 

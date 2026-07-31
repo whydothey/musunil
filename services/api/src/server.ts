@@ -276,6 +276,21 @@ function loadRuntime() {
       readiness: async () => {
         const checks = [
           { id: "config_source", ok: loaded.source !== "template_file", message: `config source: ${loaded.source}` },
+          {
+            id: "payments.donations_disabled",
+            ok: readBoolean(loaded.config, "payments.donations_enabled", true) === false,
+            message: "donations disabled for non-revenue launch"
+          },
+          {
+            id: "payments.operating_support_disabled",
+            ok: readBoolean(loaded.config, "payments.operating_support_enabled", true) === false,
+            message: "operating support disabled for non-revenue launch"
+          },
+          {
+            id: "payments.mode_disabled",
+            ok: readString(loaded.config, "payments.mode") === "disabled",
+            message: "payment provider mode disabled for non-revenue launch"
+          },
           ...issues.map((issue) => ({ id: issue.path, ok: false, message: issue.message })),
           ...(production && identityTestModeRequested ? [{ id: "identity.test_mode", ok: false, message: "MUSUNIL_IDENTITY_TEST_MODE is not allowed in production." }] : [])
         ];

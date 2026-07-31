@@ -61,11 +61,26 @@ function parseUserInputs(raw: string, source: LoadedUserInputs["source"], path?:
 
 function assertForbiddenFeaturesDisabled(config: Record<string, unknown>): void {
   const features = config.features as Record<string, unknown> | undefined;
+  const payments = config.payments as Record<string, unknown> | undefined;
   if (features?.free_comments_enabled !== false) {
     throw new Error("free_comments_enabled must stay false.");
   }
   if (features?.voting_enabled !== false) {
     throw new Error("voting_enabled must stay false.");
+  }
+  if (payments?.donations_enabled !== false) {
+    throw new Error("payments.donations_enabled must stay false for the non-revenue launch.");
+  }
+  if (payments?.operating_support_enabled !== false) {
+    throw new Error("payments.operating_support_enabled must stay false for the non-revenue launch.");
+  }
+  if (payments?.mode !== "disabled") {
+    throw new Error("payments.mode must stay disabled for the non-revenue launch.");
+  }
+  for (const key of ["influence_on_ranking_enabled", "influence_on_alerts_enabled", "influence_on_trust_enabled"]) {
+    if (payments?.[key] !== false) {
+      throw new Error(`payments.${key} must stay false.`);
+    }
   }
 }
 
@@ -218,6 +233,12 @@ export function validateLaunchConfig(config: Record<string, unknown>, env: NodeJ
   if (read(config, "payments.donations_enabled") !== false) {
     issues.push({ path: "payments.donations_enabled", message: "donations stay disabled for launch." });
   }
+  if (read(config, "payments.operating_support_enabled") !== false) {
+    issues.push({ path: "payments.operating_support_enabled", message: "operating support stays disabled for the non-revenue launch." });
+  }
+  if (read(config, "payments.mode") !== "disabled") {
+    issues.push({ path: "payments.mode", message: "payment mode stays disabled for the non-revenue launch." });
+  }
   if (read(config, "payments.influence_on_ranking_enabled") !== false) {
     issues.push({ path: "payments.influence_on_ranking_enabled", message: "payments must not influence ranking." });
   }
@@ -226,19 +247,6 @@ export function validateLaunchConfig(config: Record<string, unknown>, env: NodeJ
   }
   if (read(config, "payments.influence_on_trust_enabled") !== false) {
     issues.push({ path: "payments.influence_on_trust_enabled", message: "payments must not influence trust." });
-  }
-  if (read(config, "payments.operating_support_enabled") === true) {
-    requireRealValue(config, issues, "organization.business_registration_number");
-    requireRealValue(config, issues, "organization.business_bank_account_holder");
-    requireRealValue(config, issues, "payments.provider");
-    requireRealValue(config, issues, "payments.mode");
-    requireRealValue(config, issues, "payments.pg_mid");
-    requireRealValue(config, issues, "payments.pg_client_key");
-    requireSecret(config, issues, "payments.pg_secret_key", 24);
-    requireSecret(config, issues, "payments.pg_webhook_secret", 24);
-    requireRealValue(config, issues, "payments.success_url");
-    requireRealValue(config, issues, "payments.fail_url");
-    requireRealValue(config, issues, "payments.webhook_url");
   }
   if (production && read(config, "preview.use_mock_data") === true) {
     issues.push({ path: "preview.use_mock_data", message: "production must not expose mock data." });

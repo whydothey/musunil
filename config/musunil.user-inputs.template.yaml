@@ -15,7 +15,7 @@ web:
 organization:
   legal_name: "CHANGE_ME_LEGAL_NAME"
   operator_name: "CHANGE_ME_OPERATOR_NAME"
-  operator_type: "individual_business_pending"
+  operator_type: "individual_non_business"
   business_registration_number: ""
   mail_order_sales_registration_number: ""
   business_bank_account_holder: ""

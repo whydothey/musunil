@@ -27,7 +27,7 @@ web:
 organization:
   legal_name: "CHANGE_ME_LEGAL_NAME"
   operator_name: "CHANGE_ME_OPERATOR_NAME"
-  operator_type: "individual_business_pending"
+  operator_type: "individual_non_business"
   business_registration_number: ""
   mail_order_sales_registration_number: ""
   business_bank_account_holder: ""
@@ -170,5 +170,5 @@ ai:
 writeFileSync(outputPath, yaml, { mode: 0o600 });
 console.log(`Created ${outputPath}`);
 console.log("Fill first: support email, organization contacts, PortOne identity verification keys, law source API key, media encryption key, storage provider/bucket/keys, mobile integrity verifier values/smoke command, and a one-time MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID env value for identity smoke. The built-in redaction command is already configured.");
-console.log("Fill later after business/PG setup: business registration number, business bank account holder, and PG keys. Keep personal bank account exposure and payment influence flags disabled.");
+console.log("This release is non-revenue: keep donations, operating support, payment mode, personal bank account exposure, and every payment influence flag disabled. Business and PG values are not launch inputs.");
 console.log(`Then run: pnpm launch:ready -- ${outputPath}`);

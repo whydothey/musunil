@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import YAML from "yaml";
 import { loadUserInputs, validateLaunchConfig } from "./index.ts";
 
 const cwd = resolve(import.meta.dirname, "../../..");
@@ -122,16 +123,19 @@ assert.equal(validateLaunchConfig(unsafePaymentInfluenceConfig, {}).some((issue)
 
 const supportPaymentConfig = JSON.parse(JSON.stringify(loaded.config));
 supportPaymentConfig.payments.operating_support_enabled = true;
-assert.equal(validateLaunchConfig(supportPaymentConfig, {}).some((issue) => issue.path === "payments.pg_secret_key"), true);
-supportPaymentConfig.organization.business_registration_number = "123-45-67890";
-supportPaymentConfig.organization.business_bank_account_holder = "무슨일";
-supportPaymentConfig.payments.provider = "toss_payments";
-supportPaymentConfig.payments.mode = "live";
-supportPaymentConfig.payments.pg_mid = "musunil";
-supportPaymentConfig.payments.pg_client_key = "test_client_key_for_musunil";
-supportPaymentConfig.payments.pg_secret_key = "test_pg_secret_key_for_musunil_32";
-supportPaymentConfig.payments.pg_webhook_secret = "test_pg_webhook_secret_for_musunil_32";
-assert.equal(validateLaunchConfig(supportPaymentConfig, {}).some((issue) => issue.path === "payments.pg_secret_key"), false);
+assert.equal(validateLaunchConfig(supportPaymentConfig, {}).some((issue) => issue.path === "payments.operating_support_enabled"), true);
+assert.throws(() => loadUserInputs({
+  cwd,
+  env: { MUSUNIL_USER_INPUTS_B64: Buffer.from(YAML.stringify(supportPaymentConfig)).toString("base64") }
+}), /operating_support_enabled must stay false/);
+
+const livePaymentModeConfig = JSON.parse(JSON.stringify(loaded.config));
+livePaymentModeConfig.payments.mode = "live";
+assert.equal(validateLaunchConfig(livePaymentModeConfig, {}).some((issue) => issue.path === "payments.mode"), true);
+assert.throws(() => loadUserInputs({
+  cwd,
+  env: { MUSUNIL_USER_INPUTS_B64: Buffer.from(YAML.stringify(livePaymentModeConfig)).toString("base64") }
+}), /payments\.mode must stay disabled/);
 
 const placeholderConfig = JSON.parse(JSON.stringify(loaded.config));
 placeholderConfig.app.public_base_url = "https://musunil.example";

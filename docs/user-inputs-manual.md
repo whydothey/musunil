@@ -29,10 +29,10 @@ Render 기본 배포에서는 `DATABASE_URL`, `REDIS_URL`, `MUSUNIL_USER_TOKEN_S
 ## 현재 진행 순서
 
 1. 도메인 기반 실제 서비스 오픈
-2. 개인사업자 등록 및 사업용 계좌 확보
-3. PG 단발/정기 운영 후원 연결
+2. 개인 비사업 운영 주체와 필수 연락처 공개
+3. 이용·운영 비용을 확인한 뒤 수익화 필요성 별도 재검토
 
-지금 우선순위는 1번이다. 개인사업자 번호, 사업용 계좌, PG 키는 실제 서비스가 도메인에서 정상 동작한 뒤 입력한다.
+지금 우선순위는 1~2번이다. 개인사업자 번호, 사업용 계좌와 PG 키는 현재 공개 버전의 입력값이 아니다.
 
 ## 1. 도메인과 운영자 정보
 
@@ -261,7 +261,7 @@ NAVER, Kakao, MapTiler 키는 기본 로컬 시크릿에서 제외했다. 특정
 
 통신판매업 신고 필요 여부는 PG 정기결제/디지털 멤버십/후원 상품 구성에 따라 달라질 수 있으므로 사업자 등록 후 확인한다. 신고 전이면 `organization.mail_order_sales_registration_number`는 비워 둔다.
 
-## 11. PG 결제 연결 후 입력할 값
+## 11. 현재 공개 버전에서 비활성으로 둘 결제 값
 
 PG 연결 전에는 아래 값을 비활성 상태로 둔다.
 
@@ -273,9 +273,8 @@ payments:
   mode: "disabled"
 ```
 
-PG 계약 후에만 아래 값을 채운다.
+아래 값은 비워 둔다. 향후 수익화를 별도 출시 범위로 결정한 뒤 문서와 출시 가드를 함께 변경한다.
 
-- `payments.operating_support_enabled`
 - `payments.provider`
 - `payments.mode`
 - `payments.pg_mid`
@@ -286,7 +285,7 @@ PG 계약 후에만 아래 값을 채운다.
 - `payments.fail_url`
 - `payments.webhook_url`
 
-초기 문구는 `기부`가 아니라 `무슨일 운영 후원`으로 둔다.
+`payments.operating_support_enabled`는 현재 공개 버전에서 반드시 `false`, `payments.mode`는 `disabled`로 둔다.
 
 ```yaml
 payments:

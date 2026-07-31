@@ -430,7 +430,16 @@ assert.equal((transparencyPage.body as { logs: unknown[] }).logs.length <= 2, tr
 assert.equal(JSON.stringify(transparencyPage.body).includes("statement"), false);
 assert.equal((transparencyPage.body as { logs: Array<{ category: string; count: number }> }).logs.every((log) => Boolean(log.category) && log.count >= 1), true);
 const serviceProfile = await app.handle({ method: "GET", path: "/service-profile" });
-assert.deepEqual(serviceProfile.body, { supportAvailable: true, supportEmail: "support@musunil.test" });
+assert.deepEqual(serviceProfile.body, {
+  operatingMode: "public_read_only",
+  paymentsAvailable: false,
+  recurringPaymentsAvailable: false,
+  contributionAvailable: false,
+  supportAvailable: true,
+  supportEmail: "support@musunil.test"
+});
+assert.equal((await app.handle({ method: "POST", path: "/payments/checkout" })).status, 404);
+assert.equal((await app.handle({ method: "POST", path: "/billing/recurring" })).status, 404);
 const liveClaims = await app.handle({ method: "GET", path: "/targets/occurrence/occ_1/live-claims" });
 assert.equal(liveClaims.status, 200);
 assert.equal((liveClaims.body as { liveClaims: Array<{ claim: { id: string }; redactionStatus: string; media: { redactedClipUrl: string } }> }).liveClaims[0]?.claim.id, "claim_occ_live_1");

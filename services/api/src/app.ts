@@ -933,6 +933,10 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
   }
   if (request.method === "GET" && path === "/service-profile") {
     return json(200, {
+      operatingMode: "public_read_only",
+      paymentsAvailable: false,
+      recurringPaymentsAvailable: false,
+      contributionAvailable: false,
       supportAvailable: Boolean(options.serviceProfile?.supportEmail),
       supportEmail: options.serviceProfile?.supportEmail
     });

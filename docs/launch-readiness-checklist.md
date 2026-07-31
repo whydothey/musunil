@@ -103,7 +103,7 @@
 - 자유 댓글, 추천/비추천, 찬반투표, 후원 영향 UI가 없다.
 - 국내 v1 운영에서 `domestic_operation.service_country`는 `KR`이고 해외 서비스/해외 결제/세액공제 기부금 영수증/개인 계좌 공개 플래그가 모두 꺼져 있다.
 - 후원은 `payments.influence_on_ranking_enabled`, `payments.influence_on_alerts_enabled`, `payments.influence_on_trust_enabled`가 모두 false다.
-- 도메인 기반 실제 서비스 오픈 전에는 `payments.operating_support_enabled`가 false다.
+- 현재 무수익 공개 버전에서는 `payments.operating_support_enabled`가 false다.
 - PG 운영 후원을 켤 때는 개인사업자 번호, 사업용 계좌 예금주, PG MID/client key/secret/webhook secret/success/fail/webhook URL이 모두 입력되어 있다.
 - `hazard_area`, `service_disruption` 공개 타입이 없다.
 - 배포 후 post-deploy smoke에서 `/comments`, `/votes`, `/likes`, `/reactions`, `/donations`, `/sponsorships` GET/POST가 404인지 확인한다.
@@ -214,16 +214,16 @@
 - 실제 push provider를 켤 경우 `notifications.*`
 - 모바일 LIVE 제보 출시 전 실제 기기에서 무결성 verifier dry-run
 
-## 개인사업자/PG 단계 입력
+## 향후 수익화 재검토 시 입력
 
-도메인 기반 실제 서비스 오픈 후 사용자가 개인사업자 등록과 사업용 계좌 확보를 완료하면 아래 값을 입력한다.
+현재 공개 버전에서는 운영자 유형을 `individual_non_business`로 두고 아래 사업자·PG 값은 입력하지 않는다. 향후 수익화를 별도 출시 범위로 결정한 경우에만 적법한 운영 주체를 확정하고 입력한다.
 
 - `organization.operator_type: "individual_business"`
 - `organization.business_registration_number`
 - `organization.mail_order_sales_registration_number` 또는 신고 전 비워 둠
 - `organization.business_bank_account_holder`
 
-PG 계약 후에만 아래 값을 입력하고 `payments.operating_support_enabled`를 켠다.
+현재 공개 버전에는 아래 값을 입력하지 않고 `payments.operating_support_enabled`를 켜지 않는다. 향후 수익화를 별도 출시 범위로 결정하고 법률·세무·PG 검토를 마친 뒤에만 이 가드와 문서를 함께 변경한다.
 
 - `payments.provider`
 - `payments.mode`
@@ -271,7 +271,7 @@ PG 계약 후에만 아래 값을 입력하고 `payments.operating_support_enabl
 - `preview.use_mock_data`가 production에서 true.
 - 운영 origin에 `localhost` 포함.
 - 국내 v1에서 해외 결제, 세액공제 기부금 영수증, 개인 계좌 공개 플래그가 켜짐.
-- 개인사업자 등록과 PG 계약 전 `payments.operating_support_enabled`를 켬.
+- 무수익 공개 버전에서 `payments.operating_support_enabled`를 켬.
 - 후원/결제가 랭킹, 알림, 신뢰도, 지도 노출, Claim 우선순위에 영향을 줌.
 - 원본 미디어 비식별화 경로 미연결 상태에서 LIVE 공개를 켬.
 - 규모 추정을 Claim 메타 없이 단정 숫자처럼 공개함.
