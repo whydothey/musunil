@@ -138,6 +138,16 @@ assert.throws(() => loadUserInputs({
   cwd,
   env: { MUSUNIL_USER_INPUTS_B64: Buffer.from(YAML.stringify(supportPaymentConfig)).toString("base64") }
 }), /operating_support_enabled must stay false/);
+const nonRevenueLocked = loadUserInputs({
+  cwd,
+  env: {
+    MUSUNIL_USER_INPUTS_B64: Buffer.from(YAML.stringify(supportPaymentConfig)).toString("base64"),
+    MUSUNIL_FORCE_NON_REVENUE: "true"
+  }
+});
+assert.equal((nonRevenueLocked.config.payments as Record<string, unknown>).operating_support_enabled, false);
+assert.equal((nonRevenueLocked.config.payments as Record<string, unknown>).donations_enabled, false);
+assert.equal((nonRevenueLocked.config.payments as Record<string, unknown>).mode, "disabled");
 
 const livePaymentModeConfig = JSON.parse(JSON.stringify(loaded.config));
 livePaymentModeConfig.payments.mode = "live";
@@ -146,6 +156,14 @@ assert.throws(() => loadUserInputs({
   cwd,
   env: { MUSUNIL_USER_INPUTS_B64: Buffer.from(YAML.stringify(livePaymentModeConfig)).toString("base64") }
 }), /payments\.mode must stay disabled/);
+const paymentModeLocked = loadUserInputs({
+  cwd,
+  env: {
+    MUSUNIL_USER_INPUTS_B64: Buffer.from(YAML.stringify(livePaymentModeConfig)).toString("base64"),
+    MUSUNIL_FORCE_NON_REVENUE: "true"
+  }
+});
+assert.equal((paymentModeLocked.config.payments as Record<string, unknown>).mode, "disabled");
 
 const placeholderConfig = JSON.parse(JSON.stringify(loaded.config));
 placeholderConfig.app.public_base_url = "https://musunil.example";

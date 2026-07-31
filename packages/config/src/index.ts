@@ -26,37 +26,61 @@ export function loadUserInputs(options: LoadUserInputsOptions = {}): LoadedUserI
 
   if (env.MUSUNIL_USER_INPUTS_FILE_PATH) {
     const path = resolve(cwd, env.MUSUNIL_USER_INPUTS_FILE_PATH);
-    return parseUserInputs(readFileSync(path, "utf8"), "env_file", path);
+    return parseUserInputs(readFileSync(path, "utf8"), "env_file", path, forceNonRevenueRequested(env));
   }
 
   if (env.MUSUNIL_USER_INPUTS_B64) {
-    return parseUserInputs(Buffer.from(env.MUSUNIL_USER_INPUTS_B64, "base64").toString("utf8"), "env_b64");
+    return parseUserInputs(
+      Buffer.from(env.MUSUNIL_USER_INPUTS_B64, "base64").toString("utf8"),
+      "env_b64",
+      undefined,
+      forceNonRevenueRequested(env)
+    );
   }
 
   const templatePath = resolve(cwd, "config/musunil.user-inputs.template.yaml");
   if (options.allowTemplate && options.preferTemplate) {
-    return parseUserInputs(readFileSync(templatePath, "utf8"), "template_file", templatePath);
+    return parseUserInputs(readFileSync(templatePath, "utf8"), "template_file", templatePath, forceNonRevenueRequested(env));
   }
 
   const localPath = resolve(cwd, "config/musunil.user-inputs.local.yaml");
   if (existsSync(localPath)) {
-    return parseUserInputs(readFileSync(localPath, "utf8"), "local_file", localPath);
+    return parseUserInputs(readFileSync(localPath, "utf8"), "local_file", localPath, forceNonRevenueRequested(env));
   }
 
   if (options.allowTemplate) {
-    return parseUserInputs(readFileSync(templatePath, "utf8"), "template_file", templatePath);
+    return parseUserInputs(readFileSync(templatePath, "utf8"), "template_file", templatePath, forceNonRevenueRequested(env));
   }
 
   throw new Error("Missing user inputs. Copy config/musunil.user-inputs.template.yaml to config/musunil.user-inputs.local.yaml or set Render secret input.");
 }
 
-function parseUserInputs(raw: string, source: LoadedUserInputs["source"], path?: string): LoadedUserInputs {
+function parseUserInputs(raw: string, source: LoadedUserInputs["source"], path?: string, forceNonRevenue = false): LoadedUserInputs {
   const config = YAML.parse(raw);
   if (!config || typeof config !== "object" || Array.isArray(config)) {
     throw new Error("User inputs YAML must be an object.");
   }
+  if (forceNonRevenue) applyNonRevenueLock(config as Record<string, unknown>);
   assertForbiddenFeaturesDisabled(config as Record<string, unknown>);
   return { config: config as Record<string, unknown>, source, path };
+}
+
+function forceNonRevenueRequested(env: NodeJS.ProcessEnv): boolean {
+  return env.MUSUNIL_FORCE_NON_REVENUE === "true";
+}
+
+function applyNonRevenueLock(config: Record<string, unknown>): void {
+  const payments =
+    config.payments && typeof config.payments === "object" && !Array.isArray(config.payments)
+      ? (config.payments as Record<string, unknown>)
+      : {};
+  config.payments = payments;
+  payments.donations_enabled = false;
+  payments.operating_support_enabled = false;
+  payments.mode = "disabled";
+  payments.influence_on_ranking_enabled = false;
+  payments.influence_on_alerts_enabled = false;
+  payments.influence_on_trust_enabled = false;
 }
 
 function assertForbiddenFeaturesDisabled(config: Record<string, unknown>): void {

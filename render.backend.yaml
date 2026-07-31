@@ -25,6 +25,8 @@ services:
         value: production
       - key: MUSUNIL_EMBEDDED_SCHEDULER
         value: "true"
+      - key: MUSUNIL_FORCE_NON_REVENUE
+        value: "true"
       - key: MUSUNIL_OPS_TASKS
         value: public_source_ingest
       - key: MUSUNIL_INTERNAL_API_KEY
@@ -59,6 +61,8 @@ services:
     envVars:
       - key: MUSUNIL_RUNTIME_ENV
         value: production
+      - key: MUSUNIL_FORCE_NON_REVENUE
+        value: "true"
       - key: MUSUNIL_API_HOSTPORT
         fromService:
           type: web
