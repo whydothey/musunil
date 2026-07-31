@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { childEnvironment, opsLeaseSeconds, opsTaskDefinitions, taskById } from "./ops-scheduler-contract.ts";
+import { childEnvironment, opsLeaseSeconds, opsTaskDefinitions, selectOpsTaskDefinitions, taskById } from "./ops-scheduler-contract.ts";
 
 assert.deepEqual(opsTaskDefinitions.map((task) => task.id), [
   "notification_dispatch",
@@ -19,6 +19,10 @@ assert.equal(taskById("law_source_ingest")?.args.join(" ").includes("workers/pub
 assert.equal(taskById("news_source_ingest")?.args.join(" ").includes("workers/public-source-ingest/src/index.ts --news --post"), true);
 assert.equal(taskById("media_redaction")?.args.join(" ").includes("scripts/redaction-worker.mjs"), true);
 assert.equal(taskById("unknown"), undefined);
+assert.deepEqual(selectOpsTaskDefinitions().map((task) => task.id), opsTaskDefinitions.map((task) => task.id));
+assert.deepEqual(selectOpsTaskDefinitions("public_source_ingest").map((task) => task.id), ["public_source_ingest"]);
+assert.deepEqual(selectOpsTaskDefinitions("news_source_ingest, public_source_ingest,news_source_ingest").map((task) => task.id), ["public_source_ingest", "news_source_ingest"]);
+assert.throws(() => selectOpsTaskDefinitions("unknown"), /Unknown operations task ids/);
 
 const sourceEnv = {
   MUSUNIL_USER_INPUTS_B64: "secret-yaml",
@@ -41,6 +45,7 @@ assert.equal(redactionEnv.MUSUNIL_USER_INPUTS_FILE_PATH, "/secret/file");
 
 const schedulerSource = readFileSync(new URL("./ops-scheduler.ts", import.meta.url), "utf8");
 assert.match(schedulerSource, /for update skip locked\s+limit 1/i);
+assert.match(schedulerSource, /task_id = any\(\$1::text\[\]\)/i);
 assert.match(schedulerSource, /setInterval\(\(\) =>[\s\S]*renewLease\(task\)/);
 assert.match(schedulerSource, /lease_until = now\(\) \+ \(\$3::integer \* interval '1 second'\)/);
 
@@ -50,6 +55,7 @@ console.log(JSON.stringify({
   leaseSeconds: opsLeaseSeconds,
   singleTaskClaims: true,
   leaseHeartbeat: true,
+  taskAllowlist: true,
   nonLawSecretScrub: true,
   secretFilePropagation: true
 }, null, 2));

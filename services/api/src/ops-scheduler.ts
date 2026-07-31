@@ -5,7 +5,7 @@ import pg from "pg";
 import {
   childEnvironment,
   opsLeaseSeconds,
-  opsTaskDefinitions,
+  selectOpsTaskDefinitions,
   taskById,
   type OpsTaskDefinition
 } from "./ops-scheduler-contract.ts";
@@ -13,6 +13,8 @@ import {
 const { Pool } = pg;
 const workspaceRoot = resolve(import.meta.dirname, "../../..");
 const databaseUrl = process.env.DATABASE_URL;
+const scheduledTasks = selectOpsTaskDefinitions(process.env.MUSUNIL_OPS_TASKS);
+const scheduledTaskIds = scheduledTasks.map((task) => task.id);
 
 if (!databaseUrl) throw new Error("DATABASE_URL is required for the operations scheduler.");
 if (!process.env.MUSUNIL_API_HOSTPORT && !process.env.MUSUNIL_API_BASE_URL) {
@@ -21,7 +23,7 @@ if (!process.env.MUSUNIL_API_HOSTPORT && !process.env.MUSUNIL_API_BASE_URL) {
 if (!process.env.MUSUNIL_INTERNAL_API_KEY) {
   throw new Error("MUSUNIL_INTERNAL_API_KEY is required for scheduled workers.");
 }
-if (!process.env.MUSUNIL_USER_INPUTS_FILE_PATH && !process.env.MUSUNIL_USER_INPUTS_B64) {
+if (scheduledTasks.some((task) => task.needsUserInputs) && !process.env.MUSUNIL_USER_INPUTS_FILE_PATH && !process.env.MUSUNIL_USER_INPUTS_B64) {
   throw new Error("MUSUNIL_USER_INPUTS_FILE_PATH or MUSUNIL_USER_INPUTS_B64 is required for scheduled law ingestion.");
 }
 
@@ -54,6 +56,7 @@ try {
 
   console.log(JSON.stringify({
     checked: "ops_scheduler_run",
+    configuredTasks: scheduledTaskIds,
     claimed: claimed.map((task) => task.id),
     results,
     ok: results.every((result) => result.ok)
@@ -71,7 +74,7 @@ async function claimNextDueTask(): Promise<OpsTaskDefinition | undefined> {
     const table = await client.query<{ table_name: string | null }>("select to_regclass('public.ops_task_leases')::text as table_name");
     if (!table.rows[0]?.table_name) throw new Error("ops_task_leases is missing; run pnpm db:migrate before the scheduler.");
 
-    for (const task of opsTaskDefinitions) {
+    for (const task of scheduledTasks) {
       await client.query(
         `insert into ops_task_leases(task_id, cadence_seconds, retry_seconds, next_run_at)
          values ($1, $2, $3, now())
@@ -88,6 +91,7 @@ async function claimNextDueTask(): Promise<OpsTaskDefinition | undefined> {
        from ops_task_leases
        where next_run_at <= now()
          and (lease_until is null or lease_until <= now())
+         and task_id = any($1::text[])
        order by next_run_at,
                 case task_id
                   when 'notification_dispatch' then 10
@@ -99,7 +103,8 @@ async function claimNextDueTask(): Promise<OpsTaskDefinition | undefined> {
                   else 100
                 end
        for update skip locked
-       limit 1`
+       limit 1`,
+      [scheduledTaskIds]
     );
 
     const row = due.rows[0];

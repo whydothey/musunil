@@ -14,6 +14,8 @@ assert.equal(normalize(databaseBlock(full, "musunil-postgres")), normalize(datab
 assert.doesNotMatch(backend, /name:\s*musunil-web\b/);
 assert.match(full, /name:\s*musunil-web\b/);
 assert.match(renderServiceBlock(backend, "musunil-api"), /branch:\s*main[\s\S]*autoDeployTrigger:\s*checksPass/);
+assert.match(renderServiceBlock(backend, "musunil-api"), /key:\s*MUSUNIL_EMBEDDED_SCHEDULER\s*\n\s*value:\s*"true"/);
+assert.match(renderServiceBlock(backend, "musunil-api"), /key:\s*MUSUNIL_OPS_TASKS\s*\n\s*value:\s*public_source_ingest/);
 assert.match(renderServiceBlock(backend, "musunil-ops-scheduler"), /plan:\s*starter[\s\S]*branch:\s*main[\s\S]*autoDeployTrigger:\s*checksPass/);
 
 const dryRun = spawnSync(process.execPath, ["scripts/render-provisioning-plan.mjs", "--", "--json"], {

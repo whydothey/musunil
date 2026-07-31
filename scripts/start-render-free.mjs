@@ -4,6 +4,7 @@ import { spawn } from "node:child_process";
 const checkOnly = process.argv.includes("--check");
 const schedulerIntervalMs = 5 * 60 * 1_000;
 const embeddedSchedulerEnabled = process.env.MUSUNIL_EMBEDDED_SCHEDULER === "true";
+const embeddedSchedulerTasks = process.env.MUSUNIL_OPS_TASKS || "all";
 
 if (checkOnly) {
   console.log(JSON.stringify({
@@ -12,6 +13,7 @@ if (checkOnly) {
     schedulerIntervalSeconds: schedulerIntervalMs / 1_000,
     schedulerRunsAfterWake: embeddedSchedulerEnabled,
     schedulerMode: embeddedSchedulerEnabled ? "embedded_opt_in" : "separate_cron",
+    schedulerTasks: embeddedSchedulerTasks,
     generatedInternalKeyIsNotLogged: true
   }, null, 2));
   process.exit(0);

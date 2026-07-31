@@ -22,7 +22,9 @@ services:
       - key: MUSUNIL_RUNTIME_ENV
         value: production
       - key: MUSUNIL_EMBEDDED_SCHEDULER
-        value: "false"
+        value: "true"
+      - key: MUSUNIL_OPS_TASKS
+        value: public_source_ingest
       - key: MUSUNIL_INTERNAL_API_KEY
         generateValue: true
       - key: MUSUNIL_USER_TOKEN_SECRET

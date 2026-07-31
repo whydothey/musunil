@@ -81,6 +81,15 @@ export function taskById(id: string): OpsTaskDefinition | undefined {
   return opsTaskDefinitions.find((task) => task.id === id);
 }
 
+export function selectOpsTaskDefinitions(value?: string): OpsTaskDefinition[] {
+  const requestedIds = [...new Set(String(value || "").split(",").map((item) => item.trim()).filter(Boolean))];
+  if (requestedIds.length === 0) return opsTaskDefinitions;
+  const unknownIds = requestedIds.filter((id) => !taskById(id));
+  if (unknownIds.length > 0) throw new Error(`Unknown operations task ids: ${unknownIds.join(", ")}`);
+  const selectedIds = new Set(requestedIds);
+  return opsTaskDefinitions.filter((task) => selectedIds.has(task.id));
+}
+
 export function childEnvironment(task: OpsTaskDefinition, source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const env = { ...source };
   if (!task.needsUserInputs) {
