@@ -148,6 +148,14 @@ const nonRevenueLocked = loadUserInputs({
 assert.equal((nonRevenueLocked.config.payments as Record<string, unknown>).operating_support_enabled, false);
 assert.equal((nonRevenueLocked.config.payments as Record<string, unknown>).donations_enabled, false);
 assert.equal((nonRevenueLocked.config.payments as Record<string, unknown>).mode, "disabled");
+const productionNonRevenueLocked = loadUserInputs({
+  cwd,
+  env: {
+    MUSUNIL_USER_INPUTS_B64: Buffer.from(YAML.stringify(supportPaymentConfig)).toString("base64"),
+    MUSUNIL_RUNTIME_ENV: "production"
+  }
+});
+assert.equal((productionNonRevenueLocked.config.payments as Record<string, unknown>).operating_support_enabled, false);
 
 const livePaymentModeConfig = JSON.parse(JSON.stringify(loaded.config));
 livePaymentModeConfig.payments.mode = "live";

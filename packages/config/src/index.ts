@@ -66,7 +66,7 @@ function parseUserInputs(raw: string, source: LoadedUserInputs["source"], path?:
 }
 
 function forceNonRevenueRequested(env: NodeJS.ProcessEnv): boolean {
-  return env.MUSUNIL_FORCE_NON_REVENUE === "true";
+  return env.MUSUNIL_RUNTIME_ENV === "production" || env.MUSUNIL_FORCE_NON_REVENUE === "true";
 }
 
 function applyNonRevenueLock(config: Record<string, unknown>): void {
