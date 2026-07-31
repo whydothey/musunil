@@ -828,6 +828,11 @@ assert.equal((notReadySession.body as { error: string }).error, "runtime_not_rea
 assert.equal((notReadySession.body as { summary: { failedIds: string[]; blockingGroups: string[] } }).summary.failedIds.includes("postgres.database_url"), true);
 assert.equal((notReadySession.body as { summary: { blockingGroups: string[] } }).summary.blockingGroups.includes("database"), true);
 assert.equal((notReadySession.body as { requiredActions: Array<{ id: string }> }).requiredActions.some((item) => item.id === "database"), true);
+for (const path of ["/comments", "/votes", "/likes", "/reactions", "/donations", "/sponsorships", "/payments/checkout", "/billing/recurring"]) {
+  const response = await notReadyWriteApp.handle({ method: "POST", path, body: {} });
+  assert.equal(response.status, 404);
+  assert.equal((response.body as { error: string }).error, "not_found");
+}
 const productionAnonymousSession = await createApp(createSeedStore(), { allowAnonymousSession: false, userTokenSecret: testUserTokenSecret }).handle({
   method: "POST",
   path: "/session/anonymous"

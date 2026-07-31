@@ -908,6 +908,32 @@ function isPreviewSeedId(id: string): boolean {
   );
 }
 
+function isKnownPublicWriteRoute(method: string, path: string): boolean {
+  if (method === "POST") {
+    return (
+      path === "/session/anonymous" ||
+      path === "/uploads/live" ||
+      path === "/reports/live" ||
+      (path.startsWith("/claims/") && path.endsWith("/field-verifications")) ||
+      path === "/reports/material" ||
+      path === "/corrections/on-site" ||
+      path === "/reports/rights-violation" ||
+      path === "/rebuttals" ||
+      path === "/subscriptions"
+    );
+  }
+  if (method === "PATCH") {
+    return (
+      path.startsWith("/subscriptions/") ||
+      path.startsWith("/admin/news-issue-candidates/") ||
+      path.startsWith("/admin/law-group-links/") ||
+      path.startsWith("/admin/occurrence-issue-links/") ||
+      path.startsWith("/admin/claims/")
+    );
+  }
+  return false;
+}
+
 function targetExists(store: Store, targetType: TargetType, targetId: string): boolean {
   if (targetType === "issue") return store.issues.some((item) => item.id === targetId);
   if (targetType === "occurrence") return store.occurrences.some((item) => item.id === targetId);
@@ -958,6 +984,14 @@ async function handleRequest(store: Store, request: ApiRequest, options: AppOpti
     }
     if (path === "/auth/identity/start") return postIdentityStart(store, request, options);
     return await postIdentityComplete(store, request, options);
+  }
+  if (
+    options.requireReadyForWrites &&
+    request.method !== "GET" &&
+    !path.startsWith("/internal/") &&
+    !isKnownPublicWriteRoute(request.method, path)
+  ) {
+    return json(404, { error: "not_found" });
   }
   if (options.requireReadyForWrites && request.method !== "GET" && !path.startsWith("/internal/")) {
     const readiness = describeReadiness(await (options.readiness?.() ?? defaultReadiness()));
