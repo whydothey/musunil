@@ -6,26 +6,18 @@
 
 ## Current State
 
-- Generated: 2026-07-19T13:43:48.097Z
+- Generated: 2026-08-01T05:48:28.612Z
 - Expected deploy SHA: run `git rev-parse HEAD` immediately before Render deploy and `pnpm launch:final-gate`.
 - Refresh command: `pnpm launch:handoff`
 - Active goal: active
 - Launch readiness: blocked
-- Stage: connect_api_endpoint
+- Stage: restore_live_issue_sync
 - Release blocked: yes
 - Push CI: run `pnpm ci:status` after every push. `queued` means GitHub has accepted the workflow but has not assigned a runner yet; use the printed watch command for the final result.
-- Service watch: 2026-07-19T13:43:29.017Z (fresh)
-- Checks: 5 ok, 2 fail, 13 skip, 2 actions
-- Before apply command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
-- Immediate safe command: `pnpm launch:apply`
-- Apply command after inputs: `pnpm launch:apply -- --apply`
-
-## Pre-External-Change Checks
-
-Render/Cloudflare 화면을 바꾸기 전에 아래 명령이 먼저 통과하거나 dry-run으로 입력 상태를 설명해야 한다.
-
-- render_cloudflare_apply_dry_run: `pnpm launch:apply`
-  - Lists required Render/Cloudflare inputs and derived targets without writing to providers.
+- Service watch: 2026-08-01T05:47:10.338Z (fresh)
+- Checks: 19 ok, 1 fail, 0 skip, 1 actions
+- Before next command: api.musunil.com DNS와 Web config.js의 apiBaseUrl이 https://api.musunil.com으로 맞은 상태에서 live API 응답을 확인한다.
+- Next command: `pnpm launch:final-gate`
 
 ## One Command Apply
 
@@ -54,22 +46,12 @@ Required launch inputs from current dry-run:
 
 Split apply paths from current blockers:
 
-- api_dns_and_render_domain: Render API custom domain, api.musunil.com DNS, live API 동기화까지 한 번에 검증하는 주 경로다.
-  - Requires: `RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET`, `CLOUDFLARE_API_TOKEN`
-  - Inputs ready: no
-  - Missing: `RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET`, `CLOUDFLARE_API_TOKEN`
-  - Dry-run: `pnpm launch:apply`
-  - Apply: `pnpm launch:apply -- --apply`
-  - Verify: `pnpm launch:final-gate`
+- (none)
 
 ## What To Do Now
 
-1. connect_api_endpoint (operator)
-   - Action: pnpm launch:apply 출력대로 Render/Cloudflare token과 서비스 target 상태를 확인한다. Render API token과 Cloudflare token이 있으면 pnpm launch:apply -- --apply가 api.musunil.com custom domain 생성, Render onrender.com target 파생, Cloudflare DNS 적용을 한 번에 처리한다. Render token 없이 Dashboard target을 직접 복사한 경우에는 pnpm render:api-settings와 pnpm cloudflare:dns로 값을 확인한 뒤 MUSUNIL_RENDER_API_DNS_TARGET와 CLOUDFLARE_API_TOKEN만 넣고 같은 명령을 실행한다. 이때 renderSkippedReason=manual_api_dns_target_without_render_token이면 Render API write는 건너뛰고 Cloudflare api CNAME만 DNS only로 적용한다.
-   - Verify: `pnpm launch:apply && pnpm launch:blockers -- --refresh`
-   - Reference: docs/launch-cutover-runbook.md#3-render-api
-2. stop_live_visual_surface_regression (lead)
-   - Action: 실제 musunil.com은 fallback 이슈 피드를 렌더링하지만 live API 동기화가 아니다. API DNS/CORS/Web config와 `/home.issueCards` 연결을 고쳐 `serviceSyncState=live`가 될 때까지 배포 승급을 중단한다.
+1. stop_live_visual_surface_regression (lead)
+   - Action: 실제 musunil.com이 live issue feed를 받지 못하고 있다. API DNS/CORS/Web config와 `/home.issueCards` 연결을 고쳐 `serviceSyncState=live`이고 홈 이슈 3개 이상이 렌더링될 때까지 배포 승급을 중단한다.
    - Verify: `pnpm launch:final-gate`
    - Reference: docs/launch-cutover-runbook.md#3-render-api
 
@@ -85,8 +67,15 @@ Split apply paths from current blockers:
 Environment variables:
 - `NODE_VERSION`: `24`
 - `MUSUNIL_RUNTIME_ENV`: `production`
+- `MUSUNIL_WEB_API_BASE_URL`: `https://api.musunil.com`
 
 Headers to copy into Render Dashboard when this is a manual Static Site:
+- Path: `/assets/*`
+  - Name: `Cache-Control`
+  - Value:
+    ```text
+    public, max-age=31536000, immutable
+    ```
 - Path: `/*`
   - Name: `Cache-Control`
   - Value:
@@ -126,6 +115,7 @@ Headers to copy into Render Dashboard when this is a manual Static Site:
 
 Header application mode:
 - Manual Static Site: open Render musunil-web > Settings > Headers and copy every header rule below. render.yaml does not sync into a manually created Static Site.
+- Manual Static Site: open Redirects/Rewrites and add Source=/*, Destination=/index.html, Action=Rewrite.
 - Blueprint-managed service: sync render.yaml and confirm the musunil-web headers section is applied by Render.
 
 Render API automation:
@@ -149,13 +139,15 @@ Render API automation:
 - Build Command: `Dockerfile RUN pnpm install --frozen-lockfile && pnpm check`
 - Pre Deploy Command: `pnpm db:migrate`
 - Start Command: `Dockerfile CMD pnpm start:render-free`
-- Embedded Scheduler: `false` (별도 `musunil-ops-scheduler` 사용)
 - Health Check Path: `/health`
 - Custom Domain: `api.musunil.com`
 
 Environment source summary:
 - Fixed:
   - `MUSUNIL_RUNTIME_ENV=production`
+  - `MUSUNIL_EMBEDDED_SCHEDULER=true`
+  - `MUSUNIL_FORCE_NON_REVENUE=true`
+  - `MUSUNIL_OPS_TASKS=public_source_ingest`
   - `MUSUNIL_USER_INPUTS_FILE_PATH=/etc/secrets/musunil.user-inputs.yaml`
 - Render generated:
   - `MUSUNIL_INTERNAL_API_KEY`

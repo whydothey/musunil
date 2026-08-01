@@ -2,14 +2,18 @@ import { spawnSync } from "node:child_process";
 
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
 const listOnly = args.includes("--list");
+const publicReadOnly = args.includes("--public-read-only");
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-const launchEnv = deriveLaunchEnv(process.env);
+const launchEnv = deriveLaunchEnv({
+  ...process.env,
+  ...(publicReadOnly ? { MUSUNIL_PUBLIC_READ_ONLY_LAUNCH: "1" } : {})
+});
 
 const steps = [
   {
     id: "public_source_refresh_preflight",
     scope: "live_public_sources",
-    args: ["sources:refresh-preflight"]
+    args: ["sources:refresh-preflight", ...(publicReadOnly ? ["--", "--public-read-only"] : [])]
   },
   {
     id: "cloudflare_dns_strict_preflight",
@@ -19,7 +23,7 @@ const steps = [
   {
     id: "post_deploy_smoke",
     scope: "live_web_api",
-    args: ["launch:post-deploy-smoke", "--", "--require-laws", "--require-source-refreshes"]
+    args: ["launch:post-deploy-smoke", "--", ...(publicReadOnly ? ["--public-read-only"] : []), "--require-laws", "--require-source-refreshes"]
   },
   {
     id: "live_blocker_refresh_strict",

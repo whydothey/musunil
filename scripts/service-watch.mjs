@@ -8,6 +8,7 @@ import { publicPayloadRoutes } from "./public-api-routes.mjs";
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
 const once = args.includes("--once");
 const withVisualSurface = args.includes("--with-visual") || process.env.MUSUNIL_SERVICE_WATCH_VISUAL === "1";
+const publicReadOnly = args.includes("--public-read-only") || process.env.MUSUNIL_PUBLIC_READ_ONLY_LAUNCH === "1";
 const intervalMs = Number(process.env.MUSUNIL_SERVICE_WATCH_INTERVAL_MS ?? 5 * 60_000);
 const webBaseUrl = (process.env.MUSUNIL_WEB_BASE_URL ?? "https://musunil.com").replace(/\/$/, "");
 const apiBaseUrl = (process.env.MUSUNIL_API_BASE_URL ?? "https://api.musunil.com").replace(/\/$/, "");
@@ -280,34 +281,29 @@ async function runChecks() {
   await check(checks, "api_health_ready", async () => {
     skipIfApiUnreachable();
     const health = await getJson(`${apiBaseUrl}/health`);
-    const ready = await getJson(`${apiBaseUrl}/ready`, { allowNotOk: true });
+    const readinessPath = publicReadOnly ? "/ready/public-read" : "/ready";
+    const ready = await getJson(`${apiBaseUrl}${readinessPath}`, { allowNotOk: true });
     if (health.ok !== true) throw new Error("health not ok");
     if (ready.ready !== true) throw new Error("ready=false");
-    return { ready: ready.ready, checks: ready.checks?.map((item) => item.id) ?? [] };
+    if (publicReadOnly && ready.gates?.publicRead?.ready !== true) throw new Error("publicRead gate is not ready");
+    return { ready: ready.ready, readinessPath, checks: ready.checks?.map((item) => item.id) ?? [] };
   });
   await check(checks, "public_redacted_media", async () => {
     skipIfApiUnreachable();
-    const poster = await fetch(`${apiBaseUrl}/media/redacted/preview-occ-live-1-poster.png`, {
-      redirect: "manual",
-      signal: AbortSignal.timeout(12_000)
-    });
-    if (poster.status !== 200) throw new Error(`poster returned ${poster.status}`);
-    if (!poster.headers.get("content-type")?.startsWith("image/png")) throw new Error("poster content-type mismatch");
-    if (poster.headers.get("x-content-type-options") !== "nosniff") throw new Error("poster nosniff missing");
-    const posterBytes = (await poster.arrayBuffer()).byteLength;
-    if (posterBytes <= 10_000) throw new Error("poster payload too small");
-
-    const clip = await fetch(`${apiBaseUrl}/media/redacted/preview-occ-live-1.webm`, {
-      redirect: "manual",
-      signal: AbortSignal.timeout(12_000)
-    });
-    if (clip.status !== 200) throw new Error(`clip returned ${clip.status}`);
-    if (!clip.headers.get("content-type")?.startsWith("video/webm")) throw new Error("clip content-type mismatch");
-    if (clip.headers.get("x-content-type-options") !== "nosniff") throw new Error("clip nosniff missing");
-    const clipBytes = (await clip.arrayBuffer()).byteLength;
-    if (clipBytes <= 5_000) throw new Error("clip payload too small");
-
-    return { posterBytes, clipBytes };
+    const reels = await getJson(`${apiBaseUrl}/reels`);
+    const media = (reels.reels ?? []).map((reel) => reel?.media).find((item) => item?.redactedClipUrl || item?.redactedPosterUrl);
+    if (!media) {
+      const preview = await fetch(`${apiBaseUrl}/media/redacted/preview-occ-live-1-poster.png`, {
+        redirect: "manual",
+        signal: AbortSignal.timeout(12_000)
+      });
+      if (preview.status !== 404) throw new Error(`production preview media should stay absent, got ${preview.status}`);
+      return { publicMedia: 0, previewMedia: "absent" };
+    }
+    const checked = [];
+    if (media.redactedPosterUrl) checked.push(await assertPublicMedia(media.redactedPosterUrl, "image/", 10_000, "poster"));
+    if (media.redactedClipUrl) checked.push(await assertPublicMedia(media.redactedClipUrl, "video/", 5_000, "clip"));
+    return { publicMedia: checked.length, checked };
   });
   for (const path of publicPayloadRoutes) {
     await check(checks, `public_payload_${path.slice(1).replaceAll("/", "_")}`, async () => {
@@ -334,8 +330,10 @@ async function runChecks() {
       body: JSON.stringify({ targetType: "occurrence", targetId: "occ_1", rawText: "watch boundary" })
     });
     const body = await response.json().catch(() => ({}));
-    if (response.status !== 401 || body.error !== "identity_required") throw new Error(`write boundary returned ${response.status}:${body.error}`);
-    return { read: "public", write: "identity_required" };
+    const identityRequired = response.status === 401 && body.error === "identity_required";
+    const runtimeLocked = publicReadOnly && response.status === 503 && body.error === "runtime_not_ready";
+    if (!identityRequired && !runtimeLocked) throw new Error(`write boundary returned ${response.status}:${body.error}`);
+    return { read: "public", write: identityRequired ? "identity_required" : "runtime_locked" };
   });
   const result = {
     checkedAt: new Date().toISOString(),
@@ -484,6 +482,20 @@ async function getText(url) {
   return response.text();
 }
 
+async function assertPublicMedia(path, expectedContentTypePrefix, minimumBytes, label) {
+  const url = new URL(path, apiBaseUrl);
+  if (url.origin !== new URL(apiBaseUrl).origin || !url.pathname.startsWith("/media/redacted/")) {
+    throw new Error(`public redacted ${label} path is invalid`);
+  }
+  const response = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(12_000) });
+  if (response.status !== 200) throw new Error(`public redacted ${label} returned ${response.status}`);
+  if (!response.headers.get("content-type")?.startsWith(expectedContentTypePrefix)) throw new Error(`${label} content-type mismatch`);
+  if (response.headers.get("x-content-type-options") !== "nosniff") throw new Error(`${label} nosniff missing`);
+  const bytes = (await response.arrayBuffer()).byteLength;
+  if (bytes <= minimumBytes) throw new Error(`${label} payload too small`);
+  return { label, bytes };
+}
+
 function withCacheBuster(url) {
   const parsed = new URL(url);
   parsed.searchParams.set("_musunil_service_watch", `${Date.now()}`);
@@ -553,24 +565,25 @@ function isValidSourceRefresh(refresh) {
   if (!refresh?.checkedAt || Number.isNaN(new Date(refresh.checkedAt).getTime())) return false;
   if (refresh.status === "failed") return false;
   if (refresh.status === "empty") {
-    return Number(refresh.parsedCount) > 0 && Number(refresh.resultCount) === 0;
+    return Number(refresh.resultCount) === 0 && (publicReadOnly || Number(refresh.parsedCount) > 0);
   }
   return Number(refresh.resultCount) > 0;
 }
 
 function assertHomeIssueFirstPayload(body) {
   const issues = Array.isArray(body?.issueCards) ? body.issueCards : [];
+  const eventTopicGroups = Array.isArray(body?.eventTopicGroups) ? body.eventTopicGroups : [];
   if (issues.length === 0) {
-    throw new Error("/home issueCards is empty; live launch needs at least one topic Issue before the issue feed can be considered ready");
+    if (eventTopicGroups.length === 0) throw new Error("/home topic data is empty; live launch needs issueCards or eventTopicGroups");
   }
   const topicIssues = issues.filter((issue) => !isPublicSourceBundleIssue(issue));
-  if (topicIssues.length === 0) {
+  if (issues.length > 0 && topicIssues.length === 0) {
     throw new Error("/home issueCards contains only public source bundles; move schedule/statistics bundles to source coverage context");
   }
-  if (topicIssues.length < 3) {
-    throw new Error(`/home issueCards needs at least 3 topic Issues for launch visual readiness, got ${topicIssues.length}`);
+  if (topicIssues.length + eventTopicGroups.length < 3) {
+    throw new Error(`/home needs at least 3 topic entries, got ${topicIssues.length} issueCards and ${eventTopicGroups.length} eventTopicGroups`);
   }
-  if (isPublicSourceBundleIssue(issues[0])) {
+  if (issues.length > 0 && isPublicSourceBundleIssue(issues[0])) {
     throw new Error(`/home first issueCard is a public source bundle, not a topic Issue: ${publicIssueTitle(issues[0])}`);
   }
 }

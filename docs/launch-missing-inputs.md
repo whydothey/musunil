@@ -5,23 +5,15 @@
 
 ## Current Gate
 
-- Generated: 2026-07-19T13:43:48.969Z
+- Generated: 2026-08-01T05:48:30.415Z
 - Source: local_file
 - Launch state: blocked
-- Current stage: connect_api_endpoint
+- Current stage: restore_live_issue_sync
 - Release blocked: yes
-- Blocker report: 2026-07-19T13:43:29.017Z (0m old, refresh after 15m)
+- Blocker report: 2026-08-01T05:47:10.338Z (1m old, refresh after 15m)
 - Report freshness: fresh
-- Before apply command: 먼저 `pnpm launch:apply` dry-run의 `requiredEnv`와 `operatorInputs`를 채운다. 필수 입력이 비어 있으면 실제 적용과 `pnpm launch:final-gate`를 다음 단계로 안내하지 않는다.
-- Immediate safe command: `pnpm launch:apply`
-- Apply command after inputs: `pnpm launch:apply -- --apply`
-
-## Pre-External-Change Checks
-
-아래 명령은 실제 값을 출력하지 않고, 외부 설정 변경 전에 로컬 계약과 필요한 입력 상태를 먼저 확인한다.
-
-- render_cloudflare_apply_dry_run: `pnpm launch:apply`
-  - Lists required Render/Cloudflare inputs and derived targets without writing to providers.
+- Before next command: api.musunil.com DNS와 Web config.js의 apiBaseUrl이 https://api.musunil.com으로 맞은 상태에서 live API 응답을 확인한다.
+- Next command: `pnpm launch:final-gate`
 
 ## Immediate Apply Inputs
 
@@ -83,30 +75,31 @@
 
 ### 포트원 본인확인
 
-- Status: missing_inputs
+- Status: ready_for_smoke
 - Command: `pnpm identity:smoke`
 - Proof marker: `identity_portone_verified_lookup`
 
 | Field | Status |
 |---|---|
+| `identity.web_enabled` | not_required |
 | `identity.provider` | configured |
-| `identity.portone_store_id` | placeholder |
-| `identity.portone_identity_channel_key` | placeholder |
-| `identity.portone_api_secret` | placeholder |
-| `identity.session_cookie_domain` | configured |
-| `MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID` | missing |
+| `identity.portone_store_id` | not_required |
+| `identity.portone_identity_channel_key` | not_required |
+| `identity.portone_api_secret` | not_required |
+| `identity.session_cookie_domain` | host_only |
+| `MUSUNIL_PORTONE_SMOKE_IDENTITY_VERIFICATION_ID` | not_required |
 
 ### 법안·법령 공식 원천
 
-- Status: missing_inputs
+- Status: ready_for_smoke
 - Command: `pnpm sources:laws`
 - Proof marker: `laws_dry_run`
 
 | Field | Status |
 |---|---|
-| `public_data_sources.national_assembly_bill_api_key or public_data_sources.law_go_kr_oc` | missing |
-| `public_data_sources.national_assembly_bill_api_key` | missing |
-| `public_data_sources.law_go_kr_oc` | missing |
+| `public_data_sources.national_assembly_bill_api_key or public_data_sources.law_go_kr_oc` | configured |
+| `public_data_sources.national_assembly_bill_api_key` | configured |
+| `public_data_sources.law_go_kr_oc` | optional_not_configured |
 | `public_data_sources.official_law_endpoints` | 2_official |
 | `public_data_sources.law_interest_keywords` | 6_keywords |
 
@@ -152,5 +145,3 @@
 ## Required Actions
 
 - Play Integrity 또는 App Attest 값과 mobile.integrity_smoke_command를 채운 뒤 pnpm mobile:integrity-smoke를 실행한다.
-- PortOne 본인확인 store/channel/API secret/cookie domain을 채우고 인증 리허설을 수행한다.
-- 국회 의안 API key 또는 법제처 OC 중 하나를 입력한다. 이후 pnpm sources:laws를 실행한다.

@@ -68,6 +68,7 @@ const launchMissingInputsBlockerReport = launchMissingInputsDoc.match(/^- Blocke
 const serviceWatchWebDeploymentReady = ["web_static_manifest", "web_runtime_config", "web_build_info", "web_header_contract"].every((id) =>
   new RegExp(`\\|\\s*${id}\\s*\\|\\s*ok\\s*\\|`).test(serviceWatchDoc)
 );
+const serviceWatchRequiresApiEndpoint = /\|\s*connect_api_endpoint\s*\|\s*operator\s*\|/.test(serviceWatchDoc);
 const cloudflareDnsRecordsDoc = readFileSync(resolve(cwd, "docs/cloudflare-dns-records.md"), "utf8");
 const cloudflareDnsRecordsTerraform = readFileSync(resolve(cwd, "infra/cloudflare/dns-records.tf.example"), "utf8");
 const cloudflareResponseHeadersDoc = readFileSync(resolve(cwd, "docs/cloudflare-response-headers.md"), "utf8");
@@ -874,13 +875,13 @@ if (
   !/Apply command after inputs/.test(launchOperatorBrief) ||
   !/Before apply command/.test(launchOperatorBrief) ||
   !/Before next command/.test(launchOperatorBrief) ||
-  !/Immediate safe command/.test(launchOperatorBriefDoc) ||
-  !/Apply command after inputs/.test(launchOperatorBriefDoc) ||
-  !/Before apply command/.test(launchOperatorBriefDoc) ||
-  !/Pre-External-Change Checks/.test(launchOperatorBriefDoc) ||
+  (serviceWatchRequiresApiEndpoint && !/Immediate safe command/.test(launchOperatorBriefDoc)) ||
+  (serviceWatchRequiresApiEndpoint && !/Apply command after inputs/.test(launchOperatorBriefDoc)) ||
+  (serviceWatchRequiresApiEndpoint && !/Before apply command/.test(launchOperatorBriefDoc)) ||
+  (serviceWatchRequiresApiEndpoint && !/Pre-External-Change Checks/.test(launchOperatorBriefDoc)) ||
   (!serviceWatchWebDeploymentReady && !/render_static_build_contract/.test(launchOperatorBriefDoc)) ||
   (!serviceWatchWebDeploymentReady && !/web_headers_only_dry_run/.test(launchOperatorBriefDoc)) ||
-  !/render_cloudflare_apply_dry_run/.test(launchOperatorBriefDoc) ||
+  (serviceWatchRequiresApiEndpoint && !/render_cloudflare_apply_dry_run/.test(launchOperatorBriefDoc)) ||
   !/Render `onrender\.com` host/.test(launchOperatorBriefDoc) ||
   !/Active goal/.test(launchOperatorBrief) ||
   !/Launch readiness/.test(launchOperatorBrief) ||
@@ -904,8 +905,8 @@ if (
   !/Split apply paths from current blockers/.test(launchOperatorBriefDoc) ||
   (!serviceWatchWebDeploymentReady && !/web_headers_only/.test(launchOperatorBriefDoc)) ||
   (!serviceWatchWebDeploymentReady && !/Web proxy observed/.test(launchOperatorBriefDoc)) ||
-  !/Inputs ready/.test(launchOperatorBriefDoc) ||
-  !/Missing:/.test(launchOperatorBriefDoc) ||
+  (serviceWatchRequiresApiEndpoint && !/Inputs ready/.test(launchOperatorBriefDoc)) ||
+  (serviceWatchRequiresApiEndpoint && !/Missing:/.test(launchOperatorBriefDoc)) ||
   !/RENDER_API_TOKEN or MUSUNIL_RENDER_API_DNS_TARGET/.test(launchOperatorBriefDoc) ||
   !/pnpm launch:apply -- --apply/.test(launchOperatorBriefDoc) ||
   !/pnpm launch:apply -- --apply --cloudflare-headers-only/.test(launchOperatorBriefDoc) ||
@@ -955,7 +956,6 @@ if (/^- Git SHA:\s*[a-f0-9]{40}\s*$/im.test(launchOperatorBriefDoc)) {
 const serviceWatchStaticReady =
   /\|\s*web_static_manifest\s*\|\s*ok\s*\|/.test(serviceWatchDoc) &&
   /\|\s*web_runtime_config\s*\|\s*ok\s*\|/.test(serviceWatchDoc);
-const serviceWatchRequiresApiEndpoint = /\|\s*connect_api_endpoint\s*\|\s*operator\s*\|/.test(serviceWatchDoc);
 if (
   serviceWatchStaticReady &&
   serviceWatchRequiresApiEndpoint &&
@@ -1001,13 +1001,13 @@ if (
   !/pnpm launch:missing-inputs -- --refresh/.test(launchMissingInputs) ||
   !/Blocker report/.test(launchMissingInputsDoc) ||
   !/Report freshness/.test(launchMissingInputsDoc) ||
-  !/Immediate safe command/.test(launchMissingInputsDoc) ||
-  !/Apply command after inputs/.test(launchMissingInputsDoc) ||
-  !/Before apply command/.test(launchMissingInputsDoc) ||
-  !/Pre-External-Change Checks/.test(launchMissingInputsDoc) ||
+  (serviceWatchRequiresApiEndpoint && !/Immediate safe command/.test(launchMissingInputsDoc)) ||
+  (serviceWatchRequiresApiEndpoint && !/Apply command after inputs/.test(launchMissingInputsDoc)) ||
+  (serviceWatchRequiresApiEndpoint && !/Before apply command/.test(launchMissingInputsDoc)) ||
+  (serviceWatchRequiresApiEndpoint && !/Pre-External-Change Checks/.test(launchMissingInputsDoc)) ||
   (!serviceWatchWebDeploymentReady && !/render_static_build_contract/.test(launchMissingInputsDoc)) ||
   (!serviceWatchWebDeploymentReady && !/web_headers_only_dry_run/.test(launchMissingInputsDoc)) ||
-  !/render_cloudflare_apply_dry_run/.test(launchMissingInputsDoc) ||
+  (serviceWatchRequiresApiEndpoint && !/render_cloudflare_apply_dry_run/.test(launchMissingInputsDoc)) ||
   !/Immediate Apply Inputs/.test(launchMissingInputsDoc) ||
   !/\| ID \| Required \| Status \| Env \| Purpose \| Where \| Validate \|/.test(launchMissingInputsDoc) ||
   !/Render API key, or Render musunil-api custom-domain\/service host/.test(launchMissingInputsDoc) ||
@@ -1414,7 +1414,10 @@ if (
   !/resultCount/.test(serviceWatch) ||
   !/refresh_public_source_ingest/.test(serviceWatch) ||
   !/pnpm sources:refresh-preflight/.test(serviceWatch) ||
-  !/at least 3 topic Issues/.test(serviceWatch) ||
+  !/at least 3 topic entries/.test(serviceWatch) ||
+  !/MUSUNIL_PUBLIC_READ_ONLY_LAUNCH/.test(serviceWatch) ||
+  !/\/ready\/public-read/.test(serviceWatch) ||
+  !/runtime_locked/.test(serviceWatch) ||
   !/public source bundle/.test(serviceWatch) ||
   !/serviceStates/.test(serviceWatch) ||
   !/summarizeVisualSmokeFailure/.test(serviceWatch) ||

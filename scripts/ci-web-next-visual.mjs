@@ -70,7 +70,7 @@ async function verifyFixtureViewport(browserInstance, viewport) {
   });
   page.on("pageerror", (error) => failures.push(`${viewport.id}: page ${error.message}`));
   try {
-    await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
+    await gotoWithRetry(page, `${baseUrl}/`, "domcontentloaded");
     await page.locator('[data-screen="home"]').waitFor({ state: "visible" });
     check((await page.locator(".feed-intro > span").innerText()).trim() !== "0개", `${viewport.id}: home exposes a false zero while loading`);
     await page.locator('[data-screen="home"] a[href^="/event-topics/"]').first().waitFor({ state: "visible" });
@@ -105,7 +105,7 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     await assertAxe(page, `${viewport.id}: event topic`);
     await shot(page, `${viewport.id}_event_topic.png`);
 
-    await page.goto(`${baseUrl}/issues/issue-network-act`, { waitUntil: "load" });
+    await gotoWithRetry(page, `${baseUrl}/issues/issue-network-act`, "load");
     await page.locator('[data-screen="issue"]').waitFor({ state: "visible" });
     check(await page.locator('[role="tab"]').count() === 4, `${viewport.id}: issue detail must expose exactly four tabs`);
     check(await page.locator('.occurrence-row').count() >= 3, `${viewport.id}: issue detail occurrence list missing`);
@@ -135,14 +135,14 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     const restoredHref = await page.evaluate(() => document.activeElement?.getAttribute("href"));
     check(restoredHref === "/occurrences/occ-network-seoul", `${viewport.id}: back navigation did not restore occurrence focus`);
 
-    await page.goto(`${baseUrl}/reels`, { waitUntil: "load" });
+    await gotoWithRetry(page, `${baseUrl}/reels`, "load");
     await page.locator('.reel-card').first().waitFor({ state: "visible" });
     const reelBox = await page.locator('.reel-card').first().boundingBox();
     check(Boolean(reelBox && reelBox.height >= viewport.height * 0.82), `${viewport.id}: reel does not fill the content viewport`);
     check((await page.locator('.reel-card').first().locator('.reel-actions a').count()) === 3, `${viewport.id}: reel action rail changed`);
     await assertAxe(page, `${viewport.id}: reels`);
     await shot(page, `${viewport.id}_reels.png`);
-    await page.goto(`${baseUrl}/reels?occurrence=occ-network-seoul`, { waitUntil: "load" });
+    await gotoWithRetry(page, `${baseUrl}/reels?occurrence=occ-network-seoul`, "load");
     await page.locator('.reel-card').first().waitFor({ state: "visible" });
     check((await page.locator('.reels-topbar button[aria-label="이전 화면"]').count()) === 1, `${viewport.id}: contextual reels back action missing`);
     await page.getByRole("link", { name: "근거 보기" }).first().click();
@@ -152,7 +152,7 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     check(await page.evaluate(() => document.activeElement?.id === "evidence"), `${viewport.id}: reel evidence action did not focus the evidence section`);
     check((await page.locator("#evidence").getAttribute("open")) !== null, `${viewport.id}: reel evidence deep link did not expand the disclosure`);
 
-    await page.goto(`${baseUrl}/explore`, { waitUntil: "load" });
+    await gotoWithRetry(page, `${baseUrl}/explore`, "load");
     await page.locator('.maplibregl-canvas').waitFor({ state: "visible" });
     await page.locator('[data-map-ready="true"]').waitFor({ state: "visible" });
     await page.locator('[data-basemap-ready="true"]').waitFor({ state: "visible", timeout: 12_000 });
@@ -201,7 +201,7 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     await page.locator(".map-selection").waitFor({ state: "detached" });
     check((await page.locator(".map-selection,.map-anchor-stack,.map-event-list").count()) === 0, `${viewport.id}: Escape did not close the active map surface`);
 
-    await page.goto(`${baseUrl}/laws`, { waitUntil: "load" });
+    await gotoWithRetry(page, `${baseUrl}/laws`, "load");
     await page.locator('[data-screen="laws"]').waitFor({ state: "visible" });
     check((await page.locator('.segmented-control button').count()) === 2, `${viewport.id}: law sort must have two options`);
     check((await page.locator('.law-row').count()) >= 3, `${viewport.id}: fixture law rows missing`);
@@ -221,7 +221,7 @@ async function verifyFixtureViewport(browserInstance, viewport) {
     await assertAxe(page, `${viewport.id}: law detail`);
     await shot(page, `${viewport.id}_law_detail.png`);
 
-    await page.goto(`${baseUrl}/report`, { waitUntil: "load" });
+    await gotoWithRetry(page, `${baseUrl}/report`, "load");
     await page.locator('[data-screen="report"]').waitFor({ state: "visible" });
     const reportActions = await page.locator('main button').count();
     check(reportActions === 1, `${viewport.id}: report entry must expose one action, got ${reportActions}`);
@@ -306,9 +306,12 @@ async function verifyLiveViewport(browserInstance, viewport) {
   const page = await context.newPage();
   page.on("pageerror", (error) => failures.push(`${viewport.id}: page ${error.message}`));
   try {
-    await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
+    await gotoWithRetry(page, `${baseUrl}/`, "domcontentloaded");
     await page.locator(".app-shell").waitFor({ state: "visible" });
-    await page.waitForTimeout(1_000);
+    await page.waitForFunction(() => {
+      const state = document.documentElement.dataset.serviceSyncState;
+      return Boolean(state && state !== "loading");
+    }, undefined, { timeout: 15_000 });
     const home = await metrics(page);
     check(home.overflowX === false, `${viewport.id}: live home horizontal overflow`);
     check(home.nestedInteractive === 0, `${viewport.id}: live home nested interactive controls`);
@@ -330,14 +333,14 @@ async function verifyLiveViewport(browserInstance, viewport) {
       await shot(page, `${viewport.id}_event_topic.png`);
     }
 
-    await page.goto(`${baseUrl}/reels`, { waitUntil: "domcontentloaded" });
+    await gotoWithRetry(page, `${baseUrl}/reels`, "domcontentloaded");
     await page.waitForTimeout(500);
     const reelCount = await page.locator(".reel-card").count();
     if (reelCount > 0) check((await page.locator(".reel-card").first().locator(".reel-actions a").count()) === 3, `${viewport.id}: live reel action rail changed`);
     else check(/아직 공개된 영상이 없습니다|자료 연결을 확인하고 있습니다/.test(await page.locator("body").innerText()), `${viewport.id}: live reels empty state is not honest`);
     await shot(page, `${viewport.id}_reels.png`);
 
-    await page.goto(`${baseUrl}/explore`, { waitUntil: "domcontentloaded" });
+    await gotoWithRetry(page, `${baseUrl}/explore`, "domcontentloaded");
     await page.locator(".map-canvas").waitFor({ state: "visible" });
     await page.locator('[data-basemap-ready="true"]').waitFor({ state: "visible", timeout: 12_000 });
     check((await page.locator(".map-topbar .map-list-button").count()) === 1, `${viewport.id}: live map list action is not in the top filter area`);
@@ -375,12 +378,12 @@ async function verifyLiveViewport(browserInstance, viewport) {
     }
     await shot(page, `${viewport.id}_explore.png`);
 
-    await page.goto(`${baseUrl}/laws`, { waitUntil: "domcontentloaded" });
+    await gotoWithRetry(page, `${baseUrl}/laws`, "domcontentloaded");
     await page.locator('[data-screen="laws"]').waitFor({ state: "visible" });
     check((await page.locator(".segmented-control button").count()) === 2, `${viewport.id}: live law sort changed`);
     await shot(page, `${viewport.id}_laws.png`);
 
-    await page.goto(`${baseUrl}/report`, { waitUntil: "domcontentloaded" });
+    await gotoWithRetry(page, `${baseUrl}/report`, "domcontentloaded");
     await page.locator('[data-screen="report"]').waitFor({ state: "visible" });
     await page.waitForFunction(() => {
       const text = document.body.innerText;
@@ -406,6 +409,7 @@ async function metrics(page) {
     const text = document.body.innerText;
     const forbidden = ["좋아요", "댓글", "찬반", "추천", "비추천", "팔로우", "traffic_control", "WEAKLY_OBSERVED"].filter((token) => text.includes(token));
     return {
+      serviceSyncState: document.documentElement.dataset.serviceSyncState || "unknown",
       overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth,
       nestedInteractive: document.querySelectorAll("a a, a button, button a, button button").length,
       mapCount: document.querySelectorAll(".map-canvas").length,
@@ -447,6 +451,19 @@ async function waitForHttp(url) {
     await new Promise((resolveWait) => setTimeout(resolveWait, 120));
   }
   throw new Error("Web preview did not become ready");
+}
+
+async function gotoWithRetry(page, url, waitUntil) {
+  let lastError;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await page.goto(url, { waitUntil });
+    } catch (error) {
+      lastError = error;
+      if (attempt < 2) await new Promise((resolveWait) => setTimeout(resolveWait, 250 * (attempt + 1)));
+    }
+  }
+  throw lastError;
 }
 
 function valueAfter(flag) {

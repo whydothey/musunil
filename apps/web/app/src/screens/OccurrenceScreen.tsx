@@ -2,7 +2,7 @@ import { ArrowUpRight, FileText, MapPin, PlaySquare } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { useAppState } from "../app-state";
 import { EmptyState, FactRow, LoadingState, ScheduleStatus, ScreenHeader, ServiceUnavailable } from "../components";
-import { evidenceLabel, formatDateTime, formatRelativeTime, locationPrecisionLabel, occurrenceDisplayTitle, occurrencePurposeLabel, riskLabel, scaleLabel } from "../format";
+import { evidenceLabel, formatDateTime, formatRelativeTime, locationPrecisionLabel, occurrenceDisplayTitle, occurrencePurposeLabel, occurrenceTopicTitle, riskLabel, scaleLabel } from "../format";
 import { Link } from "../router";
 
 export function OccurrenceScreen({ id }: { id: string }) {
@@ -11,7 +11,8 @@ export function OccurrenceScreen({ id }: { id: string }) {
   const claims = dataset?.claimsByOccurrence[id] || [];
   const hasClaimPayload = Object.prototype.hasOwnProperty.call(dataset?.claimsByOccurrence || {}, id);
   const detailState = occurrenceDetailStates[id] || (hasClaimPayload ? "ready" : "idle");
-  const issue = useMemo(() => dataset?.issues.find((item) => item.id === occurrence?.issueId), [dataset, occurrence]);
+  const relatedIssueId = occurrence?.issueId || occurrence?.topicCandidate?.issueId;
+  const issue = useMemo(() => dataset?.issues.find((item) => item.id === relatedIssueId), [dataset, relatedIssueId]);
   const reels = useMemo(() => dataset?.reels.filter((item) => item.occurrenceId === id) || [], [dataset, id]);
   const evidenceRef = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
@@ -30,7 +31,7 @@ export function OccurrenceScreen({ id }: { id: string }) {
 
   return (
     <section className="screen screen-detail occurrence-detail" data-screen="occurrence">
-      <ScreenHeader title={occurrenceDisplayTitle(occurrence)} eyebrow={issue?.title || occurrencePurposeLabel(occurrence)} back />
+      <ScreenHeader title={occurrenceDisplayTitle(occurrence)} eyebrow={issue?.title || occurrenceTopicTitle(occurrence)} back />
       <div className="occurrence-hero">
         <div className="hero-status"><ScheduleStatus occurrence={occurrence} /></div>
         {occurrence.keyPoint ? <p>{occurrence.keyPoint}</p> : null}
@@ -39,7 +40,8 @@ export function OccurrenceScreen({ id }: { id: string }) {
       <dl className="fact-list" aria-label="현장 핵심 정보">
         <FactRow
           label="주제"
-          value={issue?.title || occurrencePurposeLabel(occurrence)}
+          value={issue?.title || occurrenceTopicTitle(occurrence)}
+          supporting={!issue && occurrence.topicCandidate ? occurrencePurposeLabel(occurrence) : undefined}
         />
         <FactRow
           label="장소"
@@ -86,7 +88,7 @@ export function OccurrenceScreen({ id }: { id: string }) {
         </div>
       </details>
 
-      {issue ? <Link href={`/issues/${encodeURIComponent(issue.id)}`} className="related-issue-link"><span>관련 이슈</span><strong>{issue.title}</strong></Link> : null}
+      {relatedIssueId ? <Link href={`/issues/${encodeURIComponent(relatedIssueId)}`} className="related-issue-link"><span>관련 이슈</span><strong>{issue?.title || occurrenceTopicTitle(occurrence)}</strong></Link> : null}
       <Link href={`/rights?targetType=occurrence&targetId=${encodeURIComponent(id)}`} className="rights-link"><span>이 정보에 대한 정정·반론·권리침해 안내</span></Link>
     </section>
   );

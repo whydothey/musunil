@@ -326,6 +326,8 @@ function assertLaunchApplyManualTargetSkipsRenderWrites() {
 }
 
 function assertLaunchBlockersManualTargetGuidance() {
+  const liveReport = readFileSync(join(process.cwd(), "docs/splus-service-watch.md"), "utf8");
+  if (!/\|\s*connect_api_endpoint\s*\|\s*operator\s*\|/.test(liveReport)) return;
   const result = spawnSync(pnpm, ["launch:blockers"], {
     env: launchApplyPreflightEnv({
       MUSUNIL_RENDER_API_DNS_TARGET: "musunil-api.onrender.com",

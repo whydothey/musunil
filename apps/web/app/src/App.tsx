@@ -1,5 +1,5 @@
 import { Camera, Home, Landmark, Map, PlaySquare } from "lucide-react";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { AppStateProvider, useAppState } from "./app-state";
 import { Link, RouterProvider, useRouter, type RouteName } from "./router";
 import { LoadingState } from "./components";
@@ -37,6 +37,10 @@ export function App() {
 function AppShell() {
   const { route } = useRouter();
   const { serviceSyncState } = useAppState();
+  useEffect(() => {
+    document.documentElement.dataset.serviceSyncState = serviceSyncState;
+    return () => { delete document.documentElement.dataset.serviceSyncState; };
+  }, [serviceSyncState]);
   const activeRoute: RouteName = route.name === "occurrence"
     ? "explore"
     : route.name === "issue" || route.name === "event-topic" || route.name === "trust"

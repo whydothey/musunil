@@ -16,20 +16,22 @@
         "노동조합법 개정 관련 집회"
       ],
       "home": {
+        "serviceSyncState": "fixture",
         "overflowX": false,
         "nestedInteractive": 0,
         "mapCount": 0,
         "forbidden": []
       },
       "mapPixels": {
-        "colorGroups": 139,
+        "colorGroups": 138,
         "dominantRatio": 0.3304
       },
       "selectedMapPixels": {
-        "colorGroups": 157,
-        "dominantRatio": 0.3383
+        "colorGroups": 156,
+        "dominantRatio": 0.3386
       },
       "finalMetrics": {
+        "serviceSyncState": "fixture",
         "overflowX": false,
         "nestedInteractive": 0,
         "mapCount": 0,
@@ -50,6 +52,7 @@
         "노동조합법 개정 관련 집회"
       ],
       "home": {
+        "serviceSyncState": "fixture",
         "overflowX": false,
         "nestedInteractive": 0,
         "mapCount": 0,
@@ -57,13 +60,14 @@
       },
       "mapPixels": {
         "colorGroups": 113,
-        "dominantRatio": 0.3521
+        "dominantRatio": 0.3525
       },
       "selectedMapPixels": {
-        "colorGroups": 130,
-        "dominantRatio": 0.31
+        "colorGroups": 132,
+        "dominantRatio": 0.3111
       },
       "finalMetrics": {
+        "serviceSyncState": "fixture",
         "overflowX": false,
         "nestedInteractive": 0,
         "mapCount": 0,
@@ -84,6 +88,7 @@
         "노동조합법 개정 관련 집회"
       ],
       "home": {
+        "serviceSyncState": "fixture",
         "overflowX": false,
         "nestedInteractive": 0,
         "mapCount": 0,
@@ -94,10 +99,11 @@
         "dominantRatio": 0.5653
       },
       "selectedMapPixels": {
-        "colorGroups": 88,
-        "dominantRatio": 0.2808
+        "colorGroups": 89,
+        "dominantRatio": 0.2811
       },
       "finalMetrics": {
+        "serviceSyncState": "fixture",
         "overflowX": false,
         "nestedInteractive": 0,
         "mapCount": 0,
@@ -118,6 +124,7 @@
         "노동조합법 개정 관련 집회"
       ],
       "home": {
+        "serviceSyncState": "fixture",
         "overflowX": false,
         "nestedInteractive": 0,
         "mapCount": 0,
@@ -125,13 +132,14 @@
       },
       "mapPixels": {
         "colorGroups": 65,
-        "dominantRatio": 0.6115
+        "dominantRatio": 0.6114
       },
       "selectedMapPixels": {
         "colorGroups": 92,
         "dominantRatio": 0.3179
       },
       "finalMetrics": {
+        "serviceSyncState": "fixture",
         "overflowX": false,
         "nestedInteractive": 0,
         "mapCount": 0,

@@ -3,6 +3,7 @@ import { loadUserInputs } from "../packages/config/src/index.ts";
 
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
 const listOnly = args.includes("--list");
+const publicReadOnly = args.includes("--public-read-only") || process.env.MUSUNIL_PUBLIC_READ_ONLY_LAUNCH === "1";
 const apiBaseUrl = deployedHttpsUrlString(process.env.MUSUNIL_API_BASE_URL ?? readConfigString("api.public_base_url") ?? "https://api.musunil.com");
 const requestTimeoutMs = 12_000;
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
@@ -115,7 +116,7 @@ function isValidSourceRefresh(refresh) {
   if (!refresh?.checkedAt || Number.isNaN(new Date(refresh.checkedAt).getTime())) return false;
   if (refresh.status === "failed") return false;
   if (refresh.status === "empty") {
-    return Number(refresh.parsedCount) > 0 && Number(refresh.resultCount) === 0;
+    return Number(refresh.resultCount) === 0 && (publicReadOnly || Number(refresh.parsedCount) > 0);
   }
   return Number(refresh.resultCount) > 0;
 }

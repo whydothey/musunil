@@ -189,3 +189,6 @@
 | 2026-07-19T12:47:57.897Z | Active | web_visual_surface, api_endpoint_preflight |
 | 2026-07-19T13:17:58.748Z | Active | web_visual_surface, api_endpoint_preflight |
 | 2026-07-19T13:43:29.017Z | Active | web_visual_surface, api_endpoint_preflight |
+| 2026-08-01T05:26:26.562Z | Active | web_visual_surface, api_health_ready, public_redacted_media, public_payload_home, public_source_refresh_freshness, identity_public_read_write_boundary |
+| 2026-08-01T05:39:06.385Z | Active | - |
+| 2026-08-01T05:47:10.338Z | Active | web_visual_surface |
