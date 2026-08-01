@@ -312,6 +312,11 @@ async function verifyLiveViewport(browserInstance, viewport) {
       const state = document.documentElement.dataset.serviceSyncState;
       return Boolean(state && state !== "loading");
     }, undefined, { timeout: 15_000 });
+    await page.waitForFunction(() => {
+      const text = document.body.innerText;
+      return Boolean(document.querySelector('a[href^="/event-topics/"]'))
+        || /확인된 주요 이슈가 아직 없습니다|자료 연결을 확인하고 있습니다|일정의 주제를 확인하고 있습니다/.test(text);
+    }, undefined, { timeout: 15_000 });
     const home = await metrics(page);
     check(home.overflowX === false, `${viewport.id}: live home horizontal overflow`);
     check(home.nestedInteractive === 0, `${viewport.id}: live home nested interactive controls`);

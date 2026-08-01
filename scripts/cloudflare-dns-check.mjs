@@ -2,6 +2,7 @@ import { lookup, resolveCname } from "node:dns/promises";
 
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
 const strict = args.includes("--strict");
+const publicReadOnly = args.includes("--public-read-only") || process.env.MUSUNIL_PUBLIC_READ_ONLY_LAUNCH === "1";
 const webBaseUrl = deployedHttpsUrl(process.env.MUSUNIL_WEB_BASE_URL ?? "https://musunil.com");
 const apiBaseUrl = deployedHttpsUrl(process.env.MUSUNIL_API_BASE_URL ?? "https://api.musunil.com");
 const expectedApiBaseUrl = deployedHttpsUrl(process.env.MUSUNIL_EXPECTED_API_BASE_URL ?? apiBaseUrl);
@@ -124,12 +125,16 @@ if (checkOk("api_dns")) {
     return { status: response.status, ok: body.ok };
   });
   await check("api_ready", async () => {
-    const response = await fetchWithTimeout(`${apiBaseUrl}/ready`);
+    const readinessPath = publicReadOnly ? "/ready/public-read" : "/ready";
+    const response = await fetchWithTimeout(`${apiBaseUrl}${readinessPath}`);
     const body = await response.json().catch(() => ({}));
     if (response.status !== 200 || body.ready !== true) {
-      throw new Error(`ready failed: status=${response.status}, ready=${body.ready}; ${formatReadinessFailure(body)}`);
+      throw new Error(`${readinessPath} failed: status=${response.status}, ready=${body.ready}; ${formatReadinessFailure(body)}`);
     }
-    return { status: response.status, ready: body.ready };
+    if (publicReadOnly && body.gates?.publicRead?.ready !== true) {
+      throw new Error(`${readinessPath} publicRead gate is not ready; ${formatReadinessFailure(body)}`);
+    }
+    return { status: response.status, ready: body.ready, path: readinessPath, mode: publicReadOnly ? "public_read_only" : "full" };
   });
 } else {
   skip("api_health", "skipped: API DNS failed");
@@ -139,6 +144,7 @@ if (checkOk("api_dns")) {
 const result = {
   checked: "cloudflare_dns_and_edge_preflight",
   strict,
+  mode: publicReadOnly ? "public_read_only" : "full",
   webBaseUrl,
   apiBaseUrl,
   expectedRenderTargets: {
