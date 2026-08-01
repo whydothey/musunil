@@ -229,7 +229,7 @@ async function runChecks() {
   });
   await check(checks, "web_visual_surface", async () => {
     if (!withVisualSurface) throw new SkipCheck("skipped: run service-watch with --with-visual or MUSUNIL_SERVICE_WATCH_VISUAL=1");
-    const result = spawnSync(process.execPath, ["scripts/ci-visual-surface-smoke.mjs", "--base-url", webBaseUrl], {
+    const result = spawnSync(process.execPath, ["scripts/ci-web-next-visual.mjs", "--base-url", webBaseUrl], {
       cwd: process.cwd(),
       env: process.env,
       encoding: "utf8",
@@ -241,7 +241,10 @@ async function runChecks() {
     const parsed = JSON.parse(result.stdout);
     const serviceStates = Array.isArray(parsed.serviceStates)
       ? parsed.serviceStates
-      : [...new Set((parsed.scenarios || []).map((item) => item.detail?.serviceSyncState).filter(Boolean))];
+      : [...new Set([
+          ...(parsed.scenarios || []).map((item) => item.detail?.serviceSyncState),
+          ...(parsed.results || []).map((item) => item.home?.serviceSyncState)
+        ].filter(Boolean))];
     const homeScenarios = (parsed.scenarios || []).filter((item) => /_home$/.test(item.id));
     const firstIssues = [...new Set(homeScenarios.map((item) => item.detail?.firstIssueTitle).filter(Boolean))];
     const sourceBundleFirstCount = homeScenarios.filter((item) => item.detail?.sourceBundleFirst).length;
@@ -260,8 +263,8 @@ async function runChecks() {
       baseUrl: parsed.baseUrl,
       serviceStates,
       serviceBannerVisibleCount: parsed.serviceBannerVisibleCount ?? 0,
-      scenarios: parsed.scenarios?.length ?? 0,
-      failedScenarios: parsed.scenarios?.filter((item) => item.ok !== true).length ?? 0
+      scenarios: parsed.scenarios?.length ?? parsed.results?.length ?? 0,
+      failedScenarios: parsed.scenarios?.filter((item) => item.ok !== true).length ?? parsed.failures?.length ?? 0
     };
   });
   await check(checks, "api_endpoint_preflight", async () => {
